@@ -1816,7 +1816,7 @@ L_0x0042ce7c:
     }
     // 0042cee4  e86d2e0b00             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0042cee9  db9910020000           +fistp dword ptr [ecx + 0x210]
@@ -3472,7 +3472,7 @@ L_0x0042d666:
     cpu.edx ^= x86::reg32(x86::sreg32(cpu.edx));
     // 0042d670  e8cb2f0b00             -call 0x4e0640
     cpu.esp -= 4;
-    sub_4e0640(app, cpu.sync());
+    nfs3hp::watcom::memset(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0042d675  bb64000000             -mov ebx, 0x64
@@ -3485,7 +3485,7 @@ L_0x0042d666:
     cpu.edi = x86::reg32(cpu.ebp + x86::reg32(-74) /* -0x4a */);
     // 0042d683  e8a8370b00             -call 0x4e0e30
     cpu.esp -= 4;
-    sub_4e0e30(app, cpu.sync());
+    nfs3hp::watcom::strncpy(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0042d688  29c9                   -sub ecx, ecx
@@ -3581,7 +3581,7 @@ L_0x0042d69a:
     (cpu.ecx)--;
     // 0042d6cb  e8702f0b00             -call 0x4e0640
     cpu.esp -= 4;
-    sub_4e0640(app, cpu.sync());
+    nfs3hp::watcom::memset(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0042d6d0  31d2                   -xor edx, edx
@@ -4180,7 +4180,7 @@ void Application::sub_42d860(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.edx ^= x86::reg32(x86::sreg32(cpu.edx));
     // 0042d887  e8b42d0b00             -call 0x4e0640
     cpu.esp -= 4;
-    sub_4e0640(app, cpu.sync());
+    nfs3hp::watcom::memset(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
 L_0x0042d88c:
@@ -4296,7 +4296,7 @@ void Application::sub_42d8b0(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.eax = x86::reg32(cpu.esi + x86::reg32(4) /* 0x4 */);
     // 0042d8dc  e84f350b00             -call 0x4e0e30
     cpu.esp -= 4;
-    sub_4e0e30(app, cpu.sync());
+    nfs3hp::watcom::strncpy(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0042d8e1  8b5168                 -mov edx, dword ptr [ecx + 0x68]
@@ -18168,7 +18168,7 @@ L_0x0043133d:
     cpu.eax = 6225672 /*0x5eff08*/;
     // 00431376  e815a00b00             -call 0x4eb390
     cpu.esp -= 4;
-    sub_4eb390(app, cpu.sync());
+    nfs3hp::watcom::strncmp(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0043137b  85c0                   +test eax, eax

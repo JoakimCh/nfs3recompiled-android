@@ -8,6 +8,164 @@
 namespace nfs3hp
 {
 
+/* The game's functions the port has natively, where their code was
+ * (disassemble_nfs3hp.py): the generated code calls them by name. */
+void Error(win32::WinApplication* app, x86::CPU& cpu);  // 0x401010
+void Is3DSoundAvailable(win32::WinApplication* app, x86::CPU& cpu);  // 0x40faf0
+void Message(win32::WinApplication* app, x86::CPU& cpu);  // 0x4df6c0
+namespace watcom { void CHP(win32::WinApplication* app, x86::CPU& cpu); }  // 0x4dfd56
+namespace watcom { void memset(win32::WinApplication* app, x86::CPU& cpu); }  // 0x4e0640
+namespace watcom { void IF_DATAN2(win32::WinApplication* app, x86::CPU& cpu); }  // 0x4e06d9
+namespace watcom { void strstr(win32::WinApplication* app, x86::CPU& cpu); }  // 0x4e0820
+namespace watcom { void strncpy(win32::WinApplication* app, x86::CPU& cpu); }  // 0x4e0e30
+void StopSoundBufferLambda(win32::WinApplication* app, x86::CPU& cpu);  // 0x4e1a00
+void AcquireSoundBufferPositionLambda(win32::WinApplication* app, x86::CPU& cpu);  // 0x4e1a0c
+void AcquireSoundDataLambda(win32::WinApplication* app, x86::CPU& cpu);  // 0x4e1a24
+void PrintSoundLambda(win32::WinApplication* app, x86::CPU& cpu);  // 0x4e1a34
+void TraceSoundLambda(win32::WinApplication* app, x86::CPU& cpu);  // 0x4e1a64
+void abortmessagewrapper(win32::WinApplication* app, x86::CPU& cpu);  // 0x4e1a88
+void TickSoundLambda(win32::WinApplication* app, x86::CPU& cpu);  // 0x4e1adc
+void iSNDconvertsample(win32::WinApplication* app, x86::CPU& cpu);  // 0x4e1ae4
+void audiofocushandler(win32::WinApplication* app, x86::CPU& cpu);  // 0x4e1d48
+void iSNDloaddll(win32::WinApplication* app, x86::CPU& cpu);  // 0x4e1dd4
+void SNDcaps(win32::WinApplication* app, x86::CPU& cpu);  // 0x4e21b0
+void SoundServeHandler(win32::WinApplication* app, x86::CPU& cpu);  // 0x4e2234
+namespace watcom { void unlink(win32::WinApplication* app, x86::CPU& cpu); }  // 0x4e28a0
+namespace watcom { void update_buffer(win32::WinApplication* app, x86::CPU& cpu); }  // 0x4e9030
+namespace watcom { void reset_buffer(win32::WinApplication* app, x86::CPU& cpu); }  // 0x4e9070
+namespace watcom { void fseek(win32::WinApplication* app, x86::CPU& cpu); }  // 0x4e9088
+namespace watcom { void fread(win32::WinApplication* app, x86::CPU& cpu); }  // 0x4e9200
+namespace watcom { void stricmp(win32::WinApplication* app, x86::CPU& cpu); }  // 0x4e9ec0
+namespace watcom { void mkdir(win32::WinApplication* app, x86::CPU& cpu); }  // 0x4eb1d0
+namespace watcom { void initrandnext(win32::WinApplication* app, x86::CPU& cpu); }  // 0x4eb1f0
+namespace watcom { void rand(win32::WinApplication* app, x86::CPU& cpu); }  // 0x4eb1fc
+namespace watcom { void srand(win32::WinApplication* app, x86::CPU& cpu); }  // 0x4eb220
+namespace watcom { void strncmp(win32::WinApplication* app, x86::CPU& cpu); }  // 0x4eb390
+void AcquireWindow(win32::WinApplication* app, x86::CPU& cpu);  // 0x4eba70
+namespace watcom { void open_flags(win32::WinApplication* app, x86::CPU& cpu); }  // 0x4edd80
+namespace watcom { void doopen(win32::WinApplication* app, x86::CPU& cpu); }  // 0x4edebc
+namespace watcom { void fsopen(win32::WinApplication* app, x86::CPU& cpu); }  // 0x4edfa4
+namespace watcom { void fopen(win32::WinApplication* app, x86::CPU& cpu); }  // 0x4edfe8
+namespace watcom { void fclose(win32::WinApplication* app, x86::CPU& cpu); }  // 0x4ee100
+namespace watcom { void shutdown_stream(win32::WinApplication* app, x86::CPU& cpu); }  // 0x4ee144
+namespace watcom { void doclose(win32::WinApplication* app, x86::CPU& cpu); }  // 0x4ee214
+namespace watcom { void remove(win32::WinApplication* app, x86::CPU& cpu); }  // 0x4ee2e0
+namespace watcom { void strrchr(win32::WinApplication* app, x86::CPU& cpu); }  // 0x4ee2f0
+namespace watcom { void strcmp(win32::WinApplication* app, x86::CPU& cpu); }  // 0x4ee310
+namespace watcom { void chmod(win32::WinApplication* app, x86::CPU& cpu); }  // 0x4ee3c0
+namespace watcom { void rmdir(win32::WinApplication* app, x86::CPU& cpu); }  // 0x4ee400
+namespace watcom { void ftell(win32::WinApplication* app, x86::CPU& cpu); }  // 0x4ee420
+namespace watcom { void med3(win32::WinApplication* app, x86::CPU& cpu); }  // 0x4ee480
+namespace watcom { void byteswap(win32::WinApplication* app, x86::CPU& cpu); }  // 0x4ee4d0
+namespace watcom { void qsort(win32::WinApplication* app, x86::CPU& cpu); }  // 0x4ee4f8
+namespace watcom { void fwrite(win32::WinApplication* app, x86::CPU& cpu); }  // 0x4eebd0
+namespace watcom { void toupper(win32::WinApplication* app, x86::CPU& cpu); }  // 0x4eede0
+namespace watcom { void strncat(win32::WinApplication* app, x86::CPU& cpu); }  // 0x4eedf0
+namespace watcom { void strtok(win32::WinApplication* app, x86::CPU& cpu); }  // 0x4eff60
+namespace watcom { void chdir(win32::WinApplication* app, x86::CPU& cpu); }  // 0x4f0260
+namespace watcom { void atoi(win32::WinApplication* app, x86::CPU& cpu); }  // 0x4f0430
+namespace watcom { void atol(win32::WinApplication* app, x86::CPU& cpu); }  // 0x4f0490
+namespace watcom { void fgets(win32::WinApplication* app, x86::CPU& cpu); }  // 0x4f0570
+namespace watcom { void access(win32::WinApplication* app, x86::CPU& cpu); }  // 0x4f05f0
+namespace watcom { void getcwd(win32::WinApplication* app, x86::CPU& cpu); }  // 0x4f0730
+namespace watcom { void getdiskfree(win32::WinApplication* app, x86::CPU& cpu); }  // 0x4f07d0
+namespace watcom { void tolower(win32::WinApplication* app, x86::CPU& cpu); }  // 0x4f0ae0
+namespace watcom { void floor(win32::WinApplication* app, x86::CPU& cpu); }  // 0x4f1c30
+namespace watcom { void time(win32::WinApplication* app, x86::CPU& cpu); }  // 0x4f22b0
+namespace watcom { void ceil(win32::WinApplication* app, x86::CPU& cpu); }  // 0x4f2d78
+namespace watcom { void nmalloc(win32::WinApplication* app, x86::CPU& cpu); }  // 0x4f7900
+namespace watcom { void nfree(win32::WinApplication* app, x86::CPU& cpu); }  // 0x4f79f0
+namespace watcom { void control87(win32::WinApplication* app, x86::CPU& cpu); }  // 0x4f7c90
+namespace watcom { void fflush(win32::WinApplication* app, x86::CPU& cpu); }  // 0x4f7d70
+namespace watcom { void fputs(win32::WinApplication* app, x86::CPU& cpu); }  // 0x4f7d80
+namespace watcom { void strupr(win32::WinApplication* app, x86::CPU& cpu); }  // 0x4f8020
+namespace watcom { void localtime_(win32::WinApplication* app, x86::CPU& cpu); }  // 0x4f8040
+namespace watcom { void localtime(win32::WinApplication* app, x86::CPU& cpu); }  // 0x4f8094
+namespace watcom { void IF_DEXP(win32::WinApplication* app, x86::CPU& cpu); }  // 0x4f80b4
+namespace watcom { void exp(win32::WinApplication* app, x86::CPU& cpu); }  // 0x4f8116
+void THRASH_opendll(win32::WinApplication* app, x86::CPU& cpu);  // 0x4f8390
+namespace watcom { void IF_DACOS(win32::WinApplication* app, x86::CPU& cpu); }  // 0x4f9482
+namespace watcom { void bsearch(win32::WinApplication* app, x86::CPU& cpu); }  // 0x4fb300
+namespace watcom { void GetThreadPtr(win32::WinApplication* app, x86::CPU& cpu); }  // 0x4ff0ec
+namespace watcom { void NullAccess(win32::WinApplication* app, x86::CPU& cpu); }  // 0x4ff0f4
+namespace watcom { void STOSB(win32::WinApplication* app, x86::CPU& cpu); }  // 0x4ff4c0
+namespace watcom { void STOSD(win32::WinApplication* app, x86::CPU& cpu); }  // 0x4ff4f7
+namespace watcom { void set_errno_dos(win32::WinApplication* app, x86::CPU& cpu); }  // 0x500f8c
+namespace watcom { void set_errno_nt(win32::WinApplication* app, x86::CPU& cpu); }  // 0x500ff4
+namespace watcom { void flush(win32::WinApplication* app, x86::CPU& cpu); }  // 0x502760
+namespace watcom { void set_errno(win32::WinApplication* app, x86::CPU& cpu); }  // 0x502880
+namespace watcom { void set_EDOM(win32::WinApplication* app, x86::CPU& cpu); }  // 0x502890
+namespace watcom { void set_ERANGE(win32::WinApplication* app, x86::CPU& cpu); }  // 0x5028a4
+namespace watcom { void set_doserrno(win32::WinApplication* app, x86::CPU& cpu); }  // 0x5028c8
+namespace watcom { void lseek(win32::WinApplication* app, x86::CPU& cpu); }  // 0x5028e0
+namespace watcom { void tell(win32::WinApplication* app, x86::CPU& cpu); }  // 0x502960
+namespace watcom { void ioalloc(win32::WinApplication* app, x86::CPU& cpu); }  // 0x5029c0
+namespace watcom { void qread(win32::WinApplication* app, x86::CPU& cpu); }  // 0x502a50
+namespace watcom { void fgetc(win32::WinApplication* app, x86::CPU& cpu); }  // 0x502af0
+namespace watcom { void filbuf(win32::WinApplication* app, x86::CPU& cpu); }  // 0x502bb8
+namespace watcom { void fill_buffer(win32::WinApplication* app, x86::CPU& cpu); }  // 0x502be8
+namespace mmx { void copySwapped(win32::WinApplication* app, x86::CPU& cpu); }  // 0x5033e4
+namespace mmx { void copy(win32::WinApplication* app, x86::CPU& cpu); }  // 0x5033e5
+namespace watcom { void sopen(win32::WinApplication* app, x86::CPU& cpu); }  // 0x508ff4
+namespace watcom { void sopen_(win32::WinApplication* app, x86::CPU& cpu); }  // 0x50901c
+namespace watcom { void allocfp(win32::WinApplication* app, x86::CPU& cpu); }  // 0x509250
+namespace watcom { void freefp(win32::WinApplication* app, x86::CPU& cpu); }  // 0x509314
+namespace watcom { void chktty(win32::WinApplication* app, x86::CPU& cpu); }  // 0x509380
+namespace watcom { void close(win32::WinApplication* app, x86::CPU& cpu); }  // 0x5095b0
+namespace watcom { void fixed_GetFileAttributesA(win32::WinApplication* app, x86::CPU& cpu); }  // 0x509640
+namespace watcom { void qwrite(win32::WinApplication* app, x86::CPU& cpu); }  // 0x5096c0
+namespace watcom { void fputc(win32::WinApplication* app, x86::CPU& cpu); }  // 0x5097b0
+namespace watcom { void setbits(win32::WinApplication* app, x86::CPU& cpu); }  // 0x50c540
+namespace watcom { void modf(win32::WinApplication* app, x86::CPU& cpu); }  // 0x50ea4e
+namespace watcom { void getctime(win32::WinApplication* app, x86::CPU& cpu); }  // 0x50eb30
+namespace watcom { void mktime(win32::WinApplication* app, x86::CPU& cpu); }  // 0x50eba0
+namespace watcom { void MemAllocator(win32::WinApplication* app, x86::CPU& cpu); }  // 0x515300
+namespace watcom { void MemFree(win32::WinApplication* app, x86::CPU& cpu); }  // 0x5153b0
+namespace watcom { void LinkUpNewNHeap(win32::WinApplication* app, x86::CPU& cpu); }  // 0x5154e0
+namespace watcom { void CreateNewNHeap(win32::WinApplication* app, x86::CPU& cpu); }  // 0x515558
+namespace watcom { void ExpandDGROUP(win32::WinApplication* app, x86::CPU& cpu); }  // 0x515614
+namespace watcom { void AdjustAmount(win32::WinApplication* app, x86::CPU& cpu); }  // 0x515628
+namespace watcom { void nmemneed(win32::WinApplication* app, x86::CPU& cpu); }  // 0x515680
+namespace watcom { void flushall(win32::WinApplication* app, x86::CPU& cpu); }  // 0x515850
+namespace watcom { void flushall_(win32::WinApplication* app, x86::CPU& cpu); }  // 0x515858
+namespace watcom { void brktime(win32::WinApplication* app, x86::CPU& cpu); }  // 0x515fa0
+namespace watcom { void leapyear(win32::WinApplication* app, x86::CPU& cpu); }  // 0x5160f0
+namespace watcom { void calc_yday(win32::WinApplication* app, x86::CPU& cpu); }  // 0x51612c
+namespace watcom { void check_order(win32::WinApplication* app, x86::CPU& cpu); }  // 0x516224
+namespace watcom { void isindst(win32::WinApplication* app, x86::CPU& cpu); }  // 0x516270
+namespace watcom { void time_less(win32::WinApplication* app, x86::CPU& cpu); }  // 0x51652c
+namespace watcom { void math87_err(win32::WinApplication* app, x86::CPU& cpu); }  // 0x51655c
+namespace watcom { void DSQRT(win32::WinApplication* app, x86::CPU& cpu); }  // 0x51a1ba
+namespace watcom { void handlesFull(win32::WinApplication* app, x86::CPU& cpu); }  // 0x51e2b0
+namespace watcom { void allocPOSIXHandle(win32::WinApplication* app, x86::CPU& cpu); }  // 0x51e304
+namespace watcom { void freePOSIXHandle(win32::WinApplication* app, x86::CPU& cpu); }  // 0x51e45c
+namespace watcom { void NTGetFakeHandle(win32::WinApplication* app, x86::CPU& cpu); }  // 0x51e4f0
+namespace mmx { void addMono8(win32::WinApplication* app, x86::CPU& cpu); }  // 0x51f5dd
+namespace mmx { void addStereo8(win32::WinApplication* app, x86::CPU& cpu); }  // 0x51f6c7
+namespace mmx { void addMono16(win32::WinApplication* app, x86::CPU& cpu); }  // 0x51f7ad
+namespace mmx { void addStereo16(win32::WinApplication* app, x86::CPU& cpu); }  // 0x51f897
+namespace mmx { void outputMono8(win32::WinApplication* app, x86::CPU& cpu); }  // 0x520830
+namespace mmx { void outputStereo8(win32::WinApplication* app, x86::CPU& cpu); }  // 0x520870
+namespace mmx { void outputStereo16(win32::WinApplication* app, x86::CPU& cpu); }  // 0x520920
+namespace mmx { void clear(win32::WinApplication* app, x86::CPU& cpu); }  // 0x5209a0
+namespace mmx { void emms(win32::WinApplication* app, x86::CPU& cpu); }  // 0x520a00
+namespace mmx { void outputMono16(win32::WinApplication* app, x86::CPU& cpu); }  // 0x520a10
+namespace watcom { void fsync(win32::WinApplication* app, x86::CPU& cpu); }  // 0x522d80
+namespace watcom { void GetIOMode(win32::WinApplication* app, x86::CPU& cpu); }  // 0x522de0
+namespace watcom { void SetIOMode(win32::WinApplication* app, x86::CPU& cpu); }  // 0x522e38
+namespace watcom { void GetNTAccessAttr(win32::WinApplication* app, x86::CPU& cpu); }  // 0x5234d0
+namespace watcom { void GetNTShareAttr(win32::WinApplication* app, x86::CPU& cpu); }  // 0x523504
+namespace watcom { void isatty(win32::WinApplication* app, x86::CPU& cpu); }  // 0x523560
+namespace watcom { void nheapshrink(win32::WinApplication* app, x86::CPU& cpu); }  // 0x5241c0
+namespace watcom { void ReturnMemToSystem(win32::WinApplication* app, x86::CPU& cpu); }  // 0x5241fc
+namespace watcom { void ReleaseNHeap(win32::WinApplication* app, x86::CPU& cpu); }  // 0x52425c
+namespace mmx { void interpolateMono8(win32::WinApplication* app, x86::CPU& cpu); }  // 0x5270f0
+namespace mmx { void interpolateStereo8(win32::WinApplication* app, x86::CPU& cpu); }  // 0x527170
+namespace mmx { void interpolateMono16(win32::WinApplication* app, x86::CPU& cpu); }  // 0x527210
+namespace mmx { void interpolateStereo16(win32::WinApplication* app, x86::CPU& cpu); }  // 0x527290
+namespace mmx { void xaMono(win32::WinApplication* app, x86::CPU& cpu); }  // 0x52d1a0
+namespace mmx { void xaStereo(win32::WinApplication* app, x86::CPU& cpu); }  // 0x52d250
+
 class Application : public win32::WinApplication
 {
 public:
@@ -19,7 +177,6 @@ private:
     static const x86::reg8 s_DGROUPSegment[];
     static const x86::reg8 s__rsrcSegment[];
     static void sub_401000(WinApplication* app, x86::CPU& cpu);
-    static void sub_401010(WinApplication* app, x86::CPU& cpu);
     static void sub_401220(WinApplication* app, x86::CPU& cpu);
     static void sub_401230(WinApplication* app, x86::CPU& cpu);
     static void sub_401240(WinApplication* app, x86::CPU& cpu);
@@ -308,7 +465,6 @@ private:
     static void sub_40f940(WinApplication* app, x86::CPU& cpu);
     static void sub_40fa10(WinApplication* app, x86::CPU& cpu);
     static void sub_40fac0(WinApplication* app, x86::CPU& cpu);
-    static void sub_40faf0(WinApplication* app, x86::CPU& cpu);
     static void sub_40fb10(WinApplication* app, x86::CPU& cpu);
     static void sub_40fcf0(WinApplication* app, x86::CPU& cpu);
     static void sub_40feb0(WinApplication* app, x86::CPU& cpu);
@@ -3231,7 +3387,6 @@ private:
     static void sub_4df660(WinApplication* app, x86::CPU& cpu);
     static void sub_4df674(WinApplication* app, x86::CPU& cpu);
     static void sub_4df690(WinApplication* app, x86::CPU& cpu);
-    static void sub_4df6c0(WinApplication* app, x86::CPU& cpu);
     static void sub_4df6f0(WinApplication* app, x86::CPU& cpu);
     static void sub_4df730(WinApplication* app, x86::CPU& cpu);
     static void sub_4df740(WinApplication* app, x86::CPU& cpu);
@@ -3263,7 +3418,6 @@ private:
     static void sub_4dfd00(WinApplication* app, x86::CPU& cpu);
     static void sub_4dfd04(WinApplication* app, x86::CPU& cpu);
     static void sub_4dfd30(WinApplication* app, x86::CPU& cpu);
-    static void sub_4dfd56(WinApplication* app, x86::CPU& cpu);
     static void sub_4dfd80(WinApplication* app, x86::CPU& cpu);
     static void sub_4dfde0(WinApplication* app, x86::CPU& cpu);
     static void sub_4dfe40(WinApplication* app, x86::CPU& cpu);
@@ -3286,19 +3440,16 @@ private:
     static void sub_4e04e0(WinApplication* app, x86::CPU& cpu);
     static void sub_4e05b0(WinApplication* app, x86::CPU& cpu);
     static void sub_4e0620(WinApplication* app, x86::CPU& cpu);
-    static void sub_4e0640(WinApplication* app, x86::CPU& cpu);
     static void sub_4e0658(WinApplication* app, x86::CPU& cpu);
     static void sub_4e0659(WinApplication* app, x86::CPU& cpu);
     static void sub_4e0660(WinApplication* app, x86::CPU& cpu);
     static void sub_4e06a0(WinApplication* app, x86::CPU& cpu);
     static void sub_4e06c4(WinApplication* app, x86::CPU& cpu);
-    static void sub_4e06d9(WinApplication* app, x86::CPU& cpu);
     static void sub_4e06ee(WinApplication* app, x86::CPU& cpu);
     static void sub_4e06fa(WinApplication* app, x86::CPU& cpu);
     static void sub_4e070c(WinApplication* app, x86::CPU& cpu);
     static void sub_4e0716(WinApplication* app, x86::CPU& cpu);
     static void sub_4e0721(WinApplication* app, x86::CPU& cpu);
-    static void sub_4e0820(WinApplication* app, x86::CPU& cpu);
     static void sub_4e08f0(WinApplication* app, x86::CPU& cpu);
     static void sub_4e0980(WinApplication* app, x86::CPU& cpu);
     static void sub_4e0a60(WinApplication* app, x86::CPU& cpu);
@@ -3311,7 +3462,6 @@ private:
     static void sub_4e0d80(WinApplication* app, x86::CPU& cpu);
     static void sub_4e0d88(WinApplication* app, x86::CPU& cpu);
     static void sub_4e0dee(WinApplication* app, x86::CPU& cpu);
-    static void sub_4e0e30(WinApplication* app, x86::CPU& cpu);
     static void sub_4e0e60(WinApplication* app, x86::CPU& cpu);
     static void sub_4e0ec0(WinApplication* app, x86::CPU& cpu);
     static void sub_4e0fe0(WinApplication* app, x86::CPU& cpu);
@@ -3336,22 +3486,10 @@ private:
     static void sub_4e1990(WinApplication* app, x86::CPU& cpu);
     static void sub_4e19d0(WinApplication* app, x86::CPU& cpu);
     static void sub_4e19f0(WinApplication* app, x86::CPU& cpu);
-    static void sub_4e1a00(WinApplication* app, x86::CPU& cpu);
-    static void sub_4e1a0c(WinApplication* app, x86::CPU& cpu);
-    static void sub_4e1a24(WinApplication* app, x86::CPU& cpu);
-    static void sub_4e1a34(WinApplication* app, x86::CPU& cpu);
-    static void sub_4e1a64(WinApplication* app, x86::CPU& cpu);
-    static void sub_4e1a88(WinApplication* app, x86::CPU& cpu);
-    static void sub_4e1adc(WinApplication* app, x86::CPU& cpu);
-    static void sub_4e1ae4(WinApplication* app, x86::CPU& cpu);
     static void sub_4e1d1c(WinApplication* app, x86::CPU& cpu);
-    static void sub_4e1d48(WinApplication* app, x86::CPU& cpu);
-    static void sub_4e1dd4(WinApplication* app, x86::CPU& cpu);
     static void sub_4e217c(WinApplication* app, x86::CPU& cpu);
-    static void sub_4e21b0(WinApplication* app, x86::CPU& cpu);
     static void sub_4e2224(WinApplication* app, x86::CPU& cpu);
     static void sub_4e2228(WinApplication* app, x86::CPU& cpu);
-    static void sub_4e2234(WinApplication* app, x86::CPU& cpu);
     static void sub_4e225c(WinApplication* app, x86::CPU& cpu);
     static void sub_4e2450(WinApplication* app, x86::CPU& cpu);
     static void sub_4e253c(WinApplication* app, x86::CPU& cpu);
@@ -3360,7 +3498,6 @@ private:
     static void sub_4e2630(WinApplication* app, x86::CPU& cpu);
     static void sub_4e26b4(WinApplication* app, x86::CPU& cpu);
     static void sub_4e2754(WinApplication* app, x86::CPU& cpu);
-    static void sub_4e28a0(WinApplication* app, x86::CPU& cpu);
     static void sub_4e28c0(WinApplication* app, x86::CPU& cpu);
     static void sub_4e28d0(WinApplication* app, x86::CPU& cpu);
     static void sub_4e2ab0(WinApplication* app, x86::CPU& cpu);
@@ -3506,10 +3643,6 @@ private:
     static void sub_4e8f28(WinApplication* app, x86::CPU& cpu);
     static void sub_4e8fd0(WinApplication* app, x86::CPU& cpu);
     static void sub_4e9010(WinApplication* app, x86::CPU& cpu);
-    static void sub_4e9030(WinApplication* app, x86::CPU& cpu);
-    static void sub_4e9070(WinApplication* app, x86::CPU& cpu);
-    static void sub_4e9088(WinApplication* app, x86::CPU& cpu);
-    static void sub_4e9200(WinApplication* app, x86::CPU& cpu);
     static void sub_4e9420(WinApplication* app, x86::CPU& cpu);
     static void sub_4e9540(WinApplication* app, x86::CPU& cpu);
     static void sub_4e95fc(WinApplication* app, x86::CPU& cpu);
@@ -3523,7 +3656,6 @@ private:
     static void sub_4e9bf8(WinApplication* app, x86::CPU& cpu);
     static void sub_4e9c70(WinApplication* app, x86::CPU& cpu);
     static void sub_4e9dfc(WinApplication* app, x86::CPU& cpu);
-    static void sub_4e9ec0(WinApplication* app, x86::CPU& cpu);
     static void sub_4e9f00(WinApplication* app, x86::CPU& cpu);
     static void sub_4e9fe0(WinApplication* app, x86::CPU& cpu);
     static void sub_4ea040(WinApplication* app, x86::CPU& cpu);
@@ -3567,17 +3699,12 @@ private:
     static void sub_4eafc0(WinApplication* app, x86::CPU& cpu);
     static void sub_4eb160(WinApplication* app, x86::CPU& cpu);
     static void sub_4eb1c0(WinApplication* app, x86::CPU& cpu);
-    static void sub_4eb1d0(WinApplication* app, x86::CPU& cpu);
-    static void sub_4eb1f0(WinApplication* app, x86::CPU& cpu);
-    static void sub_4eb1fc(WinApplication* app, x86::CPU& cpu);
-    static void sub_4eb220(WinApplication* app, x86::CPU& cpu);
     static void sub_4eb230(WinApplication* app, x86::CPU& cpu);
     static void sub_4eb260(WinApplication* app, x86::CPU& cpu);
     static void sub_4eb2e0(WinApplication* app, x86::CPU& cpu);
     static void sub_4eb340(WinApplication* app, x86::CPU& cpu);
     static void sub_4eb350(WinApplication* app, x86::CPU& cpu);
     static void sub_4eb360(WinApplication* app, x86::CPU& cpu);
-    static void sub_4eb390(WinApplication* app, x86::CPU& cpu);
     static void sub_4eb3c0(WinApplication* app, x86::CPU& cpu);
     static void sub_4eb420(WinApplication* app, x86::CPU& cpu);
     static void sub_4eb430(WinApplication* app, x86::CPU& cpu);
@@ -3588,7 +3715,6 @@ private:
     static void sub_4eb880(WinApplication* app, x86::CPU& cpu);
     static void sub_4eb8a0(WinApplication* app, x86::CPU& cpu);
     static void sub_4eba30(WinApplication* app, x86::CPU& cpu);
-    static void sub_4eba70(WinApplication* app, x86::CPU& cpu);
     static void sub_4eba80(WinApplication* app, x86::CPU& cpu);
     static void sub_4eba90(WinApplication* app, x86::CPU& cpu);
     static void sub_4ebaa0(WinApplication* app, x86::CPU& cpu);
@@ -3626,31 +3752,12 @@ private:
     static void sub_4eda10(WinApplication* app, x86::CPU& cpu);
     static void sub_4edb80(WinApplication* app, x86::CPU& cpu);
     static void sub_4edbc0(WinApplication* app, x86::CPU& cpu);
-    static void sub_4edd80(WinApplication* app, x86::CPU& cpu);
-    static void sub_4edebc(WinApplication* app, x86::CPU& cpu);
-    static void sub_4edfa4(WinApplication* app, x86::CPU& cpu);
-    static void sub_4edfe8(WinApplication* app, x86::CPU& cpu);
     static void sub_4edff4(WinApplication* app, x86::CPU& cpu);
     static void sub_4ee07c(WinApplication* app, x86::CPU& cpu);
-    static void sub_4ee100(WinApplication* app, x86::CPU& cpu);
-    static void sub_4ee144(WinApplication* app, x86::CPU& cpu);
     static void sub_4ee15c(WinApplication* app, x86::CPU& cpu);
     static void sub_4ee168(WinApplication* app, x86::CPU& cpu);
-    static void sub_4ee214(WinApplication* app, x86::CPU& cpu);
-    static void sub_4ee2e0(WinApplication* app, x86::CPU& cpu);
-    static void sub_4ee2f0(WinApplication* app, x86::CPU& cpu);
-    static void sub_4ee310(WinApplication* app, x86::CPU& cpu);
-    static void sub_4ee3c0(WinApplication* app, x86::CPU& cpu);
-    static void sub_4ee400(WinApplication* app, x86::CPU& cpu);
-    static void sub_4ee420(WinApplication* app, x86::CPU& cpu);
-    static void sub_4ee480(WinApplication* app, x86::CPU& cpu);
-    static void sub_4ee4d0(WinApplication* app, x86::CPU& cpu);
-    static void sub_4ee4f8(WinApplication* app, x86::CPU& cpu);
     static void sub_4eeae0(WinApplication* app, x86::CPU& cpu);
     static void sub_4eebb0(WinApplication* app, x86::CPU& cpu);
-    static void sub_4eebd0(WinApplication* app, x86::CPU& cpu);
-    static void sub_4eede0(WinApplication* app, x86::CPU& cpu);
-    static void sub_4eedf0(WinApplication* app, x86::CPU& cpu);
     static void sub_4eee30(WinApplication* app, x86::CPU& cpu);
     static void sub_4ef190(WinApplication* app, x86::CPU& cpu);
     static void sub_4ef1a0(WinApplication* app, x86::CPU& cpu);
@@ -3679,7 +3786,6 @@ private:
     static void sub_4efe50(WinApplication* app, x86::CPU& cpu);
     static void sub_4efef0(WinApplication* app, x86::CPU& cpu);
     static void sub_4eff00(WinApplication* app, x86::CPU& cpu);
-    static void sub_4eff60(WinApplication* app, x86::CPU& cpu);
     static void sub_4f0010(WinApplication* app, x86::CPU& cpu);
     static void sub_4f00d0(WinApplication* app, x86::CPU& cpu);
     static void sub_4f00e0(WinApplication* app, x86::CPU& cpu);
@@ -3692,17 +3798,12 @@ private:
     static void sub_4f0230(WinApplication* app, x86::CPU& cpu);
     static void sub_4f0240(WinApplication* app, x86::CPU& cpu);
     static void sub_4f0250(WinApplication* app, x86::CPU& cpu);
-    static void sub_4f0260(WinApplication* app, x86::CPU& cpu);
     static void sub_4f0280(WinApplication* app, x86::CPU& cpu);
     static void sub_4f0330(WinApplication* app, x86::CPU& cpu);
-    static void sub_4f0430(WinApplication* app, x86::CPU& cpu);
-    static void sub_4f0490(WinApplication* app, x86::CPU& cpu);
     static void sub_4f04f0(WinApplication* app, x86::CPU& cpu);
     static void sub_4f051c(WinApplication* app, x86::CPU& cpu);
     static void sub_4f0520(WinApplication* app, x86::CPU& cpu);
     static void sub_4f0548(WinApplication* app, x86::CPU& cpu);
-    static void sub_4f0570(WinApplication* app, x86::CPU& cpu);
-    static void sub_4f05f0(WinApplication* app, x86::CPU& cpu);
     static void sub_4f0630(WinApplication* app, x86::CPU& cpu);
     static void sub_4f0640(WinApplication* app, x86::CPU& cpu);
     static void sub_4f0650(WinApplication* app, x86::CPU& cpu);
@@ -3712,8 +3813,6 @@ private:
     static void sub_4f06c0(WinApplication* app, x86::CPU& cpu);
     static void sub_4f06e0(WinApplication* app, x86::CPU& cpu);
     static void sub_4f0710(WinApplication* app, x86::CPU& cpu);
-    static void sub_4f0730(WinApplication* app, x86::CPU& cpu);
-    static void sub_4f07d0(WinApplication* app, x86::CPU& cpu);
     static void sub_4f0840(WinApplication* app, x86::CPU& cpu);
     static void sub_4f0850(WinApplication* app, x86::CPU& cpu);
     static void sub_4f0860(WinApplication* app, x86::CPU& cpu);
@@ -3740,7 +3839,6 @@ private:
     static void sub_4f0a50(WinApplication* app, x86::CPU& cpu);
     static void sub_4f0a70(WinApplication* app, x86::CPU& cpu);
     static void sub_4f0a90(WinApplication* app, x86::CPU& cpu);
-    static void sub_4f0ae0(WinApplication* app, x86::CPU& cpu);
     static void sub_4f0af0(WinApplication* app, x86::CPU& cpu);
     static void sub_4f0b60(WinApplication* app, x86::CPU& cpu);
     static void sub_4f0c90(WinApplication* app, x86::CPU& cpu);
@@ -3765,14 +3863,12 @@ private:
     static void sub_4f1710(WinApplication* app, x86::CPU& cpu);
     static void sub_4f1790(WinApplication* app, x86::CPU& cpu);
     static void sub_4f1820(WinApplication* app, x86::CPU& cpu);
-    static void sub_4f1c30(WinApplication* app, x86::CPU& cpu);
     static void sub_4f1c70(WinApplication* app, x86::CPU& cpu);
     static void sub_4f1ea0(WinApplication* app, x86::CPU& cpu);
     static void sub_4f1ef0(WinApplication* app, x86::CPU& cpu);
     static void sub_4f20b0(WinApplication* app, x86::CPU& cpu);
     static void sub_4f2170(WinApplication* app, x86::CPU& cpu);
     static void sub_4f21c0(WinApplication* app, x86::CPU& cpu);
-    static void sub_4f22b0(WinApplication* app, x86::CPU& cpu);
     static void sub_4f22e0(WinApplication* app, x86::CPU& cpu);
     static void sub_4f2360(WinApplication* app, x86::CPU& cpu);
     static void sub_4f2380(WinApplication* app, x86::CPU& cpu);
@@ -3804,7 +3900,6 @@ private:
     static void sub_4f2d20(WinApplication* app, x86::CPU& cpu);
     static void sub_4f2d40(WinApplication* app, x86::CPU& cpu);
     static void sub_4f2d60(WinApplication* app, x86::CPU& cpu);
-    static void sub_4f2d78(WinApplication* app, x86::CPU& cpu);
     static void sub_4f2da0(WinApplication* app, x86::CPU& cpu);
     static void sub_4f2e20(WinApplication* app, x86::CPU& cpu);
     static void sub_4f2f30(WinApplication* app, x86::CPU& cpu);
@@ -3954,8 +4049,6 @@ private:
     static void sub_4f77c0(WinApplication* app, x86::CPU& cpu);
     static void sub_4f77f0(WinApplication* app, x86::CPU& cpu);
     static void sub_4f7830(WinApplication* app, x86::CPU& cpu);
-    static void sub_4f7900(WinApplication* app, x86::CPU& cpu);
-    static void sub_4f79f0(WinApplication* app, x86::CPU& cpu);
     static void sub_4f7af8(WinApplication* app, x86::CPU& cpu);
     static void sub_4f7b1a(WinApplication* app, x86::CPU& cpu);
     static void sub_4f7b2a(WinApplication* app, x86::CPU& cpu);
@@ -3968,24 +4061,15 @@ private:
     static void sub_4f7c09(WinApplication* app, x86::CPU& cpu);
     static void sub_4f7c20(WinApplication* app, x86::CPU& cpu);
     static void sub_4f7c48(WinApplication* app, x86::CPU& cpu);
-    static void sub_4f7c90(WinApplication* app, x86::CPU& cpu);
     static void sub_4f7ce0(WinApplication* app, x86::CPU& cpu);
-    static void sub_4f7d70(WinApplication* app, x86::CPU& cpu);
-    static void sub_4f7d80(WinApplication* app, x86::CPU& cpu);
     static void sub_4f7e20(WinApplication* app, x86::CPU& cpu);
     static void sub_4f7f24(WinApplication* app, x86::CPU& cpu);
     static void sub_4f7fa0(WinApplication* app, x86::CPU& cpu);
-    static void sub_4f8020(WinApplication* app, x86::CPU& cpu);
-    static void sub_4f8040(WinApplication* app, x86::CPU& cpu);
-    static void sub_4f8094(WinApplication* app, x86::CPU& cpu);
     static void sub_4f80ac(WinApplication* app, x86::CPU& cpu);
-    static void sub_4f80b4(WinApplication* app, x86::CPU& cpu);
     static void sub_4f80e5(WinApplication* app, x86::CPU& cpu);
     static void sub_4f80b6(WinApplication* app, x86::CPU& cpu);
-    static void sub_4f8116(WinApplication* app, x86::CPU& cpu);
     static void sub_4f8122(WinApplication* app, x86::CPU& cpu);
     static void sub_4f82b6(WinApplication* app, x86::CPU& cpu);
-    static void sub_4f8390(WinApplication* app, x86::CPU& cpu);
     static void sub_4f87a0(WinApplication* app, x86::CPU& cpu);
     static void sub_4f87e0(WinApplication* app, x86::CPU& cpu);
     static void sub_4f8830(WinApplication* app, x86::CPU& cpu);
@@ -4020,7 +4104,6 @@ private:
     static void sub_4f93f0(WinApplication* app, x86::CPU& cpu);
     static void sub_4f9410(WinApplication* app, x86::CPU& cpu);
     static void sub_4f9470(WinApplication* app, x86::CPU& cpu);
-    static void sub_4f9482(WinApplication* app, x86::CPU& cpu);
     static void sub_4f94bf(WinApplication* app, x86::CPU& cpu);
     static void sub_4f9500(WinApplication* app, x86::CPU& cpu);
     static void sub_4f97c0(WinApplication* app, x86::CPU& cpu);
@@ -4064,7 +4147,6 @@ private:
     static void sub_4fb170(WinApplication* app, x86::CPU& cpu);
     static void sub_4fb1a0(WinApplication* app, x86::CPU& cpu);
     static void sub_4fb1e0(WinApplication* app, x86::CPU& cpu);
-    static void sub_4fb300(WinApplication* app, x86::CPU& cpu);
     static void sub_4fb380(WinApplication* app, x86::CPU& cpu);
     static void sub_4fb3b0(WinApplication* app, x86::CPU& cpu);
     static void sub_4fb3c0(WinApplication* app, x86::CPU& cpu);
@@ -4180,8 +4262,6 @@ private:
     static void sub_4ff000(WinApplication* app, x86::CPU& cpu);
     static void sub_4ff014(WinApplication* app, x86::CPU& cpu);
     static void sub_4ff0e0(WinApplication* app, x86::CPU& cpu);
-    static void sub_4ff0ec(WinApplication* app, x86::CPU& cpu);
-    static void sub_4ff0f4(WinApplication* app, x86::CPU& cpu);
     static void sub_4ff0f8(WinApplication* app, x86::CPU& cpu);
     static void sub_4ff100(WinApplication* app, x86::CPU& cpu);
     static void sub_4ff108(WinApplication* app, x86::CPU& cpu);
@@ -4191,9 +4271,7 @@ private:
     static void sub_4ff410(WinApplication* app, x86::CPU& cpu);
     static void sub_4ff41c(WinApplication* app, x86::CPU& cpu);
     static void sub_4ff46c(WinApplication* app, x86::CPU& cpu);
-    static void sub_4ff4c0(WinApplication* app, x86::CPU& cpu);
     static void sub_4ff4f2(WinApplication* app, x86::CPU& cpu);
-    static void sub_4ff4f7(WinApplication* app, x86::CPU& cpu);
     static void sub_4ff570(WinApplication* app, x86::CPU& cpu);
     static void sub_4ff590(WinApplication* app, x86::CPU& cpu);
     static void sub_4ff598(WinApplication* app, x86::CPU& cpu);
@@ -4241,8 +4319,6 @@ private:
     static void sub_500e94(WinApplication* app, x86::CPU& cpu);
     static void sub_500ef0(WinApplication* app, x86::CPU& cpu);
     static void sub_500f80(WinApplication* app, x86::CPU& cpu);
-    static void sub_500f8c(WinApplication* app, x86::CPU& cpu);
-    static void sub_500ff4(WinApplication* app, x86::CPU& cpu);
     static void sub_501010(WinApplication* app, x86::CPU& cpu);
     static void sub_501050(WinApplication* app, x86::CPU& cpu);
     static void sub_501110(WinApplication* app, x86::CPU& cpu);
@@ -4271,19 +4347,7 @@ private:
     static void sub_502570(WinApplication* app, x86::CPU& cpu);
     static void sub_5025b0(WinApplication* app, x86::CPU& cpu);
     static void sub_502620(WinApplication* app, x86::CPU& cpu);
-    static void sub_502760(WinApplication* app, x86::CPU& cpu);
-    static void sub_502880(WinApplication* app, x86::CPU& cpu);
-    static void sub_502890(WinApplication* app, x86::CPU& cpu);
-    static void sub_5028a4(WinApplication* app, x86::CPU& cpu);
     static void sub_5028b8(WinApplication* app, x86::CPU& cpu);
-    static void sub_5028c8(WinApplication* app, x86::CPU& cpu);
-    static void sub_5028e0(WinApplication* app, x86::CPU& cpu);
-    static void sub_502960(WinApplication* app, x86::CPU& cpu);
-    static void sub_5029c0(WinApplication* app, x86::CPU& cpu);
-    static void sub_502a50(WinApplication* app, x86::CPU& cpu);
-    static void sub_502af0(WinApplication* app, x86::CPU& cpu);
-    static void sub_502bb8(WinApplication* app, x86::CPU& cpu);
-    static void sub_502be8(WinApplication* app, x86::CPU& cpu);
     static void sub_502cb0(WinApplication* app, x86::CPU& cpu);
     static void sub_502d30(WinApplication* app, x86::CPU& cpu);
     static void sub_502df0(WinApplication* app, x86::CPU& cpu);
@@ -4294,8 +4358,6 @@ private:
     static void sub_5030d0(WinApplication* app, x86::CPU& cpu);
     static void sub_503280(WinApplication* app, x86::CPU& cpu);
     static void sub_503281(WinApplication* app, x86::CPU& cpu);
-    static void sub_5033e4(WinApplication* app, x86::CPU& cpu);
-    static void sub_5033e5(WinApplication* app, x86::CPU& cpu);
     static void sub_50356c(WinApplication* app, x86::CPU& cpu);
     static void sub_50356d(WinApplication* app, x86::CPU& cpu);
     static void sub_503670(WinApplication* app, x86::CPU& cpu);
@@ -4401,19 +4463,10 @@ private:
     static void sub_508ee0(WinApplication* app, x86::CPU& cpu);
     static void sub_508f00(WinApplication* app, x86::CPU& cpu);
     static void sub_508fd0(WinApplication* app, x86::CPU& cpu);
-    static void sub_508ff4(WinApplication* app, x86::CPU& cpu);
-    static void sub_50901c(WinApplication* app, x86::CPU& cpu);
-    static void sub_509250(WinApplication* app, x86::CPU& cpu);
-    static void sub_509314(WinApplication* app, x86::CPU& cpu);
     static void sub_509350(WinApplication* app, x86::CPU& cpu);
-    static void sub_509380(WinApplication* app, x86::CPU& cpu);
     static void sub_5093c0(WinApplication* app, x86::CPU& cpu);
     static void sub_5093d0(WinApplication* app, x86::CPU& cpu);
     static void sub_5094e0(WinApplication* app, x86::CPU& cpu);
-    static void sub_5095b0(WinApplication* app, x86::CPU& cpu);
-    static void sub_509640(WinApplication* app, x86::CPU& cpu);
-    static void sub_5096c0(WinApplication* app, x86::CPU& cpu);
-    static void sub_5097b0(WinApplication* app, x86::CPU& cpu);
     static void sub_5098d0(WinApplication* app, x86::CPU& cpu);
     static void sub_509940(WinApplication* app, x86::CPU& cpu);
     static void sub_509a00(WinApplication* app, x86::CPU& cpu);
@@ -4477,7 +4530,6 @@ private:
     static void sub_50c2c0(WinApplication* app, x86::CPU& cpu);
     static void sub_50c350(WinApplication* app, x86::CPU& cpu);
     static void sub_50c3a0(WinApplication* app, x86::CPU& cpu);
-    static void sub_50c540(WinApplication* app, x86::CPU& cpu);
     static void sub_50c584(WinApplication* app, x86::CPU& cpu);
     static void sub_50c5d4(WinApplication* app, x86::CPU& cpu);
     static void sub_50c640(WinApplication* app, x86::CPU& cpu);
@@ -4532,13 +4584,10 @@ private:
     static void sub_50e9b0(WinApplication* app, x86::CPU& cpu);
     static void sub_50ea20(WinApplication* app, x86::CPU& cpu);
     static void sub_50ea40(WinApplication* app, x86::CPU& cpu);
-    static void sub_50ea4e(WinApplication* app, x86::CPU& cpu);
     static void sub_50ea68(WinApplication* app, x86::CPU& cpu);
     static void sub_50ea85(WinApplication* app, x86::CPU& cpu);
     static void sub_50eaa7(WinApplication* app, x86::CPU& cpu);
     static void sub_50ead0(WinApplication* app, x86::CPU& cpu);
-    static void sub_50eb30(WinApplication* app, x86::CPU& cpu);
-    static void sub_50eba0(WinApplication* app, x86::CPU& cpu);
     static void sub_50ed50(WinApplication* app, x86::CPU& cpu);
     static void sub_510110(WinApplication* app, x86::CPU& cpu);
     static void sub_5102a4(WinApplication* app, x86::CPU& cpu);
@@ -4629,13 +4678,6 @@ private:
     static void sub_514f70(WinApplication* app, x86::CPU& cpu);
     static void sub_515050(WinApplication* app, x86::CPU& cpu);
     static void sub_5150f0(WinApplication* app, x86::CPU& cpu);
-    static void sub_515300(WinApplication* app, x86::CPU& cpu);
-    static void sub_5153b0(WinApplication* app, x86::CPU& cpu);
-    static void sub_5154e0(WinApplication* app, x86::CPU& cpu);
-    static void sub_515558(WinApplication* app, x86::CPU& cpu);
-    static void sub_515614(WinApplication* app, x86::CPU& cpu);
-    static void sub_515628(WinApplication* app, x86::CPU& cpu);
-    static void sub_515680(WinApplication* app, x86::CPU& cpu);
     static void sub_515690(WinApplication* app, x86::CPU& cpu);
     static void sub_5156b8(WinApplication* app, x86::CPU& cpu);
     static void sub_515728(WinApplication* app, x86::CPU& cpu);
@@ -4644,8 +4686,6 @@ private:
     static void sub_5157e0(WinApplication* app, x86::CPU& cpu);
     static void sub_5157ec(WinApplication* app, x86::CPU& cpu);
     static void sub_5157f4(WinApplication* app, x86::CPU& cpu);
-    static void sub_515850(WinApplication* app, x86::CPU& cpu);
-    static void sub_515858(WinApplication* app, x86::CPU& cpu);
     static void sub_5158a0(WinApplication* app, x86::CPU& cpu);
     static void sub_515900(WinApplication* app, x86::CPU& cpu);
     static void sub_5159e4(WinApplication* app, x86::CPU& cpu);
@@ -4657,15 +4697,8 @@ private:
     static void sub_515cbc(WinApplication* app, x86::CPU& cpu);
     static void sub_515dd4(WinApplication* app, x86::CPU& cpu);
     static void sub_515ec2(WinApplication* app, x86::CPU& cpu);
-    static void sub_515fa0(WinApplication* app, x86::CPU& cpu);
     static void sub_5160b8(WinApplication* app, x86::CPU& cpu);
     static void sub_5160d8(WinApplication* app, x86::CPU& cpu);
-    static void sub_5160f0(WinApplication* app, x86::CPU& cpu);
-    static void sub_51612c(WinApplication* app, x86::CPU& cpu);
-    static void sub_516224(WinApplication* app, x86::CPU& cpu);
-    static void sub_516270(WinApplication* app, x86::CPU& cpu);
-    static void sub_51652c(WinApplication* app, x86::CPU& cpu);
-    static void sub_51655c(WinApplication* app, x86::CPU& cpu);
     static void sub_5165d8(WinApplication* app, x86::CPU& cpu);
     static void sub_51663a(WinApplication* app, x86::CPU& cpu);
     static void sub_51667b(WinApplication* app, x86::CPU& cpu);
@@ -4740,7 +4773,6 @@ private:
     static void sub_51a170(WinApplication* app, x86::CPU& cpu);
     static void sub_51a188(WinApplication* app, x86::CPU& cpu);
     static void sub_51a1b8(WinApplication* app, x86::CPU& cpu);
-    static void sub_51a1ba(WinApplication* app, x86::CPU& cpu);
     static void sub_51a1f0(WinApplication* app, x86::CPU& cpu);
     static void sub_51a200(WinApplication* app, x86::CPU& cpu);
     static void sub_51a260(WinApplication* app, x86::CPU& cpu);
@@ -4833,12 +4865,8 @@ private:
     static void sub_51e26c(WinApplication* app, x86::CPU& cpu);
     static void sub_51e290(WinApplication* app, x86::CPU& cpu);
     static void sub_51e2a0(WinApplication* app, x86::CPU& cpu);
-    static void sub_51e2b0(WinApplication* app, x86::CPU& cpu);
-    static void sub_51e304(WinApplication* app, x86::CPU& cpu);
     static void sub_51e388(WinApplication* app, x86::CPU& cpu);
-    static void sub_51e45c(WinApplication* app, x86::CPU& cpu);
     static void sub_51e490(WinApplication* app, x86::CPU& cpu);
-    static void sub_51e4f0(WinApplication* app, x86::CPU& cpu);
     static void sub_51e51c(WinApplication* app, x86::CPU& cpu);
     static void sub_51e540(WinApplication* app, x86::CPU& cpu);
     static void sub_51e544(WinApplication* app, x86::CPU& cpu);
@@ -4889,16 +4917,12 @@ private:
     static void sub_51f520(WinApplication* app, x86::CPU& cpu);
     static void sub_51f580(WinApplication* app, x86::CPU& cpu);
     static void sub_51f5a4(WinApplication* app, x86::CPU& cpu);
-    static void sub_51f5dd(WinApplication* app, x86::CPU& cpu);
     static void sub_51f680(WinApplication* app, x86::CPU& cpu);
     static void sub_51f6a4(WinApplication* app, x86::CPU& cpu);
-    static void sub_51f6c7(WinApplication* app, x86::CPU& cpu);
     static void sub_51f750(WinApplication* app, x86::CPU& cpu);
     static void sub_51f774(WinApplication* app, x86::CPU& cpu);
-    static void sub_51f7ad(WinApplication* app, x86::CPU& cpu);
     static void sub_51f850(WinApplication* app, x86::CPU& cpu);
     static void sub_51f874(WinApplication* app, x86::CPU& cpu);
-    static void sub_51f897(WinApplication* app, x86::CPU& cpu);
     static void sub_51f930(WinApplication* app, x86::CPU& cpu);
     static void sub_51f978(WinApplication* app, x86::CPU& cpu);
     static void sub_51f980(WinApplication* app, x86::CPU& cpu);
@@ -4931,12 +4955,6 @@ private:
     static void sub_5205bc(WinApplication* app, x86::CPU& cpu);
     static void sub_520740(WinApplication* app, x86::CPU& cpu);
     static void sub_5207e4(WinApplication* app, x86::CPU& cpu);
-    static void sub_520830(WinApplication* app, x86::CPU& cpu);
-    static void sub_520870(WinApplication* app, x86::CPU& cpu);
-    static void sub_520920(WinApplication* app, x86::CPU& cpu);
-    static void sub_5209a0(WinApplication* app, x86::CPU& cpu);
-    static void sub_520a00(WinApplication* app, x86::CPU& cpu);
-    static void sub_520a10(WinApplication* app, x86::CPU& cpu);
     static void sub_520a40(WinApplication* app, x86::CPU& cpu);
     static void sub_520a5e(WinApplication* app, x86::CPU& cpu);
     static void sub_520aee(WinApplication* app, x86::CPU& cpu);
@@ -5002,9 +5020,6 @@ private:
     static void sub_5229d0(WinApplication* app, x86::CPU& cpu);
     static void sub_522a80(WinApplication* app, x86::CPU& cpu);
     static void sub_522d08(WinApplication* app, x86::CPU& cpu);
-    static void sub_522d80(WinApplication* app, x86::CPU& cpu);
-    static void sub_522de0(WinApplication* app, x86::CPU& cpu);
-    static void sub_522e38(WinApplication* app, x86::CPU& cpu);
     static void sub_522e60(WinApplication* app, x86::CPU& cpu);
     static void sub_522e90(WinApplication* app, x86::CPU& cpu);
     static void sub_522f10(WinApplication* app, x86::CPU& cpu);
@@ -5021,9 +5036,6 @@ private:
     static void sub_523465(WinApplication* app, x86::CPU& cpu);
     static void sub_523488(WinApplication* app, x86::CPU& cpu);
     static void sub_5234a0(WinApplication* app, x86::CPU& cpu);
-    static void sub_5234d0(WinApplication* app, x86::CPU& cpu);
-    static void sub_523504(WinApplication* app, x86::CPU& cpu);
-    static void sub_523560(WinApplication* app, x86::CPU& cpu);
     static void sub_5235d0(WinApplication* app, x86::CPU& cpu);
     static void sub_5235dc(WinApplication* app, x86::CPU& cpu);
     static void sub_5235f0(WinApplication* app, x86::CPU& cpu);
@@ -5040,9 +5052,6 @@ private:
     static void sub_523d94(WinApplication* app, x86::CPU& cpu);
     static void sub_523f90(WinApplication* app, x86::CPU& cpu);
     static void sub_524190(WinApplication* app, x86::CPU& cpu);
-    static void sub_5241c0(WinApplication* app, x86::CPU& cpu);
-    static void sub_5241fc(WinApplication* app, x86::CPU& cpu);
-    static void sub_52425c(WinApplication* app, x86::CPU& cpu);
     static void sub_524290(WinApplication* app, x86::CPU& cpu);
     static void sub_5242f0(WinApplication* app, x86::CPU& cpu);
     static void sub_5243a7(WinApplication* app, x86::CPU& cpu);
@@ -5141,10 +5150,6 @@ private:
     static void sub_52700c(WinApplication* app, x86::CPU& cpu);
     static void sub_527058(WinApplication* app, x86::CPU& cpu);
     static void sub_5270a4(WinApplication* app, x86::CPU& cpu);
-    static void sub_5270f0(WinApplication* app, x86::CPU& cpu);
-    static void sub_527170(WinApplication* app, x86::CPU& cpu);
-    static void sub_527210(WinApplication* app, x86::CPU& cpu);
-    static void sub_527290(WinApplication* app, x86::CPU& cpu);
     static void sub_527330(WinApplication* app, x86::CPU& cpu);
     static void sub_5273c0(WinApplication* app, x86::CPU& cpu);
     static void sub_5274b0(WinApplication* app, x86::CPU& cpu);
@@ -5321,8 +5326,6 @@ private:
     static void sub_52d010(WinApplication* app, x86::CPU& cpu);
     static void sub_52d110(WinApplication* app, x86::CPU& cpu);
     static void sub_52d160(WinApplication* app, x86::CPU& cpu);
-    static void sub_52d1a0(WinApplication* app, x86::CPU& cpu);
-    static void sub_52d250(WinApplication* app, x86::CPU& cpu);
     static void sub_52d370(WinApplication* app, x86::CPU& cpu);
     static void sub_52d3cc(WinApplication* app, x86::CPU& cpu);
     static void sub_52d428(WinApplication* app, x86::CPU& cpu);

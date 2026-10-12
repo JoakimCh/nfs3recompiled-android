@@ -1,5 +1,6 @@
-#include <nfs3hp.h>
+#include <lib/winapp.h>
 #include "native_thrash.h"
+#include "thrash.h"
 #include <lib/gliderenderer.h>
 #include <lib/thrashrenderer.h>
 #include <winapi/glide2x.h>
@@ -7,8 +8,6 @@
 #include <cmath>
 #include <cstring>
 #include <initializer_list>
-#include <string>
-#include <vector>
 
 /* A product rounded to float straight from a fused multiply-add would round
  * once where voodoo2a's code rounds twice. */
@@ -18,21 +17,20 @@
 #pragma fp_contract(off)
 #endif
 
-/* The first stage of a native THRASH driver: voodoo2a's THRASH functions in
- * C++, one at a time, entered from the top of the generated ones
- * (tools/apply_native_thrash.py), with voodoo2a's own state in guest memory as
- * the one copy every function reads until all of them are native.
+/* voodoo2a, the port's THRASH driver, in C++: all 34 of its exports (THRASH_*
+ * at the end, which disassemble_nfs3hp.py binds them to), with voodoo2a's own
+ * state in guest memory, where the game may read it, and its heap native
+ * beside them (native_watcom_heap.cpp).  None of voodoo2a's code is generated;
+ * tools/thrash_checks generates it afresh from the DLL and holds every export
+ * against it.
  *
  * THRASH is the game's interface to its renderer DLLs -- voodoo2a, softtria and
- * the Direct3D one -- called through the pointers sub_4f8390 got from
- * GetProcAddress.  The game was built against all of them, so it relies on what
+ * the Direct3D one -- called through the pointers THRASH_opendll got from
+ * GetProcAddress (native_game.cpp).  The game was built against all of them, so it relies on what
  * a stdcall function promises and nothing more: the stack cleaned up, ebx, esi,
  * edi and ebp kept, a result in eax where there is one.  That is what these keep,
- * and what NFS_NATIVE_CHECK compares, with everything they draw; the scratch
- * registers and flags voodoo2a happened to leave are nobody's business.
- *
- * NFS_THRASH=0 leaves voodoo2a's generated code to all of them, as does
- * NFS_NATIVES=0. */
+ * and what tools/thrash_checks compares, with every call they make; the scratch
+ * registers and flags voodoo2a happened to leave are nobody's business. */
 
 namespace nfs3hp
 {
@@ -69,11 +67,130 @@ bool drawsThrough(win32::WinApplication* app, x86::reg32 pointer, x86::reg32 pla
     return target != 0 && target == at(app, plain);
 }
 
+void put(win32::WinApplication* app, x86::reg32 address, x86::reg32 value)
+{
+    app->getMemory<x86::reg32>(address) = value;
+}
+
+float asFloat(x86::reg32 bits)
+{
+    float value;
+    std::memcpy(&value, &bits, sizeof value);
+    return value;
+}
+
+/* What voodoo2a's drawing pointers hold besides Glide's own triangle and line
+ * (drawPointers): its wrappers, which draw through the pointers after them. */
+constexpr x86::reg32 kTwoPassTriangle = 0xa83930;  // sub_a83930: a triangle in two passes, through kPassTriangle
+constexpr x86::reg32 kTwoPassQuad = 0xa839b0;      // sub_a839b0: half a quad in two passes, through kPassQuad
+constexpr x86::reg32 kNoLine = 0xa83a30;           // sub_a83a30, a bare ret 8: no lines in two passes
+constexpr x86::reg32 kSmoothTriangle = 0xa83a40;   // sub_a83a40: grAADrawTriangle, every edge smoothed
+constexpr x86::reg32 kSmoothQuadHalf = 0xa83a60;   // sub_a83a60: all but the edge c a, a quad's diagonal
+constexpr x86::reg32 kPassTriangle = 0xa93708;
+constexpr x86::reg32 kPassQuad = 0xa93700;
+/* Glide's functions voodoo2a's drawing calls straight from its table. */
+constexpr x86::reg32 kGrLfbWriteRegion = 0xa936a0;
+constexpr x86::reg32 kGrDrawPoint = 0xa936b0;
+constexpr x86::reg32 kGrAADrawTriangle = 0xa936e0;
+
+/* A GrVertex where voodoo2a's code builds one: the fields it sets, and only
+ * those. */
+void putVertex(win32::WinApplication* app, x86::reg32 to, const win32::GrVertex& v)
+{
+    const struct { x86::reg32 offset; float value; } fields[] = {
+        { 0x00, v.x }, { 0x04, v.y }, { 0x0c, v.r }, { 0x10, v.g }, { 0x14, v.b }, { 0x18, v.ooz },
+        { 0x1c, v.a }, { 0x20, v.oow }, { 0x24, v.tmuvtx[0].sow }, { 0x28, v.tmuvtx[0].tow },
+    };
+    for (const auto& field : fields)
+        app->getMemory<float>(to + field.offset) = field.value;
+}
+
+/* A call voodoo2a's drawing makes to what has no native way here -- Glide's
+ * antialiased triangle and line and its point, which the port's Glide does not
+ * draw, or a pointer the game set itself: the vertices on the guest stack below
+ * esp, as voodoo2a has them on its own, their addresses pushed, then `more`.
+ * False when the game stopped in it. */
+bool guestDraw(win32::WinApplication* app, x86::CPU& cpu, x86::reg32 target,
+               std::initializer_list<const win32::GrVertex*> vertices, std::initializer_list<x86::reg32> more = {})
+{
+    const x86::reg32 esp = cpu.esp;
+    x86::reg32 vertex = esp - 0x3c * x86::reg32(vertices.size());
+    x86::reg32 slot = vertex - 4 * x86::reg32(vertices.size() + more.size());
+    cpu.esp = slot - 4;
+    for (const win32::GrVertex* v : vertices)
+    {
+        putVertex(app, vertex, *v);
+        put(app, slot, vertex);
+        vertex += 0x3c;
+        slot += 4;
+    }
+    for (const x86::reg32 argument : more)
+    {
+        put(app, slot, argument);
+        slot += 4;
+    }
+    app->dynamic_call(target, cpu);
+    cpu.esp = esp;
+    return !cpu.terminate;
+}
+
+/* A triangle to what one of the drawing's pointers holds, as voodoo2a's call
+ * through it draws it.  False when the game stopped. */
+bool triangleThrough(win32::WinApplication* app, x86::CPU& cpu, x86::reg32 target, const win32::GrVertex& a,
+                     const win32::GrVertex& b, const win32::GrVertex& c)
+{
+    namespace gl = win32::glide2x::direct;
+    if (target != 0 && target == at(app, kGrDrawTriangle))
+    {
+        win32::glide2x::drawTriangle(&a, &b, &c);
+        return true;
+    }
+    switch (target)
+    {
+    case kTwoPassTriangle:
+    case kTwoPassQuad:
+    {
+        // Trilinear mipmapping in two passes (THRASH_setstate 0xb): the
+        // texture weighted by its LOD fraction, then by one less it, added on.
+        const x86::reg32 pass = target == kTwoPassTriangle ? kPassTriangle : kPassQuad;
+        gl::alphaBlendFunction(app, cpu, 4, 0, 0, 0);
+        gl::texCombine(app, cpu, 0, 9, 5, 9, 5, 0, 0);
+        if (!triangleThrough(app, cpu, at(app, pass), a, b, c))
+            return false;
+        gl::alphaBlendFunction(app, cpu, 4, 4, 0, 0);
+        gl::texCombine(app, cpu, 0, 9, 0xd, 9, 0xd, 0, 0);
+        return triangleThrough(app, cpu, at(app, pass), a, b, c);
+    }
+    case kSmoothTriangle:
+    case kSmoothQuadHalf:
+        return guestDraw(app, cpu, at(app, kGrAADrawTriangle), { &a, &b, &c },
+                         { 1, 1, target == kSmoothTriangle ? 1u : 0u });
+    default:
+        return guestDraw(app, cpu, target, { &a, &b, &c });
+    }
+}
+
+/* A line likewise: Glide's own, nothing in two passes, or a call --
+ * grAADrawLine among them. */
+bool lineThrough(win32::WinApplication* app, x86::CPU& cpu, x86::reg32 target, const win32::GrVertex& a,
+                 const win32::GrVertex& b)
+{
+    if (target != 0 && target == at(app, kGrDrawLine))
+    {
+        win32::glide2x::drawLine(&a, &b);
+        return true;
+    }
+    if (target == kNoLine)
+        return true;
+    return guestDraw(app, cpu, target, { &a, &b });
+}
+
 typedef win32::ThrashRenderer::Corner Corner;
 
 /* The game's vertices as Glide's, with the two scales read once per call --
- * or, while ThrashRenderer may take them as they are (`direct`), as its
- * corners, with no GrVertex and no trip through glide2x between. */
+ * or, while ThrashRenderer may take them as they are (`direct`) and the
+ * triangles go to Glide's own grDrawTriangle, straight into its batch, with no
+ * GrVertex and no trip through glide2x between. */
 struct Vertices
 {
     win32::WinApplication* app;
@@ -101,14 +218,35 @@ struct Vertices
         return thrashCorner(app, in, zScale, wScale);
     }
 
-    void triangle(x86::reg32 a, x86::reg32 b, x86::reg32 c) const
+    /* Whether triangles drawn through `slot` may go into the batch. */
+    bool batched(x86::reg32 slot) const
+    {
+        return direct && drawsThrough(app, slot, kGrDrawTriangle);
+    }
+
+    void batch(const win32::ThrashVertex& a, const win32::ThrashVertex& b, const win32::ThrashVertex& c) const
+    {
+        win32::ThrashVertex* out = direct->reserveTriangle();
+        out[0] = a;
+        out[1] = b;
+        out[2] = c;
+        direct->finishTriangle(out);
+    }
+
+    void batch(x86::reg32 in, win32::ThrashVertex& out) const
+    {
+        thrashBatchVertex(app, in, zScale, wScale, out);
+    }
+
+    /* The triangle a b c to Glide's own grDrawTriangle. */
+    void plainTriangle(x86::reg32 a, x86::reg32 b, x86::reg32 c) const
     {
         if (direct)
         {
             win32::ThrashVertex* out = direct->reserveTriangle();
-            thrashBatchVertex(app, a, zScale, wScale, out[0]);
-            thrashBatchVertex(app, b, zScale, wScale, out[1]);
-            thrashBatchVertex(app, c, zScale, wScale, out[2]);
+            batch(a, out[0]);
+            batch(b, out[1]);
+            batch(c, out[2]);
             direct->finishTriangle(out);
             return;
         }
@@ -116,48 +254,63 @@ struct Vertices
         win32::glide2x::drawTriangle(&vertices[0], &vertices[1], &vertices[2]);
     }
 
-    /* Triangles a b c and c d a, as Glide's quads go. */
-    void quad(x86::reg32 a, x86::reg32 b, x86::reg32 c, x86::reg32 d) const
+    /* The triangle a b c through the pointer at `slot`.  False when the game
+     * stopped. */
+    bool triangle(x86::CPU& cpu, x86::reg32 slot, x86::reg32 a, x86::reg32 b, x86::reg32 c) const
     {
-        if (direct)
+        if (batched(slot))
+        {
+            plainTriangle(a, b, c);
+            return true;
+        }
+        const win32::GrVertex va = (*this)(a), vb = (*this)(b), vc = (*this)(c);
+        return triangleThrough(app, cpu, at(app, slot), va, vb, vc);
+    }
+
+    /* Triangles a b c and c d a, as Glide's quads go, each through kQuadDraw. */
+    bool quad(x86::CPU& cpu, x86::reg32 a, x86::reg32 b, x86::reg32 c, x86::reg32 d) const
+    {
+        if (batched(kQuadDraw))
         {
             // the four once; each triangle's slots copied from them before rebasing
             win32::ThrashVertex v[4];
-            thrashBatchVertex(app, a, zScale, wScale, v[0]);
-            thrashBatchVertex(app, b, zScale, wScale, v[1]);
-            thrashBatchVertex(app, c, zScale, wScale, v[2]);
-            thrashBatchVertex(app, d, zScale, wScale, v[3]);
-            win32::ThrashVertex* out = direct->reserveTriangle();
-            out[0] = v[0];
-            out[1] = v[1];
-            out[2] = v[2];
-            direct->finishTriangle(out);
-            out = direct->reserveTriangle();
-            out[0] = v[2];
-            out[1] = v[3];
-            out[2] = v[0];
-            direct->finishTriangle(out);
-            return;
+            batch(a, v[0]);
+            batch(b, v[1]);
+            batch(c, v[2]);
+            batch(d, v[3]);
+            batch(v[0], v[1], v[2]);
+            batch(v[2], v[3], v[0]);
+            return true;
         }
         const win32::GrVertex va = (*this)(a), vb = (*this)(b), vc = (*this)(c), vd = (*this)(d);
-        win32::glide2x::drawTriangle(&va, &vb, &vc);
-        win32::glide2x::drawTriangle(&vc, &vd, &va);
+        return triangleThrough(app, cpu, at(app, kQuadDraw), va, vb, vc)
+            && triangleThrough(app, cpu, at(app, kQuadDraw), vc, vd, va);
     }
 };
 
-/* THRASH_drawquad(a, b, c, d): triangles a b c and c d a. */
-bool drawQuadNative(win32::WinApplication* app, x86::CPU& cpu)
+/* THRASH_drawtri(a, b, c). */
+void drawTriNative(win32::WinApplication* app, x86::CPU& cpu)
 {
     const x86::reg32 esp = cpu.esp;
     const Vertices convert(app);
-    convert.quad(at(app, esp + 4), at(app, esp + 8), at(app, esp + 0xc), at(app, esp + 0x10));
+    if (!convert.triangle(cpu, kTriangleDraw, at(app, esp + 4), at(app, esp + 8), at(app, esp + 0xc)))
+        return;
+    cpu.esp = esp + 4 + 0xc;
+}
+
+/* THRASH_drawquad(a, b, c, d): triangles a b c and c d a. */
+void drawQuadNative(win32::WinApplication* app, x86::CPU& cpu)
+{
+    const x86::reg32 esp = cpu.esp;
+    const Vertices convert(app);
+    if (!convert.quad(cpu, at(app, esp + 4), at(app, esp + 8), at(app, esp + 0xc), at(app, esp + 0x10)))
+        return;
     cpu.esp = esp + 4 + 0x10;
-    return true;
 }
 
 /* THRASH_drawquadmesh(count, vertices, quads): each quad four vertex indices,
  * drawn as THRASH_drawquad draws its four. */
-bool drawQuadMeshNative(win32::WinApplication* app, x86::CPU& cpu)
+void drawQuadMeshNative(win32::WinApplication* app, x86::CPU& cpu)
 {
     const x86::reg32 esp = cpu.esp;
     const x86::sreg32 count = x86::sreg32(at(app, esp + 4));
@@ -165,14 +318,14 @@ bool drawQuadMeshNative(win32::WinApplication* app, x86::CPU& cpu)
     x86::reg32 quad = at(app, esp + 0xc);
     const Vertices convert(app);
     for (x86::sreg32 i = 0; i < count; ++i, quad += 0x10)
-        convert.quad(vertices + (at(app, quad) << 5), vertices + (at(app, quad + 4) << 5),
-                     vertices + (at(app, quad + 8) << 5), vertices + (at(app, quad + 0xc) << 5));
+        if (!convert.quad(cpu, vertices + (at(app, quad) << 5), vertices + (at(app, quad + 4) << 5),
+                          vertices + (at(app, quad + 8) << 5), vertices + (at(app, quad + 0xc) << 5)))
+            return;
     cpu.esp = esp + 4 + 0xc;
-    return true;
 }
 
 /* THRASH_drawtrimesh(count, vertices, triangles): three indices each. */
-bool drawTriMeshNative(win32::WinApplication* app, x86::CPU& cpu)
+void drawTriMeshNative(win32::WinApplication* app, x86::CPU& cpu)
 {
     const x86::reg32 esp = cpu.esp;
     const x86::sreg32 count = x86::sreg32(at(app, esp + 4));
@@ -180,35 +333,29 @@ bool drawTriMeshNative(win32::WinApplication* app, x86::CPU& cpu)
     x86::reg32 triangle = at(app, esp + 0xc);
     const Vertices convert(app);
     for (x86::sreg32 i = 0; i < count; ++i, triangle += 0xc)
-    {
-        convert.triangle(vertices + (at(app, triangle) << 5), vertices + (at(app, triangle + 4) << 5),
-                         vertices + (at(app, triangle + 8) << 5));
-    }
+        if (!convert.triangle(cpu, kTriangleDraw, vertices + (at(app, triangle) << 5),
+                              vertices + (at(app, triangle + 4) << 5), vertices + (at(app, triangle + 8) << 5)))
+            return;
     cpu.esp = esp + 4 + 0xc;
-    return true;
 }
 
 /* THRASH_drawtrifan(count, vertices): count triangles around the first vertex,
  * the n-th of it, n + 1 and n + 2. */
-bool drawTriFanNative(win32::WinApplication* app, x86::CPU& cpu)
+void drawTriFanNative(win32::WinApplication* app, x86::CPU& cpu)
 {
     const x86::reg32 esp = cpu.esp;
     const x86::sreg32 count = x86::sreg32(at(app, esp + 4));
     const x86::reg32 vertices = at(app, esp + 8);
     const Vertices convert(app);
-    if (count > 0 && convert.direct)
+    if (count > 0 && convert.batched(kTriangleDraw))
     {
         win32::ThrashVertex centre, previous, next;
-        thrashBatchVertex(app, vertices, convert.zScale, convert.wScale, centre);
-        thrashBatchVertex(app, vertices + kVertexSize, convert.zScale, convert.wScale, previous);
+        convert.batch(vertices, centre);
+        convert.batch(vertices + kVertexSize, previous);
         for (x86::sreg32 i = 0; i < count; ++i)
         {
-            thrashBatchVertex(app, vertices + x86::reg32(i + 2) * kVertexSize, convert.zScale, convert.wScale, next);
-            win32::ThrashVertex* out = convert.direct->reserveTriangle();
-            out[0] = centre;
-            out[1] = previous;
-            out[2] = next;
-            convert.direct->finishTriangle(out);
+            convert.batch(vertices + x86::reg32(i + 2) * kVertexSize, next);
+            convert.batch(centre, previous, next);
             previous = next;
         }
     }
@@ -219,28 +366,72 @@ bool drawTriFanNative(win32::WinApplication* app, x86::CPU& cpu)
         for (x86::sreg32 i = 0; i < count; ++i)
         {
             const win32::GrVertex next = convert(vertices + x86::reg32(i + 2) * kVertexSize);
-            win32::glide2x::drawTriangle(&centre, &previous, &next);
+            if (!triangleThrough(app, cpu, at(app, kTriangleDraw), centre, previous, next))
+                return;
             previous = next;
         }
     }
     cpu.esp = esp + 4 + 8;
-    return true;
+}
+
+/* THRASH_drawtristrip(count, vertices): count triangles along the strip, the
+ * n-th of vertices n, n + 1 and n + 2 -- every other one n, n + 2, n + 1, all
+ * of them wound the same way.  voodoo2a's loop draws six at a time and keeps
+ * where the next six start in the argument, which it leaves there. */
+void drawTriStripNative(win32::WinApplication* app, x86::CPU& cpu)
+{
+    const x86::reg32 esp = cpu.esp;
+    const x86::sreg32 count = x86::sreg32(at(app, esp + 4));
+    const x86::reg32 vertices = at(app, esp + 8);
+    const Vertices convert(app);
+    if (count > 0 && convert.batched(kTriangleDraw))
+    {
+        for (x86::sreg32 i = 0; i < count; ++i)
+        {
+            const x86::reg32 first = vertices + x86::reg32(i) * kVertexSize;
+            const x86::reg32 second = first + kVertexSize, third = second + kVertexSize;
+            if (i & 1)
+                convert.plainTriangle(first, third, second);
+            else
+                convert.plainTriangle(first, second, third);
+        }
+        if (count >= 6)
+            put(app, esp + 8, vertices + x86::reg32(count / 6) * 6 * kVertexSize);
+    }
+    else if (count > 0)
+    {
+        win32::GrVertex first = convert(vertices);
+        win32::GrVertex second = convert(vertices + kVertexSize);
+        for (x86::sreg32 i = 0; i < count; ++i)
+        {
+            const win32::GrVertex next = convert(vertices + x86::reg32(i + 2) * kVertexSize);
+            const x86::reg32 target = at(app, kTriangleDraw);
+            if (!((i & 1) ? triangleThrough(app, cpu, target, first, next, second)
+                          : triangleThrough(app, cpu, target, first, second, next)))
+                return;
+            if (i % 6 == 5)
+                put(app, esp + 8, vertices + x86::reg32(i + 1) * kVertexSize);
+            first = second;
+            second = next;
+        }
+    }
+    cpu.esp = esp + 4 + 8;
 }
 
 /* THRASH_drawline(a, b). */
-bool drawLineNative(win32::WinApplication* app, x86::CPU& cpu)
+void drawLineNative(win32::WinApplication* app, x86::CPU& cpu)
 {
     const x86::reg32 esp = cpu.esp;
     const Vertices convert(app);
     const win32::GrVertex a = convert(at(app, esp + 4));
     const win32::GrVertex b = convert(at(app, esp + 8));
-    win32::glide2x::drawLine(&a, &b);
+    if (!lineThrough(app, cpu, at(app, kLineDraw), a, b))
+        return;
     cpu.esp = esp + 4 + 8;
-    return true;
 }
 
 /* THRASH_drawlinemesh(count, vertices, lines): two indices each. */
-bool drawLineMeshNative(win32::WinApplication* app, x86::CPU& cpu)
+void drawLineMeshNative(win32::WinApplication* app, x86::CPU& cpu)
 {
     const x86::reg32 esp = cpu.esp;
     const x86::sreg32 count = x86::sreg32(at(app, esp + 4));
@@ -251,26 +442,76 @@ bool drawLineMeshNative(win32::WinApplication* app, x86::CPU& cpu)
     {
         const win32::GrVertex a = convert(vertices + (at(app, line) << 5));
         const win32::GrVertex b = convert(vertices + (at(app, line + 4) << 5));
-        win32::glide2x::drawLine(&a, &b);
+        if (!lineThrough(app, cpu, at(app, kLineDraw), a, b))
+            return;
     }
     cpu.esp = esp + 4 + 0xc;
-    return true;
 }
 
-/* A native stand-in: false, before it has done anything, where it leaves the
- * call to the generated code. */
-using Native = bool (*)(win32::WinApplication*, x86::CPU&);
-
-void put(win32::WinApplication* app, x86::reg32 address, x86::reg32 value)
+/* THRASH_drawlinestrip(count, vertices): count lines, the n-th from vertex n
+ * to n + 1. */
+void drawLineStripNative(win32::WinApplication* app, x86::CPU& cpu)
 {
-    app->getMemory<x86::reg32>(address) = value;
+    const x86::reg32 esp = cpu.esp;
+    const x86::sreg32 count = x86::sreg32(at(app, esp + 4));
+    const x86::reg32 vertices = at(app, esp + 8);
+    const Vertices convert(app);
+    if (count > 0)
+    {
+        win32::GrVertex from = convert(vertices);
+        for (x86::sreg32 i = 0; i < count; ++i)
+        {
+            const win32::GrVertex to = convert(vertices + x86::reg32(i + 1) * kVertexSize);
+            if (!lineThrough(app, cpu, at(app, kLineDraw), from, to))
+                return;
+            from = to;
+        }
+    }
+    cpu.esp = esp + 4 + 8;
 }
 
-float asFloat(x86::reg32 bits)
+/* THRASH_drawpoint(vertex): Glide's point, from voodoo2a's table. */
+void drawPointNative(win32::WinApplication* app, x86::CPU& cpu)
 {
-    float value;
-    std::memcpy(&value, &bits, sizeof value);
-    return value;
+    const x86::reg32 esp = cpu.esp;
+    const Vertices convert(app);
+    const win32::GrVertex v = convert(at(app, esp + 4));
+    if (!guestDraw(app, cpu, at(app, kGrDrawPoint), { &v }))
+        return;
+    cpu.esp = esp + 4 + 4;
+}
+
+/* THRASH_drawpointmesh(count, vertices, points): an index each. */
+void drawPointMeshNative(win32::WinApplication* app, x86::CPU& cpu)
+{
+    const x86::reg32 esp = cpu.esp;
+    const x86::sreg32 count = x86::sreg32(at(app, esp + 4));
+    const x86::reg32 vertices = at(app, esp + 8);
+    x86::reg32 point = at(app, esp + 0xc);
+    const Vertices convert(app);
+    for (x86::sreg32 i = 0; i < count; ++i, point += 4)
+    {
+        const win32::GrVertex v = convert(vertices + (at(app, point) << 5));
+        if (!guestDraw(app, cpu, at(app, kGrDrawPoint), { &v }))
+            return;
+    }
+    cpu.esp = esp + 4 + 0xc;
+}
+
+/* THRASH_drawpointstrip(count, vertices): count points, one a vertex. */
+void drawPointStripNative(win32::WinApplication* app, x86::CPU& cpu)
+{
+    const x86::reg32 esp = cpu.esp;
+    const x86::sreg32 count = x86::sreg32(at(app, esp + 4));
+    const x86::reg32 vertices = at(app, esp + 8);
+    const Vertices convert(app);
+    for (x86::sreg32 i = 0; i < count; ++i)
+    {
+        const win32::GrVertex v = convert(vertices + x86::reg32(i) * kVertexSize);
+        if (!guestDraw(app, cpu, at(app, kGrDrawPoint), { &v }))
+            return;
+    }
+    cpu.esp = esp + 4 + 8;
 }
 
 /* sub_a848e0: what voodoo2a's drawing goes through, from the two-pass flag
@@ -310,21 +551,6 @@ void drawPointers(win32::WinApplication* app, x86::reg32 twoPass, x86::reg32 ant
     put(app, 0xa93700, quad);
 }
 
-/* A call into voodoo2a's own C library, Watcom's register convention: the
- * argument and the result in eax, every other register kept. */
-x86::reg32 callRuntime(win32::WinApplication* app, x86::CPU& cpu, x86::reg32 address, x86::reg32 argument)
-{
-    const x86::reg32 eax = cpu.eax;
-    cpu.eax = argument;
-    cpu.esp -= 4;
-    app->dynamic_call(address, cpu);
-    const x86::reg32 result = cpu.eax;
-    cpu.eax = eax;
-    return result;
-}
-
-constexpr x86::reg32 kMalloc = 0xa86cb0;
-constexpr x86::reg32 kFree = 0xa86da0;
 constexpr x86::reg32 kTextures = 0xa91f28;      // the last record THRASH_talloc made; each points at the one before
 constexpr x86::reg32 kTextureNext = 0xa937a8;   // the next free address of texture memory
 constexpr x86::reg32 kTexturing = 0xa92354;     // 1 while a texture is selected
@@ -388,14 +614,19 @@ TexturePlan planTexture(win32::WinApplication* app, x86::CPU& cpu, x86::reg32 es
 /* THRASH_talloc: a record of Glide's GrTexInfo -- small and large LOD, aspect,
  * format, texels -- then where it lies in texture memory, 3 (both halves of
  * the mipmap) and the record before; 0 when it does not fit.  The record comes
- * from voodoo2a's own malloc, which THRASH_treset gives them back to. */
-bool textureAllocateNative(win32::WinApplication* app, x86::CPU& cpu)
+ * from voodoo2a's own malloc, which THRASH_treset gives them back to
+ * (native_watcom_heap.cpp). */
+void textureAllocateNative(win32::WinApplication* app, x86::CPU& cpu)
 {
     const x86::reg32 esp = cpu.esp;
     const TexturePlan plan = planTexture(app, cpu, esp, true);
     x86::reg32 record = 0;
     if (plan.fits)
-        record = callRuntime(app, cpu, kMalloc, 0x20);
+    {
+        record = thrashMalloc(app, cpu, 0x20);
+        if (cpu.terminate)
+            return;
+    }
     if (record != 0)
     {
         put(app, record + 4, plan.largeLod);
@@ -411,7 +642,6 @@ bool textureAllocateNative(win32::WinApplication* app, x86::CPU& cpu)
     }
     cpu.eax = record;
     cpu.esp = esp + 4 + 0x14;
-    return true;
 }
 
 /* THRASH_treset: all of texture memory free again, every record given back. */
@@ -422,22 +652,21 @@ void resetTextures(win32::WinApplication* app, x86::CPU& cpu)
     while (const x86::reg32 record = at(app, kTextures))
     {
         const x86::reg32 before = at(app, record + 0x1c);
-        callRuntime(app, cpu, kFree, record);
+        thrashFree(app, cpu, record);
         put(app, kTextures, before);
     }
 }
 
-bool textureResetNative(win32::WinApplication* app, x86::CPU& cpu)
+void textureResetNative(win32::WinApplication* app, x86::CPU& cpu)
 {
     resetTextures(app, cpu);
     cpu.eax = 1;
     cpu.esp += 4;
-    return true;
 }
 
 /* THRASH_tupdate(record, texels, palette): new texels for a record, downloaded;
  * a palette for a palettised one. */
-bool textureUpdateNative(win32::WinApplication* app, x86::CPU& cpu)
+void textureUpdateNative(win32::WinApplication* app, x86::CPU& cpu)
 {
     namespace gl = win32::glide2x::direct;
     const x86::reg32 esp = cpu.esp;
@@ -453,7 +682,6 @@ bool textureUpdateNative(win32::WinApplication* app, x86::CPU& cpu)
         gl::texDownloadTable(app, cpu, 0, 2, palette);
     cpu.eax = record;
     cpu.esp = esp + 4 + 0xc;
-    return true;
 }
 
 /* THRASH_settexture(record), and THRASH_setstate 1: the texture drawn with, or
@@ -481,13 +709,12 @@ void selectTexture(win32::WinApplication* app, x86::CPU& cpu, x86::reg32 record)
     }
 }
 
-bool setTextureNative(win32::WinApplication* app, x86::CPU& cpu)
+void setTextureNative(win32::WinApplication* app, x86::CPU& cpu)
 {
     const x86::reg32 esp = cpu.esp;
     selectTexture(app, cpu, at(app, esp + 4));
     cpu.eax = 1;
     cpu.esp = esp + 4 + 4;
-    return true;
 }
 
 constexpr x86::reg32 kBuffer = 0xa91f04;        // the buffer drawn into, THRASH_window's less one
@@ -497,22 +724,24 @@ constexpr x86::reg32 kSwapInterval = 0xa91f0c;  // THRASH_setstate 0x67
 constexpr x86::reg32 kLockHook = 0xa91f38;      // the game's own function, told 1 before and 0 after a lock
 
 /* The game's hook around the frame buffer's locks, when it has set one: a
- * stdcall of its own code with one argument. */
-void lockHook(win32::WinApplication* app, x86::CPU& cpu, x86::reg32 locking)
+ * stdcall of its own code with one argument.  False when the game stopped in
+ * it. */
+bool lockHook(win32::WinApplication* app, x86::CPU& cpu, x86::reg32 locking)
 {
     const x86::reg32 hook = at(app, kLockHook);
     if (hook == 0)
-        return;
+        return true;
     const x86::reg32 esp = cpu.esp;
     cpu.esp -= 4;
     put(app, cpu.esp, locking);
     cpu.esp -= 4;
     app->dynamic_call(hook, cpu);
     cpu.esp = esp;
+    return !cpu.terminate;
 }
 
 /* THRASH_window(buffer): which buffer to draw into, counted from 1; 0 is 1. */
-bool windowNative(win32::WinApplication* app, x86::CPU& cpu)
+void windowNative(win32::WinApplication* app, x86::CPU& cpu)
 {
     const x86::reg32 esp = cpu.esp;
     x86::reg32 buffer = at(app, esp + 4);
@@ -522,25 +751,22 @@ bool windowNative(win32::WinApplication* app, x86::CPU& cpu)
     win32::glide2x::direct::renderBuffer(app, cpu, buffer - 1);
     cpu.eax = 1;
     cpu.esp = esp + 4 + 4;
-    return true;
 }
 
 /* THRASH_clearwindow: colour and depth cleared to what THRASH_setstate set. */
-bool clearWindowNative(win32::WinApplication* app, x86::CPU& cpu)
+void clearWindowNative(win32::WinApplication* app, x86::CPU& cpu)
 {
     const x86::reg16 depth = app->getMemory<x86::reg16>(kClearDepth);
     win32::glide2x::direct::bufferClear(app, cpu, at(app, kClearColour), 0, depth);
     cpu.eax = depth;
     cpu.esp += 4;
-    return true;
 }
 
 /* THRASH_flushwindow and THRASH_idle: nothing to do on a Voodoo2. */
-bool nothingNative(win32::WinApplication* app, x86::CPU& cpu)
+void nothingNative(win32::WinApplication* app, x86::CPU& cpu)
 {
     NFS2_USE(app);
     cpu.esp += 4;
-    return true;
 }
 
 /* THRASH_pageflip: once nothing is left pending -- or after four million
@@ -555,16 +781,15 @@ void pageFlip(win32::WinApplication* app, x86::CPU& cpu)
     gl::bufferSwap(app, cpu, at(app, kSwapInterval));
 }
 
-bool pageFlipNative(win32::WinApplication* app, x86::CPU& cpu)
+void pageFlipNative(win32::WinApplication* app, x86::CPU& cpu)
 {
     pageFlip(app, cpu);
     cpu.esp += 4;
-    return true;
 }
 
 /* THRASH_sync(what): 0 waits for the card, 1 asks whether it is busy, 2 waits
  * for the start of a vertical retrace, 3 tells how much of the FIFO is free. */
-bool syncNative(win32::WinApplication* app, x86::CPU& cpu)
+void syncNative(win32::WinApplication* app, x86::CPU& cpu)
 {
     namespace gl = win32::glide2x::direct;
     const x86::reg32 esp = cpu.esp;
@@ -600,39 +825,38 @@ bool syncNative(win32::WinApplication* app, x86::CPU& cpu)
     }
     cpu.eax = result;
     cpu.esp = esp + 4 + 4;
-    return true;
 }
 
 /* THRASH_clip(minX, minY, maxX, maxY). */
-bool clipNative(win32::WinApplication* app, x86::CPU& cpu)
+void clipNative(win32::WinApplication* app, x86::CPU& cpu)
 {
     const x86::reg32 esp = cpu.esp;
     win32::glide2x::direct::clipWindow(app, cpu, at(app, esp + 4), at(app, esp + 8), at(app, esp + 0xc),
                                        at(app, esp + 0x10));
     cpu.eax = 1;
     cpu.esp = esp + 4 + 0x10;
-    return true;
 }
 
 /* THRASH_lockwindow: the frame buffer locked for the game to write into, as
  * a record of voodoo2a's malloc -- the pointer, the stride, 4, two of
  * THRASH_setstate's values and the buffer -- or 0.  It then asks for a read
  * lock as well, which comes to nothing. */
-bool lockWindowNative(win32::WinApplication* app, x86::CPU& cpu)
+void lockWindowNative(win32::WinApplication* app, x86::CPU& cpu)
 {
     namespace gl = win32::glide2x::direct;
     const x86::reg32 esp = cpu.esp;
-    lockHook(app, cpu, 1);
+    if (!lockHook(app, cpu, 1))
+        return;
     const x86::reg32 info = esp - 0x24;  // GrLfbInfo_t, where voodoo2a keeps it
     put(app, info, 0x14);
     x86::reg32 record = 0;
     if (gl::lfbLock(app, cpu, 1, at(app, kBuffer), 0xff, 0, 0, info) != 0)
     {
-        /* Read before malloc runs: its frame lies over the info, which in
-         * voodoo2a's own frame sat above it. */
         const x86::reg32 pixels = at(app, info + 4);
         const x86::reg32 stride = at(app, info + 8);
-        record = callRuntime(app, cpu, kMalloc, 0x18);
+        record = thrashMalloc(app, cpu, 0x18);
+        if (cpu.terminate)
+            return;
         if (record != 0)
         {
             put(app, record, pixels);
@@ -645,15 +869,14 @@ bool lockWindowNative(win32::WinApplication* app, x86::CPU& cpu)
     }
     put(app, info, 0x14);
     gl::lfbLock(app, cpu, 0, at(app, kBuffer), 0xff, 0, 0, info);
-    if (record == 0)
-        lockHook(app, cpu, 0);
+    if (record == 0 && !lockHook(app, cpu, 0))
+        return;
     cpu.eax = record;
     cpu.esp = esp + 4;
-    return true;
 }
 
 /* THRASH_unlockwindow(record): both locks let go, the record freed. */
-bool unlockWindowNative(win32::WinApplication* app, x86::CPU& cpu)
+void unlockWindowNative(win32::WinApplication* app, x86::CPU& cpu)
 {
     namespace gl = win32::glide2x::direct;
     const x86::reg32 esp = cpu.esp;
@@ -663,33 +886,35 @@ bool unlockWindowNative(win32::WinApplication* app, x86::CPU& cpu)
         const x86::reg32 buffer = at(app, record + 0x14);
         gl::lfbUnlock(app, cpu, 1, buffer);
         gl::lfbUnlock(app, cpu, 0, buffer);
-        callRuntime(app, cpu, kFree, record);
-        lockHook(app, cpu, 0);
+        thrashFree(app, cpu, record);
+        if (!lockHook(app, cpu, 0))
+            return;
     }
     cpu.eax = 1;
     cpu.esp = esp + 4 + 4;
-    return true;
 }
 
 /* THRASH_readrect(x, y, width, height, to): the buffer drawn into, read back
  * at two bytes a pixel. */
-bool readRectNative(win32::WinApplication* app, x86::CPU& cpu)
+void readRectNative(win32::WinApplication* app, x86::CPU& cpu)
 {
     const x86::reg32 esp = cpu.esp;
-    lockHook(app, cpu, 1);
+    if (!lockHook(app, cpu, 1))
+        return;
     const x86::reg32 width = at(app, esp + 0xc);
     const x86::reg32 result = win32::glide2x::direct::lfbReadRegion(
         app, cpu, at(app, kBuffer), at(app, esp + 4), at(app, esp + 8), width, at(app, esp + 0x10), width * 2,
         at(app, esp + 0x14));
-    lockHook(app, cpu, 0);
+    if (!lockHook(app, cpu, 0))
+        return;
     cpu.eax = result;
     cpu.esp = esp + 4 + 0x14;
-    return true;
 }
 
 /* A stdcall of a guest function -- the game's hooks, Win32 through voodoo2a's
  * import table, Glide through its table, DirectDraw's methods -- made the way
- * voodoo2a's code makes it.  Its result. */
+ * voodoo2a's code makes it.  Its result; cpu.terminate says whether the game
+ * stopped in it, when the caller, like voodoo2a's code, goes no further. */
 x86::reg32 stdcall(win32::WinApplication* app, x86::CPU& cpu, x86::reg32 address,
                    std::initializer_list<x86::reg32> arguments)
 {
@@ -722,6 +947,7 @@ constexpr x86::reg32 kWindow = 0xa91f08;        // the game's window
 constexpr x86::reg32 kModeEvent = 0xa91f40;
 constexpr x86::reg32 kDirectDraw = 0xa91f48;
 constexpr x86::reg32 kModeThread = 0xa92334;    // 1 while the window's thread is to set the mode
+constexpr x86::reg32 kModeMessage = 0xa84360;   // sub_a84360, what the window's thread runs on message 0x465
 
 x86::reg32 glide(win32::WinApplication* app, x86::reg32 entry)
 {
@@ -729,7 +955,8 @@ x86::reg32 glide(win32::WinApplication* app, x86::reg32 entry)
 }
 
 /* sub_a83220: glide2x.dll loaded and its functions looked up into the table
- * from 0xa93614, the drawing pointed at the plain ones.  0 without it. */
+ * from 0xa93614, the drawing pointed at the plain ones.  0 without it, or
+ * when the game stopped. */
 x86::reg32 loadGlide(win32::WinApplication* app, x86::CPU& cpu)
 {
     static const x86::reg32 kNames[] = {
@@ -743,13 +970,18 @@ x86::reg32 loadGlide(win32::WinApplication* app, x86::CPU& cpu)
     if (at(app, 0xa91f34) == 0)
         put(app, 0xa91f34, 0xa83a80);
     const x86::reg32 module = stdcall(app, cpu, at(app, kLoadLibrary), { 0xa91204 });
+    if (cpu.terminate)
+        return 0;
     put(app, kGlideModule, module);
     if (module == 0)
         return 0;
     x86::reg32 entry = 0xa93614;
     for (const x86::reg32 name : kNames)
     {
-        put(app, entry, stdcall(app, cpu, at(app, kGetProcAddress), { at(app, kGlideModule), name }));
+        const x86::reg32 function = stdcall(app, cpu, at(app, kGetProcAddress), { at(app, kGlideModule), name });
+        if (cpu.terminate)
+            return 0;
+        put(app, entry, function);
         entry += 4;
     }
     put(app, kTriangleDraw, at(app, kGrDrawTriangle));
@@ -762,7 +994,11 @@ x86::reg32 loadGlide(win32::WinApplication* app, x86::CPU& cpu)
 void freeGlide(win32::WinApplication* app, x86::CPU& cpu)
 {
     if (const x86::reg32 module = at(app, kGlideModule))
+    {
         stdcall(app, cpu, at(app, kFreeLibrary), { module });
+        if (cpu.terminate)
+            return;
+    }
     put(app, kGlideModule, 0);
 }
 
@@ -829,7 +1065,7 @@ void measureModes(win32::WinApplication* app, x86::CPU& cpu, x86::reg32 info)
 /* THRASH_about: the driver described, once -- its name, what it can do, its
  * texture formats (0xa91fd4) and its modes (0xa92018) -- from a look at the
  * card through Glide. */
-bool aboutNative(win32::WinApplication* app, x86::CPU& cpu)
+void aboutNative(win32::WinApplication* app, x86::CPU& cpu)
 {
     const x86::reg32 esp = cpu.esp;
     if (at(app, kInfo) == 0)
@@ -867,22 +1103,31 @@ bool aboutNative(win32::WinApplication* app, x86::CPU& cpu)
             if (at(app, 0xa93614) != 0 && at(app, 0xa9361c) != 0 && at(app, 0xa93618) != 0)
             {
                 x86::sreg32 boards = x86::sreg32(stdcall(app, cpu, glide(app, 0xa9361c), { kHardware }));
+                if (cpu.terminate)
+                    return;
                 if (boards != 0)
                     boards = x86::sreg32(at(app, kHardware));
                 if (boards > 0)
                 {
                     stdcall(app, cpu, glide(app, 0xa93614), {});
+                    if (cpu.terminate)
+                        return;
                     stdcall(app, cpu, glide(app, 0xa93618), { kHardware });
+                    if (cpu.terminate)
+                        return;
                     measureModes(app, cpu, kInfo);
                     stdcall(app, cpu, glide(app, 0xa93620), {});
+                    if (cpu.terminate)
+                        return;
                 }
             }
             freeGlide(app, cpu);
         }
+        if (cpu.terminate)
+            return;
     }
     cpu.eax = kInfo;
     cpu.esp = esp + 4;
-    return true;
 }
 
 /* THRASH_selectdisplay(board). */
@@ -894,18 +1139,20 @@ x86::reg32 selectDisplay(win32::WinApplication* app, x86::CPU& cpu, x86::reg32 b
     return 1;
 }
 
-bool selectDisplayNative(win32::WinApplication* app, x86::CPU& cpu)
+void selectDisplayNative(win32::WinApplication* app, x86::CPU& cpu)
 {
     const x86::reg32 esp = cpu.esp;
-    cpu.eax = selectDisplay(app, cpu, at(app, esp + 4));
+    const x86::reg32 selected = selectDisplay(app, cpu, at(app, esp + 4));
+    if (cpu.terminate)
+        return;
+    cpu.eax = selected;
     cpu.esp = esp + 4 + 4;
-    return true;
 }
 
 /* THRASH_init: the colour table (a byte to Glide's float), the event the
  * window's thread signals, Glide up, board 0, the modes measured, and
  * THRASH_restore run at exit.  The number of boards, or 0. */
-bool initNative(win32::WinApplication* app, x86::CPU& cpu)
+void initNative(win32::WinApplication* app, x86::CPU& cpu)
 {
     const x86::reg32 esp = cpu.esp;
     x86::reg32 result = 0;
@@ -916,11 +1163,27 @@ bool initNative(win32::WinApplication* app, x86::CPU& cpu)
         if (at(app, 0xa91f34) == 0)
             put(app, 0xa91f34, 0xa83a80);
         if (at(app, kModeEvent) == 0)
-            put(app, kModeEvent, stdcall(app, cpu, at(app, kCreateEvent), { 0, 0, 0, 0 }));
-        if (loadGlide(app, cpu) != 0)
+        {
+            const x86::reg32 event = stdcall(app, cpu, at(app, kCreateEvent), { 0, 0, 0, 0 });
+            if (cpu.terminate)
+                return;
+            put(app, kModeEvent, event);
+        }
+        const x86::reg32 loaded = loadGlide(app, cpu);
+        if (cpu.terminate)
+            return;
+        if (loaded != 0)
         {
             stdcall(app, cpu, glide(app, 0xa93614), {});
-            if (stdcall(app, cpu, glide(app, 0xa93618), { kHardware }) != 0 && selectDisplay(app, cpu, 0) != 0)
+            if (cpu.terminate)
+                return;
+            const x86::reg32 found = stdcall(app, cpu, glide(app, 0xa93618), { kHardware });
+            if (cpu.terminate)
+                return;
+            const x86::reg32 selected = found != 0 ? selectDisplay(app, cpu, 0) : 0;
+            if (cpu.terminate)
+                return;
+            if (selected != 0)
             {
                 result = at(app, kHardware);
                 measureModes(app, cpu, kInfo);
@@ -940,7 +1203,6 @@ bool initNative(win32::WinApplication* app, x86::CPU& cpu)
     }
     cpu.eax = result;
     cpu.esp = esp + 4;
-    return true;
 }
 
 /* sub_a84020: DirectDraw, on a card that shares the screen, for the game's
@@ -949,13 +1211,19 @@ x86::reg32 takeScreen(win32::WinApplication* app, x86::CPU& cpu)
 {
     if (at(app, kDirectDraw) != 0 || at(app, 0xa91ef8) != 0 || at(app, 0xa91f10) == 0)
         return 0;
-    if (stdcall(app, cpu, at(app, kDirectDrawCreate), { 0, kDirectDraw, 0 }) != 0)
+    if (stdcall(app, cpu, at(app, kDirectDrawCreate), { 0, kDirectDraw, 0 }) != 0 || cpu.terminate)
         return 0;
     const x86::reg32 level = at(app, 0xa91f44) != 0 ? 0x10 : 0x11;
     const x86::reg32 object = at(app, kDirectDraw);
-    if (stdcall(app, cpu, at(app, at(app, object) + 0x50), { object, at(app, kWindow), level }) == 0)
+    const x86::reg32 refused = stdcall(app, cpu, at(app, at(app, object) + 0x50), { object, at(app, kWindow), level });
+    if (cpu.terminate)
+        return 0;
+    if (refused == 0)
         return 1;
-    stdcall(app, cpu, at(app, at(app, object) + 8), { object });
+    const x86::reg32 refuser = at(app, kDirectDraw);  // read again, as voodoo2a does
+    stdcall(app, cpu, at(app, at(app, refuser) + 8), { refuser });
+    if (cpu.terminate)
+        return 0;
     put(app, kDirectDraw, 0);
     return 0;
 }
@@ -966,6 +1234,8 @@ void releaseScreen(win32::WinApplication* app, x86::CPU& cpu)
     if (const x86::reg32 object = at(app, kDirectDraw))
     {
         stdcall(app, cpu, at(app, at(app, object) + 8), { object });
+        if (cpu.terminate)
+            return;
         put(app, kDirectDraw, 0);
     }
 }
@@ -984,6 +1254,8 @@ x86::reg32 openMode(win32::WinApplication* app, x86::CPU& cpu, x86::reg32 mode, 
     if (app->getMemory<x86::reg8>(kFlags) & 2)
     {
         stdcall(app, cpu, glide(app, 0xa93628), {});  // grSstWinClose
+        if (cpu.terminate)
+            return 0;
         app->getMemory<x86::reg8>(kFlags) = x86::reg8(app->getMemory<x86::reg8>(kFlags) & 0xfd);
     }
     if (buffers == 0)
@@ -996,15 +1268,27 @@ x86::reg32 openMode(win32::WinApplication* app, x86::CPU& cpu, x86::reg32 mode, 
         auxiliary = 0;
     x86::reg32 opened = stdcall(app, cpu, glide(app, 0xa9362c),
                                 { at(app, kWindow), resolution, 0, 0, 0, buffers, auxiliary });
+    if (cpu.terminate)
+        return 0;
     if (opened == 0 && resolution == 0xff)
+    {
         opened = stdcall(app, cpu, glide(app, 0xa9362c),
                          { at(app, kWindow), at(app, kResolutions + mode * 4), 0, 0, 0, buffers, auxiliary });
+        if (cpu.terminate)
+            return 0;
+    }
     if (opened == 0)
         return 0;
     if (at(app, 0xa91ef8) == 0)
     {
-        put(app, 0xa91f18, stdcall(app, cpu, glide(app, 0xa936f0), {}));  // grSstScreenWidth
-        put(app, 0xa91f1c, stdcall(app, cpu, glide(app, 0xa936f4), {}));  // grSstScreenHeight
+        const x86::reg32 width = stdcall(app, cpu, glide(app, 0xa936f0), {});  // grSstScreenWidth
+        if (cpu.terminate)
+            return 0;
+        const x86::reg32 height = stdcall(app, cpu, glide(app, 0xa936f4), {});  // grSstScreenHeight
+        if (cpu.terminate)
+            return 0;
+        put(app, 0xa91f18, width);
+        put(app, 0xa91f1c, height);
     }
     else
     {
@@ -1013,8 +1297,12 @@ x86::reg32 openMode(win32::WinApplication* app, x86::CPU& cpu, x86::reg32 mode, 
     }
     resetTextures(app, cpu);
     stdcall(app, cpu, glide(app, 0xa93638), { 0x10 });                  // grAlphaTestReferenceValue
+    if (cpu.terminate)
+        return 0;
     win32::glide2x::direct::texCombine(app, cpu, 0, 1, 0, 1, 0, 0, 0);
     stdcall(app, cpu, glide(app, 0xa936e8), { 3, 1 });                 // grHints
+    if (cpu.terminate)
+        return 0;
     static const x86::reg32 kDefaults[][2] = {
         { 1, 0 }, { 2, 1 }, { 7, 1 }, { 6, 1 }, { 0xa, 2 }, { 0xb, 1 }, { 3, 0 }, { 0xc, 0 },
         { 5, 1 }, { 0xe, 0 }, { 0xf, 0xffffffff }, { 0x68, 0 }, { 0xd, 0 }, { 0x65, 0x3f800000 },
@@ -1027,32 +1315,33 @@ x86::reg32 openMode(win32::WinApplication* app, x86::CPU& cpu, x86::reg32 mode, 
     return opened;
 }
 
-bool openModeNative(win32::WinApplication* app, x86::CPU& cpu)
-{
-    const x86::reg32 esp = cpu.esp;
-    cpu.eax = openMode(app, cpu, at(app, esp + 4), at(app, esp + 8), at(app, esp + 0xc));
-    cpu.esp = esp + 4 + 0xc;
-    return true;
-}
-
 /* sub_a84360: what the game's window thread runs on message 0x465 -- the
  * mode the game thread asked for, opened there, the result in voodoo2a's
  * variable and the caller's, and the game thread let go. */
-bool windowThreadNative(win32::WinApplication* app, x86::CPU& cpu)
+void windowThreadNative(win32::WinApplication* app, x86::CPU& cpu)
 {
     const x86::reg32 esp = cpu.esp;
     if (at(app, kModeThread) != 0)
     {
         const x86::reg32 packed = at(app, esp + 0x14);
-        const x86::reg32 opened = openMode(app, cpu, at(app, esp + 0x10), packed & 0xff, packed >> 8);
+        // ebx holds the mode, which closing alone gives back
+        const x86::reg32 ebx = cpu.ebx;
+        cpu.ebx = at(app, esp + 0x10);
+        const x86::reg32 opened = openMode(app, cpu, cpu.ebx, packed & 0xff, packed >> 8);
+        cpu.ebx = ebx;
+        if (cpu.terminate)
+            return;
         put(app, 0xa91f14, opened);
         put(app, at(app, esp + 0x18), opened == 0 ? 1 : 0);
         if (const x86::reg32 event = at(app, kModeEvent))
+        {
             stdcall(app, cpu, at(app, kSetEvent), { event });
+            if (cpu.terminate)
+                return;
+        }
     }
     cpu.eax = 1;
     cpu.esp = esp + 4 + 0x18;
-    return true;
 }
 
 /* THRASH_setvideomode(mode, buffers, auxiliary): the game's window found, the
@@ -1062,33 +1351,52 @@ x86::reg32 setVideoMode(win32::WinApplication* app, x86::CPU& cpu, x86::reg32 mo
                         x86::reg32 auxiliary)
 {
     if (const x86::reg32 findWindow = at(app, 0xa91f30))
-        put(app, kWindow, stdcall(app, cpu, findWindow, {}));
+    {
+        const x86::reg32 window = stdcall(app, cpu, findWindow, {});
+        if (cpu.terminate)
+            return 0;
+        put(app, kWindow, window);
+    }
     takeScreen(app, cpu);
+    if (cpu.terminate)
+        return 0;
     if (const x86::reg32 window = at(app, kWindow))
+    {
         stdcall(app, cpu, at(app, kSetForegroundWindow), { window });
+        if (cpu.terminate)
+            return 0;
+    }
     if (at(app, 0xa91f3c) != 0 && at(app, kWindow) != 0 && at(app, kModeEvent) != 0)
     {
-        stdcall(app, cpu, at(app, 0xa91f3c), { 0x465, 0xa84360 });
+        stdcall(app, cpu, at(app, 0xa91f3c), { 0x465, kModeMessage });
+        if (cpu.terminate)
+            return 0;
         put(app, kModeThread, 1);
         stdcall(app, cpu, at(app, kPostMessage), { at(app, kWindow), 0x465, mode, buffers + (auxiliary << 8) });
+        if (cpu.terminate)
+            return 0;
         stdcall(app, cpu, at(app, kWaitForSingleObject), { at(app, kModeEvent), 0xffffffff });
+        if (cpu.terminate)
+            return 0;
         put(app, kModeThread, 0);
         return at(app, 0xa91f14);
     }
     return openMode(app, cpu, mode, buffers, auxiliary);
 }
 
-bool setVideoModeNative(win32::WinApplication* app, x86::CPU& cpu)
+void setVideoModeNative(win32::WinApplication* app, x86::CPU& cpu)
 {
     const x86::reg32 esp = cpu.esp;
-    cpu.eax = setVideoMode(app, cpu, at(app, esp + 4), at(app, esp + 8), at(app, esp + 0xc));
+    const x86::reg32 opened = setVideoMode(app, cpu, at(app, esp + 4), at(app, esp + 8), at(app, esp + 0xc));
+    if (cpu.terminate)
+        return;
+    cpu.eax = opened;
     cpu.esp = esp + 4 + 0xc;
-    return true;
 }
 
 /* THRASH_restore: everything let go -- the window and its mode, DirectDraw,
  * the event, Glide. */
-bool restoreNative(win32::WinApplication* app, x86::CPU& cpu)
+void restoreNative(win32::WinApplication* app, x86::CPU& cpu)
 {
     const x86::reg32 esp = cpu.esp;
     if (at(app, kFlags) != 0)
@@ -1096,23 +1404,166 @@ bool restoreNative(win32::WinApplication* app, x86::CPU& cpu)
         if (app->getMemory<x86::reg8>(kFlags) & 2)
         {
             setVideoMode(app, cpu, 0, 0, 0);
+            if (cpu.terminate)
+                return;
             releaseScreen(app, cpu);
+            if (cpu.terminate)
+                return;
         }
         if (at(app, 0xa91f3c) != 0)
             put(app, 0xa91f3c, 0);
         if (const x86::reg32 event = at(app, kModeEvent))
         {
             stdcall(app, cpu, at(app, kCloseHandle), { event });
+            if (cpu.terminate)
+                return;
             put(app, kModeEvent, 0);
         }
         stdcall(app, cpu, glide(app, 0xa93620), {});  // grGlideShutdown
+        if (cpu.terminate)
+            return;
         freeGlide(app, cpu);
+        if (cpu.terminate)
+            return;
         put(app, 0xa91f34, 0);
         put(app, kFlags, 0);
     }
     cpu.eax = 1;
     cpu.esp = esp + 4;
-    return true;
+}
+
+/* THRASH_writerect(x, y, width, height, pixels): 565 pixels written into the
+ * buffer drawn into, the game's lock hook told around it. */
+void writeRectNative(win32::WinApplication* app, x86::CPU& cpu)
+{
+    const x86::reg32 esp = cpu.esp;
+    if (!lockHook(app, cpu, 1))
+        return;
+    const x86::reg32 width = at(app, esp + 0xc);
+    const x86::reg32 result = stdcall(app, cpu, glide(app, kGrLfbWriteRegion),
+                                      { at(app, kBuffer), at(app, esp + 4), at(app, esp + 8), 0, width,
+                                        at(app, esp + 0x10), width * 2, at(app, esp + 0x14) });
+    if (cpu.terminate || !lockHook(app, cpu, 0))
+        return;
+    cpu.eax = result;
+    cpu.esp = esp + 4 + 0x14;
+}
+
+/* sub_a86ad0, getenv, on voodoo2a's own environment ([0xa93ea4]), which its
+ * C library's start-up would have filled -- and which never runs on the port:
+ * there is nothing to find. */
+x86::reg32 environmentValue(win32::WinApplication* app)
+{
+    const x86::reg32 environment = at(app, 0xa93ea4);
+    NFS2_ASSERT(environment == 0 && "voodoo2a's environment, never set up on the port");
+    NFS2_USE(environment);
+    return 0;
+}
+
+/* Watcom's character classes (_IsTable, 0xa92578), a byte's at its value + 1. */
+x86::reg8 characterClass(win32::WinApplication* app, x86::reg8 c)
+{
+    return byteAt(app, 0xa92578 + x86::reg32(x86::reg8(c + 1)));
+}
+
+/* sub_a86be0, atoi. */
+x86::reg32 toInteger(win32::WinApplication* app, x86::reg32 text)
+{
+    while (characterClass(app, byteAt(app, text)) & 2)
+        ++text;
+    const x86::reg8 sign = byteAt(app, text);
+    if (sign == '+' || sign == '-')
+        ++text;
+    x86::reg32 value = 0;
+    while (characterClass(app, byteAt(app, text)) & 0x20)
+        value = value * 10 + byteAt(app, text++) - 0x30;
+    return sign == '-' ? 0 - value : value;
+}
+
+/* sub_a86b30, strcmp: -1, 0 or 1. */
+x86::sreg32 compareText(win32::WinApplication* app, x86::reg32 a, x86::reg32 b)
+{
+    for (;; ++a, ++b)
+    {
+        const x86::reg8 x = byteAt(app, a), y = byteAt(app, b);
+        if (x != y)
+            return x < y ? -1 : 1;
+        if (x == 0)
+            return 0;
+    }
+}
+
+/* THRASH_is: how well voodoo2a would drive what there is -- VOODOO2_IS from
+ * the environment when it is set; else, Glide loaded for a look, 0 for a Glide
+ * older than 2.42, 100 up to 2.5 and 95 past it; without a board, the number
+ * of them Glide gave. */
+void isNative(win32::WinApplication* app, x86::CPU& cpu)
+{
+    const x86::reg32 esp = cpu.esp;
+    // push ebx; sub esp, 0x50: grGlideGetVersion writes into the frame, and
+    // what it does not write is what was on the stack.
+    put(app, esp - 4, cpu.ebx);
+    cpu.esp = esp - 0x54;
+    const x86::reg32 version = cpu.esp;
+    x86::reg32 result = 0;
+    if (const x86::reg32 value = environmentValue(app))
+    {
+        result = toInteger(app, value);
+    }
+    else
+    {
+        const x86::reg32 loaded = loadGlide(app, cpu);
+        if (cpu.terminate)
+            return;
+        if (loaded == 0)
+        {
+            cpu.eax = 0;
+            cpu.esp = esp + 4;
+            return;
+        }
+        if (glide(app, 0xa93614) != 0 && glide(app, 0xa9361c) != 0 && glide(app, 0xa93618) != 0)
+        {
+            x86::reg32 boards = stdcall(app, cpu, glide(app, 0xa9361c), { kHardware });
+            if (cpu.terminate)
+                return;
+            if (boards != 0)
+                boards = at(app, kHardware);
+            result = boards;  // no board, or -1 of them, is what it says
+            if (x86::sreg32(boards) > 0)
+            {
+                stdcall(app, cpu, glide(app, 0xa93614), {});
+                if (cpu.terminate)
+                    return;
+                result = stdcall(app, cpu, glide(app, 0xa93618), { kHardware });
+                if (cpu.terminate)
+                    return;
+                if (result != 0)
+                {
+                    stdcall(app, cpu, glide(app, 0xa936dc), { version });  // grGlideGetVersion
+                    if (cpu.terminate)
+                        return;
+                    // From its first digit, or its end.
+                    x86::reg32 number = version;
+                    while (byteAt(app, number) != 0 && !(characterClass(app, byteAt(app, number)) & 0x20))
+                        ++number;
+                    if (compareText(app, number, 0xa916ec) < 0)        // "2.42"
+                        result = 0;
+                    else if (compareText(app, number, 0xa916f4) <= 0)  // "2.5"
+                        result = 100;
+                    else
+                        result = 95;
+                }
+                stdcall(app, cpu, glide(app, 0xa93620), {});  // grGlideShutdown
+                if (cpu.terminate)
+                    return;
+            }
+        }
+        freeGlide(app, cpu);
+        if (cpu.terminate)
+            return;
+    }
+    cpu.eax = result;
+    cpu.esp = esp + 4;
 }
 
 /* sub_a83830 and sub_a83870: Glide's fog table for a density -- 1 - e^(-d w)
@@ -1159,16 +1610,16 @@ x86::reg32 applyState(win32::WinApplication* app, x86::CPU& cpu, x86::reg32 stat
     x86::reg32 result = 1;
     switch (state)
     {
-    case 1:
+    case thrash::kStateTexture:
         selectTexture(app, cpu, value);
         break;
-    case 2:
+    case thrash::kStateCull:
         gl::cullMode(app, cpu, value);
         break;
-    case 3:
+    case thrash::kStateClearColour:
         put(app, 0xa91efc, value);
         break;
-    case 4:  // depth: off, or on, compared less-or-equal
+    case thrash::kStateDepth:  // depth: off, or on, compared less-or-equal
         if (value == 0)
         {
             gl::depthBufferFunction(app, cpu, 7);
@@ -1186,10 +1637,10 @@ x86::reg32 applyState(win32::WinApplication* app, x86::CPU& cpu, x86::reg32 stat
             result = 0;
         }
         break;
-    case 5:
+    case thrash::kStateDither:
         gl::ditherMode(app, cpu, value != 0 ? 2 : 0);
         break;
-    case 6:  // the vertex colour alone, or modulating the texture
+    case thrash::kStateShade:  // the vertex colour alone, or modulating the texture
     {
         const x86::reg32 local = value == 0 ? 1 : 0;
         put(app, 0xa91f2c, local);
@@ -1205,17 +1656,17 @@ x86::reg32 applyState(win32::WinApplication* app, x86::CPU& cpu, x86::reg32 stat
         }
         break;
     }
-    case 7:
+    case thrash::kStateTextureFilter:
         gl::texFilterMode(app, cpu, 0, value, value);
         break;
-    case 8:
+    case thrash::kStateLodBias:
         gl::texLodBiasValue(app, cpu, 0, asFloat(value));
         break;
-    case 9:
+    case thrash::kStateAntiAlias:
         put(app, 0xa91f20, value);
         drawPointers(app, at(app, 0xa91f24), value);
         break;
-    case 0xa:  // chroma key and alpha test
+    case thrash::kStateTransparency:  // chroma key and alpha test
         if (value == 0)
         {
             gl::chromakeyMode(app, cpu, 0);
@@ -1231,7 +1682,7 @@ x86::reg32 applyState(win32::WinApplication* app, x86::CPU& cpu, x86::reg32 stat
             result = 0;
         }
         break;
-    case 0xb:  // mipmapping; 3 is mode 1 drawn in two passes
+    case thrash::kStateMipFilter:  // mipmapping; 3 is mode 1 drawn in two passes
     {
         x86::reg32 twoPass = 0;
         x86::reg32 mode = value;
@@ -1252,16 +1703,16 @@ x86::reg32 applyState(win32::WinApplication* app, x86::CPU& cpu, x86::reg32 stat
         gl::texMipMapMode(app, cpu, 0, mode, at(app, 0xa91f24));
         break;
     }
-    case 0xc:
+    case thrash::kStateChromaKey:
         gl::chromakeyValue(app, cpu, value);
         break;
-    case 0xd:  // 0 clamps, anything else wraps
+    case thrash::kStateTextureAddress:  // 0 clamps, anything else wraps
     {
         const x86::reg32 clamp = value == 0 ? 1 : 0;
         gl::texClampMode(app, cpu, 0, clamp, clamp);
         break;
     }
-    case 0xe:  // fog by density -- 1 / value -- or off
+    case thrash::kStateFogDensity:  // fog by density -- 1 / value -- or off
         if (value == 0)
         {
             gl::fogMode(app, cpu, 0);
@@ -1275,19 +1726,19 @@ x86::reg32 applyState(win32::WinApplication* app, x86::CPU& cpu, x86::reg32 stat
             result = 0;  // what voodoo2a gives back here
         }
         break;
-    case 0xf:
+    case thrash::kStateFogColour:
         gl::fogColorValue(app, cpu, value);
         break;
-    case 0x12:
+    case thrash::kStateWindowMode:
         put(app, 0xa91f44, value);
         break;
-    case 0x13:  // four of a record at once, or all four cleared
+    case thrash::kStateLambdas:  // four of a record at once, or all four cleared
         if (value != 0)
         {
-            put(app, 0xa91f30, at(app, value + 4));
-            put(app, 0xa91f3c, at(app, value + 8));
-            put(app, 0xa91f34, at(app, value + 0x18));
-            put(app, 0xa91f38, at(app, value + 0x14));
+            put(app, 0xa91f30, at(app, value + thrash::kLambdaAcquireWindow));
+            put(app, 0xa91f3c, at(app, value + thrash::kLambdaExecute));
+            put(app, 0xa91f34, at(app, value + thrash::kLambdaLog));
+            put(app, 0xa91f38, at(app, value + thrash::kLambdaLockWindow));
         }
         else
         {
@@ -1297,7 +1748,7 @@ x86::reg32 applyState(win32::WinApplication* app, x86::CPU& cpu, x86::reg32 stat
             put(app, 0xa91f30, 0);
         }
         break;
-    case 0x15:  // fog mode
+    case thrash::kStateFog:  // fog mode
         if (value == 0)
             gl::fogMode(app, cpu, 0);
         else if (value == 1 || value == 2 || value == 4 || value == 8)
@@ -1305,39 +1756,39 @@ x86::reg32 applyState(win32::WinApplication* app, x86::CPU& cpu, x86::reg32 stat
         else
             result = 0;
         break;
-    case 0x18:
-    case 0x66:
+    case thrash::kStateDepthBias:
+    case thrash::kStateDepthBiasAlternative:
         gl::depthBiasLevel(app, cpu, x86::sreg16(value));
         break;
-    case 0x19:
+    case thrash::kStateWindow:
         put(app, 0xa91f08, value);
         break;
-    case 0x1a:
+    case thrash::kStateLogLambda:
         put(app, 0xa91f34, value);
         break;
-    case 0x1b:
+    case thrash::kStateExecuteLambda:
         put(app, 0xa91f3c, value);
         break;
-    case 0x1c:
+    case thrash::kStateLockWindowLambda:
         put(app, 0xa91f38, value);
         break;
-    case 0x65:
+    case thrash::kStateGamma:
         gl::gammaCorrectionValue(app, cpu, asFloat(value));
         break;
-    case 0x67:
+    case thrash::kStateFlipRate:
         put(app, 0xa91f0c, value);
         break;
-    case 0x68:  // blending
+    case thrash::kStateBlend:  // blending
         switch (value)
         {
-        case 0: gl::alphaBlendFunction(app, cpu, 1, 5, 4, 0); break;
-        case 1: gl::alphaBlendFunction(app, cpu, 1, 4, 4, 0); break;
-        case 2: gl::alphaBlendFunction(app, cpu, 0, 5, 4, 0); break;
-        case 3: gl::alphaBlendFunction(app, cpu, 2, 0, 4, 0); break;
+        case thrash::kBlendSourceAlpha: gl::alphaBlendFunction(app, cpu, 1, 5, 4, 0); break;
+        case thrash::kBlendSourceAlphaOne: gl::alphaBlendFunction(app, cpu, 1, 4, 4, 0); break;
+        case thrash::kBlendZeroInverseSourceAlpha: gl::alphaBlendFunction(app, cpu, 0, 5, 4, 0); break;
+        case thrash::kBlendDestinationColourZero: gl::alphaBlendFunction(app, cpu, 2, 0, 4, 0); break;
         default: result = 0; break;
         }
         break;
-    case 0x69:  // fog from the game's own table, or off
+    case thrash::kStateFogAlphas:  // fog from the game's own table, or off
         if (value == 0)
         {
             gl::fogMode(app, cpu, 0);
@@ -1348,13 +1799,13 @@ x86::reg32 applyState(win32::WinApplication* app, x86::CPU& cpu, x86::reg32 stat
             gl::fogTable(app, cpu, &app->getMemory<x86::reg8>(value));
         }
         break;
-    case 0x6a:
+    case thrash::kStateDepthWrite:
         gl::depthMask(app, cpu, value);
         break;
-    case 0x6b:
+    case thrash::kState107:
         put(app, 0xa91f10, value);
         break;
-    case 0x6c:
+    case thrash::kState108:
         if (at(app, 0xa91ef8) != 0)
             result = 0;
         else
@@ -1367,478 +1818,23 @@ x86::reg32 applyState(win32::WinApplication* app, x86::CPU& cpu, x86::reg32 stat
     return result;
 }
 
-bool setStateNative(win32::WinApplication* app, x86::CPU& cpu)
+void setStateNative(win32::WinApplication* app, x86::CPU& cpu)
 {
     const x86::reg32 esp = cpu.esp;
     cpu.eax = applyState(app, cpu, at(app, esp + 4), at(app, esp + 8), esp + 8);
     cpu.esp = esp + 4 + 8;
-    return true;
-}
-
-/* Set while a check runs the generated function: its stand-in steps aside. */
-thread_local bool t_original = false;
-
-/* Whether t_original can be set at all: only while a check, a trace of the
- * setting up or a generated function named in NFS_THRASH_OFF runs the
- * generated code.  Otherwise the thread-local is never read -- on Android
- * each read is a call into the runtime (__emutls_get_address). */
-bool originalMayRun();
-
-inline bool originalRunning()
-{
-    return originalMayRun() && (t_original || nativeOriginalRunning());
-}
-
-bool thrashOn()
-{
-    static const bool on = []() {
-        const char* value = SDL_getenv("NFS_THRASH");
-        return !value || SDL_strcmp(value, "0") != 0;
-    }();
-    return on && nativesEnabled();
-}
-
-/* NFS_NATIVE_CHECK=1 checks every native stand-in; =thrash only these, without
- * native_vertices.cpp's whole-memory checks, which put all of guest memory back
- * while other guest threads may be writing it. */
-bool thrashChecking()
-{
-    static const bool check = []() {
-        const char* value = SDL_getenv("NFS_NATIVE_CHECK");
-        return value && SDL_strcmp(value, "thrash") == 0;
-    }();
-    return check || nativeChecking();
-}
-
-struct Counts
-{
-    unsigned calls = 0;
-    unsigned vertices = 0;
-    unsigned mismatches = 0;
-};
-
-/* What Glide is handed, field by field, to the bit; z and the other TMUs'
- * coordinates are never set. */
-bool sameVertex(const win32::GrVertex& a, const win32::GrVertex& b)
-{
-    const float pairs[][2] = {
-        { a.x, b.x }, { a.y, b.y }, { a.ooz, b.ooz }, { a.oow, b.oow },
-        { a.r, b.r }, { a.g, b.g }, { a.b, b.b }, { a.a, b.a },
-        { a.tmuvtx[0].sow, b.tmuvtx[0].sow }, { a.tmuvtx[0].tow, b.tmuvtx[0].tow },
-    };
-    for (const auto& pair : pairs)
-        if (std::memcmp(&pair[0], &pair[1], sizeof(float)) != 0)
-            return false;
-    return true;
-}
-
-/* What a THRASH function may write besides the stack below its return:
- * voodoo2a's data and variables, and the arguments it was called with. */
-struct Written
-{
-    std::vector<x86::reg8> bytes;
-
-    /* And `extra`, when there is one: the texture record a call writes. */
-    static std::pair<x86::reg32, x86::reg32> extra;
-
-    static void ranges(x86::reg32 esp, x86::reg32 arguments, std::pair<x86::reg32, x86::reg32> (&out)[4])
-    {
-        out[0] = { 0xa91200, 0x1e00 };  // DGROUP
-        out[1] = { 0xa93200, 0x1a00 };  // its uninitialised data
-        out[2] = { esp + 4, arguments };
-        out[3] = extra;
-    }
-
-    void take(win32::WinApplication* app, x86::reg32 esp, x86::reg32 arguments)
-    {
-        std::pair<x86::reg32, x86::reg32> list[4];
-        ranges(esp, arguments, list);
-        bytes.clear();
-        for (const auto& range : list)
-        {
-            const x86::reg8* from = &app->getMemory<x86::reg8>(range.first);
-            bytes.insert(bytes.end(), from, from + range.second);
-        }
-    }
-
-    void restore(win32::WinApplication* app, x86::reg32 esp, x86::reg32 arguments) const
-    {
-        std::pair<x86::reg32, x86::reg32> list[4];
-        ranges(esp, arguments, list);
-        std::size_t offset = 0;
-        for (const auto& range : list)
-        {
-            std::memcpy(&app->getMemory<x86::reg8>(range.first), &bytes[offset], range.second);
-            offset += range.second;
-        }
-    }
-
-    /* The guest address of the first byte that differs, or 0. */
-    x86::reg32 firstDifference(const Written& other, x86::reg32 esp, x86::reg32 arguments) const
-    {
-        std::pair<x86::reg32, x86::reg32> list[4];
-        ranges(esp, arguments, list);
-        std::size_t offset = 0;
-        for (const auto& range : list)
-        {
-            for (x86::reg32 i = 0; i < range.second; ++i)
-                if (bytes[offset + i] != other.bytes[offset + i])
-                    return range.first + i;
-            offset += range.second;
-        }
-        return 0;
-    }
-};
-
-std::pair<x86::reg32, x86::reg32> Written::extra;
-
-/* NFS_NATIVE_CHECK: the call runs natively, its writes are put back, the
- * generated function runs, and what each drew, every Glide state call each
- * made, what each wrote and the state the caller sees must agree.  Everything
- * is drawn and set twice.  False where the native declined. */
-bool check(win32::WinApplication* app, x86::CPU& cpu, const char* name, x86::reg32 address, x86::reg32 arguments,
-           bool result, Counts& counts, Native native)
-{
-    static std::vector<win32::GrVertex> mine, original;
-    static std::vector<x86::reg32> mineCalls, originalCalls;
-    static Written before, mineWritten, originalWritten;
-    mine.clear();
-    original.clear();
-    mineCalls.clear();
-    originalCalls.clear();
-    const x86::CPU entry = cpu;
-    before.take(app, entry.esp, arguments);
-
-    win32::glide2x::traceTriangles(&mine);
-    win32::glide2x::traceCalls(&mineCalls);
-    const bool done = native(app, cpu);
-    win32::glide2x::traceTriangles(nullptr);
-    win32::glide2x::traceCalls(nullptr);
-    if (!done)
-        return false;
-    const x86::CPU after = cpu;
-    mineWritten.take(app, entry.esp, arguments);
-    before.restore(app, entry.esp, arguments);
-
-    cpu = entry;
-    win32::glide2x::traceTriangles(&original);
-    win32::glide2x::traceCalls(&originalCalls);
-    t_original = true;
-    app->dynamic_call(address, cpu);
-    t_original = false;
-    win32::glide2x::traceTriangles(nullptr);
-    win32::glide2x::traceCalls(nullptr);
-    originalWritten.take(app, entry.esp, arguments);
-
-    char what[200] = "";
-    if (mine.size() != original.size())
-        SDL_snprintf(what, sizeof what, "%u vertices native, %u original", unsigned(mine.size()),
-                     unsigned(original.size()));
-    for (std::size_t i = 0; i < mine.size() && !what[0]; ++i)
-        if (!sameVertex(mine[i], original[i]))
-            SDL_snprintf(what, sizeof what, "vertex %u: x %.9g/%.9g y %.9g/%.9g", unsigned(i), double(mine[i].x),
-                         double(original[i].x), double(mine[i].y), double(original[i].y));
-    if (!what[0] && mineCalls != originalCalls)
-    {
-        std::size_t i = 0;
-        while (i < mineCalls.size() && i < originalCalls.size() && mineCalls[i] == originalCalls[i])
-            ++i;
-        SDL_snprintf(what, sizeof what, "Glide calls (%u/%u words) part from word %u: %08x/%08x",
-                     unsigned(mineCalls.size()), unsigned(originalCalls.size()), unsigned(i),
-                     unsigned(i < mineCalls.size() ? mineCalls[i] : 0),
-                     unsigned(i < originalCalls.size() ? originalCalls[i] : 0));
-    }
-    if (!what[0])
-        if (const x86::reg32 where = mineWritten.firstDifference(originalWritten, entry.esp, arguments))
-            SDL_snprintf(what, sizeof what, "memory from %08x", unsigned(where));
-    if (!what[0] && (after.esp != cpu.esp || after.ebx != cpu.ebx || after.esi != cpu.esi
-                     || after.edi != cpu.edi || after.ebp != cpu.ebp || after.fpu.count != cpu.fpu.count
-                     || (result && after.eax != cpu.eax)))
-        SDL_snprintf(what, sizeof what,
-                     "eax %08x/%08x esp %08x/%08x ebx %08x/%08x esi %08x/%08x edi %08x/%08x ebp %08x/%08x",
-                     unsigned(after.eax), unsigned(cpu.eax), unsigned(after.esp), unsigned(cpu.esp),
-                     unsigned(after.ebx), unsigned(cpu.ebx), unsigned(after.esi), unsigned(cpu.esi),
-                     unsigned(after.edi), unsigned(cpu.edi), unsigned(after.ebp), unsigned(cpu.ebp));
-
-    counts.calls++;
-    counts.vertices += unsigned(mine.size());
-    if (what[0] && ++counts.mismatches <= 20)
-        SDL_Log("[NATIVE] %s differs: %s (call %u, arguments %08x %08x)", name, what, counts.calls,
-                unsigned(app->getMemory<x86::reg32>(entry.esp + 4)), unsigned(app->getMemory<x86::reg32>(entry.esp + 8)));
-    if (counts.calls == 1 || counts.calls % 20000 == 0)
-        SDL_Log("[NATIVE] %s checked: %u calls, %u vertices, %u differ", name, counts.calls, counts.vertices,
-                counts.mismatches);
-    return true;
-}
-
-bool originalMayRun()
-{
-    static const bool may = []() {
-        const char* off = SDL_getenv("NFS_THRASH_OFF");
-        const char* trace = SDL_getenv("NFS_THRASH_INIT_TRACE");
-        return thrashChecking() || nativeChecking() || (off && *off) || (trace && SDL_strcmp(trace, "1") == 0);
-    }();
-    return may;
-}
-
-/* `arguments`: how many bytes of them; `result`: whether eax is one. */
-/* NFS_THRASH_OFF=THRASH_setstate,THRASH_drawtrifan: these left to the
- * generated code, to find which stand-in a fault comes from. */
-bool switchedOff(const char* name)
-{
-    static const std::string off = []() {
-        const char* value = SDL_getenv("NFS_THRASH_OFF");
-        return std::string(value ? value : "");
-    }();
-    if (off.empty())
-        return false;
-    const std::size_t at = off.find(name);
-    const std::size_t end = at + SDL_strlen(name);
-    return at != std::string::npos && (at == 0 || off[at - 1] == ',') && (end == off.size() || off[end] == ',');
-}
-
-bool run(win32::WinApplication* app, x86::CPU& cpu, const char* name, x86::reg32 address, x86::reg32 arguments,
-         bool result, Counts& counts, Native native, bool plain, std::pair<x86::reg32, x86::reg32> record = { 0, 0 })
-{
-    if (originalRunning() || !plain || !thrashOn() || switchedOff(name))
-        return false;
-    // A check inside another one's trace runs as it would without the check.
-    if (thrashChecking() && !win32::glide2x::tracingTriangles())
-    {
-        Written::extra = record;
-        return check(app, cpu, name, address, arguments, result, counts, native);
-    }
-    return native(app, cpu);
-}
-
-/* THRASH_talloc and _treset take memory from voodoo2a's malloc and give it
- * back, so the two paths cannot both run: under NFS_NATIVE_CHECK the generated
- * code runs, and what it did is held against what the native one plans. */
-void report(const char* name, Counts& counts, const char* what)
-{
-    counts.calls++;
-    if (what[0] && ++counts.mismatches <= 20)
-        SDL_Log("[NATIVE] %s differs: %s (call %u)", name, what, counts.calls);
-    if (counts.calls == 1 || counts.calls % 2000 == 0)
-        SDL_Log("[NATIVE] %s checked: %u calls, %u differ", name, counts.calls, counts.mismatches);
-}
-
-bool checkTextureAllocate(win32::WinApplication* app, x86::CPU& cpu, Counts& counts)
-{
-    static std::vector<x86::reg32> mineCalls, originalCalls;
-    mineCalls.clear();
-    originalCalls.clear();
-    const x86::reg32 esp = cpu.esp;
-    win32::glide2x::traceCalls(&mineCalls);
-    const TexturePlan plan = planTexture(app, cpu, esp, false);
-    win32::glide2x::traceCalls(nullptr);
-    const x86::reg32 formatIndex = at(app, esp + 0xc);
-    win32::glide2x::traceCalls(&originalCalls);
-    t_original = true;
-    app->dynamic_call(0xa844b0, cpu);
-    t_original = false;
-    win32::glide2x::traceCalls(nullptr);
-    const x86::reg32 record = cpu.eax;
-    char what[160] = "";
-    if (mineCalls != originalCalls)
-        SDL_snprintf(what, sizeof what, "Glide calls (%u/%u words)", unsigned(mineCalls.size()),
-                     unsigned(originalCalls.size()));
-    else if (cpu.esp != esp + 4 + 0x14)
-        SDL_snprintf(what, sizeof what, "esp %08x", unsigned(cpu.esp));
-    else if (!plan.fits && (record != 0 || at(app, kTextureNext) != plan.start))
-        SDL_snprintf(what, sizeof what, "no room planned, record %08x next %08x/%08x", unsigned(record),
-                     unsigned(at(app, kTextureNext)), unsigned(plan.start));
-    else if (plan.fits && record != 0
-             && (at(app, record) != plan.smallLod || at(app, record + 4) != plan.largeLod
-                 || at(app, record + 8) != plan.aspect || at(app, record + 0xc) != byteAt(app, 0xa92348 + formatIndex)
-                 || at(app, record + 0x10) != 0 || at(app, record + 0x14) != plan.start || at(app, record + 0x18) != 3
-                 || at(app, kTextures) != record || at(app, kTextureNext) != plan.start + plan.size))
-        SDL_snprintf(what, sizeof what, "record %08x: lods %u-%u/%u-%u start %08x/%08x size %08x",
-                     unsigned(record), unsigned(at(app, record)), unsigned(at(app, record + 4)),
-                     unsigned(plan.smallLod), unsigned(plan.largeLod), unsigned(at(app, record + 0x14)),
-                     unsigned(plan.start), unsigned(plan.size));
-    report("THRASH_talloc", counts, what);
-    return true;
-}
-
-bool checkTextureReset(win32::WinApplication* app, x86::CPU& cpu, Counts& counts)
-{
-    const x86::reg32 esp = cpu.esp;
-    t_original = true;
-    app->dynamic_call(0xa84690, cpu);
-    t_original = false;
-    char what[160] = "";
-    if (cpu.eax != 1 || cpu.esp != esp + 4 || at(app, kTextures) != 0
-        || at(app, kTextureNext) != win32::glide2x::direct::texMinAddress(app, cpu, 0))
-        SDL_snprintf(what, sizeof what, "eax %08x records %08x next %08x", unsigned(cpu.eax),
-                     unsigned(at(app, kTextures)), unsigned(at(app, kTextureNext)));
-    report("THRASH_treset", counts, what);
-    return true;
-}
-
-/* THRASH_pageflip, _lockwindow, _unlockwindow and _readrect swap, lock or read
- * the frame and take voodoo2a's malloc, so under NFS_NATIVE_CHECK they run
- * once, generated, and the Glide calls they made are held against the ones the
- * native code makes. */
-constexpr x86::reg32 kEnd = 0xffffffff;
-
-void runTraced(win32::WinApplication* app, x86::CPU& cpu, x86::reg32 address, std::vector<x86::reg32>& calls)
-{
-    calls.clear();
-    win32::glide2x::traceCalls(&calls);
-    t_original = true;
-    app->dynamic_call(address, cpu);
-    t_original = false;
-    win32::glide2x::traceCalls(nullptr);
-}
-
-void describeCalls(const std::vector<x86::reg32>& expected, const std::vector<x86::reg32>& calls, char* what,
-                   std::size_t size)
-{
-    if (calls == expected)
-        return;
-    std::size_t i = 0;
-    while (i < calls.size() && i < expected.size() && calls[i] == expected[i])
-        ++i;
-    SDL_snprintf(what, size, "Glide calls (%u/%u words) part from word %u: %08x/%08x", unsigned(expected.size()),
-                 unsigned(calls.size()), unsigned(i), unsigned(i < expected.size() ? expected[i] : 0),
-                 unsigned(i < calls.size() ? calls[i] : 0));
-}
-
-bool checkPageFlip(win32::WinApplication* app, x86::CPU& cpu, Counts& counts)
-{
-    static std::vector<x86::reg32> calls;
-    const x86::reg32 esp = cpu.esp;
-    const std::vector<x86::reg32> expected = { 0xf8, kEnd, 0x48, at(app, kSwapInterval), kEnd };
-    runTraced(app, cpu, 0xa847e0, calls);
-    char what[160] = "";
-    describeCalls(expected, calls, what, sizeof what);
-    if (!what[0] && cpu.esp != esp + 4)
-        SDL_snprintf(what, sizeof what, "esp %08x", unsigned(cpu.esp));
-    report("THRASH_pageflip", counts, what);
-    return true;
-}
-
-bool checkLockWindow(win32::WinApplication* app, x86::CPU& cpu, Counts& counts)
-{
-    static std::vector<x86::reg32> calls;
-    const x86::reg32 esp = cpu.esp;
-    const x86::reg32 buffer = at(app, kBuffer);
-    const std::vector<x86::reg32> expected = { 0x98, 1, buffer, 0xff, 0, 0, kEnd, 0x98, 0, buffer, 0xff, 0, 0, kEnd };
-    runTraced(app, cpu, 0xa850f0, calls);
-    const x86::reg32 record = cpu.eax;
-    char what[160] = "";
-    describeCalls(expected, calls, what, sizeof what);
-    if (!what[0] && cpu.esp != esp + 4)
-        SDL_snprintf(what, sizeof what, "esp %08x", unsigned(cpu.esp));
-    if (!what[0] && record != 0
-        && (at(app, record + 8) != 4 || at(app, record + 0xc) != at(app, 0xa91f18)
-            || at(app, record + 0x10) != at(app, 0xa91f1c) || at(app, record + 0x14) != buffer))
-        SDL_snprintf(what, sizeof what, "record %08x", unsigned(record));
-    report("THRASH_lockwindow", counts, what);
-    return true;
-}
-
-bool checkUnlockWindow(win32::WinApplication* app, x86::CPU& cpu, Counts& counts)
-{
-    static std::vector<x86::reg32> calls;
-    const x86::reg32 esp = cpu.esp;
-    const x86::reg32 record = at(app, esp + 4);
-    std::vector<x86::reg32> expected;
-    if (record != 0)
-    {
-        const x86::reg32 buffer = at(app, record + 0x14);
-        expected = { 0x9c, 1, buffer, kEnd, 0x9c, 0, buffer, kEnd };
-    }
-    runTraced(app, cpu, 0xa851d0, calls);
-    char what[160] = "";
-    describeCalls(expected, calls, what, sizeof what);
-    if (!what[0] && (cpu.esp != esp + 8 || cpu.eax != 1))
-        SDL_snprintf(what, sizeof what, "esp %08x eax %08x", unsigned(cpu.esp), unsigned(cpu.eax));
-    report("THRASH_unlockwindow", counts, what);
-    return true;
-}
-
-bool checkReadRect(win32::WinApplication* app, x86::CPU& cpu, Counts& counts)
-{
-    static std::vector<x86::reg32> calls;
-    const x86::reg32 esp = cpu.esp;
-    const x86::reg32 width = at(app, esp + 0xc);
-    const std::vector<x86::reg32> expected = { 0xa4, at(app, kBuffer), at(app, esp + 4), at(app, esp + 8), width,
-                                               at(app, esp + 0x10), width * 2, kEnd };
-    runTraced(app, cpu, 0xa85220, calls);
-    char what[160] = "";
-    describeCalls(expected, calls, what, sizeof what);
-    if (!what[0] && cpu.esp != esp + 0x18)
-        SDL_snprintf(what, sizeof what, "esp %08x", unsigned(cpu.esp));
-    report("THRASH_readrect", counts, what);
-    return true;
-}
-
-/* THRASH_about, _init, _setvideomode and the rest of the setting up: run
- * once, natively, or generated when NFS_THRASH_OFF names them.  With
- * NFS_THRASH_INIT_TRACE=1 each logs a hash of voodoo2a's data after it, so a
- * run of the generated code and a native one can be set side by side; the
- * windows, events and DirectDraw objects they make cannot run twice. */
-bool initTraceOn()
-{
-    static const bool on = []() {
-        const char* value = SDL_getenv("NFS_THRASH_INIT_TRACE");
-        return value && SDL_strcmp(value, "1") == 0;
-    }();
-    return on;
-}
-
-bool runInit(win32::WinApplication* app, x86::CPU& cpu, const char* name, x86::reg32 address, Native native)
-{
-    if (originalRunning() || !thrashOn())
-        return false;
-    const bool generated = switchedOff(name);
-    if (!initTraceOn())
-        return generated ? false : native(app, cpu);
-    const x86::reg32 esp = cpu.esp;
-    const x86::reg32 arguments[3] = { at(app, esp + 4), at(app, esp + 8), at(app, esp + 0xc) };
-    if (generated)
-    {
-        t_original = true;
-        app->dynamic_call(address, cpu);
-        t_original = false;
-    }
-    else
-    {
-        native(app, cpu);
-    }
-    Uint64 hash = 1469598103934665603ull;
-    for (const auto& range : { std::pair<x86::reg32, x86::reg32>{ 0xa91200, 0x1e00 }, { 0xa93200, 0x1a00 } })
-    {
-        const x86::reg8* bytes = &app->getMemory<x86::reg8>(range.first);
-        for (x86::reg32 i = 0; i < range.second; ++i)
-            hash = (hash ^ bytes[i]) * 1099511628211ull;
-    }
-    SDL_Log("[THRASHINIT] %s %s (%08x %08x %08x) -> eax %08x esp %+d data %016llx", name,
-            generated ? "generated" : "native", unsigned(arguments[0]), unsigned(arguments[1]),
-            unsigned(arguments[2]), unsigned(cpu.eax), int(cpu.esp - esp), (unsigned long long)hash);
-    return true;
-}
-
-bool runOnce(win32::WinApplication* app, x86::CPU& cpu, const char* name, Counts& counts, Native native,
-                bool (*checkIt)(win32::WinApplication*, x86::CPU&, Counts&))
-{
-    if (originalRunning() || !thrashOn() || switchedOff(name))
-        return false;
-    if (thrashChecking() && !win32::glide2x::tracingTriangles())
-        return checkIt(app, cpu, counts);
-    return native(app, cpu);
 }
 
 }
 
 /* The GrVertex THRASH_drawtri and the rest make of one of the game's vertices.
- * voodoo2a's generated code does its x87 arithmetic in plain double, without
- * the precision control's rounding (disasm/dll.py), so this does too, in the
- * same order: each product of floats is exact, and only the one of three
- * factors and the stores to float round.  The colours are the table's floats
- * for the vertex's bytes (VertexColours). */
+ * voodoo2a's code as the generator makes it does its x87 arithmetic in the
+ * FPU's own type without the precision control's rounding (disasm/dll.py), so
+ * this does too, operation by operation, in the same order: in plain double,
+ * where each product of floats is exact and only the one of three factors and
+ * the stores to float round; and under WITH_PEDANTIC_FPU in the x87's 80 bits,
+ * which quiet a signalling NaN as they load it.  The colours are the table's
+ * floats for the vertex's bytes (VertexColours). */
 struct VertexFloats
 {
     float x, y, ooz, sow, tow, oow;
@@ -1846,14 +1842,15 @@ struct VertexFloats
 
 inline VertexFloats vertexFloats(win32::WinApplication* app, x86::reg32 in, float zScale, float wScale)
 {
-    const double zk = double(app->getMemory<float>(in + 8)) * double(zScale);
-    const double wk = double(app->getMemory<float>(in + 0xc)) * double(wScale);
+    typedef x86::Float F;
+    const F zk = F(app->getMemory<float>(in + 8)) * F(zScale);
+    const F wk = F(app->getMemory<float>(in + 0xc)) * F(wScale);
     VertexFloats out;
-    out.x = float(double(app->getMemory<float>(in)));
-    out.y = float(double(app->getMemory<float>(in + 4)));
+    out.x = float(F(app->getMemory<float>(in)));
+    out.y = float(F(app->getMemory<float>(in + 4)));
     out.oow = app->getMemory<float>(in + 0xc);
-    out.sow = float(double(app->getMemory<float>(in + 0x18)) * wk);
-    out.tow = float(wk * double(app->getMemory<float>(in + 0x1c)));
+    out.sow = float(F(app->getMemory<float>(in + 0x18)) * wk);
+    out.tow = float(wk * F(app->getMemory<float>(in + 0x1c)));
     out.ooz = float(zk);
     return out;
 }
@@ -1915,189 +1912,53 @@ win32::ThrashRenderer::Corner thrashCorner(win32::WinApplication* app, x86::reg3
     return out;
 }
 
-void thrashTriangle(win32::WinApplication* app, x86::reg32 a, x86::reg32 b, x86::reg32 c)
-{
-    Vertices(app).triangle(a, b, c);
-}
-
-bool thrashPlainTriangles(win32::WinApplication* app)
-{
-    return drawsThrough(app, kTriangleDraw, kGrDrawTriangle);
-}
-
-bool thrashDrawQuad(win32::WinApplication* app, x86::CPU& cpu)
-{
-    static Counts counts;
-    return run(app, cpu, "THRASH_drawquad", 0xa85300, 0x10, false, counts, drawQuadNative,
-               drawsThrough(app, kQuadDraw, kGrDrawTriangle));
-}
-
-bool thrashDrawQuadMesh(win32::WinApplication* app, x86::CPU& cpu)
-{
-    static Counts counts;
-    return run(app, cpu, "THRASH_drawquadmesh", 0xa85520, 0xc, false, counts, drawQuadMeshNative,
-               drawsThrough(app, kQuadDraw, kGrDrawTriangle));
-}
-
-bool thrashDrawTriMesh(win32::WinApplication* app, x86::CPU& cpu)
-{
-    static Counts counts;
-    return run(app, cpu, "THRASH_drawtrimesh", 0xa85900, 0xc, false, counts, drawTriMeshNative, thrashPlainTriangles(app));
-}
-
-bool thrashDrawTriFan(win32::WinApplication* app, x86::CPU& cpu)
-{
-    static Counts counts;
-    return run(app, cpu, "THRASH_drawtrifan", 0xa86000, 8, false, counts, drawTriFanNative, thrashPlainTriangles(app));
-}
-
-bool thrashDrawLine(win32::WinApplication* app, x86::CPU& cpu)
-{
-    static Counts counts;
-    return run(app, cpu, "THRASH_drawline", 0xa86240, 8, false, counts, drawLineNative,
-               drawsThrough(app, kLineDraw, kGrDrawLine));
-}
-
-bool thrashDrawLineMesh(win32::WinApplication* app, x86::CPU& cpu)
-{
-    static Counts counts;
-    return run(app, cpu, "THRASH_drawlinemesh", 0xa86350, 0xc, false, counts, drawLineMeshNative,
-               drawsThrough(app, kLineDraw, kGrDrawLine));
-}
-
-bool thrashSetState(win32::WinApplication* app, x86::CPU& cpu)
-{
-    static Counts counts;
-    return run(app, cpu, "THRASH_setstate", 0xa84990, 8, true, counts, setStateNative, true);
-}
-
-bool thrashTextureAllocate(win32::WinApplication* app, x86::CPU& cpu)
-{
-    static Counts counts;
-    return runOnce(app, cpu, "THRASH_talloc", counts, textureAllocateNative, checkTextureAllocate);
-}
-
-bool thrashTextureReset(win32::WinApplication* app, x86::CPU& cpu)
-{
-    static Counts counts;
-    return runOnce(app, cpu, "THRASH_treset", counts, textureResetNative, checkTextureReset);
-}
-
-bool thrashTextureUpdate(win32::WinApplication* app, x86::CPU& cpu)
-{
-    static Counts counts;
-    return run(app, cpu, "THRASH_tupdate", 0xa84630, 0xc, true, counts, textureUpdateNative, true,
-               { at(app, cpu.esp + 4), 0x20 });
-}
-
-bool thrashSetTexture(win32::WinApplication* app, x86::CPU& cpu)
-{
-    static Counts counts;
-    return run(app, cpu, "THRASH_settexture", 0xa846d0, 4, true, counts, setTextureNative, true);
-}
-
-bool thrashWindow(win32::WinApplication* app, x86::CPU& cpu)
-{
-    static Counts counts;
-    return run(app, cpu, "THRASH_window", 0xa84780, 4, true, counts, windowNative, true);
-}
-
-bool thrashClearWindow(win32::WinApplication* app, x86::CPU& cpu)
-{
-    static Counts counts;
-    return run(app, cpu, "THRASH_clearwindow", 0xa847b0, 0, false, counts, clearWindowNative, true);
-}
-
-bool thrashFlushWindow(win32::WinApplication* app, x86::CPU& cpu)
-{
-    static Counts counts;
-    return run(app, cpu, "THRASH_flushwindow", 0xa847d0, 0, false, counts, nothingNative, true);
-}
-
-bool thrashIdle(win32::WinApplication* app, x86::CPU& cpu)
-{
-    static Counts counts;
-    return run(app, cpu, "THRASH_idle", 0xa84810, 0, false, counts, nothingNative, true);
-}
-
-bool thrashSync(win32::WinApplication* app, x86::CPU& cpu)
-{
-    static Counts counts;
-    return run(app, cpu, "THRASH_sync", 0xa84830, 4, true, counts, syncNative, true);
-}
-
-bool thrashClip(win32::WinApplication* app, x86::CPU& cpu)
-{
-    static Counts counts;
-    return run(app, cpu, "THRASH_clip", 0xa848b0, 0x10, true, counts, clipNative, true);
-}
-
-bool thrashPageFlip(win32::WinApplication* app, x86::CPU& cpu)
-{
-    static Counts counts;
-    return runOnce(app, cpu, "THRASH_pageflip", counts, pageFlipNative, checkPageFlip);
-}
-
-bool thrashLockWindow(win32::WinApplication* app, x86::CPU& cpu)
-{
-    static Counts counts;
-    return runOnce(app, cpu, "THRASH_lockwindow", counts, lockWindowNative, checkLockWindow);
-}
-
-bool thrashUnlockWindow(win32::WinApplication* app, x86::CPU& cpu)
-{
-    static Counts counts;
-    return runOnce(app, cpu, "THRASH_unlockwindow", counts, unlockWindowNative, checkUnlockWindow);
-}
-
-bool thrashReadRect(win32::WinApplication* app, x86::CPU& cpu)
-{
-    static Counts counts;
-    return runOnce(app, cpu, "THRASH_readrect", counts, readRectNative, checkReadRect);
-}
-
-/* Whatever runs the driver -- these stand-ins, or its generated code when they
- * step aside -- reaches the renderer through the same functions of glide2x.cpp,
- * so either renderer serves both. */
+/* The driver reaches the renderer through the functions of glide2x.cpp, so
+ * either renderer serves it. */
 bool thrashRendererWanted()
 {
     const char* gl = SDL_getenv("NFS_THRASH_GL");
     return !(gl && SDL_strcmp(gl, "0") == 0);
 }
 
-bool thrashAbout(win32::WinApplication* app, x86::CPU& cpu)
-{
-    return runInit(app, cpu, "THRASH_about", 0xa83c60, aboutNative);
-}
+/* voodoo2a's exports as the port has them: each a stdcall the game makes
+ * through the pointer GetProcAddress gave it (THRASH_opendll). */
+void THRASH_about(win32::WinApplication* app, x86::CPU& cpu) { aboutNative(app, cpu); }
+void THRASH_clearwindow(win32::WinApplication* app, x86::CPU& cpu) { clearWindowNative(app, cpu); }
+void THRASH_clip(win32::WinApplication* app, x86::CPU& cpu) { clipNative(app, cpu); }
+void THRASH_drawline(win32::WinApplication* app, x86::CPU& cpu) { drawLineNative(app, cpu); }
+void THRASH_drawlinemesh(win32::WinApplication* app, x86::CPU& cpu) { drawLineMeshNative(app, cpu); }
+void THRASH_drawlinestrip(win32::WinApplication* app, x86::CPU& cpu) { drawLineStripNative(app, cpu); }
+void THRASH_drawpoint(win32::WinApplication* app, x86::CPU& cpu) { drawPointNative(app, cpu); }
+void THRASH_drawpointmesh(win32::WinApplication* app, x86::CPU& cpu) { drawPointMeshNative(app, cpu); }
+void THRASH_drawpointstrip(win32::WinApplication* app, x86::CPU& cpu) { drawPointStripNative(app, cpu); }
+void THRASH_drawquad(win32::WinApplication* app, x86::CPU& cpu) { drawQuadNative(app, cpu); }
+void THRASH_drawquadmesh(win32::WinApplication* app, x86::CPU& cpu) { drawQuadMeshNative(app, cpu); }
+void THRASH_drawtri(win32::WinApplication* app, x86::CPU& cpu) { drawTriNative(app, cpu); }
+void THRASH_drawtrifan(win32::WinApplication* app, x86::CPU& cpu) { drawTriFanNative(app, cpu); }
+void THRASH_drawtrimesh(win32::WinApplication* app, x86::CPU& cpu) { drawTriMeshNative(app, cpu); }
+void THRASH_drawtristrip(win32::WinApplication* app, x86::CPU& cpu) { drawTriStripNative(app, cpu); }
+void THRASH_flushwindow(win32::WinApplication* app, x86::CPU& cpu) { nothingNative(app, cpu); }
+void THRASH_idle(win32::WinApplication* app, x86::CPU& cpu) { nothingNative(app, cpu); }
+void THRASH_init(win32::WinApplication* app, x86::CPU& cpu) { initNative(app, cpu); }
+void THRASH_is(win32::WinApplication* app, x86::CPU& cpu) { isNative(app, cpu); }
+void THRASH_lockwindow(win32::WinApplication* app, x86::CPU& cpu) { lockWindowNative(app, cpu); }
+void THRASH_pageflip(win32::WinApplication* app, x86::CPU& cpu) { pageFlipNative(app, cpu); }
+void THRASH_readrect(win32::WinApplication* app, x86::CPU& cpu) { readRectNative(app, cpu); }
+void THRASH_restore(win32::WinApplication* app, x86::CPU& cpu) { restoreNative(app, cpu); }
+void THRASH_selectdisplay(win32::WinApplication* app, x86::CPU& cpu) { selectDisplayNative(app, cpu); }
+void THRASH_setstate(win32::WinApplication* app, x86::CPU& cpu) { setStateNative(app, cpu); }
+void THRASH_settexture(win32::WinApplication* app, x86::CPU& cpu) { setTextureNative(app, cpu); }
+void THRASH_setvideomode(win32::WinApplication* app, x86::CPU& cpu) { setVideoModeNative(app, cpu); }
+void THRASH_sync(win32::WinApplication* app, x86::CPU& cpu) { syncNative(app, cpu); }
+void THRASH_talloc(win32::WinApplication* app, x86::CPU& cpu) { textureAllocateNative(app, cpu); }
+void THRASH_treset(win32::WinApplication* app, x86::CPU& cpu) { textureResetNative(app, cpu); }
+void THRASH_tupdate(win32::WinApplication* app, x86::CPU& cpu) { textureUpdateNative(app, cpu); }
+void THRASH_unlockwindow(win32::WinApplication* app, x86::CPU& cpu) { unlockWindowNative(app, cpu); }
+void THRASH_window(win32::WinApplication* app, x86::CPU& cpu) { windowNative(app, cpu); }
+void THRASH_writerect(win32::WinApplication* app, x86::CPU& cpu) { writeRectNative(app, cpu); }
 
-bool thrashInit(win32::WinApplication* app, x86::CPU& cpu)
-{
-    return runInit(app, cpu, "THRASH_init", 0xa83f50, initNative);
-}
-
-bool thrashSelectDisplay(win32::WinApplication* app, x86::CPU& cpu)
-{
-    return runInit(app, cpu, "THRASH_selectdisplay", 0xa83f10, selectDisplayNative);
-}
-
-bool thrashSetVideoMode(win32::WinApplication* app, x86::CPU& cpu)
-{
-    return runInit(app, cpu, "THRASH_setvideomode", 0xa843d0, setVideoModeNative);
-}
-
-bool thrashOpenMode(win32::WinApplication* app, x86::CPU& cpu)
-{
-    return runInit(app, cpu, "THRASH_openmode", 0xa84180, openModeNative);
-}
-
-bool thrashWindowThread(win32::WinApplication* app, x86::CPU& cpu)
-{
-    return runInit(app, cpu, "THRASH_windowthread", 0xa84360, windowThreadNative);
-}
-
-bool thrashRestore(win32::WinApplication* app, x86::CPU& cpu)
-{
-    return runInit(app, cpu, "THRASH_restore", 0xa84100, restoreNative);
-}
+/* sub_a84360, which THRASH_setvideomode hands the game to run on its window's
+ * thread, message 0x465. */
+void THRASH_modemessage(win32::WinApplication* app, x86::CPU& cpu) { windowThreadNative(app, cpu); }
 
 }

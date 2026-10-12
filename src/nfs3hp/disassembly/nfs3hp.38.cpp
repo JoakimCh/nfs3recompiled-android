@@ -1271,7 +1271,7 @@ L_0x004f3c8b:
     app->getMemory<x86::reg32>(x86::reg32(5579160) /* 0x552198 */) = cpu.esi;
     // 004f3cb1  e85ad3f0ff             -call 0x401010
     cpu.esp -= 4;
-    sub_401010(app, cpu.sync());
+    nfs3hp::Error(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004f3cb6  83c404                 -add esp, 4
@@ -1497,7 +1497,7 @@ L_0x004f3d66:
     cpu.esp -= 4;
     // 004f3d8f  e87cd2f0ff             -call 0x401010
     cpu.esp -= 4;
-    sub_401010(app, cpu.sync());
+    nfs3hp::Error(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004f3d94  83c408                 +add esp, 8
@@ -2281,7 +2281,7 @@ L_0x004f3f85:
     app->getMemory<x86::reg32>(x86::reg32(5579160) /* 0x552198 */) = cpu.eax;
     // 004f3faa  e861d0f0ff             -call 0x401010
     cpu.esp -= 4;
-    sub_401010(app, cpu.sync());
+    nfs3hp::Error(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004f3faf  83c404                 +add esp, 4
@@ -2470,7 +2470,7 @@ L_0x004f4019:
     app->getMemory<x86::reg32>(x86::reg32(5579160) /* 0x552198 */) = cpu.edx;
     // 004f4043  e8c8cff0ff             -call 0x401010
     cpu.esp -= 4;
-    sub_401010(app, cpu.sync());
+    nfs3hp::Error(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004f4048  83c408                 -add esp, 8
@@ -2501,7 +2501,7 @@ L_0x004f404b:
     app->getMemory<x86::reg32>(x86::reg32(5579160) /* 0x552198 */) = cpu.edx;
     // 004f4074  e897cff0ff             -call 0x401010
     cpu.esp -= 4;
-    sub_401010(app, cpu.sync());
+    nfs3hp::Error(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004f4079  83c404                 -add esp, 4
@@ -2860,7 +2860,7 @@ L_0x004f41b3:
     app->getMemory<x86::reg32>(x86::reg32(5579160) /* 0x552198 */) = cpu.ebx;
     // 004f41d9  e832cef0ff             -call 0x401010
     cpu.esp -= 4;
-    sub_401010(app, cpu.sync());
+    nfs3hp::Error(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004f41de  83c404                 +add esp, 4
@@ -2911,7 +2911,7 @@ L_0x004f41e6:
     app->getMemory<x86::reg32>(x86::reg32(5579160) /* 0x552198 */) = cpu.eax;
     // 004f4213  e8f8cdf0ff             -call 0x401010
     cpu.esp -= 4;
-    sub_401010(app, cpu.sync());
+    nfs3hp::Error(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004f4218  83c404                 -add esp, 4
@@ -3645,7 +3645,7 @@ L_0x004f447f:
     cpu.edx ^= x86::reg32(x86::sreg32(cpu.edx));
     // 004f4497  e8a4c1feff             -call 0x4e0640
     cpu.esp -= 4;
-    sub_4e0640(app, cpu.sync());
+    nfs3hp::watcom::memset(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004f449c  bb04000000             -mov ebx, 4
@@ -3656,7 +3656,7 @@ L_0x004f447f:
     cpu.edx ^= x86::reg32(x86::sreg32(cpu.edx));
     // 004f44a6  e895c1feff             -call 0x4e0640
     cpu.esp -= 4;
-    sub_4e0640(app, cpu.sync());
+    nfs3hp::watcom::memset(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004f44ab  bb0c000000             -mov ebx, 0xc
@@ -3667,7 +3667,7 @@ L_0x004f447f:
     cpu.edx ^= x86::reg32(x86::sreg32(cpu.edx));
     // 004f44b5  e886c1feff             -call 0x4e0640
     cpu.esp -= 4;
-    sub_4e0640(app, cpu.sync());
+    nfs3hp::watcom::memset(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004f44ba  bb0c000000             -mov ebx, 0xc
@@ -3678,7 +3678,7 @@ L_0x004f447f:
     cpu.edx ^= x86::reg32(x86::sreg32(cpu.edx));
     // 004f44c4  e877c1feff             -call 0x4e0640
     cpu.esp -= 4;
-    sub_4e0640(app, cpu.sync());
+    nfs3hp::watcom::memset(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004f44c9  31c0                   -xor eax, eax
@@ -5208,7 +5208,7 @@ L_0x004f4873:
     cpu.esp -= 4;
     // 004f48d5  e836c7f0ff             -call 0x401010
     cpu.esp -= 4;
-    sub_401010(app, cpu.sync());
+    nfs3hp::Error(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004f48da  83c418                 -add esp, 0x18
@@ -5483,7 +5483,7 @@ L_0x004f4938:
     cpu.esp -= 4;
     // 004f498d  e87ec6f0ff             -call 0x401010
     cpu.esp -= 4;
-    sub_401010(app, cpu.sync());
+    nfs3hp::Error(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004f4992  83c420                 -add esp, 0x20
@@ -5552,7 +5552,7 @@ L_0x004f49a1:
     cpu.esp -= 4;
     // 004f49d7  e834c6f0ff             -call 0x401010
     cpu.esp -= 4;
-    sub_401010(app, cpu.sync());
+    nfs3hp::Error(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004f49dc  83c420                 -add esp, 0x20
@@ -5631,7 +5631,7 @@ L_0x004f49e7:
     cpu.esp -= 4;
     // 004f4a24  e8e7c5f0ff             -call 0x401010
     cpu.esp -= 4;
-    sub_401010(app, cpu.sync());
+    nfs3hp::Error(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004f4a29  83c424                 -add esp, 0x24
@@ -5694,7 +5694,7 @@ L_0x004f4a34:
     cpu.esp -= 4;
     // 004f4a6a  e8a1c5f0ff             -call 0x401010
     cpu.esp -= 4;
-    sub_401010(app, cpu.sync());
+    nfs3hp::Error(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004f4a6f  83c424                 -add esp, 0x24
@@ -8396,7 +8396,7 @@ L_0x004f52d1:
     app->getMemory<x86::reg32>(x86::reg32(5579160) /* 0x552198 */) = cpu.eax;
     // 004f52ff  e80cbdf0ff             -call 0x401010
     cpu.esp -= 4;
-    sub_401010(app, cpu.sync());
+    nfs3hp::Error(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004f5304  83c408                 +add esp, 8
@@ -10686,7 +10686,7 @@ void Application::sub_4f5a30(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.eax = cpu.esi;
     // 004f5a46  e84559ffff             -call 0x4eb390
     cpu.esp -= 4;
-    sub_4eb390(app, cpu.sync());
+    nfs3hp::watcom::strncmp(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004f5a4b  85c0                   +test eax, eax

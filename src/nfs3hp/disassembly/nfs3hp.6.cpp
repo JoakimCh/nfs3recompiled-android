@@ -3,6 +3,92 @@
 
 namespace nfs3hp
 {
+// Port (tools/apply_native_frontend.py): defined in native_frontend_cars.cpp.
+bool tuningOnExit(win32::WinApplication* app, x86::CPU& cpu);
+// Port (tools/apply_native_frontend.py): defined in native_frontend_cars.cpp.
+bool tuningOnEnter(win32::WinApplication* app, x86::CPU& cpu);
+// Port (tools/apply_native_frontend.py): defined in native_frontend_cars.cpp.
+bool tuningPrepare(win32::WinApplication* app, x86::CPU& cpu);
+// Port (tools/apply_native_frontend.py): defined in native_frontend_cars.cpp.
+bool tuningFitButtons(win32::WinApplication* app, x86::CPU& cpu);
+// Port (tools/apply_native_frontend.py): defined in native_frontend_cars.cpp.
+bool tuningBindDoneCancel(win32::WinApplication* app, x86::CPU& cpu);
+// Port (tools/apply_native_frontend.py): defined in native_frontend_cars.cpp.
+bool tuningDefaultsKey(win32::WinApplication* app, x86::CPU& cpu);
+// Port (tools/apply_native_frontend.py): defined in native_frontend_cars.cpp.
+bool tuningCarListKey(win32::WinApplication* app, x86::CPU& cpu);
+// Port (tools/apply_native_frontend.py): defined in native_frontend_cars.cpp.
+bool tuningCancelKey(win32::WinApplication* app, x86::CPU& cpu);
+// Port (tools/apply_native_frontend.py): defined in native_frontend_cars.cpp.
+bool tuningDoneKey(win32::WinApplication* app, x86::CPU& cpu);
+// Port (tools/apply_native_frontend.py): defined in native_frontend_cars.cpp.
+bool tuningDefaultsAnswered(win32::WinApplication* app, x86::CPU& cpu);
+// Port (tools/apply_native_frontend.py): defined in native_frontend_cars.cpp.
+bool tuningLoadAdvanced(win32::WinApplication* app, x86::CPU& cpu);
+// Port (tools/apply_native_frontend.py): defined in native_frontend_cars.cpp.
+bool tuningBindSliders(win32::WinApplication* app, x86::CPU& cpu);
+// Port (tools/apply_native_frontend.py): defined in native_frontend_cars.cpp.
+bool tuningSlidersMoved(win32::WinApplication* app, x86::CPU& cpu);
+// Port (tools/apply_native_frontend.py): defined in native_frontend_cars.cpp.
+bool tuningRememberSliders(win32::WinApplication* app, x86::CPU& cpu);
+// Port (tools/apply_native_frontend.py): defined in native_frontend_cars.cpp.
+bool tuningSetSliders(win32::WinApplication* app, x86::CPU& cpu);
+// Port (tools/apply_native_frontend.py): defined in native_frontend_cars.cpp.
+bool tuningTiresMoved(win32::WinApplication* app, x86::CPU& cpu);
+// Port (tools/apply_native_frontend.py): defined in native_frontend_cars.cpp.
+bool tuningAeroMoved(win32::WinApplication* app, x86::CPU& cpu);
+// Port (tools/apply_native_frontend.py): defined in native_frontend_cars.cpp.
+bool tuningSuspensionMoved(win32::WinApplication* app, x86::CPU& cpu);
+// Port (tools/apply_native_frontend.py): defined in native_frontend_cars.cpp.
+bool tuningGearsMoved(win32::WinApplication* app, x86::CPU& cpu);
+// Port (tools/apply_native_frontend.py): defined in native_frontend_cars.cpp.
+bool tuningSteeringMoved(win32::WinApplication* app, x86::CPU& cpu);
+// Port (tools/apply_native_frontend.py): defined in native_frontend_cars.cpp.
+bool tuningBrakesMoved(win32::WinApplication* app, x86::CPU& cpu);
+// Port (tools/apply_native_frontend.py): defined in native_frontend_cars.cpp.
+bool tuningEngineMoved(win32::WinApplication* app, x86::CPU& cpu);
+// Port (tools/apply_native_frontend.py): defined in native_frontend_cars.cpp.
+bool tuningSave(win32::WinApplication* app, x86::CPU& cpu);
+// Port (tools/apply_native_frontend.py): defined in native_frontend_cars.cpp.
+bool tuningLoad(win32::WinApplication* app, x86::CPU& cpu);
+// Port (tools/apply_native_frontend.py): defined in native_frontend_cars.cpp.
+bool opponentOnFrame(win32::WinApplication* app, x86::CPU& cpu);
+// Port (tools/apply_native_frontend.py): defined in native_frontend_cars.cpp.
+bool opponentOnExit(win32::WinApplication* app, x86::CPU& cpu);
+// Port (tools/apply_native_frontend.py): defined in native_frontend_cars.cpp.
+bool opponentOnEnter(win32::WinApplication* app, x86::CPU& cpu);
+// Port (tools/apply_native_frontend.py): defined in native_frontend_cars.cpp.
+bool opponentFitArt(win32::WinApplication* app, x86::CPU& cpu);
+// Port (tools/apply_native_frontend.py): defined in native_frontend_cars.cpp.
+bool opponentFitCar(win32::WinApplication* app, x86::CPU& cpu);
+// Port (tools/apply_native_frontend.py): defined in native_frontend_cars.cpp.
+bool car2ColourClicked(win32::WinApplication* app, x86::CPU& cpu);
+// Port (tools/apply_native_frontend.py): defined in native_frontend_cars.cpp.
+bool car1ColourClicked(win32::WinApplication* app, x86::CPU& cpu);
+// Port (tools/apply_native_frontend.py): defined in native_frontend_cars.cpp.
+bool car2EditClicked(win32::WinApplication* app, x86::CPU& cpu);
+// Port (tools/apply_native_frontend.py): defined in native_frontend_cars.cpp.
+bool car1EditClicked(win32::WinApplication* app, x86::CPU& cpu);
+// Port (tools/apply_native_frontend.py): defined in native_frontend_cars.cpp.
+bool car2OnExit(win32::WinApplication* app, x86::CPU& cpu);
+// Port (tools/apply_native_frontend.py): defined in native_frontend_cars.cpp.
+bool car1OnExit(win32::WinApplication* app, x86::CPU& cpu);
+// Port (tools/apply_native_frontend.py): defined in native_frontend_cars.cpp.
+bool car2OnFrame(win32::WinApplication* app, x86::CPU& cpu);
+// Port (tools/apply_native_frontend.py): defined in native_frontend_cars.cpp.
+bool car1OnFrame(win32::WinApplication* app, x86::CPU& cpu);
+// Port (tools/apply_native_frontend.py): defined in native_frontend_cars.cpp.
+bool car2OnEnter(win32::WinApplication* app, x86::CPU& cpu);
+// Port (tools/apply_native_frontend.py): defined in native_frontend_cars.cpp.
+bool car1OnEnter(win32::WinApplication* app, x86::CPU& cpu);
+// Port (tools/apply_native_frontend.py): defined in native_frontend_cars.cpp.
+bool trackRecord(win32::WinApplication* app, x86::CPU& cpu);
+// Port (tools/apply_native_frontend.py): defined in native_frontend_cars.cpp.
+bool carRecord(win32::WinApplication* app, x86::CPU& cpu);
+// Port (tools/apply_native_frontend.py): defined in native_frontend_cars.cpp.
+bool trackSaveFrame(win32::WinApplication* app, x86::CPU& cpu);
+// Port (tools/apply_native_frontend.py): defined in native_frontend_cars.cpp.
+bool carSaveFrame(win32::WinApplication* app, x86::CPU& cpu);
 // Port (tools/apply_text_entry.py): defined in nfs3hp_main.cpp.
 void textEntry(bool taking);
 
@@ -1556,6 +1642,11 @@ void Application::sub_4267a0(WinApplication* __restrict app, x86::CPU& cpu_)
   x86::Local cpu(cpu_);
   NFS2_USE(cpu);
   NFS2_USE(app);
+    if (carSaveFrame(app, cpu.sync())) /* port: native (tools/apply_native_frontend.py) */
+    {
+        cpu.reload();
+        return;
+    }
     // 004267a0  53                     -push ebx
     app->getMemory<x86::reg32>(cpu.esp-4) = cpu.ebx;
     cpu.esp -= 4;
@@ -1631,6 +1722,11 @@ void Application::sub_4267f0(WinApplication* __restrict app, x86::CPU& cpu_)
   x86::Local cpu(cpu_);
   NFS2_USE(cpu);
   NFS2_USE(app);
+    if (trackSaveFrame(app, cpu.sync())) /* port: native (tools/apply_native_frontend.py) */
+    {
+        cpu.reload();
+        return;
+    }
     // 004267f0  53                     -push ebx
     app->getMemory<x86::reg32>(cpu.esp-4) = cpu.ebx;
     cpu.esp -= 4;
@@ -1706,6 +1802,11 @@ void Application::sub_426870(WinApplication* __restrict app, x86::CPU& cpu_)
   x86::Local cpu(cpu_);
   NFS2_USE(cpu);
   NFS2_USE(app);
+    if (carRecord(app, cpu.sync())) /* port: native (tools/apply_native_frontend.py) */
+    {
+        cpu.reload();
+        return;
+    }
   goto start;
 dynamic_jump:
   switch(cpu.ip)
@@ -1844,7 +1945,7 @@ start:
     cpu.eax = x86::reg32(cpu.ebp + x86::reg32(-308) /* -0x134 */);
     // 0042690f  e8bc480c00             -call 0x4eb1d0
     cpu.esp -= 4;
-    sub_4eb1d0(app, cpu.sync());
+    nfs3hp::watcom::mkdir(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00426914  89ec                   -mov esp, ebp
@@ -2305,6 +2406,11 @@ void Application::sub_426b00(WinApplication* __restrict app, x86::CPU& cpu_)
   x86::Local cpu(cpu_);
   NFS2_USE(cpu);
   NFS2_USE(app);
+    if (trackRecord(app, cpu.sync())) /* port: native (tools/apply_native_frontend.py) */
+    {
+        cpu.reload();
+        return;
+    }
     // 00426b00  53                     -push ebx
     app->getMemory<x86::reg32>(cpu.esp-4) = cpu.ebx;
     cpu.esp -= 4;
@@ -2485,7 +2591,7 @@ L_0x00426b5f:
     cpu.eax = x86::reg32(cpu.ebp + x86::reg32(-308) /* -0x134 */);
     // 00426ba5  e826460c00             -call 0x4eb1d0
     cpu.esp -= 4;
-    sub_4eb1d0(app, cpu.sync());
+    nfs3hp::watcom::mkdir(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00426baa  89ec                   -mov esp, ebp
@@ -2603,6 +2709,11 @@ void Application::sub_426c20(WinApplication* __restrict app, x86::CPU& cpu_)
   x86::Local cpu(cpu_);
   NFS2_USE(cpu);
   NFS2_USE(app);
+    if (car1EditClicked(app, cpu.sync())) /* port: native (tools/apply_native_frontend.py) */
+    {
+        cpu.reload();
+        return;
+    }
     // 00426c20  52                     -push edx
     app->getMemory<x86::reg32>(cpu.esp-4) = cpu.edx;
     cpu.esp -= 4;
@@ -2634,6 +2745,11 @@ void Application::sub_426c40(WinApplication* __restrict app, x86::CPU& cpu_)
   x86::Local cpu(cpu_);
   NFS2_USE(cpu);
   NFS2_USE(app);
+    if (car2EditClicked(app, cpu.sync())) /* port: native (tools/apply_native_frontend.py) */
+    {
+        cpu.reload();
+        return;
+    }
     // 00426c40  52                     -push edx
     app->getMemory<x86::reg32>(cpu.esp-4) = cpu.edx;
     cpu.esp -= 4;
@@ -2665,6 +2781,11 @@ void Application::sub_426c60(WinApplication* __restrict app, x86::CPU& cpu_)
   x86::Local cpu(cpu_);
   NFS2_USE(cpu);
   NFS2_USE(app);
+    if (car1ColourClicked(app, cpu.sync())) /* port: native (tools/apply_native_frontend.py) */
+    {
+        cpu.reload();
+        return;
+    }
     // 00426c60  53                     -push ebx
     app->getMemory<x86::reg32>(cpu.esp-4) = cpu.ebx;
     cpu.esp -= 4;
@@ -2813,6 +2934,11 @@ void Application::sub_426ce0(WinApplication* __restrict app, x86::CPU& cpu_)
   x86::Local cpu(cpu_);
   NFS2_USE(cpu);
   NFS2_USE(app);
+    if (car2ColourClicked(app, cpu.sync())) /* port: native (tools/apply_native_frontend.py) */
+    {
+        cpu.reload();
+        return;
+    }
     // 00426ce0  53                     -push ebx
     app->getMemory<x86::reg32>(cpu.esp-4) = cpu.ebx;
     cpu.esp -= 4;
@@ -2961,6 +3087,11 @@ void Application::sub_426d60(WinApplication* __restrict app, x86::CPU& cpu_)
   x86::Local cpu(cpu_);
   NFS2_USE(cpu);
   NFS2_USE(app);
+    if (car1OnEnter(app, cpu.sync())) /* port: native (tools/apply_native_frontend.py) */
+    {
+        cpu.reload();
+        return;
+    }
     // 00426d60  51                     -push ecx
     app->getMemory<x86::reg32>(cpu.esp-4) = cpu.ecx;
     cpu.esp -= 4;
@@ -3197,6 +3328,11 @@ void Application::sub_426e20(WinApplication* __restrict app, x86::CPU& cpu_)
   x86::Local cpu(cpu_);
   NFS2_USE(cpu);
   NFS2_USE(app);
+    if (car1OnFrame(app, cpu.sync())) /* port: native (tools/apply_native_frontend.py) */
+    {
+        cpu.reload();
+        return;
+    }
     // 00426e20  53                     -push ebx
     app->getMemory<x86::reg32>(cpu.esp-4) = cpu.ebx;
     cpu.esp -= 4;
@@ -3423,6 +3559,10 @@ void Application::sub_426ee0(WinApplication* app, x86::CPU& cpu)
 {
   NFS2_USE(cpu);
   NFS2_USE(app);
+    if (car1OnExit(app, cpu)) /* port: native (tools/apply_native_frontend.py) */
+    {
+        return;
+    }
     // 00426ee0  55                     -push ebp
     app->getMemory<x86::reg32>(cpu.esp-4) = cpu.ebp;
     cpu.esp -= 4;
@@ -3444,6 +3584,11 @@ void Application::sub_426ef0(WinApplication* __restrict app, x86::CPU& cpu_)
   x86::Local cpu(cpu_);
   NFS2_USE(cpu);
   NFS2_USE(app);
+    if (car2OnEnter(app, cpu.sync())) /* port: native (tools/apply_native_frontend.py) */
+    {
+        cpu.reload();
+        return;
+    }
     // 00426ef0  51                     -push ecx
     app->getMemory<x86::reg32>(cpu.esp-4) = cpu.ecx;
     cpu.esp -= 4;
@@ -3632,6 +3777,11 @@ void Application::sub_426f80(WinApplication* __restrict app, x86::CPU& cpu_)
   x86::Local cpu(cpu_);
   NFS2_USE(cpu);
   NFS2_USE(app);
+    if (car2OnFrame(app, cpu.sync())) /* port: native (tools/apply_native_frontend.py) */
+    {
+        cpu.reload();
+        return;
+    }
     // 00426f80  53                     -push ebx
     app->getMemory<x86::reg32>(cpu.esp-4) = cpu.ebx;
     cpu.esp -= 4;
@@ -3858,6 +4008,10 @@ void Application::sub_427040(WinApplication* app, x86::CPU& cpu)
 {
   NFS2_USE(cpu);
   NFS2_USE(app);
+    if (car2OnExit(app, cpu)) /* port: native (tools/apply_native_frontend.py) */
+    {
+        return;
+    }
     // 00427040  55                     -push ebp
     app->getMemory<x86::reg32>(cpu.esp-4) = cpu.ebp;
     cpu.esp -= 4;
@@ -3879,6 +4033,11 @@ void Application::sub_427050(WinApplication* __restrict app, x86::CPU& cpu_)
   x86::Local cpu(cpu_);
   NFS2_USE(cpu);
   NFS2_USE(app);
+    if (opponentFitCar(app, cpu.sync())) /* port: native (tools/apply_native_frontend.py) */
+    {
+        cpu.reload();
+        return;
+    }
     // 00427050  53                     -push ebx
     app->getMemory<x86::reg32>(cpu.esp-4) = cpu.ebx;
     cpu.esp -= 4;
@@ -4037,6 +4196,11 @@ void Application::sub_4270c0(WinApplication* __restrict app, x86::CPU& cpu_)
   x86::Local cpu(cpu_);
   NFS2_USE(cpu);
   NFS2_USE(app);
+    if (opponentFitArt(app, cpu.sync())) /* port: native (tools/apply_native_frontend.py) */
+    {
+        cpu.reload();
+        return;
+    }
     // 004270c0  53                     -push ebx
     app->getMemory<x86::reg32>(cpu.esp-4) = cpu.ebx;
     cpu.esp -= 4;
@@ -4207,6 +4371,11 @@ void Application::sub_427190(WinApplication* __restrict app, x86::CPU& cpu_)
   x86::Local cpu(cpu_);
   NFS2_USE(cpu);
   NFS2_USE(app);
+    if (opponentOnFrame(app, cpu.sync())) /* port: native (tools/apply_native_frontend.py) */
+    {
+        cpu.reload();
+        return;
+    }
     // 00427190  53                     -push ebx
     app->getMemory<x86::reg32>(cpu.esp-4) = cpu.ebx;
     cpu.esp -= 4;
@@ -4555,6 +4724,11 @@ void Application::sub_4272a0(WinApplication* __restrict app, x86::CPU& cpu_)
   x86::Local cpu(cpu_);
   NFS2_USE(cpu);
   NFS2_USE(app);
+    if (opponentOnEnter(app, cpu.sync())) /* port: native (tools/apply_native_frontend.py) */
+    {
+        cpu.reload();
+        return;
+    }
     // 004272a0  51                     -push ecx
     app->getMemory<x86::reg32>(cpu.esp-4) = cpu.ecx;
     cpu.esp -= 4;
@@ -4645,6 +4819,10 @@ void Application::sub_4272e0(WinApplication* app, x86::CPU& cpu)
 {
   NFS2_USE(cpu);
   NFS2_USE(app);
+    if (opponentOnExit(app, cpu)) /* port: native (tools/apply_native_frontend.py) */
+    {
+        return;
+    }
     // 004272e0  55                     -push ebp
     app->getMemory<x86::reg32>(cpu.esp-4) = cpu.ebp;
     cpu.esp -= 4;
@@ -4666,6 +4844,11 @@ void Application::sub_4272f0(WinApplication* __restrict app, x86::CPU& cpu_)
   x86::Local cpu(cpu_);
   NFS2_USE(cpu);
   NFS2_USE(app);
+    if (tuningLoad(app, cpu.sync())) /* port: native (tools/apply_native_frontend.py) */
+    {
+        cpu.reload();
+        return;
+    }
     // 004272f0  51                     -push ecx
     app->getMemory<x86::reg32>(cpu.esp-4) = cpu.ecx;
     cpu.esp -= 4;
@@ -4866,6 +5049,11 @@ void Application::sub_427370(WinApplication* __restrict app, x86::CPU& cpu_)
   x86::Local cpu(cpu_);
   NFS2_USE(cpu);
   NFS2_USE(app);
+    if (tuningSave(app, cpu.sync())) /* port: native (tools/apply_native_frontend.py) */
+    {
+        cpu.reload();
+        return;
+    }
     // 00427370  51                     -push ecx
     app->getMemory<x86::reg32>(cpu.esp-4) = cpu.ecx;
     cpu.esp -= 4;
@@ -5059,6 +5247,11 @@ void Application::sub_4273e0(WinApplication* __restrict app, x86::CPU& cpu_)
   x86::Local cpu(cpu_);
   NFS2_USE(cpu);
   NFS2_USE(app);
+    if (tuningEngineMoved(app, cpu.sync())) /* port: native (tools/apply_native_frontend.py) */
+    {
+        cpu.reload();
+        return;
+    }
     // 004273e0  52                     -push edx
     app->getMemory<x86::reg32>(cpu.esp-4) = cpu.edx;
     cpu.esp -= 4;
@@ -5201,6 +5394,11 @@ void Application::sub_427470(WinApplication* __restrict app, x86::CPU& cpu_)
   x86::Local cpu(cpu_);
   NFS2_USE(cpu);
   NFS2_USE(app);
+    if (tuningBrakesMoved(app, cpu.sync())) /* port: native (tools/apply_native_frontend.py) */
+    {
+        cpu.reload();
+        return;
+    }
     // 00427470  52                     -push edx
     app->getMemory<x86::reg32>(cpu.esp-4) = cpu.edx;
     cpu.esp -= 4;
@@ -5343,6 +5541,11 @@ void Application::sub_427500(WinApplication* __restrict app, x86::CPU& cpu_)
   x86::Local cpu(cpu_);
   NFS2_USE(cpu);
   NFS2_USE(app);
+    if (tuningSteeringMoved(app, cpu.sync())) /* port: native (tools/apply_native_frontend.py) */
+    {
+        cpu.reload();
+        return;
+    }
     // 00427500  52                     -push edx
     app->getMemory<x86::reg32>(cpu.esp-4) = cpu.edx;
     cpu.esp -= 4;
@@ -5485,6 +5688,11 @@ void Application::sub_427590(WinApplication* __restrict app, x86::CPU& cpu_)
   x86::Local cpu(cpu_);
   NFS2_USE(cpu);
   NFS2_USE(app);
+    if (tuningGearsMoved(app, cpu.sync())) /* port: native (tools/apply_native_frontend.py) */
+    {
+        cpu.reload();
+        return;
+    }
     // 00427590  52                     -push edx
     app->getMemory<x86::reg32>(cpu.esp-4) = cpu.edx;
     cpu.esp -= 4;
@@ -5627,6 +5835,11 @@ void Application::sub_427620(WinApplication* __restrict app, x86::CPU& cpu_)
   x86::Local cpu(cpu_);
   NFS2_USE(cpu);
   NFS2_USE(app);
+    if (tuningSuspensionMoved(app, cpu.sync())) /* port: native (tools/apply_native_frontend.py) */
+    {
+        cpu.reload();
+        return;
+    }
     // 00427620  52                     -push edx
     app->getMemory<x86::reg32>(cpu.esp-4) = cpu.edx;
     cpu.esp -= 4;
@@ -5769,6 +5982,11 @@ void Application::sub_4276b0(WinApplication* __restrict app, x86::CPU& cpu_)
   x86::Local cpu(cpu_);
   NFS2_USE(cpu);
   NFS2_USE(app);
+    if (tuningAeroMoved(app, cpu.sync())) /* port: native (tools/apply_native_frontend.py) */
+    {
+        cpu.reload();
+        return;
+    }
     // 004276b0  52                     -push edx
     app->getMemory<x86::reg32>(cpu.esp-4) = cpu.edx;
     cpu.esp -= 4;
@@ -5911,6 +6129,11 @@ void Application::sub_427740(WinApplication* __restrict app, x86::CPU& cpu_)
   x86::Local cpu(cpu_);
   NFS2_USE(cpu);
   NFS2_USE(app);
+    if (tuningTiresMoved(app, cpu.sync())) /* port: native (tools/apply_native_frontend.py) */
+    {
+        cpu.reload();
+        return;
+    }
     // 00427740  52                     -push edx
     app->getMemory<x86::reg32>(cpu.esp-4) = cpu.edx;
     cpu.esp -= 4;
@@ -6053,6 +6276,11 @@ void Application::sub_4277d0(WinApplication* __restrict app, x86::CPU& cpu_)
   x86::Local cpu(cpu_);
   NFS2_USE(cpu);
   NFS2_USE(app);
+    if (tuningSetSliders(app, cpu.sync())) /* port: native (tools/apply_native_frontend.py) */
+    {
+        cpu.reload();
+        return;
+    }
     // 004277d0  51                     -push ecx
     app->getMemory<x86::reg32>(cpu.esp-4) = cpu.ecx;
     cpu.esp -= 4;
@@ -6453,6 +6681,11 @@ void Application::sub_4279b0(WinApplication* __restrict app, x86::CPU& cpu_)
   x86::Local cpu(cpu_);
   NFS2_USE(cpu);
   NFS2_USE(app);
+    if (tuningRememberSliders(app, cpu.sync())) /* port: native (tools/apply_native_frontend.py) */
+    {
+        cpu.reload();
+        return;
+    }
     // 004279b0  51                     -push ecx
     app->getMemory<x86::reg32>(cpu.esp-4) = cpu.ecx;
     cpu.esp -= 4;
@@ -6725,6 +6958,11 @@ void Application::sub_427ac0(WinApplication* __restrict app, x86::CPU& cpu_)
   x86::Local cpu(cpu_);
   NFS2_USE(cpu);
   NFS2_USE(app);
+    if (tuningSlidersMoved(app, cpu.sync())) /* port: native (tools/apply_native_frontend.py) */
+    {
+        cpu.reload();
+        return;
+    }
     // 00427ac0  53                     -push ebx
     app->getMemory<x86::reg32>(cpu.esp-4) = cpu.ebx;
     cpu.esp -= 4;
@@ -7179,6 +7417,11 @@ void Application::sub_427c20(WinApplication* __restrict app, x86::CPU& cpu_)
   x86::Local cpu(cpu_);
   NFS2_USE(cpu);
   NFS2_USE(app);
+    if (tuningBindSliders(app, cpu.sync())) /* port: native (tools/apply_native_frontend.py) */
+    {
+        cpu.reload();
+        return;
+    }
     // 00427c20  53                     -push ebx
     app->getMemory<x86::reg32>(cpu.esp-4) = cpu.ebx;
     cpu.esp -= 4;
@@ -7409,6 +7652,11 @@ void Application::sub_427d00(WinApplication* __restrict app, x86::CPU& cpu_)
   x86::Local cpu(cpu_);
   NFS2_USE(cpu);
   NFS2_USE(app);
+    if (tuningLoadAdvanced(app, cpu.sync())) /* port: native (tools/apply_native_frontend.py) */
+    {
+        cpu.reload();
+        return;
+    }
     // 00427d00  53                     -push ebx
     textEntry(false); /* port: the name is taken */
     app->getMemory<x86::reg32>(cpu.esp-4) = cpu.ebx;
@@ -7574,6 +7822,11 @@ void Application::sub_427d80(WinApplication* __restrict app, x86::CPU& cpu_)
   x86::Local cpu(cpu_);
   NFS2_USE(cpu);
   NFS2_USE(app);
+    if (tuningDefaultsAnswered(app, cpu.sync())) /* port: native (tools/apply_native_frontend.py) */
+    {
+        cpu.reload();
+        return;
+    }
     // 00427d80  51                     -push ecx
     app->getMemory<x86::reg32>(cpu.esp-4) = cpu.ecx;
     cpu.esp -= 4;
@@ -7690,6 +7943,11 @@ void Application::sub_427e10(WinApplication* __restrict app, x86::CPU& cpu_)
   x86::Local cpu(cpu_);
   NFS2_USE(cpu);
   NFS2_USE(app);
+    if (tuningDoneKey(app, cpu.sync())) /* port: native (tools/apply_native_frontend.py) */
+    {
+        cpu.reload();
+        return;
+    }
     // 00427e10  51                     -push ecx
     app->getMemory<x86::reg32>(cpu.esp-4) = cpu.ecx;
     cpu.esp -= 4;
@@ -7872,6 +8130,11 @@ void Application::sub_427ea0(WinApplication* __restrict app, x86::CPU& cpu_)
   x86::Local cpu(cpu_);
   NFS2_USE(cpu);
   NFS2_USE(app);
+    if (tuningCancelKey(app, cpu.sync())) /* port: native (tools/apply_native_frontend.py) */
+    {
+        cpu.reload();
+        return;
+    }
     // 00427ea0  51                     -push ecx
     textEntry(false); /* port: the name is let go */
     app->getMemory<x86::reg32>(cpu.esp-4) = cpu.ecx;
@@ -8050,6 +8313,11 @@ void Application::sub_427f40(WinApplication* __restrict app, x86::CPU& cpu_)
   x86::Local cpu(cpu_);
   NFS2_USE(cpu);
   NFS2_USE(app);
+    if (tuningCarListKey(app, cpu.sync())) /* port: native (tools/apply_native_frontend.py) */
+    {
+        cpu.reload();
+        return;
+    }
     // 00427f40  51                     -push ecx
     app->getMemory<x86::reg32>(cpu.esp-4) = cpu.ecx;
     cpu.esp -= 4;
@@ -8184,6 +8452,11 @@ void Application::sub_427fb0(WinApplication* __restrict app, x86::CPU& cpu_)
   x86::Local cpu(cpu_);
   NFS2_USE(cpu);
   NFS2_USE(app);
+    if (tuningDefaultsKey(app, cpu.sync())) /* port: native (tools/apply_native_frontend.py) */
+    {
+        cpu.reload();
+        return;
+    }
     // 00427fb0  51                     -push ecx
     app->getMemory<x86::reg32>(cpu.esp-4) = cpu.ecx;
     cpu.esp -= 4;
@@ -8300,6 +8573,11 @@ void Application::sub_428020(WinApplication* __restrict app, x86::CPU& cpu_)
   x86::Local cpu(cpu_);
   NFS2_USE(cpu);
   NFS2_USE(app);
+    if (tuningBindDoneCancel(app, cpu.sync())) /* port: native (tools/apply_native_frontend.py) */
+    {
+        cpu.reload();
+        return;
+    }
     // 00428020  53                     -push ebx
     textEntry(true); /* port: the game is waiting for a name */
     app->getMemory<x86::reg32>(cpu.esp-4) = cpu.ebx;
@@ -8381,6 +8659,11 @@ void Application::sub_428060(WinApplication* __restrict app, x86::CPU& cpu_)
   x86::Local cpu(cpu_);
   NFS2_USE(cpu);
   NFS2_USE(app);
+    if (tuningFitButtons(app, cpu.sync())) /* port: native (tools/apply_native_frontend.py) */
+    {
+        cpu.reload();
+        return;
+    }
     // 00428060  53                     -push ebx
     app->getMemory<x86::reg32>(cpu.esp-4) = cpu.ebx;
     cpu.esp -= 4;
@@ -8758,6 +9041,11 @@ void Application::sub_4281e0(WinApplication* __restrict app, x86::CPU& cpu_)
   x86::Local cpu(cpu_);
   NFS2_USE(cpu);
   NFS2_USE(app);
+    if (tuningPrepare(app, cpu.sync())) /* port: native (tools/apply_native_frontend.py) */
+    {
+        cpu.reload();
+        return;
+    }
   goto start;
 dynamic_jump:
   switch(cpu.ip)
@@ -9123,6 +9411,11 @@ void Application::sub_428360(WinApplication* __restrict app, x86::CPU& cpu_)
   x86::Local cpu(cpu_);
   NFS2_USE(cpu);
   NFS2_USE(app);
+    if (tuningOnEnter(app, cpu.sync())) /* port: native (tools/apply_native_frontend.py) */
+    {
+        cpu.reload();
+        return;
+    }
     // 00428360  53                     -push ebx
     app->getMemory<x86::reg32>(cpu.esp-4) = cpu.ebx;
     cpu.esp -= 4;
@@ -9228,6 +9521,11 @@ void Application::sub_4283b0(WinApplication* __restrict app, x86::CPU& cpu_)
   x86::Local cpu(cpu_);
   NFS2_USE(cpu);
   NFS2_USE(app);
+    if (tuningOnExit(app, cpu.sync())) /* port: native (tools/apply_native_frontend.py) */
+    {
+        cpu.reload();
+        return;
+    }
     // 004283b0  52                     -push edx
     app->getMemory<x86::reg32>(cpu.esp-4) = cpu.edx;
     cpu.esp -= 4;
@@ -13592,7 +13890,7 @@ L_0x00429640:
     }
     // 00429655  e8a21b0c00             -call 0x4eb1fc
     cpu.esp -= 4;
-    sub_4eb1fc(app, cpu.sync());
+    nfs3hp::watcom::rand(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0042965a  89c2                   -mov edx, eax
@@ -13643,7 +13941,7 @@ L_0x0042967d:
     }
     // 0042968f  e8681b0c00             -call 0x4eb1fc
     cpu.esp -= 4;
-    sub_4eb1fc(app, cpu.sync());
+    nfs3hp::watcom::rand(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00429694  89c2                   -mov edx, eax
@@ -13758,7 +14056,7 @@ void Application::sub_4296c0(WinApplication* __restrict app, x86::CPU& cpu_)
     app->getMemory<x86::reg32>(cpu.ecx + x86::reg32(2244) /* 0x8c4 */) = 998803593 /*0x3b888889*/;
     // 004296f5  e8021b0c00             -call 0x4eb1fc
     cpu.esp -= 4;
-    sub_4eb1fc(app, cpu.sync());
+    nfs3hp::watcom::rand(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004296fa  89c2                   -mov edx, eax
@@ -13780,7 +14078,7 @@ void Application::sub_4296c0(WinApplication* __restrict app, x86::CPU& cpu_)
     app->getMemory<x86::reg32>(cpu.ecx + x86::reg32(2248) /* 0x8c8 */) = cpu.edx;
     // 0042970f  e8e81a0c00             -call 0x4eb1fc
     cpu.esp -= 4;
-    sub_4eb1fc(app, cpu.sync());
+    nfs3hp::watcom::rand(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00429714  89c2                   -mov edx, eax
@@ -13823,7 +14121,7 @@ L_0x00429737:
     app->getMemory<x86::reg32>(cpu.ecx + x86::reg32(2252) /* 0x8cc */) = 998803593 /*0x3b888889*/;
     // 00429741  e8b61a0c00             -call 0x4eb1fc
     cpu.esp -= 4;
-    sub_4eb1fc(app, cpu.sync());
+    nfs3hp::watcom::rand(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00429746  89c2                   -mov edx, eax
@@ -13845,7 +14143,7 @@ L_0x00429737:
     app->getMemory<x86::reg32>(cpu.ecx + x86::reg32(2256) /* 0x8d0 */) = cpu.edx;
     // 0042975b  e89c1a0c00             -call 0x4eb1fc
     cpu.esp -= 4;
-    sub_4eb1fc(app, cpu.sync());
+    nfs3hp::watcom::rand(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00429760  89c2                   -mov edx, eax
@@ -19565,7 +19863,7 @@ L_0x0042ae9d:
     cpu.ecx = app->getMemory<x86::reg32>(x86::reg32(5584736) /* 0x553760 */ + cpu.edi * 4);
     // 0042aea7  e850030c00             -call 0x4eb1fc
     cpu.esp -= 4;
-    sub_4eb1fc(app, cpu.sync());
+    nfs3hp::watcom::rand(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0042aeac  89c2                   -mov edx, eax
@@ -19660,7 +19958,7 @@ L_0x0042af06:
 L_0x0042af1f:
     // 0042af1f  e8d8020c00             -call 0x4eb1fc
     cpu.esp -= 4;
-    sub_4eb1fc(app, cpu.sync());
+    nfs3hp::watcom::rand(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0042af24  89c2                   -mov edx, eax
@@ -19706,7 +20004,7 @@ L_0x0042af1f:
 L_0x0042af5a:
     // 0042af5a  e89d020c00             -call 0x4eb1fc
     cpu.esp -= 4;
-    sub_4eb1fc(app, cpu.sync());
+    nfs3hp::watcom::rand(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0042af5f  89c2                   -mov edx, eax
@@ -19823,7 +20121,7 @@ L_0x0042afb3:
 L_0x0042afd3:
     // 0042afd3  e824020c00             -call 0x4eb1fc
     cpu.esp -= 4;
-    sub_4eb1fc(app, cpu.sync());
+    nfs3hp::watcom::rand(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0042afd8  89c2                   -mov edx, eax
@@ -19869,7 +20167,7 @@ L_0x0042afd3:
 L_0x0042b00e:
     // 0042b00e  e8e9010c00             -call 0x4eb1fc
     cpu.esp -= 4;
-    sub_4eb1fc(app, cpu.sync());
+    nfs3hp::watcom::rand(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0042b013  89c2                   -mov edx, eax
@@ -20007,7 +20305,7 @@ L_0x0042b09a:
     }
     // 0042b0a7  e850010c00             -call 0x4eb1fc
     cpu.esp -= 4;
-    sub_4eb1fc(app, cpu.sync());
+    nfs3hp::watcom::rand(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0042b0ac  89c2                   -mov edx, eax
@@ -24569,7 +24867,7 @@ void Application::sub_42c660(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.edx ^= x86::reg32(x86::sreg32(cpu.edx));
     // 0042c671  e8ca3f0b00             -call 0x4e0640
     cpu.esp -= 4;
-    sub_4e0640(app, cpu.sync());
+    nfs3hp::watcom::memset(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0042c676  5d                     -pop ebp

@@ -2206,7 +2206,7 @@ L_0x0041ec8e:
     }
     // 0041ec9a  e8b7100c00             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0041ec9f  db5dc8                 -fistp dword ptr [ebp - 0x38]
@@ -2875,7 +2875,7 @@ L_0x0041ef3d:
     }
     // 0041ef49  e8080e0c00             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0041ef4e  db5dd0                 -fistp dword ptr [ebp - 0x30]

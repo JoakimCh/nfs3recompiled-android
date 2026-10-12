@@ -7,9 +7,23 @@ class Application(Module):
     def __init__(self, application_name, exe_path, rebase_after):
         Module.__init__(self, application_name, exe_path, rebase_after)
 
-    def write(self, thread_segments=[], skip_instructions=[], dlls=[], function_names={}):
+    def write(self, thread_segments=[], skip_instructions=[], dlls=[], function_names={}, natives={}):
+        """`natives`: the game's functions the port has natively, {address:
+        name} -- void (WinApplication*, CPU&) in the application's namespace,
+        or one inside it the name says (watcom::strcmp).
+        No code is written for them: the generated code calls the native where
+        it called the function, and the address is registered to it, for the
+        calls through pointers."""
         # The game's own arithmetic rounds as the x87 would (codegen/fpu.py).
         fpu_codegen.EXACT = True
+        entries = set(s.get_entry_point() for s in self.subroutines)
+        for address, name in natives.items():
+            if address not in entries:
+                raise RuntimeError('%s: no function at 0x%x for %s' % (self.application_name, address, name))
+            if address in function_names:
+                raise RuntimeError('%s: 0x%x is both %s and native %s' % (self.application_name, address,
+                                                                         function_names[address], name))
+        calls = self.native_calls(function_names, natives, self.application_name)
         try:
             os.makedirs('src/%s/disassembly' % (self.application_name))
         except OSError:
@@ -37,13 +51,19 @@ class Application(Module):
                         '#include <lib/memmap.h>\n'
                         '#include <map>\n'  % (APP_NAME, APP_NAME))
                 h.write('\nnamespace %s\n'
-                        '{\n\n'
-                        'class Application : public win32::WinApplication\n'
+                        '{\n\n' % (app_name))
+                if natives:
+                    h.write('/* The game\'s functions the port has natively, where their code was\n'
+                            ' * (disassemble_nfs3hp.py): the generated code calls them by name. */\n')
+                    for address, name in sorted(natives.items()):
+                        h.write(self.native_declaration(address, name))
+                    h.write('\n')
+                h.write('class Application : public win32::WinApplication\n'
                         '{\n'
                         'public:\n'
                         '    Application(const char* appName);\n'
                         '    void execute();\n'
-                        'private:\n' % (app_name))
+                        'private:\n')
                 for data, address, length, name, ro, code in self.sections:
                     if data:
                         self._dump_raw_section(name, data, length)
@@ -64,9 +84,20 @@ class Application(Module):
                     src.write('        %s::s_registry->registerSymbols(this);\n' % dll.application_name)
                 for subroutine in self.subroutines:
                     function_entry = subroutine.get_entry_point()
+                    if function_entry in natives:
+                        src.write('    registerMethod(0x%08x, {"<%s>%s", &%s});\n' % (
+                            function_entry, app_name, natives[function_entry], calls[function_entry]))
+                        continue
                     name = function_names.get(function_entry, 'sub_%x' % function_entry)
                     src.write('    registerMethod(0x%08x, {"<Application>%s", &Application::%s});\n' % (function_entry, name, name))
                 for dll in dlls:
+                    if dll.natives is not None:
+                        # no code of its own: its exports are natives, and so is
+                        # what they hand out to be called
+                        for address, function in sorted(dll.native_callbacks.items()):
+                            src.write('    registerMethod(0x%08x, {"<%s>%s", &%s::%s});\n' % (
+                                address, dll.application_name, function, dll.natives_namespace, function))
+                        continue
                     for subroutine in dll.subroutines:
                         function_entry = subroutine.get_entry_point()
                         name = function_names.get(function_entry, 'sub_%x' % function_entry)
@@ -93,79 +124,105 @@ class Application(Module):
                                   'namespace %s\n'
                                   '{\n\n' % (app_name, app_name))
                     for subroutine in self.subroutines[100*index:100*(index+1)]:
-
-                        function_start = subroutine.get_start_address()
-                        function_end = subroutine.get_end_address()
                         function_entry = subroutine.get_entry_point()
+                        if function_entry in natives:
+                            methods.write('/* sub_%x: native, %s */\n\n' % (function_entry, calls[function_entry]))
+                            continue
                         name = function_names.get(function_entry, 'sub_%x' % function_entry)
-                        fallthrough = False
-                        methods.write('/* align: skip %s */\n' % (' '.join(['0x%02x'%c for c in subroutine.skipped_blob])))
-                        if subroutine.data_blob:
-                            methods.write('/* data blob: %s */\n' % (''.join(['%02x'%c for c in subroutine.data_blob])))
-                        for jump_entry in subroutine.jump_table:
-                            methods.write('/* jump table: 0x%08x */\n' % jump_entry)
                         h.write('    static void %s(WinApplication* app, x86::CPU& cpu);\n' % name)
-                        parameters, opening = function_opening(subroutine, 'WinApplication')
-                        methods.write('void Application::%s%s\n'
-                                      '{\n'
-                                      '%s'
-                                      '  NFS2_USE(cpu);\n'
-                                      '  NFS2_USE(app);\n' % (name, parameters, opening))
-                        if subroutine.thread_unsafe:
-                            methods.write('  win32::LockContext lock(*app);\n')
-                        if subroutine.dynamic_labels:
-                            methods.write('  goto start;\n'
-                                            'dynamic_jump:\n'
-                                            '  switch(cpu.ip)\n'
-                                            '  {\n'
-                                            'start:\n')
-                        if function_entry != function_start:
-                            methods.write('    goto L_entry_0x%08x;\n' % function_entry)
-                        run = fpu_stack.Run()
-                        dynamic_addresses = set(x for _, x in subroutine.dynamic_labels)
-                        static_addresses = set(x for _, x in subroutine.static_labels)
-                        loops = loop_heads(subroutine)
-                        for instruction in subroutine.instructions:
-                            lines = self.generate(instruction, (function_start, function_end), function_names)
-                            labelled = (instruction.address in dynamic_addresses
-                                        or instruction.address in static_addresses
-                                        or (function_entry != function_start and instruction.address == function_entry))
-                            skipped = instruction.address in skip_instructions
-                            carried = (fpu_stack.ENABLED and not skipped and not fpu_stack.Run.boundary(instruction)
-                                       and fpu_stack.Run.understood(lines))
-                            if run.open and (labelled or not carried):
-                                methods.write(fpu_stack.text(run.close()))
-                            if instruction.address in dynamic_addresses:
-                                if fallthrough:
-                                    methods.write('  [[fallthrough]];\n')
-                                methods.write('  case 0x%08x:\n' % (instruction.address))
-                            if instruction.address in static_addresses:
-                                methods.write('L_0x%08x:\n' % (instruction.address))
-                            if function_entry != function_start and instruction.address == function_entry:
-                                methods.write('L_entry_0x%08x:\n' % (instruction.address))
-                            if instruction.address in thread_segments:
-                                methods.write('    app->unlockContext(cpu);\n'
-                                              '    win32::Thread::sleep(0);\n'
-                                              '    app->lockContext(cpu);\n')
-                            if instruction.address in loops:
-                                methods.write(SAFEPOINT)
-                            if carried:
-                                lines = run.transform(lines)
-                            methods.write('    // %s\n'
-                                          '    %s%s\n'  % (self._raw(subroutine.section, instruction),
-                                                           skipped and '//' or '',
-                                                           '\n    '.join(lines)))
-                            fallthrough = instruction.mnemonic not in ['jmp', 'ret']
-                        if run.open:
-                            methods.write(fpu_stack.text(run.close()))
-                        if subroutine.dynamic_labels:
-                            methods.write('  default:\n'
-                                          '    NFS2_ASSERT(false);\n'
-                                          '  }\n')
-                        methods.write('}\n\n')
+                        self.write_function(methods, subroutine, name, calls, thread_segments, skip_instructions)
                     methods.write('}\n')
                 h.write('};\n\n'
                         '}\n\n'
                         '#endif /* !%s_H_ */\n' % (APP_NAME))
         for dll in dlls:
             dll.write(self.application_name, thread_segments, function_names)
+
+    @staticmethod
+    def native_declaration(address, name):
+        """A native's declaration, in the application's namespace: one named in
+        a namespace of its own inside that, as watcom::strcmp, in that one."""
+        *namespaces, function = name.split('::')
+        declaration = 'void %s(win32::WinApplication* app, x86::CPU& cpu);' % function
+        for namespace in reversed(namespaces):
+            declaration = 'namespace %s { %s }' % (namespace, declaration)
+        return '%s  // 0x%x\n' % (declaration, address)
+
+    @staticmethod
+    def native_calls(function_names, natives, namespace):
+        """What the generated code calls each function by: its name, and a
+        native's qualified with the namespace it is in."""
+        calls = dict(function_names)
+        calls.update((address, '%s::%s' % (namespace, name)) for address, name in natives.items())
+        return calls
+
+    def write_function(self, methods, subroutine, name, function_names, thread_segments=[], skip_instructions=[]):
+        """One function's code as `name`, a member of Application, into
+        `methods`; the functions it calls by `function_names`."""
+        function_start = subroutine.get_start_address()
+        function_end = subroutine.get_end_address()
+        function_entry = subroutine.get_entry_point()
+        fallthrough = False
+        methods.write('/* align: skip %s */\n' % (' '.join(['0x%02x'%c for c in subroutine.skipped_blob])))
+        if subroutine.data_blob:
+            methods.write('/* data blob: %s */\n' % (''.join(['%02x'%c for c in subroutine.data_blob])))
+        for jump_entry in subroutine.jump_table:
+            methods.write('/* jump table: 0x%08x */\n' % jump_entry)
+        parameters, opening = function_opening(subroutine, 'WinApplication')
+        methods.write('void Application::%s%s\n'
+                      '{\n'
+                      '%s'
+                      '  NFS2_USE(cpu);\n'
+                      '  NFS2_USE(app);\n' % (name, parameters, opening))
+        if subroutine.thread_unsafe:
+            methods.write('  win32::LockContext lock(*app);\n')
+        if subroutine.dynamic_labels:
+            methods.write('  goto start;\n'
+                            'dynamic_jump:\n'
+                            '  switch(cpu.ip)\n'
+                            '  {\n'
+                            'start:\n')
+        if function_entry != function_start:
+            methods.write('    goto L_entry_0x%08x;\n' % function_entry)
+        run = fpu_stack.Run()
+        dynamic_addresses = set(x for _, x in subroutine.dynamic_labels)
+        static_addresses = set(x for _, x in subroutine.static_labels)
+        loops = loop_heads(subroutine)
+        for instruction in subroutine.instructions:
+            lines = self.generate(instruction, (function_start, function_end), function_names)
+            labelled = (instruction.address in dynamic_addresses
+                        or instruction.address in static_addresses
+                        or (function_entry != function_start and instruction.address == function_entry))
+            skipped = instruction.address in skip_instructions
+            carried = (fpu_stack.ENABLED and not skipped and not fpu_stack.Run.boundary(instruction)
+                       and fpu_stack.Run.understood(lines))
+            if run.open and (labelled or not carried):
+                methods.write(fpu_stack.text(run.close()))
+            if instruction.address in dynamic_addresses:
+                if fallthrough:
+                    methods.write('  [[fallthrough]];\n')
+                methods.write('  case 0x%08x:\n' % (instruction.address))
+            if instruction.address in static_addresses:
+                methods.write('L_0x%08x:\n' % (instruction.address))
+            if function_entry != function_start and instruction.address == function_entry:
+                methods.write('L_entry_0x%08x:\n' % (instruction.address))
+            if instruction.address in thread_segments:
+                methods.write('    app->unlockContext(cpu);\n'
+                              '    win32::Thread::sleep(0);\n'
+                              '    app->lockContext(cpu);\n')
+            if instruction.address in loops:
+                methods.write(SAFEPOINT)
+            if carried:
+                lines = run.transform(lines)
+            methods.write('    // %s\n'
+                          '    %s%s\n'  % (self._raw(subroutine.section, instruction),
+                                           skipped and '//' or '',
+                                           '\n    '.join(lines)))
+            fallthrough = instruction.mnemonic not in ['jmp', 'ret']
+        if run.open:
+            methods.write(fpu_stack.text(run.close()))
+        if subroutine.dynamic_labels:
+            methods.write('  default:\n'
+                          '    NFS2_ASSERT(false);\n'
+                          '  }\n')
+        methods.write('}\n\n')

@@ -35,6 +35,9 @@ HEADER = "// Port (tools/apply_native_frontend.py): defined in native_frontend_m
 MENUS_HEADER = "// Port (tools/apply_native_frontend.py): defined in native_frontend_menus.cpp.\n"
 LOOP_HEADER = "// Port (tools/apply_native_frontend.py): defined in native_frontend_loop.cpp.\n"
 DIALOG_HEADER = "// Port (tools/apply_native_frontend.py): defined in native_frontend_dialogs.cpp.\n"
+OPTIONS_HEADER = "// Port (tools/apply_native_frontend.py): defined in native_frontend_options.cpp.\n"
+CARS_HEADER = "// Port (tools/apply_native_frontend.py): defined in native_frontend_cars.cpp.\n"
+TRACKS_HEADER = "// Port (tools/apply_native_frontend.py): defined in native_frontend_tracks.cpp.\n"
 
 # (module, function, decompiled stand-in)
 SITES = [
@@ -180,12 +183,140 @@ DIALOG_SITES = [
     ("nfs3hp", "sub_4445d0", "dialogButtonUnderMouse"),
 ]
 
+# The options screens: options, audio, audfeed, funkeys, hardkeys, control1,
+# deadzone, force, graphics and advgrph -- their handlers, the handlers they
+# hand their items (a key, drawing, a slider's moves) and the few functions
+# only they call.
+OPTIONS_SITES = [
+    ("nfs3hp", "sub_442aa0", "optionsOnEnter"),
+    ("nfs3hp", "sub_4374b0", "feedOnEnter"),
+    ("nfs3hp", "sub_437590", "feedOnExit"),
+    ("nfs3hp", "sub_437250", "feedSeparate"),
+    ("nfs3hp", "sub_437300", "feedTimeButtonKey"),
+    ("nfs3hp", "sub_437390", "feedPositionButtonKey"),
+    ("nfs3hp", "sub_437420", "feedSpeedButtonKey"),
+    ("nfs3hp", "sub_437350", "feedTimeListKey"),
+    ("nfs3hp", "sub_4373e0", "feedPositionListKey"),
+    ("nfs3hp", "sub_437470", "feedSpeedListKey"),
+    ("nfs3hp", "sub_437600", "funkeysOnEnter"),
+    ("nfs3hp", "sub_4377c0", "funkeysOnExit"),
+    ("nfs3hp", "sub_4377d0", "hardkeysOnEnter"),
+    ("nfs3hp", "sub_437e00", "audioOnEnter"),
+    ("nfs3hp", "sub_438070", "audioOnExit"),
+    ("nfs3hp", "sub_438260", "audioOnFrame"),
+    ("nfs3hp", "sub_437a90", "audioVolumeDraw"),
+    ("nfs3hp", "sub_437990", "audioMenuMusicMoved"),
+    ("nfs3hp", "sub_4379b0", "audioRaceMusicMoved"),
+    ("nfs3hp", "sub_4379d0", "audioEffectsMoved"),
+    ("nfs3hp", "sub_437a20", "audioEngineMoved"),
+    ("nfs3hp", "sub_437a70", "audioSpeechMoved"),
+    ("nfs3hp", "sub_43d4d0", "controlsOnEnter"),
+    ("nfs3hp", "sub_43d5f0", "controlsOnExit"),
+    ("nfs3hp", "sub_43d3f0", "controlsCancelKey"),
+    ("nfs3hp", "sub_43d460", "controlsResetClicked"),
+    ("nfs3hp", "sub_43d410", "controlsResetAnswered"),
+    ("nfs3hp", "sub_43d9a0", "deadZoneFillList"),
+    ("nfs3hp", "sub_4432c0", "deadZoneOnEnter"),
+    ("nfs3hp", "sub_443430", "deadZoneOnExit"),
+    ("nfs3hp", "sub_442db0", "deadZoneCancelKey"),
+    ("nfs3hp", "sub_443260", "deadZoneChooseKey"),
+    ("nfs3hp", "sub_443290", "deadZoneChooseKeyInRace"),
+    ("nfs3hp", "sub_443070", "deadZoneShowController"),
+    ("nfs3hp", "sub_442e60", "deadZoneAxisIndex"),
+    ("nfs3hp", "sub_442dd0", "deadZoneApplyAxis"),
+    ("nfs3hp", "sub_442ef0", "deadZoneAxisMoved"),
+    ("nfs3hp", "sub_442ff0", "deadZoneAxisDraw"),
+    ("nfs3hp", "sub_447dd0", "forceOnEnter"),
+    ("nfs3hp", "sub_4481c0", "forceOnExit"),
+    ("nfs3hp", "sub_447b40", "forceCancelKey"),
+    ("nfs3hp", "sub_447b60", "forceStrengthMoved"),
+    ("nfs3hp", "sub_447c40", "forceRoadEffectsMoved"),
+    ("nfs3hp", "sub_447c70", "forceCollisionMoved"),
+    ("nfs3hp", "sub_447ca0", "forceEngineMoved"),
+    ("nfs3hp", "sub_447cd0", "forceBodyRollMoved"),
+    ("nfs3hp", "sub_447d50", "forceRoadGripMoved"),
+    ("nfs3hp", "sub_448440", "graphicsOnEnter"),
+    ("nfs3hp", "sub_4484e0", "graphicsOnExit"),
+    ("nfs3hp", "sub_448430", "graphicsOnFrame"),
+    ("nfs3hp", "sub_448610", "advancedOnEnter"),
+    ("nfs3hp", "sub_448770", "advancedOnExit"),
+    ("nfs3hp", "sub_4485a0", "advancedOnFrame"),
+    ("nfs3hp", "sub_448570", "advancedIntensityMoved"),
+]
+
+# The cars' screens: car1 and car2, opponent and cedbasic (a car's tuning),
+# with the handlers they hand their items and the few functions only they call.
+CARS_SITES = [
+    ("nfs3hp", "sub_4104b0", "carMenuMusicBack"),
+    ("nfs3hp", "sub_4267a0", "carSaveFrame"),
+    ("nfs3hp", "sub_4267f0", "trackSaveFrame"),
+    ("nfs3hp", "sub_426870", "carRecord"),
+    ("nfs3hp", "sub_426b00", "trackRecord"),
+    ("nfs3hp", "sub_426d60", "car1OnEnter"),
+    ("nfs3hp", "sub_426ef0", "car2OnEnter"),
+    ("nfs3hp", "sub_426e20", "car1OnFrame"),
+    ("nfs3hp", "sub_426f80", "car2OnFrame"),
+    ("nfs3hp", "sub_426ee0", "car1OnExit"),
+    ("nfs3hp", "sub_427040", "car2OnExit"),
+    ("nfs3hp", "sub_426c20", "car1EditClicked"),
+    ("nfs3hp", "sub_426c40", "car2EditClicked"),
+    ("nfs3hp", "sub_426c60", "car1ColourClicked"),
+    ("nfs3hp", "sub_426ce0", "car2ColourClicked"),
+    ("nfs3hp", "sub_427050", "opponentFitCar"),
+    ("nfs3hp", "sub_4270c0", "opponentFitArt"),
+    ("nfs3hp", "sub_4272a0", "opponentOnEnter"),
+    ("nfs3hp", "sub_4272e0", "opponentOnExit"),
+    ("nfs3hp", "sub_427190", "opponentOnFrame"),
+    ("nfs3hp", "sub_4272f0", "tuningLoad"),
+    ("nfs3hp", "sub_427370", "tuningSave"),
+    ("nfs3hp", "sub_4273e0", "tuningEngineMoved"),
+    ("nfs3hp", "sub_427470", "tuningBrakesMoved"),
+    ("nfs3hp", "sub_427500", "tuningSteeringMoved"),
+    ("nfs3hp", "sub_427590", "tuningGearsMoved"),
+    ("nfs3hp", "sub_427620", "tuningSuspensionMoved"),
+    ("nfs3hp", "sub_4276b0", "tuningAeroMoved"),
+    ("nfs3hp", "sub_427740", "tuningTiresMoved"),
+    ("nfs3hp", "sub_4277d0", "tuningSetSliders"),
+    ("nfs3hp", "sub_4279b0", "tuningRememberSliders"),
+    ("nfs3hp", "sub_427ac0", "tuningSlidersMoved"),
+    ("nfs3hp", "sub_427c20", "tuningBindSliders"),
+    ("nfs3hp", "sub_427d00", "tuningLoadAdvanced"),
+    ("nfs3hp", "sub_427d80", "tuningDefaultsAnswered"),
+    ("nfs3hp", "sub_427e10", "tuningDoneKey"),
+    ("nfs3hp", "sub_427ea0", "tuningCancelKey"),
+    ("nfs3hp", "sub_427f40", "tuningCarListKey"),
+    ("nfs3hp", "sub_427fb0", "tuningDefaultsKey"),
+    ("nfs3hp", "sub_428020", "tuningBindDoneCancel"),
+    ("nfs3hp", "sub_428060", "tuningFitButtons"),
+    ("nfs3hp", "sub_4281e0", "tuningPrepare"),
+    ("nfs3hp", "sub_428360", "tuningOnEnter"),
+    ("nfs3hp", "sub_4283b0", "tuningOnExit"),
+    ("nfs3hp", "sub_4dcaf0", "tuningAdvancedDiffers"),
+    ("nfs3hp", "sub_4dcb60", "tuningCopyAdvanced"),
+]
+
+# The track's: location and trkinfo.
+TRACKS_SITES = [
+    ("nfs3hp", "sub_4487e0", "locationOnEnter"),
+    ("nfs3hp", "sub_4487d0", "locationOnFrame"),
+    ("nfs3hp", "sub_4489e0", "locationOnExit"),
+    ("nfs3hp", "sub_456200", "infoPlaceTrackPlaces"),
+    ("nfs3hp", "sub_4568d0", "infoOnEnter"),
+    ("nfs3hp", "sub_456890", "infoOnFrame"),
+    ("nfs3hp", "sub_456990", "infoOnExit"),
+    ("nfs3hp", "sub_4c94e0", "infoSpeak"),
+    ("nfs3hp", "sub_4c9590", "infoStopSpeaking"),
+]
+
 
 def apply(root):
     apply_sites(root, SITES, HEADER, "tools/apply_native_frontend.py")
     apply_sites(root, MENUS_SITES, MENUS_HEADER, "tools/apply_native_frontend.py")
     apply_sites(root, LOOP_SITES, LOOP_HEADER, "tools/apply_native_frontend.py")
     apply_sites(root, DIALOG_SITES, DIALOG_HEADER, "tools/apply_native_frontend.py")
+    apply_sites(root, OPTIONS_SITES, OPTIONS_HEADER, "tools/apply_native_frontend.py")
+    apply_sites(root, CARS_SITES, CARS_HEADER, "tools/apply_native_frontend.py")
+    apply_sites(root, TRACKS_SITES, TRACKS_HEADER, "tools/apply_native_frontend.py")
 
 
 if __name__ == "__main__":

@@ -92,11 +92,6 @@ void traceTriangles(std::vector<GrVertex>* trace);
 /* Whether a trace is being taken: a check nested in another must not take it over. */
 bool tracingTriangles();
 
-/* NFS_NATIVE_CHECK: while set, every Glide state call either path makes is
- * appended here: its offset in voodoo2a's table of Glide functions (0x60
- * grColorCombine, ...), its arguments, then 0xffffffff. */
-void traceCalls(std::vector<x86::reg32>* trace);
-
 /* Glide's state calls for a native stand-in (native_thrash.cpp), made straight
  * rather than through a guest call: the same functions voodoo2a reaches
  * through its table. */

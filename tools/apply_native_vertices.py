@@ -14,7 +14,8 @@ With those native, the next profile of the same race (2026-09-25) had the
 track's polygon loop (sub_41ae90) and a car's chrome, lighting and polygon
 culling (sub_49db70, sub_49da30, sub_49dbf0) at the top; they went native the
 same way, and so did the renderer DLL's triangle (voodoo2a's THRASH_drawtri),
-which hands each of the cars' triangles to Glide.
+which hands each of the cars' triangles to Glide -- native_thrash.cpp's now,
+voodoo2a having no generated code.
 """
 from pathlib import Path
 
@@ -34,8 +35,6 @@ SITES = [
     ("nfs3hp", "sub_49dbf0", "cullPolygons"),
     # The track's polygons, culled and handed to the drawing: a thirteenth.
     ("nfs3hp", "sub_41ae90", "trackPolygons"),
-    # THRASH_drawtri: a triangle of the game's vertices to Glide.
-    ("voodoo2a", "sub_a85770", "thrashDrawTri"),
     # The frame's polygons to THRASH_drawtri, all of them: a thirteenth.
     ("nfs3hp", "sub_434380", "submitPolygons"),
     # The clipper: a triangle off the screen cut to it and drawn as a fan --
@@ -73,11 +72,11 @@ SITES = [
     ("nfs3hp", "sub_433bb0", "quadList"),
     ("nfs3hp", "sub_4c7790", "depthBuckets"),
     ("nfs3hp", "sub_4c7610", "sortedBuckets"),
-    # Small helpers called from hundreds of places: truncation to an
-    # integer, a dot product and a normalisation on the x87 stack, the
-    # nearest track block, the transparent buckets gathered, an object's
-    # coloured vertices, and Watcom's memset at its three entries.
-    ("nfs3hp", "sub_4dfd56", "truncateTop"),
+    # Small helpers called from hundreds of places: a dot product and a
+    # normalisation on the x87 stack, the nearest track block, the
+    # transparent buckets gathered, an object's coloured vertices, and the
+    # fills at their three entries.  (The truncation to an integer before a
+    # fistp is Watcom's __CHP, native in src/nfs3hp/native_watcom.cpp.)
     ("nfs3hp", "sub_4e01f0", "dotPush"),
     ("nfs3hp", "sub_4972f0", "normalise"),
     ("nfs3hp", "sub_41aab0", "groundDistanceOf"),
@@ -117,12 +116,12 @@ SITES = [
     # (NFS_CAR_TRACE), to find why the opponents pile up at Aquatica's tunnel.
     ("nfs3hp", "sub_40de30", "aiVotes"),
     # Not stand-ins: EA's comm library into the log (NFS_NET_TRACE) -- the
-    # IPX transport opening, the library's event log, packet_sendpacket and
-    # its message printer -- to see where an IPX race stops.
+    # IPX transport opening, the library's event log and packet_sendpacket --
+    # to see where an IPX race stops.  Its message printer, Error, is native
+    # (src/nfs3hp/native_game.cpp) and calls commMessageTrace itself.
     ("nfs3hp", "sub_4f5c10", "commOpenTrace"),
     ("nfs3hp", "sub_512180", "commEventTrace"),
     ("nfs3hp", "sub_51d810", "commSendTrace"),
-    ("nfs3hp", "sub_401010", "commMessageTrace"),
 ]
 
 # How each module's generated functions open, and where a declaration goes.
@@ -162,6 +161,10 @@ PLAIN_OPENING = {
                  "{\n"
                  "  NFS2_USE(cpu);\n"
                  "  NFS2_USE(app);\n"),
+    "eacsnd": ("void %s(win32::WinApplication* app, x86::CPU& cpu)\n"
+               "{\n"
+               "  NFS2_USE(cpu);\n"
+               "  NFS2_USE(app);\n"),
 }
 
 PLAIN_CALL = ("    if (%s(app, cpu)) /* port: native (tools/apply_native_vertices.py) */\n"

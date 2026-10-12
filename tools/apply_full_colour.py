@@ -24,7 +24,9 @@ So the driver is made to take format 6 and hand it to Glide as ARGB 8888,
 numbered as Glide 3 numbers it for the Voodoo 4 and 5, which the port's Glide
 layer keeps as it comes (glide2x.cpp, kTexFmtArgb8888).  THRASH_tupdate and
 THRASH_settexture go through Glide's own texture record and care nothing for
-the format.  NFS_TEXTURES32=0 leaves the driver as it was.
+the format.  NFS_TEXTURES32=0 leaves the driver as it was.  The driver is
+native now, and that half is in its THRASH_about (src/nfs3hp/native_thrash.cpp);
+this tool does the other.
 
 The Modern Patch's own Voodoo2 driver maps the formats with the same table, so
 its 32-bit mode under nGlide or dgVoodoo is a full-colour picture of 16-bit
@@ -40,17 +42,6 @@ from pathlib import Path
 
 # (generated file, address and bytes of the instruction, original code, patched code)
 SITES = [
-    # THRASH_about, filling its struct the first time: right after it points the
-    # game at the table of formats it takes.
-    ("voodoo2a.0.cpp", "00a83d3c  8915841fa900",
-     "    app->getMemory<x86::reg32>(x86::reg32(11083652) /* 0xa91f84 */) = cpu.edx;",
-     "    app->getMemory<x86::reg32>(x86::reg32(11083652) /* 0xa91f84 */) = cpu.edx;\n"
-     "    if (win32::glide2x::fullColourTextures())\n"
-     "    {\n"
-     "        /* port: THRASH format 6, ARGB 8888, taken, and handed to Glide as such */\n"
-     "        app->getMemory<x86::reg32>(x86::reg32(0xa91fd4 + 6 * 4)) = 1;\n"
-     "        app->getMemory<x86::reg8>(x86::reg32(0xa92348 + 6)) = x86::reg8(win32::glide2x::kTexFmtArgb8888);\n"
-     "    }"),
     # sub_448210, a Screen Size entry: the depth pushed for "%d x %d x %d".
     ("nfs3hp.12.cpp", "0044823e  51",
      "    app->getMemory<x86::reg32>(cpu.esp-4) = cpu.ecx;",
@@ -59,8 +50,6 @@ SITES = [
 
 # What each file needs before its patched code can compile.
 PREAMBLE = {
-    "voodoo2a.0.cpp": ("#include \"voodoo2a.h\"\n",
-                       "#include <winapi/glide2x.h> // Port (tools/apply_full_colour.py)\n"),
     "nfs3hp.12.cpp": ("namespace nfs3hp\n{\n",
                       "// Port (tools/apply_full_colour.py): defined in nfs3hp_main.cpp.\n"
                       "x86::reg32 shownDepth(x86::reg32 depth);\n"),

@@ -1972,7 +1972,7 @@ L_0x0044abe6:
     cpu.eax = app->getMemory<x86::reg32>(cpu.ecx + x86::reg32(20) /* 0x14 */);
     // 0044abf8  e813370a00             -call 0x4ee310
     cpu.esp -= 4;
-    sub_4ee310(app, cpu.sync());
+    nfs3hp::watcom::strcmp(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0044abfd  85c0                   +test eax, eax
@@ -1989,7 +1989,7 @@ L_0x0044abe6:
     cpu.eax = app->getMemory<x86::reg32>(cpu.ecx + x86::reg32(20) /* 0x14 */);
     // 0044ac09  e802370a00             -call 0x4ee310
     cpu.esp -= 4;
-    sub_4ee310(app, cpu.sync());
+    nfs3hp::watcom::strcmp(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0044ac0e  85c0                   +test eax, eax
@@ -2006,7 +2006,7 @@ L_0x0044abe6:
     cpu.eax = app->getMemory<x86::reg32>(cpu.ecx + x86::reg32(20) /* 0x14 */);
     // 0044ac1a  e8f1360a00             -call 0x4ee310
     cpu.esp -= 4;
-    sub_4ee310(app, cpu.sync());
+    nfs3hp::watcom::strcmp(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0044ac1f  85c0                   +test eax, eax
@@ -2149,7 +2149,7 @@ start:
     cpu.edx = 5476356 /*0x539004*/;
     // 0044ac9e  e87d5b0900             -call 0x4e0820
     cpu.esp -= 4;
-    sub_4e0820(app, cpu.sync());
+    nfs3hp::watcom::strstr(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0044aca3  89c7                   -mov edi, eax
@@ -2286,7 +2286,7 @@ L_0x0044acf9:
     cpu.eax = cpu.ecx;
     // 0044ad09  e802360a00             -call 0x4ee310
     cpu.esp -= 4;
-    sub_4ee310(app, cpu.sync());
+    nfs3hp::watcom::strcmp(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0044ad0e  85c0                   +test eax, eax
@@ -2838,7 +2838,7 @@ L_0x0044ae6b:
     cpu.edx = app->getMemory<x86::reg32>(cpu.esi + x86::reg32(6308068) /* 0x6040e4 */);
     // 0044ae87  e884340a00             -call 0x4ee310
     cpu.esp -= 4;
-    sub_4ee310(app, cpu.sync());
+    nfs3hp::watcom::strcmp(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0044ae8c  85c0                   +test eax, eax
@@ -4133,7 +4133,7 @@ start:
     app->getMemory<x86::reg32>(cpu.ebp + x86::reg32(-12) /* -0xc */) = cpu.ebx;
     // 0044b256  e8b5300a00             -call 0x4ee310
     cpu.esp -= 4;
-    sub_4ee310(app, cpu.sync());
+    nfs3hp::watcom::strcmp(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0044b25b  85c0                   +test eax, eax
@@ -5606,7 +5606,7 @@ L_0x0044b849:
     cpu.eax = cpu.ecx;
     // 0044b864  e8a72a0a00             -call 0x4ee310
     cpu.esp -= 4;
-    sub_4ee310(app, cpu.sync());
+    nfs3hp::watcom::strcmp(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0044b869  85c0                   +test eax, eax
@@ -6540,7 +6540,7 @@ L_0x0044bc27:
     cpu.eax = cpu.esi;
     // 0044bc42  e8c9260a00             -call 0x4ee310
     cpu.esp -= 4;
-    sub_4ee310(app, cpu.sync());
+    nfs3hp::watcom::strcmp(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0044bc47  85c0                   +test eax, eax
@@ -8137,7 +8137,7 @@ L_0x0044c1a4:
     if (cpu.terminate) return;
     // 0044c1ae  e85d210a00             -call 0x4ee310
     cpu.esp -= 4;
-    sub_4ee310(app, cpu.sync());
+    nfs3hp::watcom::strcmp(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0044c1b3  85c0                   +test eax, eax
@@ -8157,7 +8157,7 @@ L_0x0044c1a4:
     if (cpu.terminate) return;
     // 0044c1c1  e84a210a00             -call 0x4ee310
     cpu.esp -= 4;
-    sub_4ee310(app, cpu.sync());
+    nfs3hp::watcom::strcmp(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0044c1c6  85c0                   +test eax, eax
@@ -8197,7 +8197,7 @@ L_0x0044c1e8:
     if (cpu.terminate) return;
     // 0044c1f2  e819210a00             -call 0x4ee310
     cpu.esp -= 4;
-    sub_4ee310(app, cpu.sync());
+    nfs3hp::watcom::strcmp(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0044c1f7  85c0                   +test eax, eax
@@ -8236,7 +8236,7 @@ L_0x0044c219:
     if (cpu.terminate) return;
     // 0044c223  e8e8200a00             -call 0x4ee310
     cpu.esp -= 4;
-    sub_4ee310(app, cpu.sync());
+    nfs3hp::watcom::strcmp(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0044c228  85c0                   +test eax, eax
@@ -23504,7 +23504,7 @@ void Application::sub_44f5f0(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.eax = x86::reg32(cpu.ebp + x86::reg32(-256) /* -0x100 */);
     // 0044f638  e883ed0900             -call 0x4ee3c0
     cpu.esp -= 4;
-    sub_4ee3c0(app, cpu.sync());
+    nfs3hp::watcom::chmod(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
 L_0x0044f63d:

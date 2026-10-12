@@ -437,7 +437,7 @@ L_0x00458ca6:
     app->getMemory<x86::reg32>(cpu.ecx + x86::reg32(92) /* 0x5c */) = cpu.esi;
     // 00458cb9  e882790800             -call 0x4e0640
     cpu.esp -= 4;
-    sub_4e0640(app, cpu.sync());
+    nfs3hp::watcom::memset(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00458cbe  8a4105                 -mov al, byte ptr [ecx + 5]
@@ -591,7 +591,7 @@ L_0x00458d44:
     }
     // 00458d46  e80b700800             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00458d4b  db5dfc                 -fistp dword ptr [ebp - 4]
@@ -1998,7 +1998,7 @@ L_0x004591dd:
     app->getMemory<x86::reg32>(cpu.ecx + x86::reg32(92) /* 0x5c */) = cpu.edi;
     // 004591f0  e84b740800             -call 0x4e0640
     cpu.esp -= 4;
-    sub_4e0640(app, cpu.sync());
+    nfs3hp::watcom::memset(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004591f5  8a5905                 -mov bl, byte ptr [ecx + 5]
@@ -6015,7 +6015,7 @@ L_0x0045a017:
     }
     // 0045a06a  e8e75c0800             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045a06f  db5dfc                 -fistp dword ptr [ebp - 4]
@@ -6048,7 +6048,7 @@ L_0x0045a017:
     }
     // 0045a096  e8bb5c0800             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045a09b  db5dfc                 -fistp dword ptr [ebp - 4]
@@ -6107,7 +6107,7 @@ L_0x0045a017:
     }
     // 0045a0dd  e8745c0800             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045a0e2  d9ca                   -fxch st(2)
@@ -6126,7 +6126,7 @@ L_0x0045a017:
     }
     // 0045a0eb  e8665c0800             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045a0f0  db5964                 -fistp dword ptr [ecx + 0x64]
@@ -6246,7 +6246,7 @@ void Application::sub_45a120(WinApplication* __restrict app, x86::CPU& cpu_)
     }
     // 0045a16f  e8e25b0800             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045a174  db5dec                 -fistp dword ptr [ebp - 0x14]
@@ -6257,7 +6257,7 @@ void Application::sub_45a120(WinApplication* __restrict app, x86::CPU& cpu_)
     }
     // 0045a177  e8da5b0800             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045a17c  db5df0                 -fistp dword ptr [ebp - 0x10]
@@ -6606,7 +6606,7 @@ L_0x0045a269:
 L_0x0045a28b:
     // 0045a28b  e8c65a0800             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045a290  db5868                 -fistp dword ptr [eax + 0x68]
@@ -6845,7 +6845,7 @@ L_0x0045a317:
 L_0x0045a339:
     // 0045a339  e8185a0800             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045a33e  db586c                 -fistp dword ptr [eax + 0x6c]
@@ -6890,7 +6890,7 @@ L_0x0045a341:
     }
     // 0045a371  e8e0590800             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045a376  db5860                 -fistp dword ptr [eax + 0x60]
@@ -6937,7 +6937,7 @@ L_0x0045a341:
     }
     // 0045a3b4  e89d590800             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045a3b9  db5864                 -fistp dword ptr [eax + 0x64]
@@ -6948,7 +6948,7 @@ L_0x0045a341:
     }
     // 0045a3bc  e895590800             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045a3c1  db5dfc                 -fistp dword ptr [ebp - 4]
@@ -6975,7 +6975,7 @@ L_0x0045a341:
     }
     // 0045a3e2  e86f590800             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045a3e7  db5dfc                 -fistp dword ptr [ebp - 4]
@@ -7095,7 +7095,7 @@ L_0x0045a341:
     }
     // 0045a45f  e8f2580800             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045a464  db5df8                 +fistp dword ptr [ebp - 8]
@@ -7113,7 +7113,7 @@ L_0x0045a341:
     }
     // 0045a46c  e8e5580800             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045a471  db5df8                 +fistp dword ptr [ebp - 8]
@@ -7170,7 +7170,7 @@ L_0x0045a479:
     }
     // 0045a4ad  e8a4580800             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045a4b2  d9e8                   -fld1 
@@ -7191,7 +7191,7 @@ L_0x0045a479:
     }
     // 0045a4be  e893580800             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045a4c3  db5df8                 -fistp dword ptr [ebp - 8]
@@ -7335,7 +7335,7 @@ L_0x0045a508:
     }
     // 0045a557  e8fa570800             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045a55c  db5dfc                 -fistp dword ptr [ebp - 4]
@@ -7358,7 +7358,7 @@ L_0x0045a508:
     }
     // 0045a56d  e8e4570800             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045a572  db5dfc                 -fistp dword ptr [ebp - 4]
@@ -7530,7 +7530,7 @@ L_0x0045a5ec:
     }
     // 0045a61c  e835570800             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045a621  db5860                 -fistp dword ptr [eax + 0x60]
@@ -7581,7 +7581,7 @@ L_0x0045a5ec:
     }
     // 0045a65f  e8f2560800             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045a664  db5864                 +fistp dword ptr [eax + 0x64]
@@ -7592,7 +7592,7 @@ L_0x0045a5ec:
     }
     // 0045a667  e8ea560800             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045a66c  db5dfc                 +fistp dword ptr [ebp - 4]
@@ -7617,7 +7617,7 @@ L_0x0045a5ec:
     }
     // 0045a689  e8c8560800             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045a68e  db5dfc                 +fistp dword ptr [ebp - 4]
@@ -7673,7 +7673,7 @@ L_0x0045a69d:
     }
     // 0045a6d0  e881560800             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045a6d5  db5dfc                 -fistp dword ptr [ebp - 4]
@@ -7718,7 +7718,7 @@ L_0x0045a69d:
     }
     // 0045a710  e841560800             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045a715  db5dfc                 -fistp dword ptr [ebp - 4]
@@ -7771,7 +7771,7 @@ L_0x0045a69d:
     }
     // 0045a742  e80f560800             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045a747  db5dfc                 +fistp dword ptr [ebp - 4]
@@ -7825,7 +7825,7 @@ L_0x0045a753:
     }
     // 0045a776  e8db550800             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045a77b  db5dfc                 +fistp dword ptr [ebp - 4]
@@ -7857,7 +7857,7 @@ L_0x0045a785:
     }
     // 0045a79c  e8b5550800             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045a7a1  db5dfc                 +fistp dword ptr [ebp - 4]
@@ -7899,7 +7899,7 @@ L_0x0045a7b0:
     }
     // 0045a7cd  e884550800             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045a7d2  db5a64                 -fistp dword ptr [edx + 0x64]
@@ -7940,7 +7940,7 @@ L_0x0045a7b0:
     }
     // 0045a806  e84b550800             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045a80b  db5dfc                 -fistp dword ptr [ebp - 4]
@@ -7991,7 +7991,7 @@ L_0x0045a7b0:
     }
     // 0045a83a  e817550800             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045a83f  db5864                 +fistp dword ptr [eax + 0x64]
@@ -8047,7 +8047,7 @@ L_0x0045a844:
     }
     // 0045a86e  e8e3540800             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045a873  db5dfc                 -fistp dword ptr [ebp - 4]
@@ -8109,7 +8109,7 @@ L_0x0045a87d:
     }
     // 0045a8c3  e88e540800             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045a8c8  db5dfc                 -fistp dword ptr [ebp - 4]
@@ -8154,7 +8154,7 @@ L_0x0045a87d:
     }
     // 0045a903  e84e540800             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045a908  db5dfc                 -fistp dword ptr [ebp - 4]
@@ -8207,7 +8207,7 @@ L_0x0045a87d:
     }
     // 0045a935  e81c540800             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045a93a  db5dfc                 +fistp dword ptr [ebp - 4]
@@ -8265,7 +8265,7 @@ L_0x0045a946:
     }
     // 0045a966  e8eb530800             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045a96b  db5dfc                 +fistp dword ptr [ebp - 4]
@@ -8297,7 +8297,7 @@ L_0x0045a975:
     }
     // 0045a98c  e8c5530800             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045a991  db5dfc                 +fistp dword ptr [ebp - 4]
@@ -8339,7 +8339,7 @@ L_0x0045a9a0:
     }
     // 0045a9bc  e895530800             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045a9c1  db5860                 -fistp dword ptr [eax + 0x60]
@@ -8380,7 +8380,7 @@ L_0x0045a9a0:
     }
     // 0045a9f5  e85c530800             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045a9fa  db5dfc                 -fistp dword ptr [ebp - 4]
@@ -8431,7 +8431,7 @@ L_0x0045a9a0:
     }
     // 0045aa29  e828530800             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045aa2e  db5860                 +fistp dword ptr [eax + 0x60]
@@ -8487,7 +8487,7 @@ L_0x0045aa33:
     }
     // 0045aa5d  e8f4520800             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045aa62  db5dfc                 -fistp dword ptr [ebp - 4]
@@ -9252,7 +9252,7 @@ L_0x0045ad4e:
     }
     // 0045ad9f  e8b24f0800             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045ada4  8bb064977400           -mov esi, dword ptr [eax + 0x749764]
@@ -9270,7 +9270,7 @@ L_0x0045ad4e:
     }
     // 0045adb1  e8a04f0800             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045adb6  57                     -push edi
@@ -9321,7 +9321,7 @@ L_0x0045ade0:
     }
     // 0045ade6  e86b4f0800             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045adeb  8b9064977400           -mov edx, dword ptr [eax + 0x749764]
@@ -9339,7 +9339,7 @@ L_0x0045ade0:
     }
     // 0045adf8  e8594f0800             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045adfd  51                     -push ecx
@@ -11028,7 +11028,7 @@ L_0x0045b4e8:
     }
     // 0045b55a  e8f7470800             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045b55f  d9ca                   -fxch st(2)
@@ -11040,7 +11040,7 @@ L_0x0045b4e8:
     }
     // 0045b561  e8f0470800             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045b566  d9c9                   -fxch st(1)
@@ -11052,7 +11052,7 @@ L_0x0045b4e8:
     }
     // 0045b568  e8e9470800             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045b56d  d9cb                   -fxch st(3)
@@ -11064,7 +11064,7 @@ L_0x0045b4e8:
     }
     // 0045b56f  e8e2470800             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045b574  d9ca                   -fxch st(2)
@@ -11454,7 +11454,7 @@ L_0x0045b69a:
     }
     // 0045b70d  e844460800             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045b712  d9ca                   -fxch st(2)
@@ -11466,7 +11466,7 @@ L_0x0045b69a:
     }
     // 0045b714  e83d460800             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045b719  d9c9                   -fxch st(1)
@@ -11478,7 +11478,7 @@ L_0x0045b69a:
     }
     // 0045b71b  e836460800             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045b720  d9cb                   -fxch st(3)
@@ -11490,7 +11490,7 @@ L_0x0045b69a:
     }
     // 0045b722  e82f460800             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045b727  d9ca                   -fxch st(2)
@@ -13954,7 +13954,7 @@ L_0x0045bffd:
     }
     // 0045c015  e83c3d0800             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045c01a  db5dfc                 -fistp dword ptr [ebp - 4]
@@ -14174,7 +14174,7 @@ L_0x0045c05b:
     }
     // 0045c0ea  e8673c0800             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045c0ef  db5df8                 -fistp dword ptr [ebp - 8]
@@ -14202,7 +14202,7 @@ L_0x0045c0f2:
     }
     // 0045c10a  e8473c0800             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045c10f  db5dfc                 -fistp dword ptr [ebp - 4]
@@ -14371,7 +14371,7 @@ L_0x0045c17a:
     }
     // 0045c192  e8bf3b0800             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045c197  db5dfc                 -fistp dword ptr [ebp - 4]
@@ -14591,7 +14591,7 @@ L_0x0045c1d8:
     }
     // 0045c26f  e8e23a0800             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045c274  db5df8                 -fistp dword ptr [ebp - 8]
@@ -14619,7 +14619,7 @@ L_0x0045c277:
     }
     // 0045c28f  e8c23a0800             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045c294  db5dfc                 -fistp dword ptr [ebp - 4]
@@ -14841,7 +14841,7 @@ L_0x0045c311:
     }
     // 0045c331  e8203a0800             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045c336  db5dfc                 -fistp dword ptr [ebp - 4]
@@ -14873,7 +14873,7 @@ L_0x0045c311:
     }
     // 0045c352  e8ff390800             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045c357  db5dfc                 -fistp dword ptr [ebp - 4]
@@ -15045,7 +15045,7 @@ L_0x0045c39b:
     }
     // 0045c3ef  e862390800             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045c3f4  db5df8                 -fistp dword ptr [ebp - 8]
@@ -15083,7 +15083,7 @@ L_0x0045c3f7:
     }
     // 0045c417  e83a390800             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045c41c  db5dfc                 -fistp dword ptr [ebp - 4]
@@ -15115,7 +15115,7 @@ L_0x0045c3f7:
     }
     // 0045c438  e819390800             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045c43d  db5dfc                 -fistp dword ptr [ebp - 4]
@@ -15336,7 +15336,7 @@ L_0x0045c4a2:
     }
     // 0045c4f6  e85b380800             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045c4fb  db5df8                 -fistp dword ptr [ebp - 8]
@@ -15376,7 +15376,7 @@ L_0x0045c4fe:
     }
     // 0045c523  e82e380800             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045c528  db5dfc                 -fistp dword ptr [ebp - 4]
@@ -15453,7 +15453,7 @@ L_0x0045c54d:
     }
     // 0045c564  e8ed370800             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045c569  db1de4e55500           -fistp dword ptr [0x55e5e4]
@@ -15567,7 +15567,7 @@ L_0x0045c5a6:
     }
     // 0045c5cb  e886370800             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045c5d0  db5dfc                 -fistp dword ptr [ebp - 4]
@@ -15644,7 +15644,7 @@ L_0x0045c5f5:
     }
     // 0045c60c  e845370800             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045c611  db1de4e55500           -fistp dword ptr [0x55e5e4]
@@ -15823,7 +15823,7 @@ L_0x0045c67e:
     }
     // 0045c69e  e8b3360800             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045c6a3  db5dfc                 -fistp dword ptr [ebp - 4]
@@ -15855,7 +15855,7 @@ L_0x0045c67e:
     }
     // 0045c6bf  e892360800             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045c6c4  db5dfc                 -fistp dword ptr [ebp - 4]
@@ -16037,7 +16037,7 @@ L_0x0045c709:
     }
     // 0045c76f  e8e2350800             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045c774  db5df8                 -fistp dword ptr [ebp - 8]
@@ -16075,7 +16075,7 @@ L_0x0045c777:
     }
     // 0045c797  e8ba350800             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045c79c  db5dfc                 -fistp dword ptr [ebp - 4]
@@ -16107,7 +16107,7 @@ L_0x0045c777:
     }
     // 0045c7b8  e899350800             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045c7bd  db5dfc                 -fistp dword ptr [ebp - 4]
@@ -16340,7 +16340,7 @@ L_0x0045c825:
     }
     // 0045c88b  e8c6340800             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045c890  db5df8                 -fistp dword ptr [ebp - 8]
@@ -16380,7 +16380,7 @@ L_0x0045c893:
     }
     // 0045c8b8  e899340800             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045c8bd  db5dfc                 -fistp dword ptr [ebp - 4]
@@ -16457,7 +16457,7 @@ L_0x0045c8e2:
     }
     // 0045c8f8  e859340800             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045c8fd  db1de8e55500           -fistp dword ptr [0x55e5e8]
@@ -16575,7 +16575,7 @@ L_0x0045c93f:
     }
     // 0045c964  e8ed330800             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045c969  db5dfc                 -fistp dword ptr [ebp - 4]
@@ -16652,7 +16652,7 @@ L_0x0045c98e:
     }
     // 0045c9a4  e8ad330800             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045c9a9  db1de8e55500           -fistp dword ptr [0x55e5e8]
@@ -16772,7 +16772,7 @@ void Application::sub_45c9d0(WinApplication* __restrict app, x86::CPU& cpu_)
     }
     // 0045ca0a  e847330800             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045ca0f  d9c9                   -fxch st(1)
@@ -16784,7 +16784,7 @@ void Application::sub_45c9d0(WinApplication* __restrict app, x86::CPU& cpu_)
     }
     // 0045ca11  e840330800             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045ca16  d9c9                   -fxch st(1)
@@ -16831,7 +16831,7 @@ void Application::sub_45c9d0(WinApplication* __restrict app, x86::CPU& cpu_)
     }
     // 0045ca4a  e807330800             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045ca4f  db5dfc                 -fistp dword ptr [ebp - 4]
@@ -16867,7 +16867,7 @@ void Application::sub_45c9d0(WinApplication* __restrict app, x86::CPU& cpu_)
     }
     // 0045ca71  e8e0320800             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045ca76  db5dfc                 -fistp dword ptr [ebp - 4]
@@ -27891,7 +27891,7 @@ L_0x0045ee9c:
     }
     // 0045eec3  e88e0e0800             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045eec8  01c3                   -add ebx, eax
@@ -29429,7 +29429,7 @@ L_0x0045f468:
     cpu.edx = app->getMemory<x86::reg32>(cpu.esi + x86::reg32(60) /* 0x3c */);
     // 0045f46d  e89eee0800             -call 0x4ee310
     cpu.esp -= 4;
-    sub_4ee310(app, cpu.sync());
+    nfs3hp::watcom::strcmp(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045f472  85c0                   +test eax, eax
@@ -33517,7 +33517,7 @@ L_0x0046030b:
     cpu.edx = 5482896 /*0x53a990*/;
     // 00460317  e8f4df0800             -call 0x4ee310
     cpu.esp -= 4;
-    sub_4ee310(app, cpu.sync());
+    nfs3hp::watcom::strcmp(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0046031c  85c0                   +test eax, eax
@@ -33534,7 +33534,7 @@ L_0x0046030b:
     cpu.eax = app->getMemory<x86::reg32>(cpu.esi + x86::reg32(60) /* 0x3c */);
     // 00460328  e8e3df0800             -call 0x4ee310
     cpu.esp -= 4;
-    sub_4ee310(app, cpu.sync());
+    nfs3hp::watcom::strcmp(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0046032d  85c0                   +test eax, eax
@@ -33593,7 +33593,7 @@ L_0x00460352:
     cpu.edx = 5482912 /*0x53a9a0*/;
     // 00460360  e8abdf0800             -call 0x4ee310
     cpu.esp -= 4;
-    sub_4ee310(app, cpu.sync());
+    nfs3hp::watcom::strcmp(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00460365  85c0                   +test eax, eax
@@ -35239,7 +35239,7 @@ L_0x0046092a:
     cpu.edx = 5481980 /*0x53a5fc*/;
     // 0046093f  e8ccd90800             -call 0x4ee310
     cpu.esp -= 4;
-    sub_4ee310(app, cpu.sync());
+    nfs3hp::watcom::strcmp(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00460944  85c0                   +test eax, eax
@@ -35258,7 +35258,7 @@ L_0x0046092a:
     cpu.eax = app->getMemory<x86::reg32>(cpu.eax + x86::reg32(68) /* 0x44 */);
     // 00460953  e8b8d90800             -call 0x4ee310
     cpu.esp -= 4;
-    sub_4ee310(app, cpu.sync());
+    nfs3hp::watcom::strcmp(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00460958  85c0                   +test eax, eax
@@ -35287,7 +35287,7 @@ L_0x0046095c:
     cpu.eax = cpu.ecx;
     // 00460970  e89bd90800             -call 0x4ee310
     cpu.esp -= 4;
-    sub_4ee310(app, cpu.sync());
+    nfs3hp::watcom::strcmp(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00460975  85c0                   +test eax, eax
@@ -36111,7 +36111,7 @@ L_0x00460b85:
     }
     // 00460bf3  e85ef10700             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00460bf8  680000743f             -push 0x3f740000
@@ -36133,7 +36133,7 @@ L_0x00460b85:
     }
     // 00460c0d  e844f10700             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00460c12  52                     -push edx
@@ -36228,7 +36228,7 @@ L_0x00460b85:
     }
     // 00460c6b  e8e6f00700             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00460c70  6800007f3f             -push 0x3f7f0000
@@ -36289,7 +36289,7 @@ L_0x00460b85:
     }
     // 00460ca9  e8a8f00700             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00460cae  db5de4                 +fistp dword ptr [ebp - 0x1c]
@@ -36745,7 +36745,7 @@ L_0x00460e6b:
     cpu.eax = cpu.edi;
     // 00460e8e  e87dd40800             -call 0x4ee310
     cpu.esp -= 4;
-    sub_4ee310(app, cpu.sync());
+    nfs3hp::watcom::strcmp(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00460e93  85c0                   +test eax, eax
@@ -37646,7 +37646,7 @@ L_0x00461127:
     cpu.esi = 5482952 /*0x53a9c8*/;
     // 004611b5  e876fc0700             -call 0x4e0e30
     cpu.esp -= 4;
-    sub_4e0e30(app, cpu.sync());
+    nfs3hp::watcom::strncpy(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004611ba  57                     -push edi
@@ -38803,7 +38803,7 @@ L_0x004614f1:
     cpu.eax = cpu.ecx;
     // 004614ff  e80cce0800             -call 0x4ee310
     cpu.esp -= 4;
-    sub_4ee310(app, cpu.sync());
+    nfs3hp::watcom::strcmp(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00461504  85c0                   +test eax, eax
@@ -38820,7 +38820,7 @@ L_0x004614f1:
     cpu.eax = app->getMemory<x86::reg32>(cpu.ebx + x86::reg32(68) /* 0x44 */);
     // 00461510  e8fbcd0800             -call 0x4ee310
     cpu.esp -= 4;
-    sub_4ee310(app, cpu.sync());
+    nfs3hp::watcom::strcmp(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00461515  85c0                   +test eax, eax
@@ -39107,7 +39107,7 @@ L_0x0046158f:
     }
     // 004615d9  e878e70700             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004615de  db5dfc                 +fistp dword ptr [ebp - 4]
@@ -39201,7 +39201,7 @@ L_0x004615f2:
     }
     // 00461655  e8fce60700             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0046165a  db5dfc                 +fistp dword ptr [ebp - 4]
@@ -39279,7 +39279,7 @@ L_0x00461669:
     }
     // 004616b8  e899e60700             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004616bd  db5dfc                 +fistp dword ptr [ebp - 4]
@@ -39357,7 +39357,7 @@ L_0x004616cc:
     }
     // 0046171b  e836e60700             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00461720  db5dfc                 +fistp dword ptr [ebp - 4]
@@ -39435,7 +39435,7 @@ L_0x0046172c:
     }
     // 00461777  e8dae50700             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0046177c  db5dfc                 -fistp dword ptr [ebp - 4]
@@ -39690,7 +39690,7 @@ L_0x00461811:
 L_0x0046183e:
     // 0046183e  e813e50700             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00461843  db5dfc                 -fistp dword ptr [ebp - 4]
@@ -40032,7 +40032,7 @@ L_0x0046191b:
     cpu.edx = app->getMemory<x86::reg32>(cpu.ecx + x86::reg32(68) /* 0x44 */);
     // 0046192f  e8dcc90800             -call 0x4ee310
     cpu.esp -= 4;
-    sub_4ee310(app, cpu.sync());
+    nfs3hp::watcom::strcmp(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00461934  85c0                   +test eax, eax
@@ -40528,7 +40528,7 @@ void Application::sub_461aa0(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.eax = app->getMemory<x86::reg32>(cpu.eax + x86::reg32(96) /* 0x60 */);
     // 00461af0  e8cb830800             -call 0x4e9ec0
     cpu.esp -= 4;
-    sub_4e9ec0(app, cpu.sync());
+    nfs3hp::watcom::stricmp(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00461af5  85c0                   +test eax, eax
@@ -40740,7 +40740,7 @@ L_0x00461b65:
     cpu.eax = app->getMemory<x86::reg32>(cpu.eax + x86::reg32(96) /* 0x60 */);
     // 00461b70  e84b830800             -call 0x4e9ec0
     cpu.esp -= 4;
-    sub_4e9ec0(app, cpu.sync());
+    nfs3hp::watcom::stricmp(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00461b75  85c0                   +test eax, eax
@@ -40949,7 +40949,7 @@ L_0x00461bee:
     cpu.eax = app->getMemory<x86::reg32>(cpu.eax + x86::reg32(96) /* 0x60 */);
     // 00461bf9  e8c2820800             -call 0x4e9ec0
     cpu.esp -= 4;
-    sub_4e9ec0(app, cpu.sync());
+    nfs3hp::watcom::stricmp(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00461bfe  85c0                   +test eax, eax
@@ -41156,7 +41156,7 @@ L_0x00461c67:
     cpu.eax = app->getMemory<x86::reg32>(cpu.eax + x86::reg32(96) /* 0x60 */);
     // 00461c72  e849820800             -call 0x4e9ec0
     cpu.esp -= 4;
-    sub_4e9ec0(app, cpu.sync());
+    nfs3hp::watcom::stricmp(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00461c77  85c0                   +test eax, eax
@@ -41361,7 +41361,7 @@ L_0x00461d25:
     cpu.eax = app->getMemory<x86::reg32>(cpu.eax + x86::reg32(96) /* 0x60 */);
     // 00461d2f  e88c810800             -call 0x4e9ec0
     cpu.esp -= 4;
-    sub_4e9ec0(app, cpu.sync());
+    nfs3hp::watcom::stricmp(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00461d34  85c0                   +test eax, eax
@@ -42130,7 +42130,7 @@ L_0x00461fc5:
     cpu.eax = app->getMemory<x86::reg32>(cpu.esi + x86::reg32(96) /* 0x60 */);
     // 00461fcd  e8ee7e0800             -call 0x4e9ec0
     cpu.esp -= 4;
-    sub_4e9ec0(app, cpu.sync());
+    nfs3hp::watcom::stricmp(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00461fd2  85c0                   +test eax, eax
@@ -44722,7 +44722,7 @@ void Application::sub_4628d0(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.eax = app->getMemory<x86::reg32>(cpu.ebx + x86::reg32(96) /* 0x60 */);
     // 004628f4  e8c7750800             -call 0x4e9ec0
     cpu.esp -= 4;
-    sub_4e9ec0(app, cpu.sync());
+    nfs3hp::watcom::stricmp(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004628f9  85c0                   +test eax, eax
@@ -44739,7 +44739,7 @@ void Application::sub_4628d0(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.eax = app->getMemory<x86::reg32>(cpu.ebx + x86::reg32(96) /* 0x60 */);
     // 00462905  e8b6750800             -call 0x4e9ec0
     cpu.esp -= 4;
-    sub_4e9ec0(app, cpu.sync());
+    nfs3hp::watcom::stricmp(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0046290a  85c0                   +test eax, eax
@@ -49001,7 +49001,7 @@ L_0x004637fb:
     cpu.eax = app->getMemory<x86::reg32>(cpu.esi + x86::reg32(100) /* 0x64 */);
     // 00463803  e8b8660800             -call 0x4e9ec0
     cpu.esp -= 4;
-    sub_4e9ec0(app, cpu.sync());
+    nfs3hp::watcom::stricmp(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00463808  85c0                   +test eax, eax
@@ -49018,7 +49018,7 @@ L_0x004637fb:
     cpu.eax = app->getMemory<x86::reg32>(cpu.esi + x86::reg32(100) /* 0x64 */);
     // 00463814  e8a7660800             -call 0x4e9ec0
     cpu.esp -= 4;
-    sub_4e9ec0(app, cpu.sync());
+    nfs3hp::watcom::stricmp(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00463819  85c0                   +test eax, eax
@@ -49886,7 +49886,7 @@ L_0x00463b4e:
     cpu.eax = app->getMemory<x86::reg32>(cpu.esi + x86::reg32(100) /* 0x64 */);
     // 00463b7c  e83f630800             -call 0x4e9ec0
     cpu.esp -= 4;
-    sub_4e9ec0(app, cpu.sync());
+    nfs3hp::watcom::stricmp(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00463b81  85c0                   +test eax, eax
@@ -49903,7 +49903,7 @@ L_0x00463b4e:
     cpu.eax = app->getMemory<x86::reg32>(cpu.esi + x86::reg32(100) /* 0x64 */);
     // 00463b8d  e82e630800             -call 0x4e9ec0
     cpu.esp -= 4;
-    sub_4e9ec0(app, cpu.sync());
+    nfs3hp::watcom::stricmp(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00463b92  85c0                   +test eax, eax
@@ -49943,7 +49943,7 @@ L_0x00463ba2:
     cpu.eax = app->getMemory<x86::reg32>(cpu.esi + x86::reg32(100) /* 0x64 */);
     // 00463baf  e80c630800             -call 0x4e9ec0
     cpu.esp -= 4;
-    sub_4e9ec0(app, cpu.sync());
+    nfs3hp::watcom::stricmp(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00463bb4  85c0                   +test eax, eax
@@ -50020,7 +50020,7 @@ L_0x00463c0f:
     cpu.eax = app->getMemory<x86::reg32>(cpu.esi + x86::reg32(100) /* 0x64 */);
     // 00463c17  e8a4620800             -call 0x4e9ec0
     cpu.esp -= 4;
-    sub_4e9ec0(app, cpu.sync());
+    nfs3hp::watcom::stricmp(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00463c1c  85c0                   +test eax, eax
@@ -50037,7 +50037,7 @@ L_0x00463c0f:
     cpu.eax = app->getMemory<x86::reg32>(cpu.esi + x86::reg32(100) /* 0x64 */);
     // 00463c28  e893620800             -call 0x4e9ec0
     cpu.esp -= 4;
-    sub_4e9ec0(app, cpu.sync());
+    nfs3hp::watcom::stricmp(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00463c2d  85c0                   +test eax, eax
@@ -55167,7 +55167,7 @@ void Application::sub_464eb0(WinApplication* __restrict app, x86::CPU& cpu_)
     if (cpu.terminate) return;
     // 00464f18  e8f3930800             -call 0x4ee310
     cpu.esp -= 4;
-    sub_4ee310(app, cpu.sync());
+    nfs3hp::watcom::strcmp(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00464f1d  85c0                   +test eax, eax
@@ -55519,7 +55519,7 @@ L_0x00464ff8:
     }
     // 00465045  e80cad0700             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0046504a  d9c9                   -fxch st(1)
@@ -55531,7 +55531,7 @@ L_0x00464ff8:
     }
     // 0046504c  e805ad0700             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00465051  d9c9                   -fxch st(1)

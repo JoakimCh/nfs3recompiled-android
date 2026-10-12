@@ -9,9 +9,17 @@ mappings for DLLs which frequently get linked without symbolic
 infoz.
 '''
 
+# wsock32.dll numbers three functions otherwise than ws2_32.dll: 10 is
+# inet_addr, 11 inet_ntoa and 12 ioctlsocket there (ws2_32: ioctlsocket,
+# inet_addr, inet_ntoa).  The rest of Winsock 1.1 -- all NFS III takes from
+# it -- is numbered alike.  Taken from ws2_32's table, nfs3.exe's imports came
+# out with inet_addr, inet_ntoa and ioctlsocket in each other's places.
+wsock32_ord_names = dict(ws2_32.ord_names)
+wsock32_ord_names.update({10: b'inet_addr', 11: b'inet_ntoa', 12: b'ioctlsocket'})
+
 ords = {
     b'ws2_32.dll': ws2_32.ord_names,
-    b'wsock32.dll': ws2_32.ord_names,
+    b'wsock32.dll': wsock32_ord_names,
     b'oleaut32.dll': oleaut32.ord_names,
 }
 

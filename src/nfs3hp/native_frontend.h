@@ -75,6 +75,9 @@ public:
     void leaveEbx(x86::reg32 value) { m_cpu.ebx = value; }
     void leaveEcx(x86::reg32 value) { m_cpu.ecx = value; }
     void leaveEdx(x86::reg32 value) { m_cpu.edx = value; }
+    /* A register argument past Watcom's four, set before a call: sub_448330
+     * takes the buffer it fills in esi. */
+    void setEsi(x86::reg32 value) { m_cpu.esi = value; }
     void setByte(x86::reg32 address, std::uint8_t value) { m_app->getMemory<x86::reg8>(address) = value; }
     void setWord(x86::reg32 address, std::uint16_t value) { m_app->getMemory<x86::reg16>(address) = value; }
     void setDword(x86::reg32 address, std::uint32_t value) { m_app->getMemory<x86::reg32>(address) = value; }
@@ -490,6 +493,127 @@ bool multiMenuApplyRaceList(win32::WinApplication* app, x86::CPU& cpu);
 bool multiMenuFollowRaceType(win32::WinApplication* app, x86::CPU& cpu);
 bool multiMenuOnBack(win32::WinApplication* app, x86::CPU& cpu);
 bool multiMenuLeaveAnswer(win32::WinApplication* app, x86::CPU& cpu);
+
+/* The options screens (native_frontend_options.cpp): the options screen and
+ * the audio feed's keys (audfeed), */
+bool optionsOnEnter(win32::WinApplication* app, x86::CPU& cpu);
+bool feedOnEnter(win32::WinApplication* app, x86::CPU& cpu);
+bool feedOnExit(win32::WinApplication* app, x86::CPU& cpu);
+bool feedSeparate(win32::WinApplication* app, x86::CPU& cpu);
+bool feedTimeButtonKey(win32::WinApplication* app, x86::CPU& cpu);
+bool feedPositionButtonKey(win32::WinApplication* app, x86::CPU& cpu);
+bool feedSpeedButtonKey(win32::WinApplication* app, x86::CPU& cpu);
+bool feedTimeListKey(win32::WinApplication* app, x86::CPU& cpu);
+bool feedPositionListKey(win32::WinApplication* app, x86::CPU& cpu);
+bool feedSpeedListKey(win32::WinApplication* app, x86::CPU& cpu);
+/* the function keys and the fixed ones, */
+bool funkeysOnEnter(win32::WinApplication* app, x86::CPU& cpu);
+bool funkeysOnExit(win32::WinApplication* app, x86::CPU& cpu);
+bool hardkeysOnEnter(win32::WinApplication* app, x86::CPU& cpu);
+/* the sound and its sliders, */
+bool audioOnEnter(win32::WinApplication* app, x86::CPU& cpu);
+bool audioOnExit(win32::WinApplication* app, x86::CPU& cpu);
+bool audioOnFrame(win32::WinApplication* app, x86::CPU& cpu);
+bool audioVolumeDraw(win32::WinApplication* app, x86::CPU& cpu);
+bool audioMenuMusicMoved(win32::WinApplication* app, x86::CPU& cpu);
+bool audioRaceMusicMoved(win32::WinApplication* app, x86::CPU& cpu);
+bool audioEffectsMoved(win32::WinApplication* app, x86::CPU& cpu);
+bool audioEngineMoved(win32::WinApplication* app, x86::CPU& cpu);
+bool audioSpeechMoved(win32::WinApplication* app, x86::CPU& cpu);
+/* the controllers, and their dead zones, */
+bool controlsOnEnter(win32::WinApplication* app, x86::CPU& cpu);
+bool controlsOnExit(win32::WinApplication* app, x86::CPU& cpu);
+bool controlsCancelKey(win32::WinApplication* app, x86::CPU& cpu);
+bool controlsResetClicked(win32::WinApplication* app, x86::CPU& cpu);
+bool controlsResetAnswered(win32::WinApplication* app, x86::CPU& cpu);
+bool deadZoneFillList(win32::WinApplication* app, x86::CPU& cpu);
+bool deadZoneOnEnter(win32::WinApplication* app, x86::CPU& cpu);
+bool deadZoneOnExit(win32::WinApplication* app, x86::CPU& cpu);
+bool deadZoneCancelKey(win32::WinApplication* app, x86::CPU& cpu);
+bool deadZoneChooseKey(win32::WinApplication* app, x86::CPU& cpu);
+bool deadZoneChooseKeyInRace(win32::WinApplication* app, x86::CPU& cpu);
+bool deadZoneShowController(win32::WinApplication* app, x86::CPU& cpu);
+bool deadZoneAxisIndex(win32::WinApplication* app, x86::CPU& cpu);
+bool deadZoneApplyAxis(win32::WinApplication* app, x86::CPU& cpu);
+bool deadZoneAxisMoved(win32::WinApplication* app, x86::CPU& cpu);
+bool deadZoneAxisDraw(win32::WinApplication* app, x86::CPU& cpu);
+/* force feedback, */
+bool forceOnEnter(win32::WinApplication* app, x86::CPU& cpu);
+bool forceOnExit(win32::WinApplication* app, x86::CPU& cpu);
+bool forceCancelKey(win32::WinApplication* app, x86::CPU& cpu);
+bool forceStrengthMoved(win32::WinApplication* app, x86::CPU& cpu);
+bool forceRoadEffectsMoved(win32::WinApplication* app, x86::CPU& cpu);
+bool forceCollisionMoved(win32::WinApplication* app, x86::CPU& cpu);
+bool forceEngineMoved(win32::WinApplication* app, x86::CPU& cpu);
+bool forceBodyRollMoved(win32::WinApplication* app, x86::CPU& cpu);
+bool forceRoadGripMoved(win32::WinApplication* app, x86::CPU& cpu);
+/* and the graphics. */
+bool graphicsOnEnter(win32::WinApplication* app, x86::CPU& cpu);
+bool graphicsOnExit(win32::WinApplication* app, x86::CPU& cpu);
+bool graphicsOnFrame(win32::WinApplication* app, x86::CPU& cpu);
+bool advancedOnEnter(win32::WinApplication* app, x86::CPU& cpu);
+bool advancedOnExit(win32::WinApplication* app, x86::CPU& cpu);
+bool advancedOnFrame(win32::WinApplication* app, x86::CPU& cpu);
+bool advancedIntensityMoved(win32::WinApplication* app, x86::CPU& cpu);
+
+/* The cars' screens (native_frontend_cars.cpp): car1 and car2, the music, the
+ * developer's recorder, opponent, and cedbasic, a car's tuning, */
+bool carMenuMusicBack(win32::WinApplication* app, x86::CPU& cpu);
+bool carSaveFrame(win32::WinApplication* app, x86::CPU& cpu);
+bool trackSaveFrame(win32::WinApplication* app, x86::CPU& cpu);
+bool carRecord(win32::WinApplication* app, x86::CPU& cpu);
+bool trackRecord(win32::WinApplication* app, x86::CPU& cpu);
+bool car1OnEnter(win32::WinApplication* app, x86::CPU& cpu);
+bool car2OnEnter(win32::WinApplication* app, x86::CPU& cpu);
+bool car1OnFrame(win32::WinApplication* app, x86::CPU& cpu);
+bool car2OnFrame(win32::WinApplication* app, x86::CPU& cpu);
+bool car1OnExit(win32::WinApplication* app, x86::CPU& cpu);
+bool car2OnExit(win32::WinApplication* app, x86::CPU& cpu);
+bool car1EditClicked(win32::WinApplication* app, x86::CPU& cpu);
+bool car2EditClicked(win32::WinApplication* app, x86::CPU& cpu);
+bool car1ColourClicked(win32::WinApplication* app, x86::CPU& cpu);
+bool car2ColourClicked(win32::WinApplication* app, x86::CPU& cpu);
+bool opponentFitCar(win32::WinApplication* app, x86::CPU& cpu);
+bool opponentFitArt(win32::WinApplication* app, x86::CPU& cpu);
+bool opponentOnEnter(win32::WinApplication* app, x86::CPU& cpu);
+bool opponentOnExit(win32::WinApplication* app, x86::CPU& cpu);
+bool opponentOnFrame(win32::WinApplication* app, x86::CPU& cpu);
+bool tuningLoad(win32::WinApplication* app, x86::CPU& cpu);
+bool tuningSave(win32::WinApplication* app, x86::CPU& cpu);
+bool tuningEngineMoved(win32::WinApplication* app, x86::CPU& cpu);
+bool tuningBrakesMoved(win32::WinApplication* app, x86::CPU& cpu);
+bool tuningSteeringMoved(win32::WinApplication* app, x86::CPU& cpu);
+bool tuningGearsMoved(win32::WinApplication* app, x86::CPU& cpu);
+bool tuningSuspensionMoved(win32::WinApplication* app, x86::CPU& cpu);
+bool tuningAeroMoved(win32::WinApplication* app, x86::CPU& cpu);
+bool tuningTiresMoved(win32::WinApplication* app, x86::CPU& cpu);
+bool tuningSetSliders(win32::WinApplication* app, x86::CPU& cpu);
+bool tuningRememberSliders(win32::WinApplication* app, x86::CPU& cpu);
+bool tuningSlidersMoved(win32::WinApplication* app, x86::CPU& cpu);
+bool tuningBindSliders(win32::WinApplication* app, x86::CPU& cpu);
+bool tuningLoadAdvanced(win32::WinApplication* app, x86::CPU& cpu);
+bool tuningDefaultsAnswered(win32::WinApplication* app, x86::CPU& cpu);
+bool tuningDoneKey(win32::WinApplication* app, x86::CPU& cpu);
+bool tuningCancelKey(win32::WinApplication* app, x86::CPU& cpu);
+bool tuningCarListKey(win32::WinApplication* app, x86::CPU& cpu);
+bool tuningDefaultsKey(win32::WinApplication* app, x86::CPU& cpu);
+bool tuningBindDoneCancel(win32::WinApplication* app, x86::CPU& cpu);
+bool tuningFitButtons(win32::WinApplication* app, x86::CPU& cpu);
+bool tuningPrepare(win32::WinApplication* app, x86::CPU& cpu);
+bool tuningOnEnter(win32::WinApplication* app, x86::CPU& cpu);
+bool tuningOnExit(win32::WinApplication* app, x86::CPU& cpu);
+bool tuningAdvancedDiffers(win32::WinApplication* app, x86::CPU& cpu);
+bool tuningCopyAdvanced(win32::WinApplication* app, x86::CPU& cpu);
+/* and the track's (native_frontend_tracks.cpp): location and trkinfo. */
+bool locationOnEnter(win32::WinApplication* app, x86::CPU& cpu);
+bool locationOnFrame(win32::WinApplication* app, x86::CPU& cpu);
+bool locationOnExit(win32::WinApplication* app, x86::CPU& cpu);
+bool infoPlaceTrackPlaces(win32::WinApplication* app, x86::CPU& cpu);
+bool infoOnEnter(win32::WinApplication* app, x86::CPU& cpu);
+bool infoOnFrame(win32::WinApplication* app, x86::CPU& cpu);
+bool infoOnExit(win32::WinApplication* app, x86::CPU& cpu);
+bool infoSpeak(win32::WinApplication* app, x86::CPU& cpu);
+bool infoStopSpeaking(win32::WinApplication* app, x86::CPU& cpu);
 
 }
 

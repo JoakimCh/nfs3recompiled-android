@@ -58,8 +58,8 @@ android {
                     // emulated CPUID, and the game picks a completely different
                     // set of copy/decode routines when it thinks MMX is absent --
                     // that no-MMX path is what left the movie streamer's filename
-                    // buffer all zeroes on device.  sse2neon covers every SSE2
-                    // intrinsic the disassembly uses (verified in M1).
+                    // buffer all zeroes on device.  MMX itself is plain C++
+                    // (include/mmx.h), the same on ARM as on x86.
                     "-DWITH_MMX=ON",
                     // -PwideFpu: the long double x87 experiment (include/fpu.h).
                     "-DWITH_WIDE_FPU=" + (providers.gradleProperty("wideFpu").isPresent() ? "ON" : "OFF"),

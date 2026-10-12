@@ -1,5 +1,5 @@
 #include <nfs3hp.h>
-#include "native_thrash.h"
+#include "isnd.h"
 #include <lib/memmap.h>
 #include <SDL3/SDL.h>
 #include <atomic>
@@ -14,8 +14,9 @@
  * eacsnd is the iSNDdirect* half of EA's SND library: the game (nfs3.exe) does
  * all the mixing -- the samples, the engine, the music stream, volume, pan and
  * pitch -- and the DLL only feeds what it mixes to DirectSound.  Its exports go
- * to the game through GetProcAddress (sub_4e1dd4, pointers at 0x9ef61c..), and
- * of them only four do anything here:
+ * to the game through GetProcAddress (iSNDloaddll, pointers at 0x9ef61c..), and
+ * of them only four do anything here -- this file's, which disassemble_nfs3hp.py
+ * binds to the exports of those names, eacsnd having no generated code:
  *
  * - iSNDdirectcaps: the formats the card plays.  Ours plays stereo 16-bit at
  *   every rate, no 3D buffers: 0x3e08, as eacsnd worked out from our
@@ -38,12 +39,11 @@
  * it keeps the stream is eacsnd's 20 ms to begin with, raised by what the
  * device found missing whenever it ran dry while serve came on time.
  *
- * The 3D functions are left generated: with no 3D buffers (caps) the game
- * creates none, and vol, rate and pos3d only store what they are given while
- * eacsnd's DirectSound flag [0xa3c0b0] is 0, which nothing here sets.
- *
- * NFS_SND_NATIVE=0 (launch extra snd_native false) leaves eacsnd's generated
- * code to all of it, as does NFS_NATIVES=0. */
+ * eacsnd's twelve other exports -- the version, the game's functions,
+ * recording, the 3D buffers -- are native in native_isnd.cpp.  With no 3D
+ * buffers (caps) the game creates none, and vol, rate and pos3d only store what
+ * they are given while eacsnd's DirectSound flag [0xa3c0b0] is 0, which nothing
+ * here sets. */
 
 namespace nfs3hp
 {
@@ -51,20 +51,11 @@ namespace nfs3hp
 namespace
 {
 
-constexpr x86::reg32 kCaps = 0xa3c0fc;         // iSNDdirectcaps's answer, kept; -1 until asked
-constexpr x86::reg32 kMixer = 0xa3c104;        // the game's mixer: stdcall (buffer, frames)
-constexpr x86::reg32 kTick = 0xa3c114;         // the game's 100 Hz tick: no arguments
-constexpr x86::reg32 kCapsValue = 0x3e08;      // stereo 16-bit; 11025, 16000, 22050, 32000, 44100 Hz
+constexpr x86::reg32 kCaps = isnd::kCapsKept;          // iSNDdirectcaps's answer, kept; -1 until asked
+constexpr x86::reg32 kMixer = isnd::kFunctionMix;      // the game's mixer: stdcall (buffer, frames)
+constexpr x86::reg32 kTick = isnd::kFunctionTick;      // the game's 100 Hz tick: no arguments
+constexpr x86::reg32 kCapsValue = isnd::kCaps16BitStereo | isnd::kCapsAnyRate;  // 0x3e08: stereo 16-bit at every rate
 constexpr x86::reg32 kMixFrames = 0x4000;      // the most mixed at once: 0.37 s at 44100 Hz
-
-bool soundOn()
-{
-    static const bool on = []() {
-        const char* value = SDL_getenv("NFS_SND_NATIVE");
-        return !value || SDL_strcmp(value, "0") != 0;
-    }();
-    return on && nativesEnabled();
-}
 
 x86::reg32 get(win32::WinApplication* app, x86::reg32 address)
 {
@@ -205,24 +196,24 @@ bool startNative(win32::WinApplication* app, x86::CPU& cpu)
 {
     const x86::reg32 flags = get(app, cpu.esp + 4);
     x86::reg32 rate = 0;
-    if (flags & 0x800)
+    if (flags & isnd::kCaps22050)
         rate = 22050;
-    else if (flags & 0x400)
+    else if (flags & isnd::kCaps16000)
         rate = 16000;
-    else if (flags & 0x1000)
+    else if (flags & isnd::kCaps32000)
         rate = 32000;
-    else if (flags & 0x2000)
+    else if (flags & isnd::kCaps44100)
         rate = 44100;
-    else if (flags & 0x200)
+    else if (flags & isnd::kCaps11025)
         rate = 11025;
     SDL_AudioSpec game{};
-    if (flags & 8)
+    if (flags & isnd::kCaps16BitStereo)
         game = {SDL_AUDIO_S16, 2, 0};
-    else if (flags & 2)
+    else if (flags & isnd::kCaps8BitStereo)
         game = {SDL_AUDIO_U8, 2, 0};
-    else if (flags & 4)
+    else if (flags & isnd::kCaps16BitMono)
         game = {SDL_AUDIO_S16, 1, 0};
-    else if (flags & 1)
+    else if (flags & isnd::kCaps8BitMono)
         game = {SDL_AUDIO_U8, 1, 0};
     game.freq = int(rate);
     if (rate == 0 || game.channels == 0)
@@ -420,24 +411,25 @@ bool serveNative(win32::WinApplication* app, x86::CPU& cpu)
 
 }
 
-bool soundCaps(win32::WinApplication* app, x86::CPU& cpu)
+/* eacsnd's exports of these names (disassemble_nfs3hp.py). */
+void iSNDdirectcaps(win32::WinApplication* app, x86::CPU& cpu)
 {
-    return soundOn() && capsNative(app, cpu);
+    capsNative(app, cpu);
 }
 
-bool soundStart(win32::WinApplication* app, x86::CPU& cpu)
+void iSNDdirectstart(win32::WinApplication* app, x86::CPU& cpu)
 {
-    return soundOn() && startNative(app, cpu);
+    startNative(app, cpu);
 }
 
-bool soundStop(win32::WinApplication* app, x86::CPU& cpu)
+void iSNDdirectstop(win32::WinApplication* app, x86::CPU& cpu)
 {
-    return soundOn() && stopNative(app, cpu);
+    stopNative(app, cpu);
 }
 
-bool soundServe(win32::WinApplication* app, x86::CPU& cpu)
+void iSNDdirectserve(win32::WinApplication* app, x86::CPU& cpu)
 {
-    return soundOn() && serveNative(app, cpu);
+    serveNative(app, cpu);
 }
 
 }

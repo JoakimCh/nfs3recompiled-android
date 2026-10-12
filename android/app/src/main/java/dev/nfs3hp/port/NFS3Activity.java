@@ -233,9 +233,6 @@ public class NFS3Activity extends SDLActivity
             // Only the clipper checked (sub_4c2cd0, native_vertices.cpp).
             else if (getIntent().getBooleanExtra("clip_check", false))
                 setEnv("NFS_NATIVE_CHECK", "clip");
-            // Only the THRASH stand-ins checked (native_thrash.cpp).
-            else if (getIntent().getBooleanExtra("thrash_check", false))
-                setEnv("NFS_NATIVE_CHECK", "thrash");
             // Only the loading stand-ins checked (native_loading.cpp).
             else if (getIntent().getBooleanExtra("load_check", false))
                 setEnv("NFS_NATIVE_CHECK", "load");
@@ -244,8 +241,6 @@ public class NFS3Activity extends SDLActivity
                 setEnv("NFS_NATIVES", "0");
             else if (!getIntent().getBooleanExtra("polygon_natives", true))
                 setEnv("NFS_NATIVES", "vertices");
-            else if (!getIntent().getBooleanExtra("drawtri_native", true))
-                setEnv("NFS_NATIVES", "no-drawtri");
             else if (!getIntent().getBooleanExtra("rotate_native", true))
                 setEnv("NFS_NATIVES", "no-rotate");
             else if (!getIntent().getBooleanExtra("clip_native", true))
@@ -265,9 +260,6 @@ public class NFS3Activity extends SDLActivity
             // The native driver through the old Voodoo2 renderer (GlideRenderer).
             if (!getIntent().getBooleanExtra("thrash_gl", true))
                 setEnv("NFS_THRASH_GL", "0");
-            // eacsnd's sound driver as generated (DirectSound) rather than native into SDL.
-            if (!getIntent().getBooleanExtra("snd_native", true))
-                setEnv("NFS_SND_NATIVE", "0");
             // The game's mixer functions in use, each set once ([SND]).
             if (getIntent().getBooleanExtra("snd_trace", false))
                 setEnv("NFS_SND_TRACE", "1");

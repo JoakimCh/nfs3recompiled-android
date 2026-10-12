@@ -1,0 +1,1102 @@
+/* The decompiled screens -- src/nfs3hp/native_frontend_options.cpp, _cars.cpp
+ * and _tracks.cpp -- against the generated code they stand in for, on the
+ * desktop, without the game or its data.
+ *
+ * The generated functions are copied out of src/nfs3hp/disassembly without
+ * the port's hooks (extract.py) and built with the port's own headers.  Every
+ * function they call outside these screens is a stand-in here (mock):
+ * it records the call -- where, the registers and stack arguments the real one
+ * reads, and a hash of the menus' and settings' memory as it stands at the
+ * call -- and answers from a script, the same script for both runs.  It
+ * clobbers the registers the real one does not keep, with values of its own,
+ * so a caller counting on one the real function changes shows up.  The few
+ * calls whose effect the screens read back -- a copy, a fill, sprintf, a
+ * slider's value on the x87, the list of screen modes -- do it, and those
+ * handed a string record what it says.
+ *
+ * Each case starts both from the same memory, registers and x87 (its control
+ * word in each precision): the generated code, then the decompiled one; then
+ * all of memory but the stack below the returned esp, the registers, the x87's
+ * status word and depth, and the two runs' calls are compared.
+ *
+ * The data is made up: menus and items, the settings each screen reads, with
+ * values on both sides of every comparison the screens make.
+ *
+ * See run.sh. */
+#include <nfs3hp.h>
+#include <native_frontend.h>
+#include <cstdio>
+#include <cstring>
+#include <fstream>
+#include <limits>
+#include <map>
+#include <random>
+#include <string>
+#include <vector>
+#include <sys/mman.h>
+
+namespace x86
+{
+void assertLog(const char* file, int line, const char* expr)
+{
+    std::printf("assert %s:%d %s\n", file, line, expr);
+}
+}
+
+namespace
+{
+
+constexpr x86::reg32 kMemory = 0x1000000;
+constexpr x86::reg32 kStack = 0xff0000;
+
+x86::reg8* g_memory = nullptr;
+std::map<x86::reg32, win32::MethodPtr> g_methods;
+
+x86::reg32 word32(x86::reg32 at)
+{
+    x86::reg32 value;
+    std::memcpy(&value, g_memory + at, 4);
+    return value;
+}
+
+void setWord32(x86::reg32 at, x86::reg32 value)
+{
+    std::memcpy(g_memory + at, &value, 4);
+}
+
+void setFloat(x86::reg32 at, float value)
+{
+    std::memcpy(g_memory + at, &value, 4);
+}
+
+/* The script both runs answer from, and what each run recorded. */
+std::mt19937 g_script;
+std::vector<x86::reg32> g_log;
+unsigned g_calls = 0;
+
+x86::reg32 scripted(x86::reg32 below)
+{
+    return below ? x86::reg32(g_script() % below) : x86::reg32(g_script());
+}
+
+/* The memory the screens read and write, hashed at each call. */
+const std::pair<x86::reg32, x86::reg32> kWatched[] = {
+    { 0x550000, 0x570000 }, { 0x5f3000, 0x5f4000 }, { 0x604000, 0x608000 },
+    { 0x660000, 0x664000 }, { 0x6fb000, 0x6fe000 }, { 0x7a2000, 0x7a4000 },
+    { 0x5e1000, 0x5e2000 }, { 0x677000, 0x678000 }, { 0x7dd000, 0x7de000 }, { 0x8b8000, 0x8bb000 },
+};
+
+x86::reg32 watchedHash()
+{
+    std::uint64_t h = 1469598103934665603ull;
+    for (const auto& range : kWatched)
+    {
+        for (x86::reg32 at = range.first; at < range.second; at += 8)
+        {
+            std::uint64_t v;
+            std::memcpy(&v, g_memory + at, 8);
+            h = (h ^ v) * 1099511628211ull;
+        }
+    }
+    return x86::reg32(h ^ (h >> 32));
+}
+
+enum Reg : std::uint8_t
+{
+    EAX = 1,
+    EBX = 2,
+    ECX = 4,
+    EDX = 8,
+    ESI = 16,
+    EDI = 32,
+};
+
+enum class Kind
+{
+    Plain,         // a value from the script
+    Bool,          // 0 or 1
+    FindItem,      // 0 or an item
+    KeyHandler,    // a widget's key handler: it may move the keys and the controller chosen
+    SliderValue,   // a float on the x87
+    Copy,          // eax to edx, ebx bytes
+    Fill,          // edx zero bytes at eax
+    Sprintf,
+    ListModes,     // the count of modes at 0x559218
+    CurrentMode,   // the chosen mode's record to esi
+    ControlsOf,
+    Focus,         // 0, 1 or 2
+    NoEax,         // leaves eax as it is
+    Shape,         // a shape's record: memory to read
+    Tuning,        // 0 or a player's tuning record, 0x1c bytes
+};
+
+struct Spec
+{
+    std::uint8_t in;       // the registers it reads
+    std::uint8_t stack;    // the stack arguments it reads
+    std::uint8_t pops;     // what its ret pops
+    std::uint8_t clobbers; // the registers it changes besides
+    Kind kind;
+    bool string = false;   // eax a string: what it says is recorded
+};
+
+const std::map<x86::reg32, Spec> kSpecs = {
+    { 0x442a40, { EAX | EDX, 0, 0, EDX, Kind::FindItem } },
+    { 0x4429c0, { EAX | EDX, 0, 0, EDX, Kind::Bool } },
+    { 0x461270, { EAX | EBX | EDX, 0, 0, EBX | EDX, Kind::KeyHandler } },
+    { 0x4624a0, { EAX | EBX | EDX, 0, 0, EBX | EDX, Kind::KeyHandler } },
+    { 0x463ff0, { EAX | EBX | EDX, 0, 0, EBX | EDX, Kind::KeyHandler } },
+    { 0x46c950, { EAX, 2, 8, 0, Kind::Plain } },
+    { 0x46c9b0, { EAX | EDX, 0, 0, EDX, Kind::SliderValue } },
+    { 0x46cac0, { EAX | EDX, 0, 0, 0, Kind::NoEax } },
+    { 0x46cae0, { EAX | EDX, 0, 0, EDX, Kind::Plain } },
+    { 0x46cca0, { EAX | EBX | EDX, 0, 0, 0, Kind::NoEax } },
+    { 0x451530, { 0, 1, 4, 0, Kind::Plain } },
+    { 0x4ea4f0, { EAX | EBX | EDX, 0, 0, EBX | EDX, Kind::Copy } },
+    { 0x4e070c, { EAX | EDX, 0, 0, EDX, Kind::Fill } },
+    { 0x435b40, { EAX | EBX | ECX | EDX, 0, 0, EBX | ECX | EDX, Kind::Plain } },
+    { 0x4358f0, { EAX | EDX, 0, 0, EDX, Kind::Plain } },
+    { 0x435df0, { EAX | EDX, 0, 0, EDX, Kind::Plain } },
+    { 0x4482c0, { 0, 0, 0, 0, Kind::ListModes } },
+    { 0x448330, { ESI, 0, 0, ESI, Kind::CurrentMode } },
+    { 0x4904d0, { EAX, 0, 0, 0, Kind::ControlsOf } },
+    { 0x4904f0, { EAX, 0, 0, 0, Kind::Plain } },
+    { 0x44ac90, { EAX, 0, 0, 0, Kind::Plain, true } },
+    { 0x4d5db0, { EAX, 0, 0, 0, Kind::Plain, true } },
+    { 0x4df690, { 0, 0, 0, 0, Kind::Sprintf } },
+    { 0x43c040, { 0, 0, 0, 0, Kind::Plain } },
+    { 0x44a660, { EAX, 0, 0, 0, Kind::Bool } },
+    { 0x4d1850, { EAX, 0, 0, EBX | EDI | ESI, Kind::Plain } },
+    { 0x4446c0, { 0, 0, 0, 0, Kind::Focus } },
+    { 0x4446d0, { EAX | EBX | ECX | EDX, 4, 16, EBX | ECX | EDX, Kind::Plain } },
+    { 0x444be0, { EAX, 0, 0, EDI | ESI, Kind::Plain } },
+    { 0x445f00, { 0, 0, 0, 0, Kind::NoEax } },
+    { 0x445f10, { 0, 0, 0, 0, Kind::Plain } },
+    { 0x445f50, { EAX, 0, 0, 0, Kind::Plain } },
+    { 0x4438b0, { 0, 0, 0, 0, Kind::Bool } },
+    { 0x44aeb0, { 0, 0, 0, 0, Kind::Plain } },
+    { 0x44a4f0, { EAX, 0, 0, 0, Kind::Plain } },
+    { 0x4d9120, { 0, 0, 0, EBX | EDI | ESI, Kind::Plain } },
+    { 0x4d9140, { 0, 0, 0, EBX | EDI | ESI, Kind::Plain } },
+    { 0x4109d0, { 0, 0, 0, EBX, Kind::Plain } },
+    { 0x410aa0, { 0, 0, 0, EBX | EDI | ESI, Kind::Plain } },
+    { 0x410b20, { 0, 0, 0, EDI, Kind::Plain } },
+    { 0x40feb0, { 0, 0, 0, EBX | EDI | EDX | ESI, Kind::Plain } },
+    { 0x40fcf0, { EAX | EDX, 0, 0, 0, Kind::Plain } },
+    { 0x4136e0, { 0, 0, 0, 0, Kind::Plain } },
+    { 0x410330, { 0, 0, 0, 0, Kind::Plain } },
+    { 0x4103a0, { EAX | EDX, 0, 0, EDX, Kind::Plain } },
+    { 0x4107c0, { EAX | EBX | EDX, 0, 0, EBX | EDX, Kind::Plain } },
+    { 0x4e7470, { EAX | EDX, 0, 0, EDX, Kind::Plain } },
+    { 0x4e9420, { EAX | EBX | EDX, 0, 0, EBX | EDX, Kind::Plain } },
+    { 0x4e95fc, { EAX | EDX, 0, 0, EDX, Kind::Plain } },
+    { 0x4182b0, { EAX | EBX | ECX | EDX, 1, 4, EBX | ECX | EDX, Kind::Plain } },
+    { 0x40faf0, { 0, 0, 0, EBX | EDI | ESI, Kind::Bool } },
+    // The cars' and the tracks' screens'.
+    { 0x439520, { EAX, 0, 0, 0, Kind::Plain } },
+    { 0x439660, { EAX, 0, 0, 0, Kind::Plain } },
+    { 0x4eb1d0, { EAX, 0, 0, EBX | EDI | ESI, Kind::Plain, true } },
+    { 0x4ead20, { 0, 0, 0, 0, Kind::Plain } },
+    { 0x4eb160, { EAX, 0, 0, 0, Kind::Plain, true } },
+    { 0x4ead90, { 0, 0, 0, 0, Kind::Plain } },
+    { 0x439760, { EAX, 0, 0, 0, Kind::Plain } },
+    { 0x439790, { EAX | EDX, 0, 0, 0, Kind::Plain } },
+    { 0x4397d0, { EAX | EBX | EDX, 0, 0, EDX, Kind::Plain } },
+    { 0x456a20, { EAX, 0, 0, 0, Kind::Plain } },
+    { 0x4530c0, { EAX, 0, 0, EDI, Kind::Bool } },
+    { 0x4396b0, { EAX, 0, 0, 0, Kind::Bool } },
+    { 0x439ce0, { 0, 0, 0, 0, Kind::Bool } },
+    { 0x439a50, { EAX, 0, 0, 0, Kind::Bool } },
+    { 0x4dc550, { EAX | EDX, 0, 0, EDX, Kind::Tuning } },
+    { 0x4dca50, { EAX, 0, 0, 0, Kind::Bool } },
+    { 0x4104f0, { EAX | EBX | EDX, 0, 0, EBX | EDX, Kind::Plain } },
+    { 0x4d6390, { EAX | EDX, 0, 0, EDX, Kind::Plain } },
+    { 0x4ef270, { EAX | EDX, 0, 0, EDX, Kind::Shape, false } },
+    { 0x4ef1e0, { EAX | EDX, 0, 0, EDX | EDI, Kind::Shape } },
+    { 0x456800, { EAX | EDX, 0, 0, EDX, Kind::Plain } },
+    { 0x4c9240, { EAX, 0, 0, 0, Kind::Bool, true } },
+    { 0x4c95f0, { EAX | EBX | EDX, 0, 0, EDX, Kind::Plain } },
+    { 0x4c9490, { 0, 0, 0, ESI, Kind::Plain } },
+    { 0x4e8c1c, { EAX, 0, 0, EDI, Kind::Plain } },
+    { 0x4e1890, { EAX, 0, 0, 0, Kind::Plain } },
+};
+
+x86::reg32* reg(x86::CPU& cpu, std::uint8_t r)
+{
+    switch (r)
+    {
+    case EAX: return &cpu.eax;
+    case EBX: return &cpu.ebx;
+    case ECX: return &cpu.ecx;
+    case EDX: return &cpu.edx;
+    case ESI: return &cpu.esi;
+    default: return &cpu.edi;
+    }
+}
+
+// The items findItem hands out, and the screens' slider slots that may hold them.
+constexpr x86::reg32 kItems = 0x604ee0;
+constexpr x86::reg32 kItemSize = 0xbc;
+constexpr std::uint32_t kPoolFirst = 10;
+constexpr std::uint32_t kPoolItems = 30;
+
+x86::reg32 poolItem(std::uint32_t i)
+{
+    return kItems + kItemSize * (kPoolFirst + i);
+}
+
+/* Every slider at this value for a case, when not NaN: the tuning screen
+ * then finds none moved. */
+float g_fixedSlider = std::numeric_limits<float>::quiet_NaN();
+
+const float kValues[] = { 0.0f, 0.25f, 0.5f, 0.75f, 1.0f, 0.1f, 0.9f, 0.33f, 0.6f, 0.05f };
+
+float someValue(std::mt19937& random)
+{
+    // Often the same few, so that the ends the deadzone screen kept match.
+    if (random() % 3 == 0)
+        return random() % 2 ? 0.5f : 0.25f;
+    const unsigned pick = random() % 14;
+    if (pick < std::size(kValues))
+        return kValues[pick];
+    if (pick == 10)
+        return -0.25f;
+    if (pick == 11)
+        return 1.3f;
+    return float(random() % 100000) / 100000.0f;
+}
+
+/* A string of guest memory, at most `limit` characters. */
+std::string guestString(x86::reg32 at, std::size_t limit = 200)
+{
+    std::string text;
+    while (text.size() < limit && at < kMemory && g_memory[at] != 0)
+        text += char(g_memory[at++]);
+    return text;
+}
+
+/* sprintf, Watcom's: its format's %s, %d, %x and %c, flags and width, the
+ * arguments from the stack, each one recorded. */
+void sprintfMock(x86::CPU& cpu)
+{
+    const x86::reg32 buffer = word32(cpu.esp + 4);
+    const x86::reg32 format = word32(cpu.esp + 8);
+    const std::string fmt = guestString(format);
+    g_log.push_back(buffer);
+    g_log.push_back(format);
+    std::string out;
+    x86::reg32 argument = cpu.esp + 12;
+    for (std::size_t i = 0; i < fmt.size(); ++i)
+    {
+        if (fmt[i] != '%' || i + 1 == fmt.size())
+        {
+            out += fmt[i];
+            continue;
+        }
+        std::size_t j = i + 1;
+        while (j < fmt.size() && std::strchr("-+ #0123456789", fmt[j]))
+            ++j;
+        if (j == fmt.size())
+            break;
+        const std::string spec = "%" + fmt.substr(i + 1, j - i - 1) + fmt[j];
+        char piece[256] = "";
+        const x86::reg32 value = word32(argument);
+        switch (fmt[j])
+        {
+        case 's':
+            g_log.push_back(value);
+            std::snprintf(piece, sizeof piece, spec.c_str(), guestString(value).c_str());
+            argument += 4;
+            break;
+        case 'd':
+        case 'x':
+        case 'X':
+        case 'c':
+            g_log.push_back(value);
+            std::snprintf(piece, sizeof piece, spec.c_str(), int(value));
+            argument += 4;
+            break;
+        case '%':
+            piece[0] = '%';
+            break;
+        default:
+            std::snprintf(piece, sizeof piece, "<%c>", fmt[j]);
+            break;
+        }
+        out += piece;
+        i = j;
+    }
+    if (out.size() > 255)
+        out.resize(255);
+    std::memcpy(g_memory + buffer, out.c_str(), out.size() + 1);
+    cpu.eax = x86::reg32(out.size());
+}
+
+}
+
+namespace nfs3hp
+{
+
+/* The port's keyboard, told the game takes typing: recorded. */
+void textEntry(bool taking)
+{
+    g_log.push_back(0x7e470000 | (taking ? 1 : 0));
+}
+
+/* A stand-in for a game function: the call recorded, answered from the
+ * script. */
+void mock(win32::WinApplication*, x86::CPU& cpu, x86::reg32 address)
+{
+    auto found = kSpecs.find(address);
+    if (found == kSpecs.end())
+    {
+        std::printf("no stand-in for sub_%06x\n", unsigned(address));
+        std::abort();
+    }
+    const Spec& spec = found->second;
+    ++g_calls;
+    g_log.push_back(0xca110000);
+    g_log.push_back(address);
+    for (const std::uint8_t r : { EAX, EBX, ECX, EDX, ESI, EDI })
+        if (spec.in & r)
+            g_log.push_back(*reg(cpu, r));
+    for (unsigned i = 0; i < spec.stack; ++i)
+        g_log.push_back(word32(cpu.esp + 4 + 4 * i));
+    if (spec.string)
+    {
+        for (const char c : guestString(cpu.eax, 64))
+            g_log.push_back(x86::reg32(std::uint8_t(c)));
+    }
+    g_log.push_back(watchedHash());
+    g_log.push_back(cpu.fpu.count);
+
+    x86::reg32 result = scripted(0);
+    switch (spec.kind)
+    {
+    case Kind::Plain:
+        break;
+    case Kind::NoEax:
+        result = cpu.eax;
+        break;
+    case Kind::Bool:
+        result = scripted(3) != 0 ? 1 : 0;
+        break;
+    case Kind::Focus:
+        result = scripted(3);
+        break;
+    case Kind::FindItem:
+        result = scripted(5) == 0 ? 0 : poolItem(scripted(kPoolItems));
+        break;
+    case Kind::KeyHandler:
+        // The feeds' keys, and the controller chosen, as a list or button moves them.
+        if (scripted(4) != 0)
+        {
+            setWord32(0x6fbc04 + 4 * scripted(3), scripted(10));
+            setWord32(0x558a74, scripted(4));
+            // The car a tuned player's list chose.
+            const x86::reg32 player = word32(0x55304c);
+            if (player == 0x6fd2bc || player == 0x6fd328)
+                setWord32(player, scripted(3) == 0 ? word32(player) : scripted(40));
+        }
+        result = scripted(12);
+        break;
+    case Kind::SliderValue:
+        cpu.fpu.push(x86::Float(g_fixedSlider == g_fixedSlider ? g_fixedSlider : someValue(g_script)));
+        result = cpu.eax;
+        break;
+    case Kind::Copy:
+    {
+        const x86::reg32 bytes = cpu.ebx < 0x1000 ? cpu.ebx : 0x1000;
+        g_log.push_back(bytes);
+        std::memmove(g_memory + cpu.edx, g_memory + cpu.eax, bytes);
+        break;
+    }
+    case Kind::Fill:
+        std::memset(g_memory + cpu.eax, 0, cpu.edx < 0x1000 ? cpu.edx : 0x1000);
+        break;
+    case Kind::Sprintf:
+        sprintfMock(cpu);
+        result = cpu.eax;
+        break;
+    case Kind::ListModes:
+        setWord32(0x559218, 1 + scripted(8));
+        break;
+    case Kind::CurrentMode:
+    {
+        const x86::reg32 index = word32(0x6fbc14) % 16;
+        std::memcpy(g_memory + cpu.esi, g_memory + 0x661220 + 0x114 * index, 0x114);
+        result = cpu.esi;
+        break;
+    }
+    case Kind::ControlsOf:
+        result = cpu.eax == 1 ? 0x6fd240 : 0x6fd20c;
+        break;
+    case Kind::Shape:
+        result = 0x5f3c00 + 16 * scripted(16);
+        break;
+    case Kind::Tuning:
+        result = scripted(3) == 0 ? 0 : 0x5f3e00 + 4 * scripted(8);
+        break;
+    }
+    for (const std::uint8_t r : { EBX, ECX, EDX, ESI, EDI })
+        if (spec.clobbers & r)
+            *reg(cpu, r) = 0xc1000000 | (g_calls << 8) | r;
+    cpu.eax = result;
+    cpu.esp += 4 + spec.pops;
+}
+
+}
+
+namespace win32
+{
+
+WinApplication::WinApplication(const char*, x86::reg32, const std::vector<Section>&)
+{
+    void* memory = mmap(nullptr, kMemory, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    if (memory == MAP_FAILED)
+        std::abort();
+    m_memory = static_cast<x86::reg8*>(memory);
+    g_memory = m_memory;
+}
+
+WinApplication::~WinApplication() {}
+
+int WinApplication::s_traceApi = 0;
+bool WinApplication::readTraceApi() { return false; }
+void WinApplication::traceCall(const Method&, x86::reg32) {}
+void WinApplication::yieldContext(const x86::CPU&) {}
+
+void WinApplication::dynamicCallElsewhere(x86::reg32 address, x86::CPU& cpu)
+{
+    auto method = g_methods.find(address);
+    if (method == g_methods.end())
+    {
+        nfs3hp::mock(this, cpu, address);
+        return;
+    }
+    method->second(this, cpu);
+}
+
+void MemMap::usedRanges(std::vector<std::pair<x86::reg32, x86::reg32>>& ranges)
+{
+    ranges.assign(1, {0, kMemory});
+}
+
+}
+
+namespace nfs3hp
+{
+
+#include "build/mocks.inc"
+
+Application::Application(const char* appName)
+    : WinApplication(appName, 0x400000, {})
+{
+    g_methods = {
+#include "build/mocks.inc.generated"
+    };
+}
+
+}
+
+namespace
+{
+
+typedef bool (*Native)(win32::WinApplication*, x86::CPU&);
+
+std::mt19937 g_random(1998);
+
+x86::reg32 random(x86::reg32 below)
+{
+    return below ? x86::reg32(g_random() % below) : x86::reg32(g_random());
+}
+
+/* The exe's data, its strings among it: the decompiled code checks them. */
+void loadImage(const char* path)
+{
+    std::ifstream file(path, std::ios::binary);
+    std::vector<char> d((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+    if (d.size() < 0x400)
+    {
+        std::printf("cannot read %s\n", path);
+        std::exit(1);
+    }
+    auto u32 = [&](std::size_t at) { x86::reg32 v; std::memcpy(&v, &d[at], 4); return v; };
+    auto u16 = [&](std::size_t at) { std::uint16_t v; std::memcpy(&v, &d[at], 2); return v; };
+    const x86::reg32 pe = u32(0x3c);
+    const unsigned sections = u16(pe + 6);
+    const unsigned optional = u16(pe + 20);
+    const x86::reg32 base = u32(pe + 24 + 28);
+    for (unsigned i = 0; i < sections; ++i)
+    {
+        const std::size_t s = pe + 24 + optional + 40 * i;
+        const x86::reg32 va = u32(s + 12), at = u32(s + 20);
+        x86::reg32 raw = u32(s + 16);
+        if (at >= d.size())
+            continue;
+        if (raw > d.size() - at)
+            raw = x86::reg32(d.size() - at);
+        if (raw && base + va + raw < kStack - 0x100000)
+            std::memcpy(g_memory + base + va, &d[at], raw);
+    }
+}
+
+std::vector<x86::reg8> g_image;
+
+void fillRandom(x86::reg32 from, x86::reg32 to)
+{
+    for (x86::reg32 at = from; at < to; ++at)
+        g_memory[at] = x86::reg8(g_random());
+}
+
+x86::reg32 maybeItem(unsigned zeroIn)
+{
+    return random(zeroIn) == 0 ? 0 : poolItem(random(kPoolItems));
+}
+
+x86::reg32 g_menu = 0;
+
+/* A world for one case: the image, then the screens' memory made up. */
+void makeWorld()
+{
+    std::memcpy(g_memory + 0x534000, g_image.data(), g_image.size());
+    for (const auto& range : kWatched)
+        fillRandom(range.first, range.second);
+    fillRandom(kStack - 0x8000, kStack + 0x100);
+
+    // The menu: its first item and the one selected, in the pool.
+    g_menu = 0x6040d0 + 0x24 * 3;
+    g_memory[g_menu + 0x18] = x86::reg8(kPoolFirst + random(10));
+    g_memory[g_menu + 0x19] = 0;
+    g_memory[g_menu + 0x1a] = x86::reg8(random(10));
+    g_memory[g_menu + 0x1b] = 0;
+    for (std::uint32_t i = 0; i < kPoolItems + 10; ++i)
+    {
+        const x86::reg32 item = kItems + kItemSize * (kPoolFirst + i);
+        setWord32(item, random(3) ? 5 : random(20));
+    }
+
+    setWord32(0x559234, random(2));                    // in a race
+    setWord32(0x6fd3b0, random(3));                    // players
+    setWord32(0x6fbb54, random(3) == 0);
+    for (x86::reg32 at : { 0x6fbc04u, 0x6fbc08u, 0x6fbc0cu, 0x5f3910u, 0x5f3914u, 0x5f3918u })
+        setWord32(at, random(5) == 0 ? x86::reg32(random(14)) - 2 : random(10));
+    for (x86::reg32 at = 0x6fbbd0; at < 0x6fbc04; at += 4)
+        setWord32(at, random(4) == 0 ? random(3) : random(128));
+    for (x86::reg32 at : { 0x552920u, 0x552924u, 0x5f3960u, 0x5f396cu })
+        setWord32(at, random(128));
+    setWord32(0x6fbbe4, random(5));
+    setWord32(0x5f3968, random(2) ? word32(0x6fbbe4) : random(5));
+    setWord32(0x6fbc00, random(2));
+    setWord32(0x5f3970, random(2) ? word32(0x6fbc00) : random(2));
+    setWord32(0x5f3964, random(2) ? word32(0x6fbbec) : random(128));
+    for (x86::reg32 at = 0x554f20; at <= 0x554f34; at += 4)
+        setWord32(at, random(4) == 0);
+    setWord32(0x554f38, random(2) ? 0 : random(0));
+    for (x86::reg32 at = 0x554f3c; at <= 0x554f4c; at += 4)
+        setWord32(at, maybeItem(3));
+    g_memory[0x552909] = x86::reg8(random(2));
+    g_memory[0x55e890] = x86::reg8(random(2));
+
+    // Controllers.
+    setWord32(0x6fd204, random(6) == 0 ? x86::reg32(-1) : random(5));
+    for (x86::reg32 c = 0; c < 6; ++c)
+    {
+        const x86::reg32 record = 0x6fc970 + 0x88 * c;
+        setWord32(record, random(3) == 0 ? 0 : random(0));
+        setWord32(record + 0x40, random(0));
+        for (x86::reg32 k = 0; k < 16; ++k)
+            setWord32(record + 0x48 + 4 * k, random(4) == 0 ? random(0) : random(2) ? 25 * random(5) : random(101));
+    }
+    setWord32(0x558a70, random(4));
+    setWord32(0x558a74, random(2) ? word32(0x558a70) : random(4));
+    for (x86::reg32 k = 0; k < 8; ++k)
+    {
+        setWord32(0x558a10 + 4 * k, maybeItem(3));
+        setFloat(0x558a30 + 8 * k, someValue(g_random));
+        setFloat(0x558a34 + 8 * k, someValue(g_random));
+        setWord32(0x558ac8 + 4 * k, random(4) == 0 ? random(0) : random(65536));
+    }
+    setWord32(0x660fc0, random(2));
+    setWord32(0x5f3da4, random(2));
+
+    // Force feedback.
+    for (x86::reg32 at = 0x6611e0; at <= 0x6611f4; at += 4)
+        setWord32(at, maybeItem(4));
+    for (x86::reg32 at = 0x6fd1f0; at <= 0x6fd200; at += 4)
+        setWord32(at, random(4) == 0 ? random(0) : random(101));
+    setWord32(0x6fc9b4, random(4) == 0 ? random(0) : random(101));
+    setWord32(0x661210, random(3));
+
+    // Graphics.
+    setWord32(0x6fbc14, random(12));
+    setWord32(0x559218, random(12));
+    setWord32(0x6fbb4c, random(8));
+    setWord32(0x7a3a68, random(2));
+    setWord32(0x6fbc34, random(2));
+    setFloat(0x6fbc38, someValue(g_random));
+    for (x86::reg32 m = 0; m < 16; ++m)
+        setWord32(0x661220 + 0x114 * m + 0x10, random(2));
+
+    std::memcpy(g_memory + 0x7a2db4, "fedata\\art\\", 12);
+
+    // The cars' screens.
+    setWord32(0x6fd3b8, random(5) == 0 ? random(0) : random(4));   // the kind of race
+    setWord32(0x6fd2bc, random(40));
+    setWord32(0x6fd328, random(40));
+    static const x86::reg32 kPlayers[] = { 0x6fd2bc, 0x6fd328, 0x6fd2bc, 0x6fd328, 0x5f3e80 };
+    setWord32(0x55304c, kPlayers[random(std::size(kPlayers))]);
+    setWord32(0x553048, random(6));
+    setWord32(0x553044, random(5));
+    setWord32(0x6fd4d4, random(9));
+    setWord32(0x6fd4d0, random(4));
+    setWord32(0x553040, random(4));
+    setWord32(0x552594, random(2));
+    setWord32(0x6fbbec, random(3) == 0 ? 6 : random(8));
+    // The developer's recorder.
+    g_memory[0x55eb2f] = x86::reg8(random(2) ? 0x40 : random(256));
+    setWord32(0x553038, random(10));
+    g_memory[0x564850] = x86::reg8(random(3) != 0);
+    g_memory[0x564831] = x86::reg8(random(3) != 0);
+    setWord32(0x5e10d0, random(3) == 0 ? random(0) : 25 + random(9));
+    setFloat(0x55302c, float(random(64)) / 32.0f);
+    // The tuning: each setting's least, most and default, the edited and the
+    // shown ones, often the sliders' values.
+    for (x86::reg32 i = 0; i < 7; ++i)
+    {
+        const float least = random(4) == 0 ? someValue(g_random) : float(random(5)) / 4.0f;
+        const float most = random(4) == 0 ? someValue(g_random) : least + float(1 + random(4)) / 2.0f;
+        setFloat(0x55d05c + 4 * i, least);
+        setFloat(0x55d040 + 4 * i, most);
+        setFloat(0x55d024 + 4 * i, least + (most - least) * someValue(g_random));
+        setFloat(0x5e10e0 + 4 * i, random(3) == 0 ? someValue(g_random) : least + (most - least) * someValue(g_random));
+        setFloat(0x5e10fc + 4 * i, someValue(g_random));
+    }
+    g_fixedSlider = std::numeric_limits<float>::quiet_NaN();
+    if (random(5) == 0)
+    {
+        g_fixedSlider = 0.5f;
+        for (x86::reg32 i = 0; i < 7; ++i)
+            setFloat(0x5e10fc + 4 * i, random(8) == 0 ? 0.25f : 0.5f);
+    }
+    // The advanced tunings, sometimes the same.
+    if (random(2))
+        std::memcpy(g_memory + 0x8b9200, g_memory + 0x8b9b60, 50 * 0x30);
+    if (random(2))
+        std::memcpy(g_memory + 0x8b88a0, g_memory + 0x8b9b60, 50 * 0x30);
+    if (random(3) == 0)
+        g_memory[0x8b9b60 + random(50 * 0x30)] ^= x86::reg8(1 + random(255));
+
+    // The tracks' screens: the track, its places and its art's names.
+    setWord32(0x6fd4ac, random(13));
+    std::memcpy(g_memory + 0x5f3f00, "place\0road%d\0", 15);
+    std::memcpy(g_memory + 0x5f3f20, "trk00", 6);
+    for (x86::reg32 t = 0; t < 13; ++t)
+    {
+        setWord32(0x5597f4 + 4 * t, random(5) == 0 ? x86::reg32(-1) : random(5));
+        setWord32(0x559620 + 4 * t, 0x5f3f20);
+        for (x86::reg32 i = 0; i < 4; ++i)
+            setWord32(0x5596d4 + 16 * t + 4 * i, random(4) == 0 ? 0x5f3f06 : 0x5f3f00);
+    }
+    std::memcpy(g_memory + 0x7a31b4, "fedata\\art\\", 12);
+    for (x86::reg32 l = 0; l < 5; ++l)
+        std::strcpy(reinterpret_cast<char *>(g_memory) + 0x7a2b34 + 0x80 * l, random(2) ? "speech\\" : "speech2\\");
+    for (x86::reg32 l = 0; l < 8; ++l)
+        setWord32(0x560b34 + 4 * l, 0x5f3f20);
+    setWord32(0x559828, random(2));
+    setWord32(0x7dd838, random(2));
+    setWord32(0x7dd84c, random(2) ? 0 : random(0));
+    setWord32(0x7a22e0, random(3) == 0);
+}
+
+x86::CPU entryState()
+{
+    x86::CPU cpu;
+    std::memset(&cpu, 0, sizeof cpu);
+    cpu.init(0, 0);
+    cpu.eax = random(0);
+    cpu.ebx = random(0);
+    cpu.ecx = random(0);
+    cpu.edx = random(0);
+    cpu.esi = random(0);
+    cpu.edi = random(0);
+    cpu.ebp = random(0);
+    cpu.esp = kStack;
+    static const x86::reg16 kControls[] = { 0x037f, 0x027f, 0x007f, 0x0c7f, 0x047f };
+    cpu.fpu.setControl(kControls[random(std::size(kControls))]);
+    // Something on the x87 already, as the menus leave it.
+    for (unsigned i = random(3); i > 0; --i)
+        cpu.fpu.push(x86::Float(random(1000)));
+    cpu.flags.lo = x86::reg8((random(0) & 0xd5) | 0x02);
+    return cpu;
+}
+
+struct Totals
+{
+    unsigned cases = 0;
+    unsigned failures = 0;
+};
+
+std::map<std::string, Totals> g_totals;
+std::vector<x86::reg8> g_before;
+std::vector<x86::reg8> g_original;
+
+/* One case: the generated function at `address`, then `native`, from the same
+ * memory, registers and script. */
+void compare(nfs3hp::Application& app, const char* name, x86::reg32 address, Native native, const x86::CPU& entry)
+{
+    Totals& totals = g_totals[name];
+    ++totals.cases;
+    g_before.assign(g_memory, g_memory + kMemory);
+    const unsigned seed = random(0);
+
+    x86::CPU original = entry;
+    g_script.seed(seed);
+    g_log.clear();
+    g_calls = 0;
+    app.dynamic_call(address, original);
+    const std::vector<x86::reg32> originalLog = g_log;
+    g_original.assign(g_memory, g_memory + kMemory);
+
+    std::memcpy(g_memory, g_before.data(), kMemory);
+    x86::CPU mine = entry;
+    g_script.seed(seed);
+    g_log.clear();
+    g_calls = 0;
+    const bool took = native(&app, mine);
+
+    char what[400] = "";
+    if (!took)
+    {
+        std::snprintf(what, sizeof what, "the native stepped aside");
+    }
+    else if (g_log != originalLog)
+    {
+        std::size_t i = 0;
+        while (i < g_log.size() && i < originalLog.size() && g_log[i] == originalLog[i])
+            ++i;
+        std::size_t call = 0;
+        x86::reg32 callee = 0;
+        for (std::size_t j = 0; j < i && j < originalLog.size(); ++j)
+            if (originalLog[j] == 0xca110000 && j + 1 < originalLog.size())
+                ++call, callee = originalLog[j + 1];
+        std::snprintf(what, sizeof what,
+                      "calls differ at word %zu (after %zu calls, last sub_%06x): native %08x, generated %08x "
+                      "(lengths %zu/%zu)",
+                      i, call, unsigned(callee), i < g_log.size() ? unsigned(g_log[i]) : 0u,
+                      i < originalLog.size() ? unsigned(originalLog[i]) : 0u, g_log.size(), originalLog.size());
+    }
+    else
+    {
+        const x86::reg32 stackEnd = original.esp;
+        const x86::reg32 stackStart = original.esp - 0x10000;
+        unsigned differing = 0;
+        for (x86::reg32 chunk = 0; chunk < kMemory; chunk += 0x10000)
+        {
+            if (std::memcmp(g_memory + chunk, &g_original[chunk], 0x10000) == 0)
+                continue;
+            for (x86::reg32 i = chunk; i < chunk + 0x10000; ++i)
+            {
+                if (g_memory[i] == g_original[i] || (i >= stackStart && i < stackEnd))
+                    continue;
+                if (differing++ == 0)
+                    std::snprintf(what, sizeof what, "memory at %08x: %02x native, %02x generated", unsigned(i),
+                                  unsigned(g_memory[i]), unsigned(g_original[i]));
+            }
+        }
+        if (differing > 1)
+        {
+            const std::size_t length = std::strlen(what);
+            std::snprintf(what + length, sizeof what - length, " (%u bytes)", differing);
+        }
+        if (!what[0]
+            && (mine.eax != original.eax || mine.ebx != original.ebx || mine.ecx != original.ecx
+                || mine.edx != original.edx || mine.esi != original.esi || mine.edi != original.edi
+                || mine.ebp != original.ebp || mine.esp != original.esp))
+            std::snprintf(what, sizeof what,
+                          "registers native/generated: eax %08x/%08x ebx %08x/%08x ecx %08x/%08x edx %08x/%08x "
+                          "esi %08x/%08x edi %08x/%08x ebp %08x/%08x esp %08x/%08x",
+                          unsigned(mine.eax), unsigned(original.eax), unsigned(mine.ebx), unsigned(original.ebx),
+                          unsigned(mine.ecx), unsigned(original.ecx), unsigned(mine.edx), unsigned(original.edx),
+                          unsigned(mine.esi), unsigned(original.esi), unsigned(mine.edi), unsigned(original.edi),
+                          unsigned(mine.ebp), unsigned(original.ebp), unsigned(mine.esp), unsigned(original.esp));
+        if (!what[0] && (mine.fpu.status.word != original.fpu.status.word || mine.fpu.count != original.fpu.count))
+            std::snprintf(what, sizeof what, "x87 status/depth native %04x/%u, generated %04x/%u",
+                          unsigned(mine.fpu.status.word), unsigned(mine.fpu.count),
+                          unsigned(original.fpu.status.word), unsigned(original.fpu.count));
+        if (!what[0])
+        {
+            for (unsigned i = 0; i < mine.fpu.count && i < 8; ++i)
+            {
+                if (std::memcmp(&mine.fpu.st(i), &original.fpu.st(i), sizeof(x86::Float)) != 0)
+                {
+                    std::snprintf(what, sizeof what, "x87 st(%u) differs", i);
+                    break;
+                }
+            }
+        }
+    }
+    if (what[0])
+    {
+        if (std::getenv("OPTIONS_CHECKS_DUMP") && totals.failures == 0)
+        {
+            std::printf("generated:");
+            for (x86::reg32 v : originalLog)
+                std::printf(v == 0xca110000 ? "\n " : " %08x", unsigned(v));
+            std::printf("\nnative:");
+            for (x86::reg32 v : g_log)
+                std::printf(v == 0xca110000 ? "\n " : " %08x", unsigned(v));
+            std::printf("\n");
+        }
+        ++totals.failures;
+        if (totals.failures <= 5)
+            std::printf("FAIL %s case %u: %s\n", name, totals.cases, what);
+    }
+}
+
+/* How a function is entered. */
+enum class Entry
+{
+    Menu,          // eax a screen, sometimes 0
+    Key,           // eax an item, edx the screen, bx a key
+    Item,          // eax an item, edx 0 or 1
+    None,
+    Answer,        // eax an answer, edx where the byte goes
+    ApplyAxis,     // the stack
+    ShowController,
+    Advanced,      // eax and edx advanced tunings, or 0
+    MenuAndMode,   // eax a screen, edx whom the tuning is for
+    Numbers,       // eax and edx small numbers
+};
+
+struct Case
+{
+    const char* name;
+    x86::reg32 address;
+    Native native;
+    Entry entry;
+};
+
+/* The screens' own sliders, by screen: an item handed to one of their
+ * functions is one of them most of the time. */
+const x86::reg32 kAudioSlots[] = { 0x554f3c, 0x554f40, 0x554f44, 0x554f48, 0x554f4c };
+const x86::reg32 kAxisSlots[] = { 0x558a10, 0x558a14, 0x558a18, 0x558a1c, 0x558a20, 0x558a24, 0x558a28, 0x558a2c };
+const x86::reg32 kForceSlots[] = { 0x6611e0, 0x6611e4, 0x6611e8, 0x6611ec, 0x6611f0, 0x6611f4 };
+
+x86::reg32 someItem(x86::reg32 address)
+{
+    const x86::reg32* slots = nullptr;
+    std::size_t count = 0;
+    if (address >= 0x437990 && address < 0x438300)
+        slots = kAudioSlots, count = std::size(kAudioSlots);
+    else if (address >= 0x442d00 && address < 0x443100)
+        slots = kAxisSlots, count = std::size(kAxisSlots);
+    else if (address >= 0x447b00 && address < 0x447e00)
+        slots = kForceSlots, count = std::size(kForceSlots);
+    if (slots && random(4) != 0)
+    {
+        const x86::reg32 slot = slots[random(count)];
+        if (word32(slot) == 0)
+            setWord32(slot, poolItem(random(kPoolItems)));
+        return word32(slot);
+    }
+    return poolItem(random(kPoolItems));
+}
+
+x86::CPU caseEntry(Entry entry, x86::reg32 address)
+{
+    x86::CPU cpu = entryState();
+    switch (entry)
+    {
+    case Entry::Menu:
+        cpu.eax = random(10) == 0 ? 0 : g_menu;
+        break;
+    case Entry::Key:
+        cpu.eax = random(12) == 0 ? 0 : someItem(address);
+        cpu.edx = random(12) == 0 ? 0 : g_menu;
+        cpu.ebx = (random(0) & 0xffff0000) | (random(2) ? 0x0d : random(4) ? 0x1b : random(0x10000));
+        break;
+    case Entry::Item:
+        cpu.eax = someItem(address);
+        cpu.edx = random(3) == 0 ? random(0) : random(2);
+        break;
+    case Entry::None:
+        break;
+    case Entry::Answer:
+        cpu.eax = random(5);
+        cpu.edx = random(6) == 0 ? 0 : 0x5f3e00 + random(16);
+        break;
+    case Entry::ApplyAxis:
+        setFloat(cpu.esp + 4, someValue(g_random));
+        setFloat(cpu.esp + 8, someValue(g_random));
+        setWord32(cpu.esp + 12, random(4));
+        setWord32(cpu.esp + 16, random(8));
+        break;
+    case Entry::ShowController:
+        cpu.eax = random(10) == 0 ? 0 : g_menu;
+        cpu.edx = random(4);
+        break;
+    case Entry::Advanced:
+    {
+        static const x86::reg32 kTunings[] = { 0x8b9b60, 0x8b9200, 0x8b88a0, 0 };
+        cpu.eax = kTunings[random(4)];
+        cpu.edx = kTunings[random(4)];
+        break;
+    }
+    case Entry::MenuAndMode:
+        cpu.eax = random(10) == 0 ? 0 : g_menu;
+        cpu.edx = random(6);
+        break;
+    case Entry::Numbers:
+        cpu.eax = random(8);
+        cpu.edx = random(14);
+        break;
+    }
+    return cpu;
+}
+
+}
+
+#define CASE(name, address, entry) { #name " sub_" #address, 0x##address, nfs3hp::name, Entry::entry }
+
+int main(int argc, char** argv)
+{
+    nfs3hp::Application app("frontend_checks");
+    loadImage(argc > 1 ? argv[1] : "nfs3hp/nfs3.exe");
+    g_image.assign(g_memory + 0x534000, g_memory + 0x56e000);
+    const unsigned rounds = argc > 2 ? unsigned(std::atoi(argv[2])) : 1000;
+
+    const Case cases[] = {
+        CASE(optionsOnEnter, 442aa0, Menu),
+        CASE(feedOnEnter, 4374b0, Menu),
+        CASE(feedOnExit, 437590, Menu),
+        CASE(feedSeparate, 437250, None),
+        CASE(feedTimeButtonKey, 437300, Key),
+        CASE(feedPositionButtonKey, 437390, Key),
+        CASE(feedSpeedButtonKey, 437420, Key),
+        CASE(feedTimeListKey, 437350, Key),
+        CASE(feedPositionListKey, 4373e0, Key),
+        CASE(feedSpeedListKey, 437470, Key),
+        CASE(funkeysOnEnter, 437600, Menu),
+        CASE(funkeysOnExit, 4377c0, Menu),
+        CASE(hardkeysOnEnter, 4377d0, Menu),
+        CASE(audioOnEnter, 437e00, Menu),
+        CASE(audioOnExit, 438070, Menu),
+        CASE(audioOnFrame, 438260, Menu),
+        CASE(audioVolumeDraw, 437a90, Item),
+        CASE(audioMenuMusicMoved, 437990, Item),
+        CASE(audioRaceMusicMoved, 4379b0, Item),
+        CASE(audioEffectsMoved, 4379d0, Item),
+        CASE(audioEngineMoved, 437a20, Item),
+        CASE(audioSpeechMoved, 437a70, Item),
+        CASE(controlsOnEnter, 43d4d0, Menu),
+        CASE(controlsOnExit, 43d5f0, Menu),
+        CASE(controlsCancelKey, 43d3f0, Key),
+        CASE(controlsResetClicked, 43d460, Item),
+        CASE(controlsResetAnswered, 43d410, Answer),
+        CASE(deadZoneFillList, 43d9a0, None),
+        CASE(deadZoneOnEnter, 4432c0, Menu),
+        CASE(deadZoneOnExit, 443430, Menu),
+        CASE(deadZoneCancelKey, 442db0, Key),
+        CASE(deadZoneChooseKey, 443260, Key),
+        CASE(deadZoneChooseKeyInRace, 443290, Key),
+        CASE(deadZoneShowController, 443070, ShowController),
+        CASE(deadZoneAxisIndex, 442e60, Item),
+        CASE(deadZoneApplyAxis, 442dd0, ApplyAxis),
+        CASE(deadZoneAxisMoved, 442ef0, Item),
+        CASE(deadZoneAxisDraw, 442ff0, Item),
+        CASE(forceOnEnter, 447dd0, Menu),
+        CASE(forceOnExit, 4481c0, Menu),
+        CASE(forceCancelKey, 447b40, Key),
+        CASE(forceStrengthMoved, 447b60, Item),
+        CASE(forceRoadEffectsMoved, 447c40, Item),
+        CASE(forceCollisionMoved, 447c70, Item),
+        CASE(forceEngineMoved, 447ca0, Item),
+        CASE(forceBodyRollMoved, 447cd0, Item),
+        CASE(forceRoadGripMoved, 447d50, Item),
+        CASE(graphicsOnEnter, 448440, Menu),
+        CASE(graphicsOnExit, 4484e0, Menu),
+        CASE(graphicsOnFrame, 448430, Menu),
+        CASE(advancedOnEnter, 448610, Menu),
+        CASE(advancedOnExit, 448770, Menu),
+        CASE(advancedOnFrame, 4485a0, Menu),
+        CASE(advancedIntensityMoved, 448570, Item),
+        // The cars' screens.
+        CASE(carMenuMusicBack, 4104b0, None),
+        CASE(carSaveFrame, 4267a0, Numbers),
+        CASE(trackSaveFrame, 4267f0, Numbers),
+        CASE(carRecord, 426870, None),
+        CASE(trackRecord, 426b00, None),
+        CASE(car1OnEnter, 426d60, Menu),
+        CASE(car2OnEnter, 426ef0, Menu),
+        CASE(car1OnFrame, 426e20, Menu),
+        CASE(car2OnFrame, 426f80, Menu),
+        CASE(car1OnExit, 426ee0, Menu),
+        CASE(car2OnExit, 427040, Menu),
+        CASE(car1EditClicked, 426c20, None),
+        CASE(car2EditClicked, 426c40, None),
+        CASE(car1ColourClicked, 426c60, None),
+        CASE(car2ColourClicked, 426ce0, None),
+        CASE(opponentFitCar, 427050, Menu),
+        CASE(opponentFitArt, 4270c0, Menu),
+        CASE(opponentOnEnter, 4272a0, Menu),
+        CASE(opponentOnExit, 4272e0, Menu),
+        CASE(opponentOnFrame, 427190, Menu),
+        CASE(tuningLoad, 4272f0, Numbers),
+        CASE(tuningSave, 427370, Numbers),
+        CASE(tuningEngineMoved, 4273e0, Item),
+        CASE(tuningBrakesMoved, 427470, Item),
+        CASE(tuningSteeringMoved, 427500, Item),
+        CASE(tuningGearsMoved, 427590, Item),
+        CASE(tuningSuspensionMoved, 427620, Item),
+        CASE(tuningAeroMoved, 4276b0, Item),
+        CASE(tuningTiresMoved, 427740, Item),
+        CASE(tuningSetSliders, 4277d0, Menu),
+        CASE(tuningRememberSliders, 4279b0, Menu),
+        CASE(tuningSlidersMoved, 427ac0, Menu),
+        CASE(tuningBindSliders, 427c20, Menu),
+        CASE(tuningLoadAdvanced, 427d00, None),
+        CASE(tuningDefaultsAnswered, 427d80, Answer),
+        CASE(tuningDoneKey, 427e10, Key),
+        CASE(tuningCancelKey, 427ea0, Key),
+        CASE(tuningCarListKey, 427f40, Key),
+        CASE(tuningDefaultsKey, 427fb0, Key),
+        CASE(tuningBindDoneCancel, 428020, Menu),
+        CASE(tuningFitButtons, 428060, MenuAndMode),
+        CASE(tuningPrepare, 4281e0, Menu),
+        CASE(tuningOnEnter, 428360, Menu),
+        CASE(tuningOnExit, 4283b0, Menu),
+        CASE(tuningAdvancedDiffers, 4dcaf0, Advanced),
+        CASE(tuningCopyAdvanced, 4dcb60, Advanced),
+        // The tracks'.
+        CASE(locationOnEnter, 4487e0, Menu),
+        CASE(locationOnFrame, 4487d0, Menu),
+        CASE(locationOnExit, 4489e0, Menu),
+        CASE(infoPlaceTrackPlaces, 456200, None),
+        CASE(infoOnEnter, 4568d0, Menu),
+        CASE(infoOnFrame, 456890, Menu),
+        CASE(infoOnExit, 456990, Menu),
+        CASE(infoSpeak, 4c94e0, Numbers),
+        CASE(infoStopSpeaking, 4c9590, None),
+    };
+
+    for (unsigned round = 0; round < rounds; ++round)
+    {
+        for (const Case& c : cases)
+        {
+            makeWorld();
+            compare(app, c.name, c.address, c.native, caseEntry(c.entry, c.address));
+        }
+    }
+    unsigned failures = 0;
+    for (const auto& entry : g_totals)
+    {
+        if (entry.second.failures)
+            std::printf("%-40s %5u cases, %u differ\n", entry.first.c_str(), entry.second.cases,
+                        entry.second.failures);
+        failures += entry.second.failures;
+    }
+    std::printf("%zu functions, %u cases each: %s\n", std::size(cases), rounds,
+                failures ? "FAILED" : "all match");
+    return failures ? 1 : 0;
+}

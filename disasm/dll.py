@@ -7,8 +7,33 @@ from .codegen import fpu_stack
 class DLL(Module):
     def __init__(self, application_name, exe_path, rebase_after):
         Module.__init__(self, application_name, exe_path, rebase_after)
+        # Set by native(): the DLL's exports are the port's own functions.
+        self.natives = None
+        self.natives_namespace = None
+        self.native_callbacks = {}
+
+    def native(self, namespace, functions, callbacks={}):
+        """The DLL as the port has it natively: each export (its decorated
+        name) bound to a function of the port's, void (WinApplication*, CPU&)
+        in `namespace`, and each of `callbacks` -- an address in the DLL its
+        natives hand out to be called, as the DLL's code did -- to one more.
+        No code is written for the DLL, and the code an earlier run wrote is
+        taken away; its data is written as it loads."""
+        exported = set(name.decode() for _, name in self.exported_symbols)
+        if exported != set(functions):
+            raise RuntimeError('%s: natives for %s, exports %s' % (self.application_name, sorted(functions),
+                                                                   sorted(exported)))
+        for address in callbacks:
+            if not any(s.get_entry_point() == address for s in self.subroutines):
+                raise RuntimeError('%s: no function at 0x%x' % (self.application_name, address))
+        self.natives = dict(functions)
+        self.natives_namespace = namespace
+        self.native_callbacks = dict(callbacks)
 
     def write(self, owner_name, thread_segments = [], function_names={}):
+        if self.natives is not None:
+            self._write_native(owner_name)
+            return
         # A driver's arithmetic stays plain double: drawing and sound gain
         # nothing from the x87's rounding (codegen/fpu.py).
         fpu_codegen.EXACT = False
@@ -16,6 +41,61 @@ class DLL(Module):
             self._write(owner_name, thread_segments, function_names)
         finally:
             fpu_codegen.EXACT = True
+
+    def _write_native(self, owner_name):
+        directory = 'src/%s/disassembly/' % owner_name
+        try:
+            os.makedirs(directory)
+        except OSError:
+            pass
+        app_name = self.application_name
+        APP_NAME = app_name.upper()
+        for old in os.listdir(directory):
+            parts = old.split('.')
+            if len(parts) == 3 and parts[0] == app_name and parts[1].isdigit() and parts[2] == 'cpp':
+                os.remove(os.path.join(directory, old))
+        with open(directory + '%s.h' % app_name, 'w') as h:
+            h.write('#ifndef %s_H_\n'
+                    '#define %s_H_\n'
+                    '#include <x86.h>\n'
+                    '#include <lib/winapp.h>\n'
+                    '#include <lib/library.h>\n'
+                    '\n/* %s.dll is native: its exports are the port\'s functions\n'
+                    ' * (disassemble_nfs3hp.py), and only its data is here, as it loads. */\n'
+                    '\nnamespace %s\n'
+                    '{\n\n' % (APP_NAME, APP_NAME, app_name, app_name))
+            for data, address, length, name, ro, code in self.sections:
+                if data:
+                    self._dump_raw_section(owner_name, name, data, length)
+                    h.write('extern const x86::reg8 s_%sSegment[];\n' % name.decode())
+            h.write('\nextern win32::Library* s_registry;\n'
+                    '\n'
+                    '}\n')
+            if self.native_callbacks:
+                h.write('\n/* What the natives hand out to be called, where the DLL\'s code was. */\n'
+                        'namespace %s\n'
+                        '{\n' % self.natives_namespace)
+                for address, function in sorted(self.native_callbacks.items()):
+                    h.write('void %s(win32::WinApplication* app, x86::CPU& cpu);  // 0x%x\n' % (function, address))
+                h.write('}\n')
+            h.write('\n#endif /* !%s_H_ */\n' % (APP_NAME))
+        with open(directory + '%s.cpp' % app_name, 'w') as src:
+            src.write('#include "%s.h"\n'
+                      '#include <x86.h>\n'
+                      '#include <winapi/wrapper.h>\n'
+                      '\nnamespace %s\n'
+                      '{\n' % (app_name, self.natives_namespace))
+            for _, name in self.exported_symbols:
+                src.write('void %s(win32::WinApplication* app, x86::CPU& cpu);\n' % self.natives[name.decode()])
+            src.write('}\n'
+                      '\nnamespace %s\n'
+                      '{\n\n' % app_name)
+            src.write('win32::Library s_library = win32::Library("%s.dll");\n'
+                      'win32::Library* s_registry = &(s_library\n' % app_name)
+            for _, name in self.exported_symbols:
+                src.write('        .registerSymbol("%s", &%s::%s)\n' % (name.decode(), self.natives_namespace,
+                                                                      self.natives[name.decode()]))
+            src.write('\n    );\n}\n')
 
     def _write(self, owner_name, thread_segments, function_names):
         try:

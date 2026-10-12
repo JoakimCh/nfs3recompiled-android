@@ -190,7 +190,7 @@ void Application::sub_418d40(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.ecx = cpu.eax;
     // 00418d63  e8d8780c00             -call 0x4e0640
     cpu.esp -= 4;
-    sub_4e0640(app, cpu.sync());
+    nfs3hp::watcom::memset(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00418d68  89c8                   -mov eax, ecx
@@ -368,7 +368,7 @@ L_0x00418dda:
     cpu.eax = cpu.ebx;
     // 00418de2  e8d9100d00             -call 0x4e9ec0
     cpu.esp -= 4;
-    sub_4e9ec0(app, cpu.sync());
+    nfs3hp::watcom::stricmp(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00418de7  85c0                   +test eax, eax
@@ -586,7 +586,7 @@ L_0x00418e69:
     cpu.eax = cpu.ebx;
     // 00418e72  e849100d00             -call 0x4e9ec0
     cpu.esp -= 4;
-    sub_4e9ec0(app, cpu.sync());
+    nfs3hp::watcom::stricmp(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00418e77  85c0                   +test eax, eax
@@ -2047,7 +2047,7 @@ void Application::sub_4191e0(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.edx ^= x86::reg32(x86::sreg32(cpu.edx));
     // 0041925e  e8dd730c00             -call 0x4e0640
     cpu.esp -= 4;
-    sub_4e0640(app, cpu.sync());
+    nfs3hp::watcom::memset(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00419263  8b45fc                 -mov eax, dword ptr [ebp - 4]

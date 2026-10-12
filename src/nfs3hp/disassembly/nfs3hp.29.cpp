@@ -2333,7 +2333,7 @@ void Application::sub_4cd2d0(WinApplication* __restrict app, x86::CPU& cpu_)
     app->getMemory<x86::reg32>(cpu.ebp + x86::reg32(-4) /* -0x4 */) = cpu.esi;
     // 004cd2fc  e8ffdf0200             -call 0x4fb300
     cpu.esp -= 4;
-    sub_4fb300(app, cpu.sync());
+    nfs3hp::watcom::bsearch(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004cd301  89c2                   -mov edx, eax
@@ -3476,7 +3476,7 @@ L_0x004cd724:
     cpu.esp -= 4;
     // 004cd794  e87738f3ff             -call 0x401010
     cpu.esp -= 4;
-    sub_401010(app, cpu.sync());
+    nfs3hp::Error(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004cd799  83c408                 -add esp, 8
@@ -5553,7 +5553,7 @@ L_0x004cde7f:
     app->getMemory<x86::reg32>(x86::reg32(5640944) /* 0x5612f0 */) = cpu.esi;
     // 004cde9a  e859060200             -call 0x4ee4f8
     cpu.esp -= 4;
-    sub_4ee4f8(app, cpu.sync());
+    nfs3hp::watcom::qsort(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004cde9f  8b35f0125600           -mov esi, dword ptr [0x5612f0]
@@ -6901,7 +6901,7 @@ L_0x004ce315:
 L_0x004ce32d:
     // 004ce32d  e8cace0100             -call 0x4eb1fc
     cpu.esp -= 4;
-    sub_4eb1fc(app, cpu.sync());
+    nfs3hp::watcom::rand(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004ce332  8945fc                 -mov dword ptr [ebp - 4], eax
@@ -6935,7 +6935,7 @@ L_0x004ce32d:
     }
     // 004ce361  e896ce0100             -call 0x4eb1fc
     cpu.esp -= 4;
-    sub_4eb1fc(app, cpu.sync());
+    nfs3hp::watcom::rand(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004ce366  8945fc                 -mov dword ptr [ebp - 4], eax
@@ -9882,7 +9882,7 @@ L_0x004cecef:
     }
     // 004ced08  e849100100             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004ced0d  89c3                   -mov ebx, eax
@@ -10037,7 +10037,7 @@ L_0x004ced76:
     }
     // 004ced7c  e8d50f0100             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004ced81  8d049d00000000         -lea eax, [ebx*4]
@@ -10051,7 +10051,7 @@ L_0x004ced76:
     }
     // 004ced8a  e8c70f0100             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004ced8f  d9c9                   -fxch st(1)
@@ -10319,7 +10319,7 @@ void Application::sub_4cee40(WinApplication* __restrict app, x86::CPU& cpu_)
     }
     // 004cee5b  e8f60e0100             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004cee60  db5df8                 -fistp dword ptr [ebp - 8]
@@ -13433,7 +13433,7 @@ L_0x004cf757:
     cpu.eax = cpu.esi;
     // 004cf770  e89beb0100             -call 0x4ee310
     cpu.esp -= 4;
-    sub_4ee310(app, cpu.sync());
+    nfs3hp::watcom::strcmp(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004cf775  85c0                   +test eax, eax
@@ -14694,7 +14694,7 @@ L_0x004cfaf3:
     app->getMemory<x86::reg32>(cpu.ecx + x86::reg32(20) /* 0x14 */) = cpu.edi;
     // 004cfbb8  e8830a0100             -call 0x4e0640
     cpu.esp -= 4;
-    sub_4e0640(app, cpu.sync());
+    nfs3hp::watcom::memset(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004cfbbd  c7816001000000000000   -mov dword ptr [ecx + 0x160], 0
@@ -15882,7 +15882,7 @@ L_0x004cff2c:
     app->getMemory<x86::reg32>(cpu.eax + x86::reg32(-4) /* -0x4 */) = 0 /*0x0*/;
     // 004cff3d  e8ee0e0100             -call 0x4e0e30
     cpu.esp -= 4;
-    sub_4e0e30(app, cpu.sync());
+    nfs3hp::watcom::strncpy(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004cff42  8b45f8                 -mov eax, dword ptr [ebp - 8]

@@ -263,10 +263,21 @@ ground's height, the particles — step aside for the generated code.
 The game runs on a virtual x86 CPU, and the parts that cost the most no longer
 go through it:
 
-- voodoo2a's THRASH driver, the game's renderer, is native C++ for every
-  function the game uses (`src/nfs3hp/native_thrash.cpp`), drawing through its
-  own renderer (`src/lib/thrashrenderer.cpp`): an OpenGL texture for each of
-  the game's, the texture formats as they are, hardware filtering.
+- voodoo2a, the THRASH driver behind the game's renderer, is native whole and
+  has no generated code: `disassemble_nfs3hp.py` binds its 34 exports to the
+  port's functions of the same names (`src/nfs3hp/native_thrash.cpp`, its heap
+  -- Watcom's, the game's too -- in `native_watcom_heap.cpp`) and writes only
+  its data. It draws every way voodoo2a does -- Glide's own triangles and
+  lines, antialiased, two passes for trilinear mipmapping -- through its own
+  renderer (`src/lib/thrashrenderer.cpp`): an OpenGL texture for each of the
+  game's, the texture formats as they are, hardware filtering.
+  `tools/thrash_checks/run.sh` compares every export with voodoo2a's generated
+  code, made afresh from the DLL, on random states, to the byte.
+- softtria, the software renderer, is not built at all -- no code, no data,
+  no library. The game loads one renderer, the one the registry's "Thrash
+  Driver" names (`sub_4b5720`) unless a command-line option names another;
+  the port sets voodoo2 and passes no options. The file itself stays among
+  the bundled ones, which the game's integrity check looks for.
 - About fifty of the game's own functions are native
   (`src/nfs3hp/native_vertices.cpp`): turning and projecting vertices,
   clipping, the track's and objects' polygons and their depth sorting,
@@ -306,9 +317,55 @@ go through it:
   loading screen (`sub_494cb0`), with the car detail and the loading screen
   at 4:3 kept. The movie player (`sub_495bc0`) stays the port's own MAD
   player (`src/nfs3hp/native_movie.cpp`), not this one.
-- eacsnd's sound driver (`src/nfs3hp/native_sound.cpp`): what the game mixes
-  goes straight onto an SDL audio stream, with no DirectSound and no ring
-  buffer in between. `NFS_SND_NATIVE=0` goes back to eacsnd's generated code.
+- eacsnd, the sound driver, is native whole and has no generated code:
+  `disassemble_nfs3hp.py` binds its sixteen exports to the port's functions of
+  the same names and writes only its data. The driver proper
+  (`src/nfs3hp/native_sound.cpp`) puts what the game mixes straight onto an SDL
+  audio stream, with no DirectSound and no ring buffer in between; the other
+  twelve exports -- the version, the game's functions, recording and the 3D
+  buffers -- are in `src/nfs3hp/native_isnd.cpp`, which
+  `tools/sound_checks/run.sh` compares with eacsnd's generated code, made afresh
+  from the DLL, on random states, to the byte.
+- The game's side of the two drivers, and the logger they report through, is
+  native and has no generated code: `disassemble_nfs3hp.py` binds the
+  seventeen functions of its `GAME_NATIVES` to the port's functions of the
+  same names (`src/nfs3hp/native_game.cpp`), and the generated code calls
+  them by name. They are the ones AZHP reimplements
+  (`third_party/azhp/SYMBOLS.md`) -- `THRASH_opendll`, which loads the renderer
+  and looks up its 34 functions; `iSNDloaddll`, `SNDcaps` and the focus and
+  serve handlers, which load and drive eacsnd; `Error` and `Message` -- and the
+  rest of what `iSNDloaddll` hands eacsnd, among it the sample converter.
+  `tools/game_checks/run.sh` compares each with the game's code for it, made
+  afresh from nfs3.exe, on random states, to the byte.
+- The C runtime the game was linked with, Watcom's, goes native family by
+  family (`src/nfs3hp/native_watcom.cpp`, in `nfs3hp::watcom`, bound as the
+  game's own are, `WATCOM_NATIVES`). `src/nfs3hp/watcom.md` maps all of it in
+  nfs3.exe -- 267 functions among EA's libraries, by Open Watcom's names --
+  and says which are native: so far the string and character functions,
+  `atoi`, `rand`, `memset`, `__CHP`, the step before every `fistp` of the
+  game, `qsort` and `bsearch`, `errno` and the functions on paths --
+  `unlink`, `mkdir`, `chmod`, `access`, `getcwd` and the like -- and on
+  handles -- `lseek`, `__qread`, `__qwrite`, `isatty` -- time -- `time`,
+  `localtime`, `mktime` and daylight saving's rules -- the x87's `floor`,
+  `ceil`, `modf`, `exp`, `acos` and `atan2`, the streams -- `fopen` and
+  `fclose`, `fgetc`, `fgets`, `fread`, `fputc`, `fputs`, `fwrite`, `fseek`,
+  `ftell`, `fflush`, the buffer under them and the handles under that --
+  and the heap --
+  `malloc`, `free` and what grows and shrinks it, in `native_watcom_heap.cpp`,
+  which voodoo2a's heap is too.
+  `tools/game_checks` holds them against their generated code as well.
+- All of the game's code that uses MMX is native
+  (`src/nfs3hp/native_mmx.cpp`, in `nfs3hp::mmx`, bound as the game's own
+  are, `MMX_NATIVES`): the SND library's MMX routines -- a block added into
+  the mixer's accumulator at its volume, the accumulator out to 8 or 16 bits,
+  the interpolators, the XA decoders -- and the memmove the game's file reads
+  copy with. They work on the CPU's MMX registers as their code does, leaving
+  them as it leaves them, with `include/mmx.h`'s MMX in plain C++;
+  `tools/game_checks` holds them against their generated code, the MMX
+  registers too, and `tools/mmx_checks` holds `mmx.h`'s MMX against the
+  x86's own. The disassembler writes MMX with it as well
+  (`disasm/codegen/mmx.py`): there is no SSE anywhere, and on ARM nothing to
+  translate.
 - The game's sound mixer (`src/nfs3hp/native_mixer.cpp`): all of a sample's
   way through EA's SND library -- PCM and XA ADPCM decoding, pitch, volume and
   pan, the race's reverb, the 16 channels added up -- done as the x86 does it,
@@ -339,8 +396,8 @@ go through it:
 Each was compared with the generated code bit for bit before it was switched
 on — memory, registers, flags, the FPU and the triangles drawn
 (`NFS_NATIVE_CHECK`) — and keeps the x87's single-precision rounding. In a race
-this is about three quarters of the game thread's time. `NFS_NATIVES=0`,
-`NFS_THRASH=0` and `NFS_THRASH_GL=0` go back to the generated code.
+this is about three quarters of the game thread's time. `NFS_NATIVES=0` goes
+back to the generated code, `NFS_THRASH_GL=0` to the old renderer.
 
 ### Decompiled menus
 
@@ -368,6 +425,36 @@ Done so far: the main menu in its three forms (`native_frontend_main.cpp`) —
 a network race: the items fitted to the kind of race, the players' name
 dialogs, the attract-mode movie, the network screen's race list and its
 question before leaving.
+
+Then the options screens (`native_frontend_options.cpp`): `OPTIONS.MNU` and
+the screens it leads to, most of them a race's pause screens too — the sound
+(its five volumes, which play as their slider is held), the audio feed's
+keys for the time, the position and the speed in a race (`audfeed`), the
+function keys,
+the controllers (their reset to the defaults, the dead zones of each axis, force
+feedback) and the graphics. A screen keeps its settings as it opens and its
+Cancel puts them back. Their 54 functions — the screens' handlers, the
+handlers they give their items (a key, drawing, a slider's moves) and the few
+only they call — were compared with the generated ones by
+`tools/frontend_checks/run.sh`, the same way as the loop below, and keep the
+port's one change among them: the effects' intensity slider is never greyed
+out (`tools/apply_menu_unlock.py`).
+
+Then the screens a race is chosen on. The cars' (`native_frontend_cars.cpp`):
+each player's car (`CAR1.MNU`, `CAR2.MNU` -- its colour, its showcase, the
+way to its tuning), the opponents (`OPPONENT.MNU` -- how many, which car,
+traffic) and a car's tuning (`CEDBASIC.MNU` -- its seven sliders, their
+defaults and the advanced tuning they may differ from, from a player's car or
+a race's pause screens). The track's (`native_frontend_tracks.cpp`): the
+track and its laps, direction, mirror image, night and weather
+(`LOCATION.MNU`, greyed in a series) and its picture, its map with its places
+named and its spoken description (`TRKINFO.MNU`). With them, the developer's
+recorder the car and track screens keep, which saves the turning car or the
+track frame by frame as `.tga` files. Their 55 functions were compared by the
+same `tools/frontend_checks/run.sh`, and keep the port's changes among them:
+Download Car stays hidden (`tools/apply_hide_download.py`) and the phone's
+keyboard comes up while the game waits for a typed name
+(`tools/apply_text_entry.py`).
 
 The engine goes the same way, a layer at a time. First
 (`native_frontend_menus.cpp`), what reads `FeData\Menus\*.mnu` into the table
@@ -491,11 +578,10 @@ from the phone; the rest matter for a desktop run.
 | `NFS_DEPTH16` | auto | On where the depth buffer has more than 16 bits and the GPU is not an Adreno 5xx. `0` keeps the GPU's own depth precision, `1` forces the Voodoo's 16-bit steps (see Projected headlights). `ab` switches between the two every 5 s, so both can be compared in one race; the `[GPU]` lines count the frames of each. |
 | `NFS_GPU_FILTER` | on | `0` filters every texel in the shader. By default the GPU's bilinear filter takes a pixel whose 2x2 texels lie inside their atlas tile and have no chroma key. |
 | `NFS_TEXCOORD_CUT` | off | `1` cuts triangles with far-out clamped texture coordinates along the texture's edges. An experiment, not needed for the headlights. |
-| `NFS_NATIVES` | on | `0` runs the generated code instead of every native stand-in for the hot vertex and polygon loops; `vertices` keeps only the three vertex loops; `no-drawtri` all but THRASH_drawtri; `no-clip` all but the clipping of off-screen polygons (`sub_4c2cd0` and its callers `sub_4c11b0`, `sub_4c12e0`); `no-render` all but the ones in `src/nfs3hp/native_render.cpp`. For comparing speeds. |
+| `NFS_NATIVES` | on | `0` runs the generated code instead of every native stand-in for the hot vertex and polygon loops; `vertices` keeps only the three vertex loops; `no-clip` all but the clipping of off-screen polygons (`sub_4c2cd0` and its callers `sub_4c11b0`, `sub_4c12e0`); `no-render` all but the ones in `src/nfs3hp/native_render.cpp`. For comparing speeds. |
 | `NFS_RENDER_OFF` | unset | Addresses of functions in `src/nfs3hp/native_render.cpp` to leave to their generated code, e.g. `4bf790,47a880`. |
 | `NFS_NATIVE_LOAD` | on | `0` leaves the loading of the game's data to the generated code: RefPack, the FSH textures' alpha scans, FCE models and FRD tracks (`src/nfs3hp/native_loading.cpp`). `NFS_NATIVE_CHECK=load` checks only these, every call. |
 | `NFS_MAD` | on | `0` plays the movies with the generated MAD player, decoder and display instead of `src/nfs3hp/native_movie.cpp`; `NFS_MAD_PLAYER=0` and `NFS_MAD_GL=0` leave just the player or the full-colour output generated. `NFS_MAD_CHECK=1` (debug) runs the generated player and checks the native decoder against the generated one ([MAD]). |
-| `NFS_THRASH` | on | `0` leaves voodoo2a's THRASH functions (the game's renderer driver) to their generated code instead of the native ones in `src/nfs3hp/native_thrash.cpp`. All of them the game uses: drawing, state, textures, the frame, setting up and video modes. `NFS_THRASH_OFF=THRASH_setstate,...` leaves the named ones generated. `NFS_NATIVE_CHECK=thrash` checks only these. |
 | `NFS_THRASH_GL` | on | `0` draws through the old renderer, the Voodoo2 emulated over a texture atlas with its filtering done in the shader, instead of `ThrashRenderer`, which gives each of the game's textures an OpenGL texture of its own and lets the GPU filter, wrap and clamp it. |
 | *(release)* | | A release build writes nothing to the log and takes none of these flags: the native code is built with `NFS_RELEASE` (log priority critical, SDL's direct Android logging compiled out through `android/app/jni/sdl_quiet.h`), the Java side logs through `AppLog`/`SDLLog` only when `BuildConfig.DEBUG`. Use the debug build (`-Pandroid10`) for diagnostics. |
 | `NFS_FPU_EXTENDED` | on | Races at the x87's extended precision, as the Modern Patch runs them; `0` races in single precision, as the original (see The x87's precision). Every player of a network race needs the same. A debug build takes it from a launch: `adb shell am start -n dev.nfs3hp.port/.SplashActivity --ez fpu_single_races true`. |
@@ -506,7 +592,6 @@ from the phone; the rest matter for a desktop run.
 | `NFS_FE_NATIVE_OFF` | unset | A list of generated functions, `sub_45d050,sub_45cff0`, left to the generated code while the other decompiled ones run. |
 | `NFS_NATIVE_CHECK` | off | `1` runs each native stand-in against the generated code and logs any difference (`[NATIVE]`). The polygon and car loops are compared over all of guest memory once a second. Slow, and draws some triangles twice. `clip` checks only the stand-ins of the clipping (both ways to the screen, the car's quad mesh included), the track, the effects, the car lights and detail, the objects and the vector math, every call; the small helpers called from hundreds of places are checked on every 64th call. |
 | `NFS_AUDIO_RATE` | unset | The output's own sample rate. The game mixes at 22050 Hz and SDL converts to this; a device opened at any other rate is resampled by Android, off its low-latency path. Unset, the device opens at SDL's default. |
-| `NFS_SND_NATIVE` | on | `0` leaves eacsnd's `iSNDdirect` functions (caps, start, stop, serve) to their generated code, which feeds the game's mix to the emulated DirectSound, instead of the native ones in `src/nfs3hp/native_sound.cpp`, which put it on an SDL audio stream themselves. |
 | `NFS_SND_MIX` | on | `0` leaves the game's sound mixer (`sub_500864` and everything under it) to its generated code instead of `src/nfs3hp/native_mixer.cpp`. `NFS_SND_CHECK=1` (debug) mixes each block natively and with the generated code and logs any byte that differs (`[SNDCHK]`); a block that calls the game, to refill a stream or end a sound, is left to the generated code. |
 | `NFS_TOUCH_STEER_LEFT` etc. | unset | Keys the touch overlay sends for steering and the pedals, so that endpoint can report them as axes. |
 | `NFS_GAMEPAD1_SOUTH` etc. | built-in defaults | What a pad button sends, as `NFS_GAMEPAD<n>_<BUTTON>`: an SDL key name (`Space`, `Return`), `axis:steer_left`, `axis:steer_right`, `axis:accelerate`, `axis:brake`, or empty for nothing. `_UI` after it is the same button in the menus. `LEFT_TRIGGER` and `RIGHT_TRIGGER` are the triggers read as buttons, empty by default; the launcher gives them the pedals' keys for a pad set to Digital. |
@@ -539,8 +624,10 @@ symbolically, and stops on the first one that differs.
 - [motor-dev/nfs-recompiled](https://github.com/motor-dev/nfs-recompiled) — the
   recompilation this is built on.
 - [libsdl-org/SDL](https://github.com/libsdl-org/SDL) — SDL3, zlib licence.
-- [sse2neon](https://github.com/DLTcollab/sse2neon) — SSE2 intrinsics on ARM,
-  MIT licence, vendored as `third_party/sse2neon.h`.
+- [americusmaximus/AZHP](https://github.com/americusmaximus/AZHP) — the names of
+  the THRASH and iSNDdirect interfaces (`src/nfs3hp/thrash.h`,
+  `src/nfs3hp/isnd.h`) and of eacsnd's functions, MIT licence; the files used
+  are kept in `third_party/azhp`.
 
 Need for Speed III: Hot Pursuit is the property of Electronic Arts. This
 repository contains no game content — no tracks, cars, audio or video. Those you

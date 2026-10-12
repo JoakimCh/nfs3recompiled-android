@@ -85,10 +85,6 @@ if(TARGET_WINDOWS)
     set(SDL3_DIR "${NFS_ROOT_DIR}/sdl3/cmake" CACHE PATH "SDL3 CMake directory")
 endif()
 
-# sse2neon is vendored; include it as SYSTEM so its warnings do not surface in
-# the ~100 translation units that pull in mmx.h.
-include_directories(SYSTEM ${NFS_ROOT_DIR}/third_party)
-
 # The repository only ships prebuilt SDL3 for Windows; on Android
 # android/app/jni/CMakeLists.txt add_subdirectory()s SDL3 from source (cloned
 # into third_party/SDL) before this file, so SDL3::SDL3 already exists by the

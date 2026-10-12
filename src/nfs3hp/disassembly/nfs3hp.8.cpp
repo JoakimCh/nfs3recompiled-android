@@ -3,6 +3,32 @@
 
 namespace nfs3hp
 {
+// Port (tools/apply_native_frontend.py): defined in native_frontend_options.cpp.
+bool audioMenuMusicMoved(win32::WinApplication* app, x86::CPU& cpu);
+// Port (tools/apply_native_frontend.py): defined in native_frontend_options.cpp.
+bool hardkeysOnEnter(win32::WinApplication* app, x86::CPU& cpu);
+// Port (tools/apply_native_frontend.py): defined in native_frontend_options.cpp.
+bool funkeysOnExit(win32::WinApplication* app, x86::CPU& cpu);
+// Port (tools/apply_native_frontend.py): defined in native_frontend_options.cpp.
+bool funkeysOnEnter(win32::WinApplication* app, x86::CPU& cpu);
+// Port (tools/apply_native_frontend.py): defined in native_frontend_options.cpp.
+bool feedSpeedListKey(win32::WinApplication* app, x86::CPU& cpu);
+// Port (tools/apply_native_frontend.py): defined in native_frontend_options.cpp.
+bool feedPositionListKey(win32::WinApplication* app, x86::CPU& cpu);
+// Port (tools/apply_native_frontend.py): defined in native_frontend_options.cpp.
+bool feedTimeListKey(win32::WinApplication* app, x86::CPU& cpu);
+// Port (tools/apply_native_frontend.py): defined in native_frontend_options.cpp.
+bool feedSpeedButtonKey(win32::WinApplication* app, x86::CPU& cpu);
+// Port (tools/apply_native_frontend.py): defined in native_frontend_options.cpp.
+bool feedPositionButtonKey(win32::WinApplication* app, x86::CPU& cpu);
+// Port (tools/apply_native_frontend.py): defined in native_frontend_options.cpp.
+bool feedTimeButtonKey(win32::WinApplication* app, x86::CPU& cpu);
+// Port (tools/apply_native_frontend.py): defined in native_frontend_options.cpp.
+bool feedSeparate(win32::WinApplication* app, x86::CPU& cpu);
+// Port (tools/apply_native_frontend.py): defined in native_frontend_options.cpp.
+bool feedOnExit(win32::WinApplication* app, x86::CPU& cpu);
+// Port (tools/apply_native_frontend.py): defined in native_frontend_options.cpp.
+bool feedOnEnter(win32::WinApplication* app, x86::CPU& cpu);
 // Port (tools/apply_native_render.py): defined in native_render.cpp.
 bool polygonDrawers(win32::WinApplication* app, x86::CPU& cpu);
 // Port (tools/apply_native_render.py): defined in native_render.cpp.
@@ -19396,7 +19422,7 @@ void Application::sub_436610(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.ebx = cpu.edx;
     // 0043661b  e850540b00             -call 0x4eba70
     cpu.esp -= 4;
-    sub_4eba70(app, cpu.sync());
+    nfs3hp::AcquireWindow(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00436620  85c0                   +test eax, eax
@@ -19442,7 +19468,7 @@ void Application::sub_436610(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.edi = app->getMemory<x86::reg32>(cpu.edx);
     // 00436641  e82a540b00             -call 0x4eba70
     cpu.esp -= 4;
-    sub_4eba70(app, cpu.sync());
+    nfs3hp::AcquireWindow(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00436646  50                     -push eax
@@ -19547,7 +19573,7 @@ L_0x00436677:
     cpu.esi = app->getMemory<x86::reg32>(cpu.eax);
     // 00436684  e8e7530b00             -call 0x4eba70
     cpu.esp -= 4;
-    sub_4eba70(app, cpu.sync());
+    nfs3hp::AcquireWindow(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00436689  50                     -push eax
@@ -19618,7 +19644,7 @@ L_0x004366a0:
     cpu.esi = app->getMemory<x86::reg32>(cpu.eax);
     // 004366ad  e8be530b00             -call 0x4eba70
     cpu.esp -= 4;
-    sub_4eba70(app, cpu.sync());
+    nfs3hp::AcquireWindow(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004366b2  50                     -push eax
@@ -20832,7 +20858,7 @@ void Application::sub_436980(WinApplication* __restrict app, x86::CPU& cpu_)
     (cpu.eax) += x86::reg32(x86::sreg32(4 /*0x4*/));
     // 004369dd  e84ea40a00             -call 0x4e0e30
     cpu.esp -= 4;
-    sub_4e0e30(app, cpu.sync());
+    nfs3hp::watcom::strncpy(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004369e2  8b15f84e5500           -mov edx, dword ptr [0x554ef8]
@@ -23348,6 +23374,11 @@ void Application::sub_437250(WinApplication* __restrict app, x86::CPU& cpu_)
   x86::Local cpu(cpu_);
   NFS2_USE(cpu);
   NFS2_USE(app);
+    if (feedSeparate(app, cpu.sync())) /* port: native (tools/apply_native_frontend.py) */
+    {
+        cpu.reload();
+        return;
+    }
     // 00437250  53                     -push ebx
     app->getMemory<x86::reg32>(cpu.esp-4) = cpu.ebx;
     cpu.esp -= 4;
@@ -23590,6 +23621,11 @@ void Application::sub_437300(WinApplication* __restrict app, x86::CPU& cpu_)
   x86::Local cpu(cpu_);
   NFS2_USE(cpu);
   NFS2_USE(app);
+    if (feedTimeButtonKey(app, cpu.sync())) /* port: native (tools/apply_native_frontend.py) */
+    {
+        cpu.reload();
+        return;
+    }
     // 00437300  51                     -push ecx
     app->getMemory<x86::reg32>(cpu.esp-4) = cpu.ecx;
     cpu.esp -= 4;
@@ -23719,6 +23755,11 @@ void Application::sub_437350(WinApplication* __restrict app, x86::CPU& cpu_)
   x86::Local cpu(cpu_);
   NFS2_USE(cpu);
   NFS2_USE(app);
+    if (feedTimeListKey(app, cpu.sync())) /* port: native (tools/apply_native_frontend.py) */
+    {
+        cpu.reload();
+        return;
+    }
     // 00437350  51                     -push ecx
     app->getMemory<x86::reg32>(cpu.esp-4) = cpu.ecx;
     cpu.esp -= 4;
@@ -23807,6 +23848,11 @@ void Application::sub_437390(WinApplication* __restrict app, x86::CPU& cpu_)
   x86::Local cpu(cpu_);
   NFS2_USE(cpu);
   NFS2_USE(app);
+    if (feedPositionButtonKey(app, cpu.sync())) /* port: native (tools/apply_native_frontend.py) */
+    {
+        cpu.reload();
+        return;
+    }
     // 00437390  51                     -push ecx
     app->getMemory<x86::reg32>(cpu.esp-4) = cpu.ecx;
     cpu.esp -= 4;
@@ -23936,6 +23982,11 @@ void Application::sub_4373e0(WinApplication* __restrict app, x86::CPU& cpu_)
   x86::Local cpu(cpu_);
   NFS2_USE(cpu);
   NFS2_USE(app);
+    if (feedPositionListKey(app, cpu.sync())) /* port: native (tools/apply_native_frontend.py) */
+    {
+        cpu.reload();
+        return;
+    }
     // 004373e0  51                     -push ecx
     app->getMemory<x86::reg32>(cpu.esp-4) = cpu.ecx;
     cpu.esp -= 4;
@@ -24024,6 +24075,11 @@ void Application::sub_437420(WinApplication* __restrict app, x86::CPU& cpu_)
   x86::Local cpu(cpu_);
   NFS2_USE(cpu);
   NFS2_USE(app);
+    if (feedSpeedButtonKey(app, cpu.sync())) /* port: native (tools/apply_native_frontend.py) */
+    {
+        cpu.reload();
+        return;
+    }
     // 00437420  51                     -push ecx
     app->getMemory<x86::reg32>(cpu.esp-4) = cpu.ecx;
     cpu.esp -= 4;
@@ -24153,6 +24209,11 @@ void Application::sub_437470(WinApplication* __restrict app, x86::CPU& cpu_)
   x86::Local cpu(cpu_);
   NFS2_USE(cpu);
   NFS2_USE(app);
+    if (feedSpeedListKey(app, cpu.sync())) /* port: native (tools/apply_native_frontend.py) */
+    {
+        cpu.reload();
+        return;
+    }
     // 00437470  51                     -push ecx
     app->getMemory<x86::reg32>(cpu.esp-4) = cpu.ecx;
     cpu.esp -= 4;
@@ -24241,6 +24302,11 @@ void Application::sub_4374b0(WinApplication* __restrict app, x86::CPU& cpu_)
   x86::Local cpu(cpu_);
   NFS2_USE(cpu);
   NFS2_USE(app);
+    if (feedOnEnter(app, cpu.sync())) /* port: native (tools/apply_native_frontend.py) */
+    {
+        cpu.reload();
+        return;
+    }
     // 004374b0  51                     -push ecx
     app->getMemory<x86::reg32>(cpu.esp-4) = cpu.ecx;
     cpu.esp -= 4;
@@ -24444,6 +24510,11 @@ void Application::sub_437590(WinApplication* __restrict app, x86::CPU& cpu_)
   x86::Local cpu(cpu_);
   NFS2_USE(cpu);
   NFS2_USE(app);
+    if (feedOnExit(app, cpu.sync())) /* port: native (tools/apply_native_frontend.py) */
+    {
+        cpu.reload();
+        return;
+    }
     // 00437590  52                     -push edx
     app->getMemory<x86::reg32>(cpu.esp-4) = cpu.edx;
     cpu.esp -= 4;
@@ -24555,6 +24626,11 @@ void Application::sub_437600(WinApplication* __restrict app, x86::CPU& cpu_)
   x86::Local cpu(cpu_);
   NFS2_USE(cpu);
   NFS2_USE(app);
+    if (funkeysOnEnter(app, cpu.sync())) /* port: native (tools/apply_native_frontend.py) */
+    {
+        cpu.reload();
+        return;
+    }
     // 00437600  51                     -push ecx
     app->getMemory<x86::reg32>(cpu.esp-4) = cpu.ecx;
     cpu.esp -= 4;
@@ -24877,6 +24953,10 @@ void Application::sub_4377c0(WinApplication* app, x86::CPU& cpu)
 {
   NFS2_USE(cpu);
   NFS2_USE(app);
+    if (funkeysOnExit(app, cpu)) /* port: native (tools/apply_native_frontend.py) */
+    {
+        return;
+    }
     // 004377c0  55                     -push ebp
     app->getMemory<x86::reg32>(cpu.esp-4) = cpu.ebp;
     cpu.esp -= 4;
@@ -24898,6 +24978,11 @@ void Application::sub_4377d0(WinApplication* __restrict app, x86::CPU& cpu_)
   x86::Local cpu(cpu_);
   NFS2_USE(cpu);
   NFS2_USE(app);
+    if (hardkeysOnEnter(app, cpu.sync())) /* port: native (tools/apply_native_frontend.py) */
+    {
+        cpu.reload();
+        return;
+    }
     // 004377d0  51                     -push ecx
     app->getMemory<x86::reg32>(cpu.esp-4) = cpu.ecx;
     cpu.esp -= 4;
@@ -25221,6 +25306,11 @@ void Application::sub_437990(WinApplication* __restrict app, x86::CPU& cpu_)
   x86::Local cpu(cpu_);
   NFS2_USE(cpu);
   NFS2_USE(app);
+    if (audioMenuMusicMoved(app, cpu.sync())) /* port: native (tools/apply_native_frontend.py) */
+    {
+        cpu.reload();
+        return;
+    }
     // 00437990  52                     -push edx
     app->getMemory<x86::reg32>(cpu.esp-4) = cpu.edx;
     cpu.esp -= 4;
@@ -25244,7 +25334,7 @@ void Application::sub_437990(WinApplication* __restrict app, x86::CPU& cpu_)
     }
     // 004379a1  e8b0830a00             -call 0x4dfd56
     cpu.esp -= 4;
-    sub_4dfd56(app, cpu.sync());
+    nfs3hp::watcom::CHP(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004379a6  db1de8bb6f00           -fistp dword ptr [0x6fbbe8]

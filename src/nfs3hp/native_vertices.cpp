@@ -53,7 +53,6 @@ namespace nfs3hp
 {
 
 // Stand-ins further down that the clipper's callers call straight.
-bool thrashDrawTri(win32::WinApplication* app, x86::CPU& cpu);
 bool clipPolygon(win32::WinApplication* app, x86::CPU& cpu);
 bool clipTriangle(win32::WinApplication* app, x86::CPU& cpu);
 bool objectVertices(win32::WinApplication* app, x86::CPU& cpu);
@@ -264,16 +263,6 @@ bool polygonNativesOn()
     static const bool on = []() {
         const char* value = SDL_getenv("NFS_NATIVES");
         return !value || (SDL_strcmp(value, "0") != 0 && SDL_strcmp(value, "vertices") != 0);
-    }();
-    return on;
-}
-
-/* NFS_NATIVES=no-drawtri: all but THRASH_drawtri. */
-bool drawTriNativeOn()
-{
-    static const bool on = []() {
-        const char* value = SDL_getenv("NFS_NATIVES");
-        return polygonNativesOn() && !(value && SDL_strcmp(value, "no-drawtri") == 0);
     }();
     return on;
 }
@@ -976,15 +965,6 @@ void cullPolygonsNative(win32::WinApplication* app, x86::CPU& cpu)
     cpu.esp = esp + 4;
 }
 
-/* voodoo2a's sub_a85770, THRASH_drawtri: a triangle of the game's vertices to
- * Glide.  [esp+4], [esp+8], [esp+0xc]  the three vertices: x, y, z, w at +0,
- * the colour's bytes b, g, r, a at +0x10, u and v at +0x18.  Each becomes a
- * GrVertex on its stack --
- *   x, y;  ooz = z * [0xa9235c];  oow = w;  r, g, b, a from the table at
- *   0xa93210;  s = u * (w * [0xa92358]),  t = (w * [0xa92358]) * v
- * -- and the three go to grDrawTriangle ([0xa93710]).  Here they go to the
- * renderer straight from the host's stack.  Flags and the FPU are as they
- * were: the generated code skips every flag this sets. */
 /* A float product that is the x87's at single precision too: anything but a
  * product that left a float's range -- an infinity from finite factors, or a
  * subnormal or zero from nonzero ones -- which the x87 keeps with its wider
@@ -999,19 +979,6 @@ inline bool floatProductExact(float a, float b, float product)
     if (product == 0)
         return a == 0 || b == 0;
     return product != product;  // NaN, the emulated FPU's as well
-}
-
-void thrashDrawTriNative(win32::WinApplication* app, x86::CPU& cpu)
-{
-    const x86::reg32 esp = cpu.esp;
-    const x86::reg32 corners[3] = { app->getMemory<x86::reg32>(esp + 4), app->getMemory<x86::reg32>(esp + 8),
-                                    app->getMemory<x86::reg32>(esp + 0xc) };
-    thrashTriangle(app, corners[0], corners[1], corners[2]);
-    // lea eax, [esp+8] before the call: the first GrVertex; the last colour in ecx
-    cpu.eax = esp - 0xb8;
-    cpu.ecx = app->getMemory<x86::reg32>(0xa93210 + x86::reg32(app->getMemory<x86::reg8>(corners[2] + 0x10)) * 4);
-    cpu.edx = corners[2];
-    cpu.esp = esp + 4 + 0xc;
 }
 
 /* A vertex's depth for Glide from its 1/z, as sub_434380 (and the clipper)
@@ -1039,8 +1006,7 @@ void polygonDepth(win32::WinApplication* app, x86::reg32 vertex, float scale, fl
  * ([0x554e54], state 1) go through THRASH_setstate ([0x9ef96c]) when they
  * change.  A polygon with a vertex off the screen goes to the clipper
  * (sub_4c11b0); the rest get their depth (polygonDepth) and go to
- * THRASH_drawtri ([0x9ef974]) -- here straight to the renderer when that is
- * voodoo2a's.  Returns the polygon the list ended on. */
+ * THRASH_drawtri ([0x9ef974]).  Returns the polygon the list ended on. */
 void submitPolygonsNative(win32::WinApplication* app, x86::CPU& cpu)
 {
     auto reg32At = [app](x86::reg32 address) { return app->getMemory<x86::reg32>(address); };
@@ -1119,20 +1085,12 @@ void submitPolygonsNative(win32::WinApplication* app, x86::CPU& cpu)
                     const float offset = app->getMemory<float>(x86::reg32(0x560098));
                     for (int i = 0; i < 3; ++i)
                         polygonDepth(app, corners[i], scale, offset);
-                    const x86::reg32 draw = reg32At(0x9ef974);
-                    if (draw == 0xa85770 && drawTriNativeOn() && thrashPlainTriangles(app))
-                    {
-                        thrashTriangle(app, corners[0], corners[1], corners[2]);
-                    }
-                    else
-                    {
-                        reg32At(cpu.esp - 4) = corners[2];
-                        reg32At(cpu.esp - 8) = corners[1];
-                        reg32At(cpu.esp - 12) = corners[0];
-                        cpu.esp -= 12;
-                        if (!call(app, cpu, draw))
-                            return;
-                    }
+                    reg32At(cpu.esp - 4) = corners[2];
+                    reg32At(cpu.esp - 8) = corners[1];
+                    reg32At(cpu.esp - 12) = corners[0];
+                    cpu.esp -= 12;
+                    if (!call(app, cpu, reg32At(0x9ef974)))
+                        return;
                 }
             }
             polygon = reg32At(polygon);
@@ -1722,14 +1680,11 @@ void clipPolygonNative(win32::WinApplication* app, x86::CPU& cpu)
     finish(0, cpu.ebx);
 }
 
-/* A call through one of THRASH's pointers, the arguments pushed: voodoo2a's
- * THRASH_drawtri straight to its stand-in, without the lookup of a guest call. */
+/* A call through one of THRASH's pointers, the arguments pushed. */
 bool callThrash(win32::WinApplication* app, x86::CPU& cpu, x86::reg32 slot)
 {
     const x86::reg32 target = app->getMemory<x86::reg32>(slot);
     cpu.esp -= 4;
-    if (target == 0xa85770 && thrashDrawTri(app, cpu))
-        return !cpu.terminate;
     app->dynamic_call(target, cpu);
     return !cpu.terminate;
 }
@@ -3197,20 +3152,6 @@ void depthBucketsNative(win32::WinApplication* app, x86::CPU& cpu)
     cpu.edi = saved[4];
     cpu.ebp = saved[5];
     cpu.esp = esp + 4 + 4;
-}
-
-/* sub_4dfd56: st(0) rounded toward zero -- the game's float-to-integer step,
- * frndint under a control word of 0x1f.. (extended precision, truncation),
- * the caller's restored after.  Nothing else changes: the registers, the
- * flags and the status word stay as they were. */
-void truncateNative(win32::WinApplication* app, x86::CPU& cpu)
-{
-    NFS2_USE(app);
-    const auto rc = cpu.fpu.control.rc;
-    cpu.fpu.control.rc = 3;
-    cpu.fpu.st(0) = cpu.fpu.rndint(cpu.fpu.st(0));
-    cpu.fpu.control.rc = rc;
-    cpu.esp += 4;
 }
 
 /* sub_4e01f0: the dot product of the vectors at eax and edx, pushed onto the
@@ -5488,7 +5429,7 @@ inline bool originalRunning()
     return clipChecking() && t_original;
 }
 /* Set while a whole-memory check traces the triangles of both paths: a nested
- * check of THRASH_drawtri would take the trace over. */
+ * check would take the trace over. */
 thread_local bool t_tracing = false;
 
 struct CheckCounts
@@ -5613,35 +5554,6 @@ void describeTriangles(const std::vector<win32::GrVertex>& mineTraced,
         differ("s", m.tmuvtx[0].sow, o.tmuvtx[0].sow);
         differ("t", m.tmuvtx[0].tow, o.tmuvtx[0].tow);
     }
-}
-
-/* NFS_NATIVE_CHECK for THRASH_drawtri, whose work goes to the renderer rather
- * than to guest memory: every field it sets of what each path hands over, and
- * the state after.  The triangle is drawn twice. */
-void checkTriangles(win32::WinApplication* app, x86::CPU& cpu, const char* name, x86::reg32 address,
-                    CheckCounts& counts, void (*native)(win32::WinApplication*, x86::CPU&))
-{
-    static std::vector<win32::GrVertex> mineTraced;
-    static std::vector<win32::GrVertex> originalTraced;
-    mineTraced.clear();
-    originalTraced.clear();
-    const x86::CPU entry = cpu;
-    win32::glide2x::traceTriangles(&mineTraced);
-    native(app, cpu);
-    win32::glide2x::traceTriangles(nullptr);
-    const x86::CPU mine = cpu;
-    cpu = entry;
-    win32::glide2x::traceTriangles(&originalTraced);
-    t_original = true;
-    app->dynamic_call(address, cpu);
-    t_original = false;
-    win32::glide2x::traceTriangles(nullptr);
-
-    char what[160] = "";
-    describeTriangles(mineTraced, originalTraced, what, sizeof what);
-    if (!what[0])
-        describeState(mine, cpu, what, sizeof what);
-    report(name, counts, what[0] == 0, x86::reg32(mineTraced.size() / 3), what);
 }
 
 /* NFS_NATIVE_CHECK=1, or =clip for these alone: the clipper or one of its
@@ -5875,7 +5787,7 @@ void checkWholeMemory(win32::WinApplication* app, x86::CPU& cpu, const char* nam
 
 }
 
-/* For the stand-ins in native_thrash.cpp, which keep their own checks. */
+/* For the stand-ins of the other files, which keep their own checks. */
 bool nativeChecking()
 {
     return checking();
@@ -6071,8 +5983,9 @@ bool aiVotes(win32::WinApplication* app, x86::CPU& cpu)
  * sub_512180 is that log: a four-letter tag at eax ("sent", "rsnd", "busy",
  * "hold", "qdat", "recv", "deny"...) with edx, ebx, ecx and two arguments on
  * the stack; sub_51d810 is packet_sendpacket (eax the connection, edx the
- * data, ebx its length); sub_401010 is the library's message printer, its
- * format at [esp+4]. */
+ * data, ebx its length); Error (sub_401010, native_game.cpp, which calls
+ * commMessageTrace first) is the library's message printer, its format at
+ * [esp+4]. */
 bool netTraceOn()
 {
     static const bool on = []() {
@@ -6133,10 +6046,10 @@ bool commSendTrace(win32::WinApplication* app, x86::CPU& cpu)
     return false;
 }
 
-bool commMessageTrace(win32::WinApplication* app, x86::CPU& cpu)
+void commMessageTrace(win32::WinApplication* app, x86::CPU& cpu)
 {
     if (!netTraceOn())
-        return false;
+        return;
     const x86::reg32 esp = cpu.esp;
     SDL_Log("[COMM] message \"%s\" (%s %s line %u) %08x %08x",
             guestText(app, app->getMemory<x86::reg32>(esp + 4), 120).c_str(),
@@ -6144,7 +6057,6 @@ bool commMessageTrace(win32::WinApplication* app, x86::CPU& cpu)
             guestText(app, app->getMemory<x86::reg32>(0x552194)).c_str(),
             unsigned(app->getMemory<x86::reg32>(0x552198)), unsigned(app->getMemory<x86::reg32>(esp + 8)),
             unsigned(app->getMemory<x86::reg32>(esp + 0xc)));
-    return false;
 }
 
 x86::reg32 takeArenaPeak()
@@ -6152,20 +6064,6 @@ x86::reg32 takeArenaPeak()
     const x86::reg32 peak = s_arenaPeak;
     s_arenaPeak = 0;
     return peak;
-}
-
-bool thrashDrawTri(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (originalRunning() || !drawingPrecision(cpu) || !drawTriNativeOn() || !thrashPlainTriangles(app))
-        return false;
-    if (checking() && !t_tracing)
-    {
-        static CheckCounts counts;
-        checkTriangles(app, cpu, "sub_a85770", 0xa85770, counts, thrashDrawTriNative);
-        return true;
-    }
-    thrashDrawTriNative(app, cpu);
-    return true;
 }
 
 bool submitPolygons(win32::WinApplication* app, x86::CPU& cpu)
@@ -6740,14 +6638,6 @@ bool groundHeight(win32::WinApplication* app, x86::CPU& cpu)
     static CheckCounts counts;
     // p, written over with p - o as the original does: put back before the generated code runs
     return smallNative<groundHeightNative>(app, cpu, true, "sub_4968a0", 0x4968a0, cpu.esp + 0x10, 12, counts);
-}
-
-bool truncateTop(win32::WinApplication* app, x86::CPU& cpu)
-{
-    static CheckCounts counts;
-    if (cpu.fpu.count == 0)
-        return false;
-    return smallNative<truncateNative>(app, cpu, false, "sub_4dfd56", 0x4dfd56, 0, 0, counts);
 }
 
 bool dotPush(win32::WinApplication* app, x86::CPU& cpu)
