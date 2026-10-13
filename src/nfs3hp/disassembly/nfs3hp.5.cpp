@@ -31845,7 +31845,7 @@ L_0x00425b91:
     }
     // 00425bd2  e8b99a0b00             -call 0x4df690
     cpu.esp -= 4;
-    sub_4df690(app, cpu.sync());
+    nfs3hp::watcom::sprintf(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00425bd7  83c418                 -add esp, 0x18

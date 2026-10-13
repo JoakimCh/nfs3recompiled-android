@@ -2886,7 +2886,7 @@ L_0x00438411:
     cpu.esp -= 4;
     // 00438418  e873720a00             -call 0x4df690
     cpu.esp -= 4;
-    sub_4df690(app, cpu.sync());
+    nfs3hp::watcom::sprintf(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0043841d  83c40c                 -add esp, 0xc
@@ -3283,7 +3283,7 @@ L_0x00438511:
     cpu.esp -= 4;
     // 00438518  e873710a00             -call 0x4df690
     cpu.esp -= 4;
-    sub_4df690(app, cpu.sync());
+    nfs3hp::watcom::sprintf(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0043851d  83c40c                 -add esp, 0xc
@@ -12954,7 +12954,7 @@ L_0x00439e70:
     cpu.esp -= 4;
     // 00439e9a  e8f1570a00             -call 0x4df690
     cpu.esp -= 4;
-    sub_4df690(app, cpu.sync());
+    nfs3hp::watcom::sprintf(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00439e9f  83c40c                 -add esp, 0xc
@@ -13080,7 +13080,7 @@ L_0x00439f04:
     cpu.esp -= 4;
     // 00439f17  e874570a00             -call 0x4df690
     cpu.esp -= 4;
-    sub_4df690(app, cpu.sync());
+    nfs3hp::watcom::sprintf(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00439f1c  83c408                 -add esp, 8

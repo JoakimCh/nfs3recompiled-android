@@ -4113,7 +4113,7 @@ void Application::sub_48faa0(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.edx = 16 /*0x10*/;
     // 0048fac5  e8c6fb0400             -call 0x4df690
     cpu.esp -= 4;
-    sub_4df690(app, cpu.sync());
+    nfs3hp::watcom::sprintf(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0048faca  83c410                 -add esp, 0x10
@@ -4164,7 +4164,7 @@ L_0x0048fae3:
     cpu.esp -= 4;
     // 0048faf0  e89bfb0400             -call 0x4df690
     cpu.esp -= 4;
-    sub_4df690(app, cpu.sync());
+    nfs3hp::watcom::sprintf(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0048faf5  8d04b500000000         -lea eax, [esi*4]
@@ -21992,7 +21992,7 @@ L_0x00493f65:
     cpu.esp -= 4;
     // 00493f80  e80bb70400             -call 0x4df690
     cpu.esp -= 4;
-    sub_4df690(app, cpu.sync());
+    nfs3hp::watcom::sprintf(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00493f85  83c40c                 -add esp, 0xc
@@ -25687,7 +25687,7 @@ void Application::sub_494bd0(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.esp -= 4;
     // 00494c54  e837aa0400             -call 0x4df690
     cpu.esp -= 4;
-    sub_4df690(app, cpu.sync());
+    nfs3hp::watcom::sprintf(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00494c59  d945f4                 -fld dword ptr [ebp - 0xc]
@@ -26338,7 +26338,7 @@ L_0x00494eb2:
     cpu.esp -= 4;
     // 00494efe  e88da70400             -call 0x4df690
     cpu.esp -= 4;
-    sub_4df690(app, cpu.sync());
+    nfs3hp::watcom::sprintf(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00494f03  d94576                 -fld dword ptr [ebp + 0x76]
@@ -26773,7 +26773,7 @@ L_0x00495049:
     cpu.esp -= 4;
     // 0049509b  e8f0a50400             -call 0x4df690
     cpu.esp -= 4;
-    sub_4df690(app, cpu.sync());
+    nfs3hp::watcom::sprintf(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004950a0  83c410                 -add esp, 0x10
@@ -26924,7 +26924,7 @@ L_0x004950d9:
     cpu.esp -= 4;
     // 00495103  e888a50400             -call 0x4df690
     cpu.esp -= 4;
-    sub_4df690(app, cpu.sync());
+    nfs3hp::watcom::sprintf(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00495108  83c410                 -add esp, 0x10
@@ -28379,7 +28379,7 @@ L_0x00495645:
     cpu.esp -= 4;
     // 0049566c  e81fa00400             -call 0x4df690
     cpu.esp -= 4;
-    sub_4df690(app, cpu.sync());
+    nfs3hp::watcom::sprintf(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00495671  83c40c                 -add esp, 0xc

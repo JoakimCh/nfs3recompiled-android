@@ -5131,7 +5131,7 @@ L_0x00501079:
     cpu.ecx ^= x86::reg32(x86::sreg32(cpu.ecx));
     // 00501099  e8d6e5fdff             -call 0x4df674
     cpu.esp -= 4;
-    sub_4df674(app, cpu.sync());
+    nfs3hp::watcom::vsprintf(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0050109e  a19c785600             -mov eax, dword ptr [0x56789c]

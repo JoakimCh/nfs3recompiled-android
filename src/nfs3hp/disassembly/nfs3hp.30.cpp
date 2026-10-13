@@ -2694,7 +2694,7 @@ void Application::sub_4d0d50(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.ecx ^= x86::reg32(x86::sreg32(cpu.ecx));
     // 004d0d83  e808e90000             -call 0x4df690
     cpu.esp -= 4;
-    sub_4df690(app, cpu.sync());
+    nfs3hp::watcom::sprintf(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004d0d88  83c40c                 -add esp, 0xc
@@ -2722,7 +2722,7 @@ L_0x004d0d98:
     cpu.esp -= 4;
     // 004d0da9  e8e2e80000             -call 0x4df690
     cpu.esp -= 4;
-    sub_4df690(app, cpu.sync());
+    nfs3hp::watcom::sprintf(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004d0dae  83c40c                 -add esp, 0xc
@@ -2742,7 +2742,7 @@ L_0x004d0d98:
     cpu.ebx = 1 /*0x1*/;
     // 004d0dc4  e8c7e80000             -call 0x4df690
     cpu.esp -= 4;
-    sub_4df690(app, cpu.sync());
+    nfs3hp::watcom::sprintf(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004d0dc9  83c40c                 -add esp, 0xc
@@ -5176,7 +5176,7 @@ L_0x004d1774:
     cpu.esp -= 4;
     // 004d178d  e8fede0000             -call 0x4df690
     cpu.esp -= 4;
-    sub_4df690(app, cpu.sync());
+    nfs3hp::watcom::sprintf(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004d1792  83c410                 -add esp, 0x10
@@ -21874,7 +21874,7 @@ void Application::sub_4d5370(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.edx ^= x86::reg32(x86::sreg32(cpu.edx));
     // 004d5391  e8faa20000             -call 0x4df690
     cpu.esp -= 4;
-    sub_4df690(app, cpu.sync());
+    nfs3hp::watcom::sprintf(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004d5396  83c40c                 -add esp, 0xc
@@ -21938,7 +21938,7 @@ L_0x004d53b9:
     cpu.esp -= 4;
     // 004d53cb  e8c0a20000             -call 0x4df690
     cpu.esp -= 4;
-    sub_4df690(app, cpu.sync());
+    nfs3hp::watcom::sprintf(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004d53d0  8d04bd00000000         -lea eax, [edi*4]

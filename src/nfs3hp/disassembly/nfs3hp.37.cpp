@@ -5333,7 +5333,7 @@ L_0x004f1dfc:
     cpu.eax = 5556648 /*0x54c9a8*/;
     // 004f1e06  e8c5cc0100             -call 0x50ead0
     cpu.esp -= 4;
-    sub_50ead0(app, cpu.sync());
+    nfs3hp::watcom::getenv(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004f1e0b  85c0                   +test eax, eax
@@ -9512,7 +9512,7 @@ void Application::sub_4f2a78(WinApplication* app, x86::CPU& cpu)
   NFS2_USE(cpu);
   NFS2_USE(app);
     // 004f2a78  e9a3510000             -jmp 0x4f7c20
-    return sub_4f7c20(app, cpu.handOver());
+    return nfs3hp::watcom::atexit(app, cpu.handOver());
 }
 
 /* align: skip  */
@@ -9530,7 +9530,7 @@ start:
     cpu.eax ^= x86::reg32(x86::sreg32(cpu.eax));
     // 004f2a7f  e880d2feff             -call 0x4dfd04
     cpu.esp -= 4;
-    sub_4dfd04(app, cpu.sync());
+    nfs3hp::watcom::exit(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004f2a84  0000                   -add byte ptr [eax], al
@@ -9975,7 +9975,7 @@ start:
     cpu.eax ^= x86::reg32(x86::sreg32(cpu.eax));
     // 004f2a7f  e880d2feff             -call 0x4dfd04
     cpu.esp -= 4;
-    sub_4dfd04(app, cpu.sync());
+    nfs3hp::watcom::exit(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004f2a84  0000                   -add byte ptr [eax], al

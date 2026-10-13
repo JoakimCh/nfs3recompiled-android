@@ -1901,7 +1901,7 @@ void Application::sub_44ab40(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.esp -= 4;
     // 0044ab9a  e8f14a0900             -call 0x4df690
     cpu.esp -= 4;
-    sub_4df690(app, cpu.sync());
+    nfs3hp::watcom::sprintf(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0044ab9f  83c410                 -add esp, 0x10
@@ -1939,7 +1939,7 @@ void Application::sub_44ab40(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.esp -= 4;
     // 0044abcc  e8bf4a0900             -call 0x4df690
     cpu.esp -= 4;
-    sub_4df690(app, cpu.sync());
+    nfs3hp::watcom::sprintf(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0044abd1  83c410                 -add esp, 0x10
@@ -3994,7 +3994,7 @@ L_0x0044b1be:
     cpu.eax ^= x86::reg32(x86::sreg32(cpu.eax));
     // 0044b1c0  e84b550a00             -call 0x4f0710
     cpu.esp -= 4;
-    sub_4f0710(app, cpu.sync());
+    nfs3hp::watcom::sleep(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0044b1c5  e896e60700             -call 0x4c9860
@@ -22123,7 +22123,7 @@ L_0x0044f004:
     cpu.esp -= 4;
     // 0044f052  e839060900             -call 0x4df690
     cpu.esp -= 4;
-    sub_4df690(app, cpu.sync());
+    nfs3hp::watcom::sprintf(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0044f057  83c414                 -add esp, 0x14
@@ -23253,7 +23253,7 @@ void Application::sub_44f510(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.esp -= 4;
     // 0044f53b  e850010900             -call 0x4df690
     cpu.esp -= 4;
-    sub_4df690(app, cpu.sync());
+    nfs3hp::watcom::sprintf(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0044f540  83c40c                 -add esp, 0xc
@@ -23478,7 +23478,7 @@ void Application::sub_44f5f0(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.esp -= 4;
     // 0044f616  e875000900             -call 0x4df690
     cpu.esp -= 4;
-    sub_4df690(app, cpu.sync());
+    nfs3hp::watcom::sprintf(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0044f61b  83c40c                 -add esp, 0xc

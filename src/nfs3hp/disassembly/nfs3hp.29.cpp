@@ -10232,7 +10232,7 @@ L_0x004cee08:
     }
     // 004cee14  e877080100             -call 0x4df690
     cpu.esp -= 4;
-    sub_4df690(app, cpu.sync());
+    nfs3hp::watcom::sprintf(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004cee19  83c410                 +add esp, 0x10
@@ -10258,7 +10258,7 @@ L_0x004cee1e:
     cpu.esp -= 4;
     // 004cee24  e867080100             -call 0x4df690
     cpu.esp -= 4;
-    sub_4df690(app, cpu.sync());
+    nfs3hp::watcom::sprintf(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004cee29  83c408                 -add esp, 8
@@ -10437,7 +10437,7 @@ void Application::sub_4cee40(WinApplication* __restrict app, x86::CPU& cpu_)
     }
     // 004ceee8  e8a3070100             -call 0x4df690
     cpu.esp -= 4;
-    sub_4df690(app, cpu.sync());
+    nfs3hp::watcom::sprintf(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004ceeed  83c41c                 -add esp, 0x1c

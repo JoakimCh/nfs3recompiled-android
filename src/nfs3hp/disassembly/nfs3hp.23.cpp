@@ -495,7 +495,7 @@ void Application::sub_49c310(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.ecx = x86::reg32(cpu.ebp + x86::reg32(-260) /* -0x104 */);
     // 0049c335  e83a330400             -call 0x4df674
     cpu.esp -= 4;
-    sub_4df674(app, cpu.sync());
+    nfs3hp::watcom::vsprintf(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
 L_0x0049c33a:
@@ -1768,7 +1768,7 @@ void Application::sub_49c700(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.edx = x86::reg32(cpu.ebp + x86::reg32(-20) /* -0x14 */);
     // 0049c72c  e85f2f0400             -call 0x4df690
     cpu.esp -= 4;
-    sub_4df690(app, cpu.sync());
+    nfs3hp::watcom::sprintf(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0049c731  83c40c                 -add esp, 0xc
@@ -5594,7 +5594,7 @@ void Application::sub_49d450(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.esp -= 4;
     // 0049d470  e81b220400             -call 0x4df690
     cpu.esp -= 4;
-    sub_4df690(app, cpu.sync());
+    nfs3hp::watcom::sprintf(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0049d475  83c40c                 -add esp, 0xc
@@ -5630,7 +5630,7 @@ void Application::sub_49d450(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.esp -= 4;
     // 0049d496  e8f5210400             -call 0x4df690
     cpu.esp -= 4;
-    sub_4df690(app, cpu.sync());
+    nfs3hp::watcom::sprintf(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0049d49b  8b560c                 -mov edx, dword ptr [esi + 0xc]
@@ -5785,7 +5785,7 @@ L_0x0049d51b:
     cpu.esp -= 4;
     // 0049d525  e866210400             -call 0x4df690
     cpu.esp -= 4;
-    sub_4df690(app, cpu.sync());
+    nfs3hp::watcom::sprintf(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0049d52a  83c40c                 -add esp, 0xc
@@ -14708,7 +14708,7 @@ L_0x0049f4de:
     app->getMemory<x86::reg32>(x86::reg32(7995872) /* 0x7a01e0 */) = cpu.esi;
     // 0049f4f5  e896010400             -call 0x4df690
     cpu.esp -= 4;
-    sub_4df690(app, cpu.sync());
+    nfs3hp::watcom::sprintf(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0049f4fa  83c40c                 -add esp, 0xc

@@ -673,7 +673,7 @@ L_0x004e12d3:
     app->getMemory<x86::reg32>(cpu.esp + x86::reg32(268) /* 0x10c */) = cpu.ecx;
     // 004e132b  e860e3ffff             -call 0x4df690
     cpu.esp -= 4;
-    sub_4df690(app, cpu.sync());
+    nfs3hp::watcom::sprintf(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004e1330  83c40c                 -add esp, 0xc
@@ -751,7 +751,7 @@ L_0x004e12d3:
     cpu.esp -= 4;
     // 004e13a3  e8e8e2ffff             -call 0x4df690
     cpu.esp -= 4;
-    sub_4df690(app, cpu.sync());
+    nfs3hp::watcom::sprintf(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004e13a8  83c40c                 -add esp, 0xc

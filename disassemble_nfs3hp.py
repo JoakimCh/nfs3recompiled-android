@@ -119,6 +119,11 @@ GAME_NATIVES = {
 # Open Watcom's names (src/nfs3hp/watcom.md maps the runtime in nfs3.exe).
 # tools/game_checks compares them with their generated code as well.
 WATCOM_NATIVES = {
+    0x4df660: "watcom::mem_putc",
+    0x4df674: "watcom::vsprintf",
+    0x4df690: "watcom::sprintf",
+    0x4dfd04: "watcom::exit",
+    0x4dfd30: "watcom::_exit",
     0x4dfd56: "watcom::CHP",            # __CHP
     0x4e0640: "watcom::memset",
     0x4e06d9: "watcom::IF_DATAN2",      # IF@DATAN2
@@ -141,6 +146,8 @@ WATCOM_NATIVES = {
     0x4edfe8: "watcom::fopen",
     0x4ee100: "watcom::fclose",
     0x4ee144: "watcom::shutdown_stream", # __shutdown_stream
+    0x4ee15c: "watcom::hexDigit",       # __MkTmpFile's digit
+    0x4ee168: "watcom::MkTmpFile",      # __MkTmpFile
     0x4ee214: "watcom::doclose",        # __doclose
     0x4ee2e0: "watcom::remove",
     0x4ee2f0: "watcom::strrchr",
@@ -158,30 +165,79 @@ WATCOM_NATIVES = {
     0x4f0260: "watcom::chdir",
     0x4f0430: "watcom::atoi",
     0x4f0490: "watcom::atol",
+    0x4f04f0: "watcom::cget_string",
+    0x4f051c: "watcom::uncget_string",
+    0x4f0520: "watcom::vsscanf",
+    0x4f0548: "watcom::sscanf",
     0x4f0570: "watcom::fgets",
     0x4f05f0: "watcom::access",
+    0x4f0710: "watcom::sleep",
     0x4f0730: "watcom::getcwd",
     0x4f07d0: "watcom::getdiskfree",    # _getdiskfree
     0x4f0ae0: "watcom::tolower",
     0x4f1c30: "watcom::floor",
     0x4f22b0: "watcom::time",
     0x4f2d78: "watcom::ceil",
+    0x4f45c0: "watcom::stackavail",
+    0x4f4610: "watcom::GRO",            # __GRO
+    0x4f4b80: "watcom::fprintf",
     0x4f7900: "watcom::nmalloc",        # _nmalloc
     0x4f79f0: "watcom::nfree",          # _nfree
+    0x4f7af8: "watcom::TryInit",        # __TryInit
+    0x4f7b2a: "watcom::TryHandler",     # __TryHandler
+    0x4f7b61: "watcom::TryScope",       # __TryHandler's scopes
+    0x4f7b7d: "watcom::Except",         # __Except
+    0x4f7b87: "watcom::TryOuter",       # __TryHandler's next scope
+    0x4f7b8c: "watcom::TryDone",        # __TryHandler's end
+    0x4f7ba7: "watcom::global_unwind",  # __global_unwind
+    0x4f7bc3: "watcom::local_unwind",   # __local_unwind
+    0x4f7c20: "watcom::atexit",
     0x4f7c90: "watcom::control87",      # _control87
+    0x4f7ce0: "watcom::kbhit",
     0x4f7d70: "watcom::fflush",
     0x4f7d80: "watcom::fputs",
+    0x4f7e20: "watcom::do_getch",
+    0x4f7f24: "watcom::getch",
+    0x4f7fa0: "watcom::cstart_",        # _cstart_
     0x4f8020: "watcom::strupr",         # _strupr
     0x4f8040: "watcom::localtime_",     # _localtime
     0x4f8094: "watcom::localtime",
     0x4f80b4: "watcom::IF_DEXP",        # IF@DEXP
     0x4f8116: "watcom::exp",
+    0x4f8122: "watcom::Strtold",        # __Strtold
+    0x4f82b6: "watcom::strtod",
+    0x4f8b50: "watcom::setenv",
+    0x4f8ce8: "watcom::setenv_",        # __setenv
+    0x4f8f38: "watcom::findenv",        # __findenv
     0x4f9482: "watcom::IF_DACOS",       # IF@DACOS
     0x4fb300: "watcom::bsearch",
+    0x4fe1d0: "watcom::prtf",           # __prtf
+    0x4fe578: "watcom::prtfSpec",       # __prtf's specification
+    0x4fe6cc: "watcom::prtfFlags",      # __prtf's flags
+    0x4fe734: "watcom::prtfLength",     # __prtf's strnlen
+    0x4fe758: "watcom::prtfWideLength", # __prtf's wide strnlen
+    0x4fe7c4: "watcom::prtfHex",        # __prtf's %p digits
+    0x4fe81e: "watcom::prtfHexEnd",     # the end of __prtf's %p digits, %hf's too
+    0x4fe828: "watcom::prtfFixed",      # __prtf's %hf
+    0x4fe924: "watcom::prtfFloat",      # [__EFG_printf]
+    0x4fe92c: "watcom::prtfZeros",      # __prtf's zero padding
+    0x4fe970: "watcom::prtfWideOut",    # __prtf's %ls
+    0x4fe9d4: "watcom::prtfConvert",    # __prtf's conversion
+    0x4fefdc: "watcom::prtfUpper",      # __prtf's strupr
+    0x4ff000: "watcom::file_putc",
+    0x4ff014: "watcom::vfprintf",
     0x4ff0ec: "watcom::GetThreadPtr",   # __GetThreadPtr
     0x4ff0f4: "watcom::NullAccess",     # __NullAccessRtn
+    0x4ff108: "watcom::NTInit",         # __NTInit
+    0x4ff338: "watcom::NTMain",         # the program's start
+    0x4ff38c: "watcom::exit_",          # __exit
+    0x4ff3d0: "watcom::freeEnvironment",# the environment's copies freed
+    0x4ff410: "watcom::callRoutine",    # __FiniRtns' call
+    0x4ff41c: "watcom::InitRtns",       # __InitRtns
+    0x4ff46c: "watcom::FiniRtns",       # __FiniRtns
     0x4ff4c0: "watcom::STOSB",          # __STOSB
     0x4ff4f7: "watcom::STOSD",          # __STOSD
+    0x4ff624: "watcom::fpatan_wrap",    # __fpatan_wrap
     0x500f8c: "watcom::set_errno_dos",  # __set_errno_dos
     0x500ff4: "watcom::set_errno_nt",   # __set_errno_nt
     0x502760: "watcom::flush",          # __flush
@@ -201,14 +257,33 @@ WATCOM_NATIVES = {
     0x509250: "watcom::allocfp",        # __allocfp
     0x509314: "watcom::freefp",         # __freefp
     0x509380: "watcom::chktty",         # __chktty
+    0x5093c0: "watcom::getpid",
+    0x5094e0: "watcom::tmpdir",         # __tmpdir
     0x5095b0: "watcom::close",          # __close
     0x509640: "watcom::fixed_GetFileAttributesA", # __fixed_GetFileAttributesA
     0x5096c0: "watcom::qwrite",         # __qwrite
     0x5097b0: "watcom::fputc",
     0x50c540: "watcom::setbits",        # __setbits
+    0x50c640: "watcom::cgetc",          # __scnf's
+    0x50c648: "watcom::uncget",         # __scnf's
+    0x50c650: "watcom::scnf",           # __scnf
+    0x50c904: "watcom::get_opt",        # __scnf's
+    0x50ca08: "watcom::scan_white",     # __scnf's
+    0x50ca48: "watcom::scan_char",      # __scnf's
+    0x50cb30: "watcom::scan_string",    # __scnf's
+    0x50cc88: "watcom::report_scan",    # __scnf's
+    0x50cce8: "watcom::makelist",       # __scnf's
+    0x50cd2c: "watcom::scan_arb",       # __scnf's
+    0x50ce18: "watcom::scan_float",     # __scnf's
+    0x50d0f0: "watcom::scan_int",       # __scnf's
+    0x50d510: "watcom::radix_value",    # __scnf's
+    0x50d538: "watcom::chktrm",         # __scnf's
     0x50ea4e: "watcom::modf",
+    0x50ead0: "watcom::getenv",
     0x50eb30: "watcom::getctime",       # __getctime
     0x50eba0: "watcom::mktime",
+    0x511cd0: "watcom::fatalWrite",     # __fatal_runtime_error's
+    0x511d0c: "watcom::fatal_runtime_error",# __fatal_runtime_error
     0x515300: "watcom::MemAllocator",   # __MemAllocator
     0x5153b0: "watcom::MemFree",        # __MemFree
     0x5154e0: "watcom::LinkUpNewNHeap", # __LinkUpNewNHeap
@@ -216,8 +291,19 @@ WATCOM_NATIVES = {
     0x515614: "watcom::ExpandDGROUP",   # __ExpandDGROUP
     0x515628: "watcom::AdjustAmount",   # __AdjustAmount
     0x515680: "watcom::nmemneed",       # __nmemneed
+    0x515690: "watcom::NTRealKey",      # __NTRealKey
+    0x5156b8: "watcom::openConsoles",   # the console's handles
+    0x515728: "watcom::NTConsoleInput", # __NTConsoleInput
+    0x515734: "watcom::NTConsoleOutput", # __NTConsoleOutput
     0x515850: "watcom::flushall",
     0x515858: "watcom::flushall_",      # __flushall
+    0x5158a0: "watcom::mainStart",      # the main thread's start
+    0x515b34: "watcom::tzWindows",      # __tzset's without TZ
+    0x515c2c: "watcom::tzset",          # __tzset
+    0x515c90: "watcom::tzNumber",       # __tzset's number
+    0x515cbc: "watcom::tzName",         # __tzset's zone
+    0x515dd4: "watcom::tzRule",         # __tzset's rule
+    0x515ec2: "watcom::tzDaylight",     # __tzset's daylight saving
     0x515fa0: "watcom::brktime",        # __brktime
     0x5160f0: "watcom::leapyear",       # __leapyear
     0x51612c: "watcom::calc_yday",
@@ -225,20 +311,93 @@ WATCOM_NATIVES = {
     0x516270: "watcom::isindst",        # __isindst
     0x51652c: "watcom::time_less",
     0x51655c: "watcom::math87_err",     # __math87_err
+    0x5165d8: "watcom::ZBuf2LD",        # __ZBuf2LD
+    0x51663a: "watcom::normalize",      # __ZBuf2LD's
+    0x51667b: "watcom::scalePowers",    # __LDScale10x's
+    0x5166cf: "watcom::scaleEnd",       # __LDScale10x's way out
+    0x5166d8: "watcom::scaleBy",        # __LDScale10x's
+    0x516759: "watcom::LDScale10x",     # __LDScale10x
+    0x518050: "watcom::mbslen",         # _mbslen
+    0x518080: "watcom::mbstowcs",
+    0x518290: "watcom::wsetenv",        # __wsetenv
+    0x518498: "watcom::wfindenv",       # __wfindenv
+    0x5185c0: "watcom::nrealloc",       # _nrealloc
+    0x518640: "watcom::memmove",
     0x51a1ba: "watcom::DSQRT",          # __@DSQRT
+    0x51e060: "watcom::wctomb_",        # wctomb's core
+    0x51e0a0: "watcom::utoa",
+    0x51e0ec: "watcom::itoa",
+    0x51e130: "watcom::ulltoa",
+    0x51e220: "watcom::prtfUtoa",       # __prtf's utoa
     0x51e2b0: "watcom::handlesFull",    # _sopen's: no handle free
     0x51e304: "watcom::allocPOSIXHandle", # __allocPOSIXHandle
     0x51e45c: "watcom::freePOSIXHandle", # __freePOSIXHandle
+    0x51e490: "watcom::initPOSIXHandles", # __initPOSIXHandles
     0x51e4f0: "watcom::NTGetFakeHandle", # __NTGetFakeHandle
+    0x51e7ec: "watcom::initThreadData", # the main thread's data
+    0x51eb00: "watcom::moduleWideName", # the module's wide name
+    0x51eba0: "watcom::copyCommandLine", # the command line's copy
+    0x51ebf0: "watcom::copyWideCommandLine", # the wide command line's copy
+    0x51ec20: "watcom::stackLimits",    # the stack's limits
+    0x51f0d0: "watcom::InitExceptionHandling", # __InitExceptionHandling
+    0x51f11c: "watcom::DoneExceptionHandler",# __DoneExceptionHandler
+    0x51f320: "watcom::atanSafe",       # __fpatan_wrap's atan2
     0x522d80: "watcom::fsync",
     0x522de0: "watcom::GetIOMode",      # __GetIOMode
     0x522e38: "watcom::SetIOMode",      # __SetIOMode
+    0x522e60: "watcom::getche",
     0x5234d0: "watcom::GetNTAccessAttr", # __GetNTAccessAttr
     0x523504: "watcom::GetNTShareAttr", # __GetNTShareAttr
     0x523560: "watcom::isatty",
+    0x523610: "watcom::fullpath",       # _fullpath
+    0x523c00: "watcom::mbtowc",
+    0x523ca0: "watcom::FDFS",           # __FDFS
+    0x523cec: "watcom::U8M",            # __U8M
+    0x523d10: "watcom::mbsnicmp",       # _mbsnicmp
+    0x524190: "watcom::EnterWVIDEO",    # __EnterWVIDEO
     0x5241c0: "watcom::nheapshrink",    # _nheapshrink
     0x5241fc: "watcom::ReturnMemToSystem", # __ReturnMemToSystem
     0x52425c: "watcom::ReleaseNHeap",   # _nheapshrink's step
+    0x524290: "watcom::callMain",       # main's call
+    0x5242f0: "watcom::wcstombs",
+    0x5243a7: "watcom::reporterror",    # __reporterror
+    0x5243b1: "watcom::reportError",    # __reporterror's struct exception
+    0x5250c0: "watcom::mbterm",         # _mbterm
+    0x525100: "watcom::mbsinc",         # _mbsinc
+    0x5252a0: "watcom::create_wide_environment",# __create_wide_environment
+    0x525300: "watcom::wcslen",
+    0x525320: "watcom::memcpy",
+    0x525350: "watcom::wcscpy",
+    0x525370: "watcom::towupper",       # the environment's towupper
+    0x525380: "watcom::msize",          # _msize
+    0x525390: "watcom::nexpand",        # _nexpand
+    0x5253cc: "watcom::HeapManager_expand",# __HeapManager_expand
+    0x525578: "watcom::nexpandFailed",  # _nexpand's way out
+    0x525d59: "watcom::U8D",            # __U8D
+    0x525df0: "watcom::calloc",
+    0x526030: "watcom::initThread",     # the thread's data's start
+    0x5269d4: "watcom::fdivSafe",       # __fdiv_fpr's division
+    0x526aeb: "watcom::fdiv_fpr",       # __fdiv_fpr
+    0x52b290: "watcom::putch",
+    0x52b5b0: "watcom::mbclen",         # _mbclen
+    0x52b5e0: "watcom::mbcicmp",        # _mbcicmp
+    0x52b640: "watcom::startHook",      # a start-up hook
+    0x52b647: "watcom::printMathError", # the maths' error printed
+    0x52b68f: "watcom::callMatherr",    # _matherr's call
+    0x52c178: "watcom::wputenv",        # __wputenv
+    0x52c300: "watcom::wputenvFind",    # __wputenv's find
+    0x52e310: "watcom::mbccpy",         # _mbccpy
+    0x52e350: "watcom::mbsupr",         # _mbsupr
+    0x52e3a0: "watcom::mbccmp",         # _mbccmp
+    0x52e400: "watcom::get_std_stream", # __get_std_stream
+    0x52ed30: "watcom::mbsnextc",       # _mbsnextc
+    0x52ed70: "watcom::mbctoupper",     # _mbctoupper
+    0x52ede0: "watcom::mbvtop",         # _mbvtop
+    0x52eec0: "watcom::mbcupper932",    # _mbctoupper's, code page 932
+    0x52eee0: "watcom::mbclower",       # _ismbclower's, code page 932
+    0x52ef30: "watcom::mbclegal",       # _ismbclegal's
+    0x52ef70: "watcom::mbbtrail",       # _ismbbtrail's
+    0x533de4: "watcom::RtlUnwindThunk", # RtlUnwind's import
 }
 GAME_NATIVES.update(WATCOM_NATIVES)
 

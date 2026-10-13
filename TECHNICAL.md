@@ -340,8 +340,8 @@ go through it:
 - The C runtime the game was linked with, Watcom's, goes native family by
   family (`src/nfs3hp/native_watcom.cpp`, in `nfs3hp::watcom`, bound as the
   game's own are, `WATCOM_NATIVES`). `src/nfs3hp/watcom.md` maps all of it in
-  nfs3.exe -- 267 functions among EA's libraries, by Open Watcom's names --
-  and says which are native: so far the string and character functions,
+  nfs3.exe -- 275 functions among EA's libraries, by Open Watcom's names --
+  and says which are native: all of it now -- the string and character functions,
   `atoi`, `rand`, `memset`, `__CHP`, the step before every `fistp` of the
   game, `qsort` and `bsearch`, `errno` and the functions on paths --
   `unlink`, `mkdir`, `chmod`, `access`, `getcwd` and the like -- and on
@@ -350,7 +350,16 @@ go through it:
   `ceil`, `modf`, `exp`, `acos` and `atan2`, the streams -- `fopen` and
   `fclose`, `fgetc`, `fgets`, `fread`, `fputc`, `fputs`, `fwrite`, `fseek`,
   `ftell`, `fflush`, the buffer under them and the handles under that --
-  and the heap --
+  the formatted output -- `sprintf`, `vsprintf`, `fprintf`, `vfprintf` and
+  `__prtf` under them, all of it but a float's conversion, which goes to the
+  x87's formatter -- the environment, the time zone and the way out --
+  `getenv` and the multibyte functions it compares with, `__tzset`, `exit`,
+  `atexit`, the finalizers, `__GRO`, `sleep`, temporary files' names,
+  `setenv` with the wide environment -- the formatted input -- `sscanf`,
+  `__scnf`, `strtod` -- the console's `getch`, `getche` and `kbhit`, the
+  structured exception handling, the start-up from `_cstart_` to the game's
+  main, the Pentium FDIV bug's atan2 and divisions, `__reporterror` -- and
+  the heap, `_nrealloc` and `_nexpand` with it --
   `malloc`, `free` and what grows and shrinks it, in `native_watcom_heap.cpp`,
   which voodoo2a's heap is too.
   `tools/game_checks` holds them against their generated code as well.

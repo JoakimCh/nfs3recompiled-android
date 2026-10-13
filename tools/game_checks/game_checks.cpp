@@ -30,6 +30,7 @@
  * See run.sh. */
 #include "nfs3hp.h"
 #include <lib/memmap.h>
+#include <lib/thread.h>
 #include <SDL3/SDL.h>
 #include <algorithm>
 #include <cmath>
@@ -136,6 +137,12 @@ constexpr x86::reg32 kIsWindowedHandle = 0x5677b0, kWindowsStdin = 0x5677d8, kWi
  * links' list; the streams' lock; __iob, stdin, stdout and stderr first. */
 constexpr x86::reg32 kOpenStreams = 0x9f38a0, kAccessIob = 0x567778, kReleaseIob = 0x56777c;
 constexpr x86::reg32 kIob = 0x566f58;  // 0x1a bytes each
+/* The formatted output's (native_watcom.cpp): the x87's formatter's pointer,
+ * the two functions __prtf hands its characters to, and the multibyte
+ * tables' switch. */
+constexpr x86::reg32 kFloatFormat = 0x56ac64;
+constexpr x86::reg32 kMemPutc = 0x4df660, kFilePutc = 0x4ff000;
+constexpr x86::reg32 kMbcsOn = 0xa0b200;
 constexpr x86::reg32 kClosedStreams = 0x9f38a4;
 /* Opening and closing's: __NHandles and __NTGetFakeHandle's last; what
  * calls __allocPOSIXHandle and __freePOSIXHandle, and the handles' lock; the
@@ -154,11 +161,14 @@ constexpr x86::reg32 kDstStart = 0x568a40, kDstEnd = 0x568a64;
 /* The functions qsort and bsearch are handed: stand-ins (kPointers) by where
  * none of the game's are. */
 constexpr x86::reg32 kByDword = 0xfff000, kByByte = 0xfff004, kAtRandom = 0xfff008;
+/* And the scopes' filters and finally blocks __TryHandler runs. */
+constexpr x86::reg32 kFilterCode = 0xfff010, kFinallyCode = 0xfff014;
 
 /* What the functions write, and the stack from the arguments up: compared. */
 const std::pair<x86::reg32, x86::reg32> kWindows[] = {
     {kLow, kLowEnd}, {kHeap, kHeapEnd}, {kHarness, kHarnessEnd}, {0x552000, 0x553000}, {0x55e000, 0x55f000},
-    {0x564000, 0x565000}, {0x566000, 0x568000}, {0x568000, 0x569000}, {0x56a000, 0x56b000}, {0x56e000, 0x56f000},
+    {0x564000, 0x565000}, {0x566000, 0x568000}, {0x568000, 0x569000}, {0x56a000, 0x56b000}, {0x56b000, 0x56c000},
+    {0x56e000, 0x56f000},
     {0x9ef000, 0x9f0000},
     {0x9f3000, 0x9f4000}, {0x9f6000, 0x9f7000}, {0xa09000, 0xa0a000}, {0xa0b000, 0xa0d000}, {kStackLow, kStackHigh},
 };
@@ -218,6 +228,21 @@ enum Effect
     kHandle,        // __allocPOSIXHandle: a handle -- of the 20 mostly, past them, -1
     kReallocate,    // _nrealloc: the handles' table moved, or 0
     kTmpName,       // __MkTmpFile: a name into the buffer
+    kWideChar,      // WideCharToMultiByte: a byte or two into the buffer, or none
+    kFloat,         // __EFG_printf: a double taken, text into the buffer, the parts' lengths
+    kZoneInfo,      // GetTimeZoneInformation: a zone, its names, its biases; which of them is on
+    kUpper,         // CharUpperBuffA: the buffer's letters as capitals
+    kFullPath,      // GetFullPathNameA: a path into the buffer, if it fits, and its length
+    kMultiByte,     // MultiByteToWideChar: a wide character into the buffer, or none
+    kScanDouble,    // __EFG_scanf: a double of any bits where its second argument points
+    kConsoleInput,  // PeekConsoleInputA, ReadConsoleInputA: a key's record mostly, or none, or FALSE
+    kConsoleMode,   // GetConsoleMode: a mode, or FALSE
+    kModuleName,    // GetModuleFileNameA and W: a path into the buffer, its length; or 0
+    kVersionInfo,   // GetVersion: Windows NT's or 95's, of a version
+    kStdHandle,     // GetStdHandle: a HANDLE, or 0, or -1
+    kQuery,         // VirtualQuery: the stack's MEMORY_BASIC_INFORMATION about the address
+    kCommandLine,   // GetCommandLineA and W: the case's command line, the wide one or none
+    kMatherrSay,    // _matherr: 0 mostly -- the error reported -- or 1
 };
 
 struct StandIn
@@ -259,6 +284,7 @@ const StandIn kGameFunctions[] = {
     {0x522e60, "getche", kWatcom, 0, 0, kEax, -1, 0, kCharacter},
     {0x5185c0, "_nrealloc", kWatcom, 2, 0, kEax | kEdx, -1, 0, kReallocate},
     {0x4ee168, "__MkTmpFile", kWatcom, 2, 0, kEax | kEdx, -1, 0, kTmpName},
+    {0x4a39f0, "the game's main", kWatcom, 2, 0, kEax | kEdx, -1, 0, kNothing},
 };
 
 /* What is called through a pointer: the game's imports, by their slots, and
@@ -291,7 +317,32 @@ const StandIn kPointers[] = {
     {0x5345f0, "SetFilePointer", kStdcall, 0, 4, kScratch, -1, 0, kSeek},
     {0x534624, "VirtualAlloc", kStdcall, 0, 4, kScratch, -1, 0, kAllocate},
     {0x534628, "VirtualFree", kStdcall, 0, 3, kScratch, -1, 0, kFree},
+    {0x534638, "WideCharToMultiByte", kStdcall, 0, 8, kScratch, -1, 0, kWideChar},
+    {0x53456c, "GetTimeZoneInformation", kStdcall, 0, 1, kScratch, -1, 0, kZoneInfo},
+    {0x5346fc, "CharUpperBuffA", kStdcall, 0, 2, kScratch, -1, 0, kUpper},
+    {0x534604, "SleepEx", kStdcall, 0, 2, kScratch, -1, 0, kNothing},
+    {0x534508, "GetCurrentProcessId", kStdcall, 0, 0, kScratch, -1, 0, kNothing},
+    {0x534530, "GetFullPathNameA", kStdcall, 0, 4, kScratch, -1, 0, kFullPath},
+    {0x534598, "MultiByteToWideChar", kStdcall, 0, 6, kScratch, -1, 0, kMultiByte},
+    {0x5345dc, "SetEnvironmentVariableA", kStdcall, 0, 2, kScratch, -1, 0, kSucceed},
     {0x534640, "WriteFile", kStdcall, 0, 5, kScratch, -1, 0, kWrite},
+    {0x5345a0, "PeekConsoleInputA", kStdcall, 0, 4, kScratch, -1, 0, kConsoleInput},
+    {0x5345ac, "ReadConsoleInputA", kStdcall, 0, 4, kScratch, -1, 0, kConsoleInput},
+    {0x5344fc, "GetConsoleMode", kStdcall, 0, 2, kScratch, -1, 0, kConsoleMode},
+    {0x5345d0, "SetConsoleMode", kStdcall, 0, 2, kScratch, -1, 0, kSucceed},
+    {0x53463c, "WriteConsoleA", kStdcall, 0, 5, kScratch, 5, 1, kWrite},  // the character
+    {0x5345c0, "RtlUnwind", kStdcall, 0, 4, kScratch, -1, 0, kNothing},
+    {0x53454c, "GetModuleHandleA", kStdcall, 0, 1, kScratch, -1, 0, kNothing},
+    {0x534544, "GetModuleFileNameA", kStdcall, 0, 3, kScratch, -1, 0, kModuleName},
+    {0x534548, "GetModuleFileNameW", kStdcall, 0, 3, kScratch, -1, 0, kModuleName},
+    {0x53451c, "GetEnvironmentStrings", kStdcall, 0, 0, kScratch, -1, 0, kNothing},
+    {0x534574, "GetVersion", kStdcall, 0, 0, kScratch, -1, 0, kVersionInfo},
+    {0x5344f4, "GetCommandLineA", kStdcall, 0, 0, kScratch, -1, 0, kCommandLine},
+    {0x5344f8, "GetCommandLineW", kStdcall, 0, 0, kScratch, -1, 0, kCommandLine},
+    {0x53455c, "GetStdHandle", kStdcall, 0, 1, kScratch, -1, 0, kStdHandle},
+    {0x53462c, "VirtualQuery", kStdcall, 0, 3, kScratch, -1, 0, kQuery},
+    {0x534600, "SetUnhandledExceptionFilter", kStdcall, 0, 1, kScratch, -1, 0, kNothing},
+    {0x53450c, "GetCurrentThreadId", kStdcall, 0, 0, kScratch, -1, 0, kNothing},
     {0x534764, "MessageBoxA", kStdcall, 0, 4, kScratch, -1, 0, kBox},
     {0x534794, "ShowCursor", kStdcall, 0, 1, kScratch, -1, 0, kNothing},
     {kErrorFilter, "the error filter", kWatcom, 1, 0, kScratch, -1, 0, kFilter},
@@ -318,6 +369,25 @@ const StandIn kPointers[] = {
     {kByDword, "compared by dwords", kWatcom, 2, 0, kEax | kEdx, -1, 0, kCompare},
     {kByByte, "compared by bytes", kWatcom, 2, 0, kEax | kEdx, -1, 0, kCompare},
     {kAtRandom, "compared at random", kWatcom, 2, 0, kEax | kEdx, -1, 0, kCompare},
+    {kFloatFormat, "__EFG_printf", kWatcom, 3, 0, kEax, -1, 0, kFloat},
+    // The way out's hooks and the runtime's finalizers (native_watcom.cpp).
+    {0x564484, "an exit hook", kWatcom, 0, 0, kEax, -1, 0, kNothing},
+    {0x564488, "another exit hook", kWatcom, 0, 0, kEax, -1, 0, kNothing},
+    {0x5677f0, "the program's exit", kWatcom, 0, 0, kEax, -1, 0, kNothing},
+    {0x5677a0, "the exit's last", kWatcom, 0, 0, kEax, -1, 0, kNothing},
+    {0x5677ac, "an early exit", kWatcom, 2, 0, kEax, -1, 0, kNothing},
+    {0x56b800, "a finalizer", kWatcom, 0, 0, kEax, -1, 0, kNothing},
+    // A scope's filter, jumped to with its frame in ebp, and a finally block.
+    {kFilterCode, "a scope's filter", kWatcom, 0, 3, kEax, -1, 0, kNothing},
+    {kFinallyCode, "a finally block", kWatcom, 0, 3, kEax, -1, 0, kNothing},
+    // _matherr, handed the struct exception, its 8 words logged.
+    {0x56b16c, "_matherr", kWatcom, 1, 0, kEax, 0, 8, kMatherrSay},
+    // The console's default windowing's hooks.
+    {0x5677e0, "_WindowsKbhit", kWatcom, 1, 0, kEax, -1, 0, kNothing},
+    {0x5677e4, "_WindowsGetch", kWatcom, 1, 0, kEax, -1, 0, kCharacter},
+    {0x5677ec, "_WindowsPutch", kWatcom, 2, 0, kEax, -1, 0, kNothing},
+    // The formatted input's: the float's conversion's number, its first 16 bytes logged.
+    {0x56ac68, "__EFG_scanf", kWatcom, 2, 0, kEax | kEdx, 0, 4, kScanDouble},
 };
 constexpr unsigned kPointerCount = sizeof kPointers / sizeof kPointers[0];
 
@@ -351,6 +421,11 @@ struct Call
 /* The case: its seed, the call the game stops at, if any, and whether
  * GetProcAddress may not find a name. */
 std::uint64_t g_seed = 0;
+/* GetCurrentDirectoryA's path within MAX_PATH: getcwd copies as much as it is
+ * long from its own MAX_PATH bytes, past them for a longer one -- into what
+ * the stack holds there, which natives under the cases that set this (the
+ * environment's) leave otherwise than the game's code does. */
+bool g_shortDirectory = false;
 long g_stopAt = -1;
 bool g_lookupFails = false;
 
@@ -526,6 +601,174 @@ const Promise kPromises[] = {
     {"watcom::fclose", true, true, 1},
     {"watcom::fsopen", true, true, 3},
     {"watcom::fopen", true, true, 2},
+    // Its formatted output: sprintf and fprintf, cdecl, keep every register
+    // but eax; __U8D's results are all four, compared as kept ones.
+    {"watcom::mem_putc", true, true, 2},
+    {"watcom::file_putc", true, true, 2},
+    {"watcom::vsprintf", true, true, 3},
+    {"watcom::sprintf", true, true},
+    {"watcom::vfprintf", true, true, 3},
+    {"watcom::fprintf", true, true},
+    {"watcom::prtf", true, true, 4},
+    {"watcom::prtfSpec", true, true, 3},
+    {"watcom::prtfFlags", true, true, 2},
+    {"watcom::prtfLength", true, true, 3},
+    {"watcom::prtfWideLength", true, true, 3},
+    {"watcom::prtfHex", true, true, 3},
+    {"watcom::prtfHexEnd", true, true},
+    {"watcom::prtfFixed", true, false, 3},
+    {"watcom::prtfFloat", true, false, 3},
+    {"watcom::prtfZeros", true, true, 1},
+    {"watcom::prtfWideOut", true, false, 4},
+    {"watcom::prtfConvert", true, true, 4},
+    {"watcom::prtfUpper", true, true, 1},
+    {"watcom::wctomb_", true, true, 2},
+    {"watcom::utoa", true, true, 3},
+    {"watcom::itoa", true, true, 3},
+    {"watcom::ulltoa", true, true, 3},
+    {"watcom::prtfUtoa", true, true, 3},
+    {"watcom::U8D", true, true},
+    // The environment, the time zone and the way out.
+    {"watcom::mbterm", true, true, 1},
+    {"watcom::mbsinc", true, true, 1},
+    {"watcom::mbclen", true, true, 1},
+    {"watcom::mbccpy", true, true, 2},
+    {"watcom::mbccmp", true, true, 2},
+    {"watcom::mbsnextc", true, true, 1},
+    {"watcom::mbvtop", true, true, 2},
+    {"watcom::mbbtrail", true, true, 1},
+    {"watcom::mbclegal", true, true, 1},
+    {"watcom::mbclower", true, true, 1},
+    {"watcom::mbcupper932", true, true, 1},
+    {"watcom::mbctoupper", true, true, 1},
+    {"watcom::mbsupr", true, true, 1},
+    {"watcom::mbcicmp", true, true, 2},
+    {"watcom::mbsnicmp", true, true, 3},
+    {"watcom::getenv", true, true, 1},
+    {"watcom::wcstombs", true, true, 3},
+    {"watcom::tzNumber", true, true, 2},
+    {"watcom::tzName", true, true, 3},
+    {"watcom::tzRule", true, true, 2},
+    {"watcom::tzWindows", true, true},
+    {"watcom::tzDaylight", true, true},
+    {"watcom::tzset", true, true},
+    {"watcom::callRoutine", true, true, 1},
+    {"watcom::FiniRtns", true, true, 2},
+    {"watcom::DoneExceptionHandler", true, true},
+    {"watcom::freeEnvironment", true, false, 0, false, kStirred},
+    {"watcom::exit_", true, false, 1, false, kStirred},
+    {"watcom::_exit", true, false, 1, false, kStirred},
+    {"watcom::exit", true, false, 1, false, kStirred},
+    {"watcom::atexit", true, true, 1},
+    {"watcom::EnterWVIDEO", true, true, 2},
+    {"watcom::fatalWrite", true, false, 2, false, kStirred},
+    {"watcom::fatal_runtime_error", true, false, 2, false, kStirred},
+    {"watcom::sleep", true, true, 1},
+    {"watcom::getpid", true, true},
+    {"watcom::stackavail", true, true},
+    {"watcom::GRO", true, true},
+    {"watcom::hexDigit", true, true, 1},
+    {"watcom::fullpath", true, true, 3, false, kStirred},
+    {"watcom::tmpdir", true, true, 0, false, kStirred},
+    {"watcom::MkTmpFile", true, true, 2, false, kStirred},
+    // setenv and the heap's growing.
+    {"watcom::mbslen", true, true, 1},
+    {"watcom::mbtowc", true, true, 3},
+    {"watcom::mbstowcs", true, true, 3},
+    {"watcom::wcslen", true, true, 1},
+    {"watcom::memcpy", true, true, 3},
+    {"watcom::wcscpy", true, true, 2},
+    {"watcom::towupper", true, true, 1},
+    {"watcom::memmove", true, true, 3},
+    {"watcom::msize", true, true, 1},
+    {"watcom::HeapManager_expand", true, true, 4, false, kStirred},
+    {"watcom::nexpand", true, true, 2, false, kStirred},
+    {"watcom::nexpandFailed", true, true},
+    {"watcom::nrealloc", true, true, 2, false, kStirred},
+    {"watcom::findenv", true, true, 2, false, kStirred},
+    {"watcom::setenv_", true, true, 3, false, kStirred},
+    {"watcom::wfindenv", true, true, 2, false, kStirred},
+    {"watcom::wsetenv", true, true, 3, false, kStirred},
+    {"watcom::wputenvFind", true, true, 2, false, kStirred},
+    {"watcom::wputenv", true, true, 1, false, kStirred},
+    {"watcom::create_wide_environment", true, false, 0, false, kStirred},
+    {"watcom::setenv", true, true, 3, false, kStirred},
+    // Formatted input.
+    {"watcom::cget_string", true, true, 1},
+    {"watcom::uncget_string", true, true, 2},
+    {"watcom::vsscanf", true, true, 3},
+    {"watcom::sscanf", true, true},
+    {"watcom::Strtold", true, true, 3, true},
+    {"watcom::strtod", true, true, 2, true},
+    {"watcom::cgetc", true, true, 1},
+    {"watcom::uncget", true, true, 2},
+    {"watcom::scnf", true, true, 3},
+    {"watcom::get_opt", true, true, 2},
+    {"watcom::scan_white", true, true, 1},
+    {"watcom::scan_char", true, true, 2},
+    {"watcom::scan_string", true, true, 2},
+    {"watcom::report_scan", true, true, 3},
+    {"watcom::makelist", true, true, 2},
+    {"watcom::scan_arb", true, true, 3},
+    {"watcom::scan_float", true, true, 2},
+    {"watcom::scan_int", true, true, 4},
+    {"watcom::radix_value", true, true, 1},
+    {"watcom::chktrm", true, true, 1},
+    {"watcom::ZBuf2LD", true, true, 2},
+    {"watcom::normalize", true, true},
+    {"watcom::scalePowers", true, true, 2, true},
+    {"watcom::scaleEnd", true, true},
+    {"watcom::scaleBy", true, true, 2, true},
+    {"watcom::LDScale10x", true, true, 2, true},
+    {"watcom::FDFS", true, true, 2},
+    {"watcom::U8M", true, true, 4},
+    // The console.
+    {"watcom::NTRealKey", true, true, 1},
+    {"watcom::openConsoles", true, true},
+    {"watcom::NTConsoleInput", true, true},
+    {"watcom::NTConsoleOutput", true, true},
+    {"watcom::putch", true, true, 1},
+    {"watcom::kbhit", true, true},
+    {"watcom::do_getch", true, true, 1},
+    {"watcom::getch", true, true},
+    {"watcom::getche", true, true},
+    // Structured exception handling.
+    {"watcom::TryInit", true, true},
+    {"watcom::TryHandler", true, true},
+    {"watcom::TryScope", true, true},
+    {"watcom::TryOuter", true, true},
+    {"watcom::TryDone", true, true},
+    {"watcom::Except", true, true},
+    {"watcom::global_unwind", true, true},
+    {"watcom::local_unwind", true, true},
+    {"watcom::RtlUnwindThunk", true, true},
+    // The start.
+    {"watcom::startHook", true, true},
+    {"watcom::InitRtns", true, true, 1},
+    {"watcom::stackLimits", true, true, 2},
+    {"watcom::calloc", true, true, 2, false, kStirred},
+    {"watcom::initThread", true, true, 1},
+    {"watcom::initThreadData", true, true, 1, false, kStirred},
+    {"watcom::initPOSIXHandles", true, true, 0, false, kStirred},
+    {"watcom::moduleWideName", true, true, 3, false, kStirred},
+    {"watcom::copyCommandLine", true, true, 1, false, kStirred},
+    {"watcom::copyWideCommandLine", true, true, 1, false, kStirred},
+    {"watcom::InitExceptionHandling", true, true, 1},
+    {"watcom::NTInit", true, true, 3, false, kStirred},
+    {"watcom::NTMain", true, true, 2, false, kStirred},
+    {"watcom::callMain", true, true},
+    {"watcom::mainStart", true, true, 0, false, kStirred},
+    {"watcom::cstart_", true, true, 0, false, kStirred},
+    // The maths' error report, and the FDIV bug's atan2.
+    {"watcom::fdivSafe", true, true, 0, true},
+    {"watcom::fdiv_fpr", true, true, 1, true},
+    {"watcom::atanSafe", true, true, 0, true},
+    {"watcom::fpatan_wrap", true, true, 0, true},
+    {"watcom::get_std_stream", true, true, 1},
+    {"watcom::printMathError", true, true, 2},
+    {"watcom::callMatherr", true, true, 1, true},
+    {"watcom::reportError", true, true, 3, true},
+    {"watcom::reporterror", true, true, 2, true},
     // Its heap (native_watcom_heap.cpp).
     {"watcom::nmalloc", true, true, 1, false, kStirred},
     {"watcom::nfree", true, false, 1, false, kStirred},
@@ -792,7 +1035,7 @@ public:
         {
             // The path as long as it is, up to past MAX_PATH; into the
             // buffer if it fits, else how much it would take; or nothing.
-            const x86::reg32 length = 1 + (r >> 8) % 0x120;
+            const x86::reg32 length = 1 + (r >> 8) % (g_shortDirectory ? 0x100 : 0x120);
             if (r % 9 == 0)
             {
                 result = 0;
@@ -870,6 +1113,161 @@ public:
         case kTmpName:
             text(words[0], 8 + r % 24, random64(id));
             break;
+        case kWideChar:
+            // (code page, flags, the character, 1, the buffer, 2, 0, 0): a
+            // byte or two, or none.
+            result = r % 8 == 0 ? 0 : 1 + (r >> 3) % 2;
+            for (x86::reg32 i = 0; i < result; ++i)
+                getMemory<x86::reg8>(words[4] + i) = x86::reg8(r >> (8 + 8 * i));
+            break;
+        case kZoneInfo:
+        {
+            // A TIME_ZONE_INFORMATION: a bias, the two names, their dates and
+            // biases; unknown, standard, daylight, or failed.
+            static const x86::reg32 results[] = {0, 1, 2, 2, 1, 0xffffffff};
+            result = results[r % 6];
+            word(words[0]) = x86::reg32(x86::sreg32((r >> 4) % 1441) - 720);
+            for (const x86::reg32 name : {words[0] + 4, words[0] + 0x58})
+            {
+                const x86::reg32 length = random(id + name) % 33;
+                for (x86::reg32 i = 0; i < 32; ++i)
+                    getMemory<x86::reg16>(name + 2 * i) =
+                        x86::reg16(i >= length ? 0 : random(id + name + i) % 5 == 0 ? random(id + i) : 'A' + i % 26);
+            }
+            for (x86::reg32 i = 0x44; i < 0x54; i += 4)
+                word(words[0] + i) = random(id + i);
+            for (x86::reg32 i = 0x98; i < 0xa8; i += 4)
+                word(words[0] + i) = random(id + i);
+            word(words[0] + 0x54) = r % 3 == 0 ? 0 : x86::reg32(-60);
+            word(words[0] + 0xa8) = r % 4 == 0 ? 0 : x86::reg32(-60);
+            break;
+        }
+        case kUpper:
+            // (the buffer, how many): ASCII's small letters made capitals.
+            for (x86::reg32 i = 0; i < words[1] && i < 0x100; ++i)
+            {
+                const x86::reg8 c = getMemory<x86::reg8>(words[0] + i);
+                if (c >= 'a' && c <= 'z')
+                    getMemory<x86::reg8>(words[0] + i) = x86::reg8(c - 0x20);
+            }
+            result = words[1];
+            break;
+        case kMultiByte:
+            // (code page, flags, the bytes, how many, the buffer, 1)
+            result = r % 8 == 0 ? 0 : 1;
+            if (result != 0)
+                getMemory<x86::reg16>(words[4]) = x86::reg16(r % 3 == 0 ? r >> 8 : 'a' + (r >> 8) % 26);
+            break;
+        case kFullPath:
+        {
+            // (the path, the size, the buffer, &the file's part): the path
+            // as long as it is, into the buffer if it fits, else how much it
+            // would take; or nothing.
+            const x86::reg32 length = 1 + (r >> 8) % 0x120;
+            if (r % 9 == 0)
+                result = 0;
+            else if (length < words[1])
+            {
+                text(words[2], length, random64(id));
+                word(words[3]) = words[2] + (r >> 16) % length;
+                result = length;
+            }
+            else
+                result = length + 1;
+            break;
+        }
+        case kConsoleInput:
+        {
+            // (the console, the record, 1, &how many): a key pressed or let
+            // go mostly -- shift, control or alt alone now and then, an
+            // extended key, none of a character -- or another event; none
+            // now and then, or FALSE.
+            const bool failed = r % 9 == 0;
+            const x86::reg32 count = failed || r % 5 == 0 ? 0 : 1;
+            result = failed ? 0 : 1;
+            if (!failed)
+                word(words[3]) = count;
+            if (count != 0)
+            {
+                const x86::reg32 record = words[1];
+                getMemory<x86::reg16>(record) = x86::reg16((r >> 4) % 6 != 0 ? 1 : 2);
+                word(record + 4) = (r >> 7) % 4 != 0 ? 1 : 0;
+                getMemory<x86::reg16>(record + 8) = x86::reg16(1 + (r >> 9) % 3);
+                getMemory<x86::reg16>(record + 0xa) =
+                    x86::reg16((r >> 11) % 4 == 0 ? 0x10 + (r >> 13) % 3 : 0x41 + (r >> 13) % 26);
+                getMemory<x86::reg16>(record + 0xc) = x86::reg16(random(id + 1) & 0xff);
+                getMemory<x86::reg16>(record + 0xe) = x86::reg16((r >> 16) % 5 == 0 ? 0 : 'a' + (r >> 18) % 26);
+                word(record + 0x10) = (r >> 23) % 5 == 0 ? 0x100 : random(id + 2) & 0x1f;
+            }
+            break;
+        }
+        case kModuleName:
+        {
+            // (the module, the buffer, its size): a path as long as it is,
+            // cut to the size, or nothing; wide for GetModuleFileNameW.
+            const bool wide = s.address == 0x534548;
+            const x86::reg32 length = std::min<x86::reg32>(1 + (r >> 8) % 0x60, words[2] - 1);
+            result = r % 9 == 0 || words[2] == 0 ? 0 : length;
+            for (x86::reg32 i = 0; result != 0 && i <= length; ++i)
+            {
+                const x86::reg8 c = i == length ? 0 : x86::reg8('A' + random(id + i) % 26);
+                if (wide)
+                    getMemory<x86::reg16>(words[1] + 2 * i) = c;
+                else
+                    getMemory<x86::reg8>(words[1] + i) = c;
+            }
+            break;
+        }
+        case kVersionInfo:
+            result = ((r >> 8) & 0xffff) << 16 | (r % 4) << 8 | (3 + (r >> 4) % 4);
+            break;
+        case kStdHandle:
+            result = r % 6 == 0 ? 0 : r % 6 == 1 ? 0xffffffff : 0x7000 + (r >> 8) % 0x100 * 4;
+            break;
+        case kQuery:
+            // (the address, the buffer, its size): the region it is in --
+            // its base, where the allocation starts, its size.
+            word(words[1]) = words[0] & 0xfffff000;
+            word(words[1] + 4) = (words[0] & 0xfff00000) - (r >> 8) % 0x100 * 0x1000;
+            word(words[1] + 8) = 4;
+            word(words[1] + 0xc) = 0x1000 * (1 + (r >> 16) % 0x40);
+            word(words[1] + 0x10) = 0x1000;
+            word(words[1] + 0x14) = 4;
+            word(words[1] + 0x18) = 0x20000;
+            result = 0x1c;
+            break;
+        case kCommandLine:
+            result = s.address == 0x5344f4 ? kBuffers + 0x200 * 14 : r % 5 == 0 ? 0 : kBuffers + 0x200 * 14 + 0x100;
+            break;
+        case kMatherrSay:
+            result = r % 4 == 0 ? 1 : 0;
+            break;
+        case kConsoleMode:
+            result = r % 7 != 0 ? 1 : 0;
+            if (result != 0)
+                word(words[1]) = (r >> 8) & 0x1ff;
+            break;
+        case kScanDouble:
+        {
+            const std::uint64_t bits = random64(id);
+            word(words[1]) = x86::reg32(bits);
+            word(words[1] + 4) = x86::reg32(bits >> 32);
+            break;
+        }
+        case kFloat:
+        {
+            // (the buffer, the arguments' pointer, the SPECS): a double's 8
+            // bytes taken, text after the buffer's first byte -- a sign or
+            // nothing -- and the parts: the sign's, the digits', zeros after.
+            const x86::reg32 length = r % 0x20;
+            word(words[1]) += 8;
+            getMemory<x86::reg8>(words[0]) = r & 0x100 ? '-' : 0;
+            text(words[0] + 1, length, random64(id));
+            word(words[2] + 0x20) = r >> 8 & 1;
+            word(words[2] + 0x28) = length;
+            word(words[2] + 0x2c) = (r >> 9) % 3;
+            break;
+        }
         case kRead:
         case kTransfer:
         {
@@ -976,6 +1374,9 @@ int WinApplication::s_traceApi = 0;
 bool WinApplication::readTraceApi() { return false; }
 void WinApplication::traceCall(const Method&, x86::reg32) {}
 void WinApplication::yieldContext(const x86::CPU&) {}
+void WinApplication::lockContext(const x86::CPU&) {}
+void WinApplication::unlockContext(const x86::CPU&) {}
+void Thread::sleep(x86::reg32) {}
 
 void WinApplication::dynamicCallElsewhere(x86::reg32 address, x86::CPU& cpu)
 {
@@ -1387,6 +1788,7 @@ void freshHeap(CheckApp& g)
 /* What the case starts from, on `g`: what the functions read of the game. */
 void makeState(CheckApp& g)
 {
+    g_shortDirectory = false;
     // Where an error is from: a file, a function, a line -- or none.
     for (const x86::reg32 where : {kWhere, kCalledFrom})
     {
@@ -1405,6 +1807,8 @@ void makeState(CheckApp& g)
     g.word(kErrorOk) = chance(60) ? standInFor(kErrorOk) : 0;
     g.text(kErrorText, below(0x200), random32());
     g.word(kWindow) = chance(85) ? 0x9000 + below(0x100) : 0;
+    g.word(kFloatFormat) = standInFor(kFloatFormat);
+    g.word(kMbcsOn) = chance(50) ? 1 : 0;
 
     // iSND: loaded or not, its functions found or not.
     g.word(kSoundModule) = chance(50) ? 0x7700 + below(0x10) * 0x10 : 0;
@@ -1580,10 +1984,1509 @@ void makeElements(CheckApp& g, x86::reg32 base, x86::reg32 n, x86::reg32 size, x
     }
 }
 
+/* The formatted output's cases (native_watcom.cpp's __prtf and the rest).
+ * Their memory, in kBuffers: what sprintf writes from the first on, the
+ * places %n writes to in the 12th, the SPECS and __prtf's buffer in the 11th,
+ * the format in the 13th, its arguments in the 14th -- the va_list's dword
+ * at the end of the 12th -- and wide strings in the 15th. */
+constexpr x86::reg32 kFormatOut = kBuffers;
+constexpr x86::reg32 kFormatDigits = kBuffers + 0x200 * 10;
+constexpr x86::reg32 kFormatSpecs = kBuffers + 0x200 * 11;
+constexpr x86::reg32 kFormatTargets = kBuffers + 0x200 * 12;
+constexpr x86::reg32 kFormatList = kBuffers + 0x200 * 12 + 0x1fc;
+constexpr x86::reg32 kFormatText = kBuffers + 0x200 * 13;
+constexpr x86::reg32 kFormatArguments = kBuffers + 0x200 * 14;
+constexpr x86::reg32 kWideTexts = kBuffers + 0x200 * 15;
+
+/* Wide strings, 8 of 0x20 characters at most: letters, anything, none. */
+void makeWideTexts(CheckApp& g)
+{
+    for (x86::reg32 i = 0; i < 8; ++i)
+    {
+        const x86::reg32 at = kWideTexts + 0x40 * i;
+        const x86::reg32 length = chance(10) ? 0 : below(0x20);
+        for (x86::reg32 j = 0; j < length; ++j)
+            g.getMemory<x86::reg16>(at + 2 * j) = x86::reg16(chance(70) ? 'a' + below(26) : 1 + below(0xffff));
+        g.getMemory<x86::reg16>(at + 2 * length) = 0;
+    }
+}
+
+x86::reg32 aWideText()
+{
+    return kWideTexts + 0x40 * below(8);
+}
+
+/* An integer argument of every kind: small, either sign, anything. */
+x86::reg32 anInteger()
+{
+    switch (below(6))
+    {
+    case 0: return below(10);
+    case 1: return below(100000);
+    case 2: return x86::reg32(-x86::sreg32(1 + below(100000)));
+    case 3: return chance(50) ? 0x80000000 : chance(50) ? 0x7fffffff : 0xffffffff;
+    case 4: return below(0x10000) | (chance(50) ? 0x8000 : 0);
+    default: return random32();
+    }
+}
+
+/* The argument words a conversion takes, as __prtf reads them: its
+ * character, flags and second flags as the SPECS has them. */
+void conversionArguments(x86::reg8 c, x86::reg8 flags, x86::reg8 flags2, std::vector<x86::reg32>& a)
+{
+    const bool far_ = flags & 0x80, longLong = flags2 & 1;
+    switch (c)
+    {
+    case 'd': case 'i': case 'u': case 'x': case 'X': case 'o':
+        a.push_back(anInteger());
+        if (longLong)
+            a.push_back(chance(50) ? anInteger() : chance(50) ? 0 : 0xffffffff);
+        break;
+    case 'n':
+        a.push_back(kFormatTargets + 4 * below(0x40));
+        if (far_)
+            a.push_back(random32());
+        break;
+    case 's': case 'S':
+    {
+        // Never a null wide string: __prtf reads its own buffer for it, as
+        // wide characters on past the byte it wrote, into what is left on
+        // the stack -- by the natives under it (the streams') otherwise than
+        // by the game's code, which they are held to only from esp up.
+        const bool wide = c == 'S' ? !(flags & 0x10) : (flags & 0x20) != 0;
+        a.push_back(wide ? aWideText() : chance(8) ? 0 : chance(80) ? aText() : aString());
+        if (far_)
+            a.push_back(a.back() == 0 && chance(50) ? 0 : chance(70) ? 0 : below(0x100));
+        break;
+    }
+    case 'p': case 'P':
+        a.push_back(random32());
+        if (far_)
+            a.push_back(random32());
+        break;
+    case 'c': case 'C':
+        a.push_back(chance(60) ? 'a' + below(26) : random32());
+        break;
+    case 'e': case 'E': case 'g': case 'G':
+        a.push_back(random32());
+        a.push_back(random32());
+        break;
+    case 'f': case 'F':
+        a.push_back(random32());
+        if (!(flags & 0x10))
+            a.push_back(random32());
+        break;
+    default:
+        break;
+    }
+}
+
+/* A format of text and conversions of every kind, at `at`, and the words of
+ * the arguments it takes, as __prtf walks it: a '*' takes a width or a
+ * precision, a conversion its argument by its character and size -- each one
+ * that will do for it, a string for %s, a place for %n.  Far %n, which writes
+ * where a register left by the generated code points, is turned into %d.
+ *
+ * With the streams under it (vfprintf's lock and buffer before __prtf), %lc is
+ * %hc: for a character WideCharToMultiByte does not take, __prtf writes its
+ * buffer's first byte as the stack had it -- left there by the streams'
+ * natives, which keep no registers on it, otherwise than by the game's code. */
+std::vector<x86::reg32> makeFormat(CheckApp& g, x86::reg32 at, bool streams = false)
+{
+    static const char* const sizes[] = {"", "", "", "", "h", "l", "w", "N", "F", "L", "I64", "I6"};
+    static const char conversions[] = "ddiiuuxXoccsssSpPneEfgGCq%";
+    std::string f;
+    const unsigned parts = below(6);
+    for (unsigned i = 0; i < parts; ++i)
+    {
+        for (unsigned j = below(chance(70) ? 6 : 24); j-- > 0;)
+            f += chance(90) ? char('a' + below(26)) : " .,:-+0123456789"[below(16)];
+        f += '%';
+        for (unsigned j = chance(50) ? below(4) : 0; j-- > 0;)
+            f += "-#+ 0"[below(5)];
+        if (chance(15))
+            f += '*';
+        else if (chance(40))
+            f += std::to_string(below(30));
+        if (chance(35))
+        {
+            f += '.';
+            if (chance(25))
+                f += '*';
+            else if (chance(80))
+                f += std::to_string(below(20));
+        }
+        f += sizes[below(12)];
+        f += chance(97) ? conversions[below(sizeof conversions - 1)] : char(1 + below(127));
+    }
+    for (unsigned j = below(8); j-- > 0;)
+        f += char('a' + below(26));
+    if (chance(5))
+        f += '%';
+
+    // Walked as __prtf walks it.
+    std::vector<x86::reg32> a;
+    for (size_t i = 0; i < f.size();)
+    {
+        if (f[i++] != '%')
+            continue;
+        x86::reg8 flags = 0, flags2 = 0;
+        while (i < f.size() && std::strchr("-#+ 0", f[i]))
+            ++i;
+        auto number = [&] {
+            const x86::reg32 n = chance(80) ? below(30) : x86::reg32(-x86::sreg32(below(30)));
+            a.push_back(n);
+        };
+        if (i < f.size() && f[i] == '*')
+        {
+            number();
+            ++i;
+        }
+        else
+            while (i < f.size() && f[i] >= '0' && f[i] <= '9')
+                ++i;
+        if (i < f.size() && f[i] == '.')
+        {
+            ++i;
+            if (i < f.size() && f[i] == '*')
+            {
+                number();
+                ++i;
+            }
+            else
+                while (i < f.size() && f[i] >= '0' && f[i] <= '9')
+                    ++i;
+        }
+        if (i < f.size())
+            switch (f[i])
+            {
+            case 'N': flags |= 0x40; ++i; break;
+            case 'l': case 'w': flags |= 0x20; ++i; break;
+            case 'h': flags |= 0x10; ++i; break;
+            case 'L': flags2 |= 1; ++i; break;
+            case 'F': flags |= 0x80; ++i; break;
+            case 'I':
+                if (f.compare(i, 3, "I64") == 0)
+                {
+                    flags2 |= 1;
+                    i += 3;
+                }
+                break;
+            }
+        if (i >= f.size())
+            break;
+        if (f[i] == 'n' && (flags & 0x80) && !(flags & 0x20))
+            f[i] = 'd';
+        if (streams && f[i] == 'c' && (flags & 0x20))
+        {
+            f[i - 1] = 'h';
+            flags = 0x10;
+        }
+        conversionArguments(x86::reg8(f[i++]), flags, flags2, a);
+    }
+    std::memcpy(&g.getMemory<char>(at), f.c_str(), f.size() + 1);
+    return a;
+}
+
+/* SPECS as __prtf makes them, made up: where its characters go, a width, a
+ * precision or none, flags of every kind, a conversion. */
+void makeSpecs(CheckApp& g, x86::reg32 specs)
+{
+    static const char conversions[] = "diouxXcsSpPeEfFgGCnq%";
+    g.word(specs + 0x00) = kFormatOut + below(0x40);
+    g.word(specs + 0x04) = chance(80) ? below(30) : random32();
+    g.word(specs + 0x08) = chance(40) ? 0xffffffff : chance(90) ? below(20) : x86::reg32(-x86::sreg32(2 + below(8)));
+    g.word(specs + 0x10) = below(0x100);
+    g.getMemory<x86::reg8>(specs + 0x15) = x86::reg8(conversions[below(sizeof conversions - 1)]);
+    g.getMemory<x86::reg8>(specs + 0x16) = chance(50) ? ' ' : '0';
+    g.getMemory<x86::reg8>(specs + 0x1e) = x86::reg8(random32());
+    g.getMemory<x86::reg8>(specs + 0x1f) = chance(70) ? 0 : x86::reg8(random32());
+    for (x86::reg32 at = specs + 0x20; at < specs + 0x38; at += 4)
+        g.word(at) = chance(70) ? below(8) : chance(50) ? 0 : x86::reg32(-x86::sreg32(below(4)));
+}
+
+/* A stream for vfprintf and file_putc, as fputc's cases have one. */
+x86::reg32 aFormattedStream(CheckApp& g)
+{
+    if (chance(10))
+        freshHeap(g);
+    if (chance(20))
+    {
+        g.word(kIsWindowedHandle) = standInFor(kIsWindowedHandle);
+        g.word(kWindowsStdout) = standInFor(kWindowsStdout);
+    }
+    return aStream();
+}
+
+/* The formatted output's registers and stack words; false for a function not
+ * of it. */
+bool makeFormattedArguments(CheckApp& g, const std::string& name, x86::CPU& cpu, x86::reg32* stack)
+{
+    static const char* const names[] = {
+        "mem_putc", "file_putc", "vsprintf", "sprintf", "vfprintf", "fprintf", "prtf", "prtfSpec",
+        "prtfFlags", "prtfLength", "prtfWideLength", "prtfHex", "prtfHexEnd", "prtfFixed", "prtfFloat", "prtfZeros",
+        "prtfWideOut", "prtfConvert", "prtfUpper", "wctomb_", "utoa", "itoa", "ulltoa", "prtfUtoa", "U8D"};
+    if (std::find_if(std::begin(names), std::end(names), [&](const char* n) { return name == n; }) == std::end(names))
+        return false;
+    makeWideTexts(g);
+    for (x86::reg32 i = 0; i < 0x100; ++i)
+        g.getMemory<x86::reg8>(0xa0b211 + i) = chance(20) ? x86::reg8(random32() | 1) : 0;
+    auto aBase = [] { static const x86::reg32 bases[] = {10, 10, 16, 8, 2, 36}; return chance(80) ? bases[below(6)] : 2 + below(35); };
+
+    if (name == "prtf" || name == "vsprintf" || name == "vfprintf" || name == "sprintf" || name == "fprintf")
+    {
+        const bool streams = name == "vfprintf" || name == "fprintf";
+        const std::vector<x86::reg32> a = makeFormat(g, kFormatText, streams);
+        const bool toFile = streams || (name == "prtf" && chance(15));
+        const x86::reg32 to = toFile ? aFormattedStream(g) : kFormatOut + below(0x40);
+        if (name == "sprintf" || name == "fprintf")
+        {
+            // cdecl: the destination and the format, the arguments after.
+            stack[0] = to;
+            stack[1] = kFormatText;
+            for (size_t i = 0; i < a.size(); ++i)
+                if (i + 2 < 9)
+                    stack[i + 2] = a[i];
+                else
+                    g.word(cpu.esp + 4 + 4 * x86::reg32(i + 2)) = a[i];
+            return true;
+        }
+        for (size_t i = 0; i < a.size(); ++i)
+            g.word(kFormatArguments + 4 * x86::reg32(i)) = a[i];
+        g.word(kFormatList) = kFormatArguments;
+        cpu.eax = to;
+        cpu.edx = kFormatText;
+        cpu.ebx = kFormatList;
+        cpu.ecx = toFile ? kFilePutc : kMemPutc;
+    }
+    else if (name == "mem_putc" || name == "file_putc")
+    {
+        makeSpecs(g, kFormatSpecs);
+        if (name == "file_putc")
+            g.word(kFormatSpecs) = aFormattedStream(g);
+        cpu.eax = kFormatSpecs;
+        cpu.edx = chance(20) ? '\n' : chance(80) ? below(256) : random32();
+    }
+    else if (name == "prtfSpec" || name == "prtfFlags")
+    {
+        // What follows a '%': the walk's own format, from one of its '%'s.
+        makeSpecs(g, kFormatSpecs);
+        const std::vector<x86::reg32> a = makeFormat(g, kFormatText);
+        for (size_t i = 0; i < a.size(); ++i)
+            g.word(kFormatArguments + 4 * x86::reg32(i)) = a[i];
+        g.word(kFormatList) = kFormatArguments;
+        const char* text = &g.getMemory<char>(kFormatText);
+        const char* percent = std::strchr(text, '%');
+        cpu.eax = percent ? kFormatText + x86::reg32(percent - text) + 1 : kFormatText;
+        if (name == "prtfFlags")
+            cpu.edx = kFormatSpecs;
+        else
+        {
+            cpu.edx = kFormatList;
+            cpu.ebx = kFormatSpecs;
+        }
+    }
+    else if (name == "prtfLength")
+    {
+        cpu.eax = chance(80) ? aText() : aBuffer();
+        cpu.edx = random32();
+        cpu.ebx = chance(50) ? 0xffffffff : below(0x120);
+    }
+    else if (name == "prtfWideLength")
+    {
+        cpu.eax = aWideText();
+        cpu.edx = random32();
+        cpu.ebx = chance(50) ? 0xffffffff : chance(10) ? random32() : below(0x40);
+    }
+    else if (name == "prtfHex")
+    {
+        cpu.eax = random32() >> below(32);
+        cpu.edx = kFormatDigits + 0x40 + below(0x40);
+        cpu.ebx = chance(80) ? (chance(50) ? 8 : 4) : below(14);
+    }
+    else if (name == "prtfFixed")
+    {
+        makeSpecs(g, kFormatSpecs);
+        cpu.eax = kFormatDigits + below(0x40);
+        cpu.edx = chance(30) ? (random32() & 0xffff) | (chance(50) ? 0xffff0000 : 0) : random32();
+        cpu.ebx = kFormatSpecs;
+        g.word(kFormatSpecs + 8) = chance(30) ? 0xffffffff : below(12);
+    }
+    else if (name == "prtfFloat" || name == "prtfConvert")
+    {
+        makeSpecs(g, kFormatSpecs);
+        std::vector<x86::reg32> a;
+        conversionArguments(g.getMemory<x86::reg8>(kFormatSpecs + 0x15), g.getMemory<x86::reg8>(kFormatSpecs + 0x1e),
+                            g.getMemory<x86::reg8>(kFormatSpecs + 0x1f), a);
+        if (g.getMemory<x86::reg8>(kFormatSpecs + 0x15) == 'n')
+            a.clear();  // the default's: no argument
+        for (size_t i = 0; i < a.size(); ++i)
+            g.word(kFormatArguments + 4 * x86::reg32(i)) = a[i];
+        g.word(kFormatList) = kFormatArguments;
+        cpu.eax = kFormatSpecs + 0x38;
+        cpu.edx = kFormatList;
+        cpu.ebx = kFormatSpecs;
+        cpu.ecx = kFormatSpecs + 0x6c;
+    }
+    else if (name == "prtfZeros")
+    {
+        makeSpecs(g, kFormatSpecs);
+        cpu.eax = kFormatSpecs;
+    }
+    else if (name == "prtfWideOut")
+    {
+        makeSpecs(g, kFormatSpecs);
+        const bool toFile = chance(15);
+        if (toFile)
+            g.word(kFormatSpecs) = aFormattedStream(g);
+        g.word(kFormatSpecs + 0x28) = chance(80) ? below(0x40) : chance(50) ? 0 : x86::reg32(-x86::sreg32(below(8)));
+        cpu.eax = aWideText();
+        cpu.edx = random32();
+        cpu.ebx = kFormatSpecs;
+        cpu.ecx = toFile ? kFilePutc : kMemPutc;
+    }
+    else if (name == "prtfUpper")
+    {
+        cpu.eax = copied(g, aText());
+    }
+    else if (name == "wctomb_")
+    {
+        cpu.eax = chance(10) ? 0 : kFormatDigits + below(0x40);
+        cpu.edx = chance(70) ? 'a' + below(26) : random32();
+    }
+    else if (name == "utoa" || name == "itoa" || name == "prtfUtoa")
+    {
+        cpu.eax = anInteger();
+        cpu.edx = kFormatDigits + below(0x40);
+        cpu.ebx = aBase();
+    }
+    else if (name == "ulltoa")
+    {
+        const x86::reg32 value = kFormatDigits + 0x100;
+        g.word(value) = anInteger();
+        g.word(value + 4) = chance(30) ? 0 : chance(30) ? 0xffffffff : anInteger();
+        cpu.eax = value;
+        cpu.edx = kFormatDigits + below(0x40);
+        cpu.ebx = aBase();
+    }
+    else if (name == "U8D")
+    {
+        // A divisor of one word or two -- 1, below the dividend's high word,
+        // above it, the same -- never 0.
+        cpu.eax = random32();
+        cpu.edx = chance(30) ? below(16) : random32();
+        switch (below(6))
+        {
+        case 0: cpu.ecx = 0; cpu.ebx = 1; break;
+        case 1: cpu.ecx = 0; cpu.ebx = 1 + below(36); break;
+        case 2: cpu.ecx = 0; cpu.ebx = random32() | 1; break;
+        case 3: cpu.ecx = cpu.edx; cpu.ebx = chance(50) ? cpu.eax : random32(); break;
+        case 4: cpu.ecx = random32() >> below(32); cpu.ebx = random32(); break;
+        default: cpu.ecx = 1 + below(8); cpu.ebx = random32(); break;
+        }
+        if (cpu.ecx == 0 && cpu.ebx == 0)
+            cpu.ebx = 1;
+    }
+    return true;
+}
+
+/* The environment's, the time zone's and the way out's cases (native_watcom.cpp,
+ * after the formatted output).  Their memory: the environment's strings in the
+ * 13th of kBuffers, its pointers in the 14th, strings to work on in the 10th,
+ * what they write in the 9th. */
+constexpr x86::reg32 kEnvironStrings = kBuffers + 0x200 * 13;
+constexpr x86::reg32 kEnvironList = kBuffers + 0x200 * 14;
+constexpr x86::reg32 kWorkText = kBuffers + 0x200 * 10;
+constexpr x86::reg32 kWorkOut = kBuffers + 0x200 * 9;
+constexpr x86::reg32 kEnvironVar = 0xa0b154;
+constexpr x86::reg32 kCodePageVar = 0x56b0b8;
+constexpr x86::reg32 kFiniTable = 0x56b81a, kFiniTableEnd = 0x56b844;
+constexpr x86::reg32 kExitHooks[] = {0x564484, 0x564488, 0x5677f0, 0x5677a0, 0x5677ac};
+constexpr x86::reg32 kFinalizer = 0x56b800;  // a finalizer's stand-in, keyed here
+constexpr x86::reg32 kExitStartedVar = 0x9f6420, kEnvironCopies = 0x9f6424;
+constexpr x86::reg32 kAtexitCountVar = 0x9f3890, kDebuggerVar = 0x56af64, kZoneDoneVar = 0x568ba0;
+constexpr x86::reg32 kTmpDirVar = 0x568278;
+
+/* A string of the kind TZ holds, or of one of its parts. */
+std::string aZone()
+{
+    static const char* const zones[] = {
+        "EST5EDT", "PST8PDT,M3.2.0/2,M11.1.0", "CET-1CEST,M3.5.0,M10.5.0/3", "JST-9", "GMT0", "UTC",
+        ":Europe/Paris", "XYZ+3:30ABC-4:15:20,J60/1:2:3,100", "AAA-12BBB", "NZST-12NZDT,M9.5.0,M4.1.0/3",
+        "ABCDEFGHIJ1", "Q", "", "EST5EDT,J1,J365/25", "ZZZ5ZZY,M12.5.6/0:0:1,M1.1.1/23:59:59", "-3", ",,,"};
+    if (chance(80))
+        return zones[below(17)];
+    std::string z;
+    for (unsigned i = below(24); i-- > 0;)
+        z += "ABCZ0123456789+-:,./JM"[below(22)];
+    return z;
+}
+
+/* Bytes of every kind for the multibyte functions: letters, lead bytes and
+ * what follows them, 0 now and then early. */
+void makeMultibyteText(CheckApp& g, x86::reg32 at, x86::reg32 length)
+{
+    for (x86::reg32 i = 0; i < length; ++i)
+        g.getMemory<x86::reg8>(at + i) = x86::reg8(chance(50) ? "aBcDzZ09_="[below(10)]
+                                                   : chance(50) ? 0x81 + below(0x1f) : 1 + below(255));
+    g.getMemory<x86::reg8>(at + length) = 0;
+}
+
+/* The environment: some of TZ, TMP and the like, in any case, and others; or
+ * none at all. */
+void makeEnvironment(CheckApp& g)
+{
+    static const char* const names[] = {"TZ", "tz", "Tz", "TMP", "TEMP", "TMPDIR", "TEMPDIR", "tmp", "PATH",
+                                        "NFS", "T", "TZZ", "COMSPEC", ""};
+    if (chance(5))
+    {
+        g.word(kEnvironVar) = 0;
+        return;
+    }
+    x86::reg32 text = kEnvironStrings;
+    const x86::reg32 count = below(10);
+    for (x86::reg32 i = 0; i < count; ++i)
+    {
+        std::string s = chance(90) ? names[below(14)] : std::string(1, char('A' + below(26)));
+        if (chance(95))
+            s += '=';
+        const std::string& name = s;
+        if (name.compare(0, 2, "TZ") == 0 || name.compare(0, 2, "tz") == 0 || name.compare(0, 2, "Tz") == 0)
+            s += aZone();
+        else
+            s += chance(20) ? "" : chance(10) ? std::string(0x110, 'x') : chance(50) ? "C:\\TEMP" : "c:/tmp/";
+        if (text + s.size() + 1 > kEnvironStrings + 0x1f0)
+            break;
+        std::memcpy(&g.getMemory<char>(text), s.c_str(), s.size() + 1);
+        g.word(kEnvironList + 4 * i) = text;
+        text += x86::reg32(s.size()) + 1;
+        g.word(kEnvironList + 4 * (i + 1)) = 0;
+    }
+    g.word(kEnvironList + 4 * count) = 0;
+    if (count == 0)
+        g.word(kEnvironList) = 0;
+    g.word(kEnvironVar) = kEnvironList;
+}
+
+/* The environment's, the time zone's and the way out's registers and stack
+ * words; false for a function not of them. */
+bool makeEnvironmentArguments(CheckApp& g, const std::string& name, x86::CPU& cpu, x86::reg32* stack)
+{
+    static const char* const names[] = {
+        "mbterm", "mbsinc", "mbclen", "mbccpy", "mbccmp", "mbsnextc", "mbvtop", "mbbtrail", "mbclegal",
+        "mbclower", "mbcupper932", "mbctoupper", "mbsupr", "mbcicmp", "mbsnicmp", "getenv", "wcstombs",
+        "tzNumber", "tzName", "tzRule", "tzWindows", "tzDaylight", "tzset", "callRoutine", "FiniRtns",
+        "DoneExceptionHandler", "freeEnvironment", "exit_", "_exit", "exit", "atexit", "EnterWVIDEO",
+        "fatalWrite", "fatal_runtime_error", "sleep", "getpid", "stackavail", "GRO", "hexDigit", "fullpath",
+        "tmpdir", "MkTmpFile"};
+    if (std::find_if(std::begin(names), std::end(names), [&](const char* n) { return name == n; }) == std::end(names))
+        return false;
+
+    g_shortDirectory = true;
+    // What all of them may read: multibyte characters on or off, of code page
+    // 932 or another; the environment; the way out's hooks and finalizers,
+    // stand-ins all; the thread's data.
+    g.word(kMbcsOn) = chance(40) ? 1 : 0;
+    g.word(kCodePageVar) = chance(30) ? 932 : 1252;
+    for (x86::reg32 i = 0; i < 0x100; ++i)
+        g.getMemory<x86::reg8>(0xa0b211 + i) = chance(25) ? x86::reg8(random32() | 1) : 0;
+    makeEnvironment(g);
+    for (const x86::reg32 hook : kExitHooks)
+        g.word(hook) = (hook == 0x5677f0 || hook == 0x5677ac) && chance(40) ? 0 : standInFor(hook);
+    for (x86::reg32 at = kFiniTable; at < kFiniTableEnd; at += 6)
+    {
+        g.getMemory<x86::reg8>(at) = x86::reg8(chance(25) ? 2 : below(2));
+        g.getMemory<x86::reg8>(at + 1) = x86::reg8(chance(50) ? below(0x40) : random32());
+        g.getMemory<x86::reg32>(at + 2) = chance(20) ? 0 : standInFor(kFinalizer);
+    }
+    g.word(kExitStartedVar) = chance(50) ? 0 : chance(50) ? 1 : random32();
+    static const char* const freeing[] = {"freeEnvironment", "exit_", "_exit", "exit", "fatalWrite",
+                                          "fatal_runtime_error"};
+    const bool frees = std::find_if(std::begin(freeing), std::end(freeing),
+                                    [&](const char* n) { return name == n; }) != std::end(freeing);
+    for (const x86::reg32 at : {kEnvironCopies, kEnvironCopies + 4})
+        g.word(at) = frees && !g_blocks.empty() && chance(30) ? takeBlock() : 0;
+    g.word(kThread + 0x54) = chance(50) ? 0 : kWorkOut + 0x1f0;
+    g.word(kWorkOut + 0x1f0) = random32();
+    g.word(kThread) = 0xef0000 + below(0x10000);  // the stack's bottom
+    g.getMemory<x86::reg8>(kDebuggerVar) = chance(10) ? 1 : 0;
+    g.getMemory<x86::reg8>(kZoneDoneVar) = x86::reg8(below(4));
+    g.word(kAtexitCountVar) = chance(80) ? below(0x20) : 0x1e + below(4);
+    if (chance(50))
+        g.getMemory<x86::reg8>(kTmpDirVar) = 0;
+    else
+        std::strcpy(&g.getMemory<char>(kTmpDirVar), chance(50) ? "C:\\TEMP\\" : "d:/x");
+    makeMultibyteText(g, kWorkText, below(0x40));
+    makeMultibyteText(g, kWorkText + 0x80, below(0x40));
+    if (chance(40))
+        std::memcpy(&g.getMemory<x86::reg8>(kWorkText + 0x80), &g.getMemory<x86::reg8>(kWorkText), 0x40);
+    for (x86::reg32 i = 0; i < 0x20; ++i)
+        g.getMemory<x86::reg16>(kWorkText + 0x100 + 2 * i) =
+            x86::reg16(i == 0x1f || chance(8) ? 0 : chance(70) ? 'a' + below(26) : random32());
+
+    auto aCharacter = [] {
+        return chance(40) ? 'a' + below(26) : chance(30) ? (0x81 + below(0x1f)) << 8 | below(256)
+               : chance(50) ? below(256) : random32() & 0xffff;
+    };
+    auto aText = [] { return kWorkText + (chance(50) ? 0 : 0x80) + below(4); };
+    if (name == "mbterm" || name == "mbsinc" || name == "mbclen" || name == "mbsnextc" || name == "mbsupr")
+        cpu.eax = aText();
+    else if (name == "mbccpy" || name == "mbccmp" || name == "mbcicmp" || name == "mbsnicmp")
+    {
+        cpu.eax = name == "mbccpy" ? kWorkOut + below(0x10) : aText();
+        cpu.edx = aText();
+        cpu.ebx = chance(10) ? 0 : chance(10) ? 0xffffffff : below(0x30);
+    }
+    else if (name == "mbvtop")
+    {
+        cpu.eax = aCharacter();
+        cpu.edx = kWorkOut + below(0x10);
+    }
+    else if (name == "mbbtrail" || name == "mbclegal" || name == "mbclower" || name == "mbcupper932"
+             || name == "mbctoupper")
+        cpu.eax = name == "mbbtrail" ? (chance(70) ? below(256) : random32()) : aCharacter();
+    else if (name == "getenv")
+    {
+        static const char* const looked[] = {"TZ", "tz", "TMP", "TEMP", "PATH", "T", "", "NONE", "TZZ"};
+        std::strcpy(&g.getMemory<char>(kWorkOut), looked[below(9)]);
+        cpu.eax = chance(5) ? 0 : chance(80) ? kWorkOut : aText();
+    }
+    else if (name == "wcstombs")
+    {
+        cpu.eax = chance(20) ? 0 : kWorkOut + below(0x10);
+        cpu.edx = kWorkText + 0x100 + 2 * below(0x10);
+        cpu.ebx = chance(10) ? 0 : below(0x40);
+    }
+    else if (name == "tzNumber" || name == "tzName" || name == "tzRule" || name == "tzDaylight")
+    {
+        const std::string z = name == "tzNumber" ? std::to_string(random32() >> below(32)) + (chance(50) ? "x" : "")
+                                                 : aZone();
+        std::strcpy(&g.getMemory<char>(kWorkText), z.c_str());
+        cpu.eax = kWorkText + (z.empty() ? 0 : below(x86::reg32(z.size())));
+        cpu.edx = kWorkOut;
+        cpu.ebx = kWorkOut + 0x100;
+        cpu.ecx = cpu.eax;
+    }
+    else if (name == "callRoutine")
+    {
+        g.word(kWorkOut) = chance(30) ? 0 : standInFor(kFinalizer);
+        cpu.eax = kWorkOut;
+    }
+    else if (name == "FiniRtns")
+    {
+        cpu.eax = chance(70) ? (chance(50) ? 0 : 0x10) : below(0x100);
+        cpu.edx = chance(70) ? (chance(50) ? 0xff : 0xf) : below(0x100);
+    }
+    else if (name == "exit_" || name == "_exit" || name == "exit" || name == "sleep")
+        cpu.eax = chance(50) ? below(4) : random32();
+    else if (name == "atexit")
+        cpu.eax = random32();
+    else if (name == "EnterWVIDEO" || name == "fatalWrite" || name == "fatal_runtime_error")
+    {
+        cpu.eax = aString();
+        cpu.edx = chance(50) ? 1 : random32();
+    }
+    else if (name == "GRO")
+        stack[0] = chance(20) ? 0 : below(0x6000);
+    else if (name == "hexDigit")
+        cpu.eax = chance(90) ? below(16) : random32();
+    else if (name == "fullpath")
+    {
+        static const char* const paths[] = {"con", "CON", "", "x", "C:\\GAME\\NFS3", "..\\a\\b", "data"};
+        std::strcpy(&g.getMemory<char>(kWorkText), paths[below(7)]);
+        cpu.eax = chance(25) ? 0 : kWorkOut;
+        cpu.edx = chance(10) ? 0 : kWorkText;
+        cpu.ebx = chance(20) ? below(5) : chance(80) ? 0x104 : below(0x200);
+    }
+    else if (name == "MkTmpFile")
+    {
+        cpu.eax = kWorkOut;
+        cpu.edx = random32();
+    }
+    return true;
+}
+
+/* setenv's and the heap's growing's cases (native_watcom.cpp, after the
+ * environment's).  _environ, _wenviron and __env_mask are made as the game
+ * makes them -- by the native setenv, run on `g` before the case, from no
+ * environment at all, on a heap afresh now and then -- so their blocks are
+ * the heap's own; the case's arguments are names and values from the 10th of
+ * kBuffers, wide ones from its second half. */
+constexpr x86::reg32 kWideEnvironVar = 0xa0b158, kEnvMaskVar = 0xa0b150;
+constexpr x86::reg32 kSetenvNames = kBuffers + 0x200 * 10;   // 8 of 0x20
+constexpr x86::reg32 kSetenvValues = kSetenvNames + 0x100;   // 8 of 0x20
+constexpr x86::reg32 kSetenvWide = kBuffers + 0x200 * 15;    // 8 of 0x40: "name=value"
+constexpr x86::reg32 kSetenvScratch = kBuffers + 0x200 * 12;  // a wide name or two, what is copied
+
+/* A block of the heap's, left on the list. */
+x86::reg32 aBlock()
+{
+    return g_blocks.empty() ? 0 : g_blocks[below(x86::reg32(g_blocks.size()))];
+}
+
+/* A block from the native _nmalloc, on `g`, with the cpu's stack below the
+ * case's; 0 for none. */
+x86::reg32 blockBefore(CheckApp& g, x86::reg32 esp, x86::reg32 size)
+{
+    x86::CPU c{};
+    c.esp = esp - 0x2000 - 4;
+    c.eax = size;
+    nfs3hp::watcom::nmalloc(&g, c);
+    return c.eax;
+}
+
+/* The native setenv, on `g`, with the cpu's stack below the case's. */
+void setenvBefore(CheckApp& g, x86::reg32 esp, x86::reg32 name, x86::reg32 value, x86::reg32 overwrite, bool wide)
+{
+    x86::CPU c{};
+    c.esp = esp - 0x2000;
+    c.eax = name;
+    c.edx = value;
+    c.ebx = overwrite;
+    c.esp -= 4;
+    (wide ? nfs3hp::watcom::wsetenv : nfs3hp::watcom::setenv)(&g, c);
+}
+
+/* The setenv family's registers; false for a function not of it. */
+bool makeSetenvArguments(CheckApp& g, const std::string& name, x86::CPU& cpu, x86::reg32* stack)
+{
+    static const char* const names[] = {
+        "mbslen", "mbtowc", "mbstowcs", "wcslen", "memcpy", "wcscpy", "towupper", "memmove", "msize",
+        "HeapManager_expand", "nexpand", "nexpandFailed", "nrealloc", "findenv", "setenv_", "wfindenv",
+        "wsetenv", "wputenvFind", "wputenv", "create_wide_environment", "setenv"};
+    if (std::find_if(std::begin(names), std::end(names), [&](const char* n) { return name == n; }) == std::end(names))
+        return false;
+    g_shortDirectory = true;
+    g.word(kMbcsOn) = chance(30) ? 1 : 0;
+    g.word(kCodePageVar) = chance(20) ? 932 : 1252;
+    // Lead bytes above ASCII, as code pages have them: getenv's names
+    // compared one way and __findenv's another would take out a variable
+    // getenv says is not there.
+    for (x86::reg32 i = 0; i < 0x100; ++i)
+        g.getMemory<x86::reg8>(0xa0b211 + i) = i >= 0x81 && chance(15) ? x86::reg8(random32() | 1) : 0;
+
+    // Names -- some the same but for case -- values, wide "name=value"s.
+    static const char* const variables[] = {"TZ", "tz", "TMP", "PATH", "A", "NFS3", "a", "Tz"};
+    static const char* const values[] = {"", "x", "EST5EDT", "C:\\TEMP", "1", "\x81\x40z", "long value here", "y"};
+    for (x86::reg32 i = 0; i < 8; ++i)
+    {
+        std::strcpy(&g.getMemory<char>(kSetenvNames + 0x20 * i), variables[i]);
+        std::strcpy(&g.getMemory<char>(kSetenvValues + 0x20 * i), values[i]);
+        const std::string w = std::string(variables[below(8)]) + (chance(90) ? "=" : "") + values[below(8)];
+        for (x86::reg32 j = 0; j <= w.size(); ++j)
+            g.getMemory<x86::reg16>(kSetenvWide + 0x40 * i + 2 * j) = j < w.size() ? x86::reg8(w[j]) : 0;
+    }
+    auto aName = [] { return kSetenvNames + 0x20 * below(8); };
+    auto aValue = [] { return chance(10) ? 0 : kSetenvValues + 0x20 * below(8); };
+
+    // The environment, as setenv makes it: none, narrow, or narrow and wide.
+    const bool environment = name == "findenv" || name == "setenv_" || name == "wfindenv" || name == "wsetenv"
+                             || name == "wputenvFind" || name == "wputenv" || name == "create_wide_environment"
+                             || name == "setenv";
+    if (environment)
+    {
+        if (chance(30))
+            freshHeap(g);
+        g.word(kEnvironVar) = 0;
+        g.word(kWideEnvironVar) = 0;
+        g.word(kEnvMaskVar) = 0;
+        // __findenv and the wide ones are called on an environment that is
+        // there only: on none they read address 0 for one.
+        const bool wideNeeded = name == "wfindenv" || name == "wputenvFind";
+        const bool needed = wideNeeded || name == "findenv";
+        const x86::reg32 narrow = !needed && chance(15) ? 0 : 1 + below(6);
+        for (x86::reg32 i = 0; i < narrow; ++i)
+            setenvBefore(g, cpu.esp, aName(), kSetenvValues + 0x20 * (1 + below(7)), below(2), false);
+        if (needed && g.word(kEnvironVar) == 0)
+        {
+            // setenv failed each time (SetEnvironmentVariableA's stand-in
+            // said no): _environ as the start-up makes it, none of it the
+            // runtime's.
+            do
+                makeEnvironment(g);
+            while (g.word(kEnvironVar) == 0);
+            x86::reg32 count = 0;
+            while (g.word(g.word(kEnvironVar) + 4 * count) != 0)
+                ++count;
+            g.word(kEnvMaskVar) = g.word(kEnvironVar) + 4 * (count + 1);
+            for (x86::reg32 i = 0; i < 0x20; i += 4)
+                g.word(g.word(kEnvMaskVar) + i) = 0;
+        }
+        // _wenviron for the wide ones only: made, it takes __env_mask over --
+        // the runtime keeps one for both -- and _environ's own go wrong after.
+        const bool wide = name == "wsetenv" || name == "wputenv" || name == "create_wide_environment";
+        if (wideNeeded || (wide && chance(60)))
+        {
+            g.getMemory<x86::reg16>(kSetenvScratch) = 'Q';
+            g.getMemory<x86::reg16>(kSetenvScratch + 2) = 0;
+            g.getMemory<x86::reg16>(kSetenvScratch + 4) = 'v';
+            g.getMemory<x86::reg16>(kSetenvScratch + 6) = 0;
+            setenvBefore(g, cpu.esp, kSetenvScratch, kSetenvScratch + 4, 1, true);
+        }
+        if (wideNeeded && g.word(kWideEnvironVar) == 0)
+        {
+            // Not made (a stand-in said no): _wenviron of the wide strings as
+            // they are, __env_mask none of them the runtime's.
+            const x86::reg32 list = kSetenvScratch + 0x140, mask = kSetenvScratch + 0x180;
+            const x86::reg32 count = 1 + below(7);
+            for (x86::reg32 i = 0; i < count; ++i)
+                g.word(list + 4 * i) = kSetenvWide + 0x40 * i;
+            g.word(list + 4 * count) = 0;
+            for (x86::reg32 i = 0; i < 0x20; i += 4)
+                g.word(mask + i) = 0;
+            g.word(kWideEnvironVar) = list;
+            g.word(kEnvMaskVar) = mask;
+        }
+    }
+
+    if (name == "mbslen")
+        cpu.eax = kSetenvValues + 0x20 * below(8);
+    else if (name == "mbtowc" || name == "mbstowcs")
+    {
+        cpu.eax = chance(20) ? 0 : kSetenvScratch + 2 * below(8);
+        cpu.edx = name == "mbtowc" && chance(10) ? 0 : kSetenvValues + 0x20 * below(8) + below(2);
+        cpu.ebx = chance(10) ? 0 : name == "mbtowc" ? below(4) : below(0x20);
+    }
+    else if (name == "wcslen" || name == "wcscpy")
+    {
+        cpu.eax = name == "wcscpy" ? kSetenvScratch + 2 * below(8) : kSetenvWide + 0x40 * below(8);
+        cpu.edx = kSetenvWide + 0x40 * below(8);
+    }
+    else if (name == "memcpy" || name == "memmove")
+    {
+        // Into another buffer, or over the source either way.
+        cpu.edx = kSetenvScratch + 0x40 + below(0x40);
+        cpu.eax = name == "memmove" && chance(60) ? cpu.edx + below(0x40) - 0x20 : kSetenvScratch + 0x100 + below(0x40);
+        cpu.ebx = chance(10) ? 0 : below(0x80);
+    }
+    else if (name == "towupper")
+        cpu.eax = chance(70) ? 'A' + below(60) : random32();
+    else if (name == "msize")
+        cpu.eax = aBlock() != 0 && chance(80) ? aBlock() : kSetenvScratch + 8;
+    else if (name == "HeapManager_expand" || name == "nexpand" || name == "nrealloc")
+    {
+        // A block of the heap's, to any size; for _nrealloc none, or 0 bytes.
+        if (g_blocks.empty())
+            g_blocks.push_back(blockBefore(g, cpu.esp, 1 + below(0x200)));
+        // _nexpand's a block of its own, made now: one of the list's may have
+        // gone into another that grew over it, free as it was.
+        x86::reg32 block = name == "nrealloc" ? (chance(90) ? takeBlock() : 0)
+                                              : blockBefore(g, cpu.esp, 1 + below(0x200));
+        // None -- the heap full, or VirtualAlloc's stand-in said no -- a
+        // block from the heap afresh, as often as it takes.
+        while (block == 0 && name != "nrealloc")
+        {
+            freshHeap(g);
+            block = blockBefore(g, cpu.esp, 1 + below(0x200));
+        }
+        // The heap of segment ds: another's, the code takes esi as it finds it.
+        cpu.eax = name == "HeapManager_expand" ? cpu.ds : block;
+        cpu.edx = name == "HeapManager_expand" ? block : chance(5) ? 0 : chance(50) ? below(0x40) : below(0x1000);
+        cpu.ebx = chance(50) ? below(0x40) : below(0x1000);
+        cpu.ecx = kSetenvScratch;
+    }
+    else if (name == "findenv" || name == "setenv_" || name == "setenv")
+    {
+        cpu.eax = chance(5) ? 0 : chance(5) ? kSetenvValues : aName();
+        cpu.edx = aValue();
+        cpu.ebx = below(2);
+        // Taking a variable out, __findenv goes on through _environ moved
+        // down, __env_mask after it, whose bytes it takes for strings: on
+        // the runtime's own, a byte of 1 each, to anywhere.  So for that --
+        // no value, or setenv's empty one that may be none -- _environ as the
+        // start-up makes it, none of it the runtime's; setenv's empty one
+        // without overwriting otherwise, which takes out none that is there.
+        if (name == "setenv" && cpu.edx != 0 && g.getMemory<x86::reg8>(cpu.edx) == 0)
+            cpu.ebx = 0;
+        if (cpu.edx == 0)
+        {
+            do
+                makeEnvironment(g);  // none at all for __findenv: it reads address 0 for one
+            while (name == "findenv" && g.word(kEnvironVar) == 0);
+            const x86::reg32 env = g.word(kEnvironVar);
+            if (env != 0)
+            {
+                x86::reg32 count = 0;
+                while (g.word(env + 4 * count) != 0)
+                    ++count;
+                g.word(kEnvMaskVar) = env + 4 * (count + 1);
+                for (x86::reg32 i = 0; i < 0x20; i += 4)
+                    g.word(env + 4 * (count + 1) + i) = 0;
+            }
+        }
+    }
+    else if (name == "wfindenv" || name == "wsetenv")
+    {
+        g.getMemory<x86::reg16>(kSetenvScratch + 0x100) = 'T';
+        g.getMemory<x86::reg16>(kSetenvScratch + 0x102) = chance(50) ? 'z' : 0;
+        g.getMemory<x86::reg16>(kSetenvScratch + 0x104) = 0;
+        cpu.eax = chance(5) ? 0 : chance(70) ? kSetenvScratch + 0x100 : kSetenvScratch;
+        cpu.edx = chance(15) ? 0 : kSetenvWide + 0x40 * below(8);
+        cpu.ebx = below(2);
+    }
+    else if (name == "wputenvFind" || name == "wputenv")
+    {
+        cpu.eax = chance(5) && name == "wputenv" ? 0 : kSetenvWide + 0x40 * below(8);
+        cpu.edx = below(2);
+    }
+    return true;
+}
+
 /* The Watcom runtime's functions' registers -- eax, edx, ebx, ecx -- and the
  * x87 for __CHP; `stack` the words on the stack. */
+/* Formatted input's cases (native_watcom.cpp, after setenv's): a format of
+ * conversions with the arguments it takes, pointers into kScanTargets, and
+ * an input made to go with it now and then otherwise -- signs, bases, points
+ * and exponents, words, sets, multibyte characters, the input over early.
+ * No conversion is 'F': a far pointer's les is not the generated code's, and
+ * it would store through whatever register it leaves.  A number the float's
+ * conversion takes is short of its buffer on the stack: one past 0x50
+ * characters runs over the code's frame. */
+constexpr x86::reg32 kScanText = kBuffers + 0x200 * 11;     // the input: 0x100
+constexpr x86::reg32 kScanFormat = kScanText + 0x100;       // the format: 0x100
+constexpr x86::reg32 kScanTargets = kBuffers + 0x200 * 12;  // what the conversions store: 8 of 0x40
+constexpr x86::reg32 kScanArgs = kBuffers + 0x200 * 13;     // the arguments: 16 pointers
+constexpr x86::reg32 kScanList = kScanArgs + 0x40;          // a va_list's: the arguments' pointer
+constexpr x86::reg32 kScanSpecs = kScanArgs + 0x60;         // __scnf's specs, 0x14 bytes
+constexpr x86::reg32 kScanFormatAt = kScanArgs + 0x80;      // scan_arb's: the format's pointer
+constexpr x86::reg32 kScanNumber = kScanArgs + 0xa0;        // a long double, 10 bytes, and its room
+constexpr x86::reg32 kScanEnd = kScanArgs + 0xc0;           // strtod's end
+constexpr x86::reg32 kScanSet = kScanArgs + 0x100;          // makelist's 32 bytes
+constexpr x86::reg32 kScanFloatPointer = 0x56ac68;          // __EFG_scanf's pointer
+
+/* A number as strtod and the float's conversion take one: a sign, digits, a
+ * point among them, an exponent of either sign; leading white space for
+ * strtod; now and then none of it, or hex, or a huge or tiny exponent. */
+std::string aNumberText(bool space)
+{
+    std::string s;
+    if (space && chance(30))
+        s += chance(50) ? " \t" : " ";
+    if (chance(40))
+        s += chance(50) ? '-' : '+';
+    if (chance(5))
+        return s + (chance(50) ? "x1" : "");
+    const unsigned whole = chance(20) ? 0 : below(chance(20) ? 25 : 8);
+    for (unsigned i = 0; i < whole; ++i)
+        s += char(chance(15) ? '0' : '0' + below(10));
+    if (chance(60) || whole == 0)
+    {
+        s += '.';
+        const unsigned fraction = below(chance(10) ? 22 : 7);
+        for (unsigned i = 0; i < fraction; ++i)
+            s += char(chance(15) ? '0' : '0' + below(10));
+    }
+    if (chance(40))
+    {
+        s += chance(50) ? 'e' : 'E';
+        if (chance(50))
+            s += chance(50) ? '-' : '+';
+        const unsigned digits = chance(10) ? 0 : 1 + below(chance(20) ? 5 : 3);
+        for (unsigned i = 0; i < digits; ++i)
+            s += char('0' + below(10));
+    }
+    if (chance(20))
+        s += "x.5";
+    return s;
+}
+
+/* An integer's text for a base -- 0 for the number's own -- a sign, 0x or
+ * 0, digits of the base and past it, now and then a segment's ':'. */
+std::string anIntegerText(x86::reg32 base)
+{
+    static const char digits[] = "0123456789abcdefABCDEFgz";
+    std::string s;
+    if (chance(30))
+        s += chance(50) ? '-' : '+';
+    if (chance(25))
+        s += chance(60) ? (chance(50) ? "0x" : "0X") : "0";
+    const unsigned count = chance(10) ? 0 : 1 + below(chance(20) ? 24 : 10);
+    for (unsigned i = 0; i < count; ++i)
+        s += digits[below(base == 10 || base == 8 ? (chance(90) ? 10 : 24) : 24)];
+    if (chance(10))
+        s += ":" + std::to_string(below(100));
+    return s;
+}
+
+/* A word: letters, now and then bytes above 0x7f -- lead bytes with what
+ * follows them. */
+std::string aWordText()
+{
+    std::string s;
+    const unsigned count = 1 + below(chance(20) ? 24 : 8);
+    for (unsigned i = 0; i < count; ++i)
+        s += char(chance(10) ? 0x81 + below(0x7e) : chance(80) ? 'a' + below(26) : '!' + below(15));
+    return s;
+}
+
+/* A format of conversions, into kScanFormat, with the pointers its
+ * assigning ones take, into kScanArgs, and an input into kScanText made to
+ * go with it mostly. */
+void makeScan(CheckApp& g)
+{
+    static const char* const kinds[] = {"d", "i", "o", "u", "x", "X", "p", "e", "f", "g", "E", "G", "s", "S", "c",
+                                        "C", "[", "n", "%"};
+    std::string format, input;
+    const unsigned count = 1 + below(6);
+    for (unsigned c = 0; c < count; ++c)
+    {
+        if (chance(20))
+            format += chance(50) ? " " : "\t ";
+        if (chance(10))
+        {
+            const char literal = char(chance(50) ? ',' : 'a' + below(26));
+            format += literal;
+            input += chance(85) ? literal : '?';
+        }
+        format += '%';
+        const std::string kind = kinds[below(19)];
+        if (kind == "%")
+        {
+            format += '%';
+            input += chance(85) ? "%" : "q";
+            continue;
+        }
+        if (chance(15))
+            format += '*';
+        x86::reg32 width = 0;
+        if (chance(30))
+        {
+            width = 1 + below(20);
+            format += std::to_string(width);
+        }
+        if (chance(10))
+            format += 'N';
+        if (chance(35))
+        {
+            static const char* const sizes[] = {"h", "l", "w", "L", "I64", "I6"};
+            format += sizes[below(6)];
+        }
+        if (kind == "[")
+        {
+            std::string set = chance(30) ? "^" : "";
+            const unsigned members = below(8);
+            for (unsigned i = 0; i < members; ++i)
+                set += char(chance(20) ? ']' : 'a' + below(8));
+            format += "[" + set + (chance(90) ? "]" : "");
+        }
+        else
+            format += kind;
+        // The input for it: white space first now and then, then its text.
+        if (chance(40))
+            input += chance(50) ? " " : "\n\t ";
+        const char k = kind[0];
+        if (k == 'd' || k == 'u')
+            input += anIntegerText(10);
+        else if (k == 'i')
+            input += anIntegerText(0);
+        else if (k == 'o')
+            input += anIntegerText(8);
+        else if (k == 'x' || k == 'X' || k == 'p')
+            input += anIntegerText(16);
+        else if (k == 'e' || k == 'f' || k == 'g' || k == 'E' || k == 'G')
+            input += aNumberText(false);
+        else if (k == 's' || k == 'S' || k == 'c' || k == 'C')
+            input += aWordText();
+        else if (k == '[')
+        {
+            const unsigned length = below(10);
+            for (unsigned i = 0; i < length; ++i)
+                input += char(chance(70) ? 'a' + below(8) : 'p' + below(8));
+        }
+        if (chance(30))
+            input += ' ';
+    }
+    if (chance(15) && !input.empty())
+        input.resize(below(x86::reg32(input.size())));  // the input over early
+    if (chance(10))
+        input += aWordText();
+    format.resize(std::min<size_t>(format.size(), 0xf0));
+    input.resize(std::min<size_t>(input.size(), 0xf0));
+    std::strcpy(&g.getMemory<char>(kScanFormat), format.c_str());
+    std::strcpy(&g.getMemory<char>(kScanText), input.c_str());
+    for (x86::reg32 i = 0; i < 16; ++i)
+        g.word(kScanArgs + 4 * i) = kScanTargets + 0x40 * (i < 8 ? i : 7);
+    for (x86::reg32 at = kScanTargets; at < kScanTargets + 0x200; at += 4)
+        g.word(at) = random32();
+    g.word(kScanList) = kScanArgs;
+}
+
+/* __scnf's specs at kScanSpecs: sscanf's routines, the input, a width, flags
+ * -- any but a far pointer's. */
+void makeScanSpecs(CheckApp& g)
+{
+    g.word(kScanSpecs) = 0x4f04f0;
+    g.word(kScanSpecs + 4) = 0x4f051c;
+    g.word(kScanSpecs + 8) = kScanText + (chance(10) ? x86::reg32(std::strlen(&g.getMemory<char>(kScanText))) : 0);
+    g.word(kScanSpecs + 0xc) = chance(40) ? 0xffffffff : chance(10) ? 0 : 1 + below(20);
+    g.getMemory<x86::reg8>(kScanSpecs + 0x10) =
+        x86::reg8((chance(85) ? 1 : 0) | (chance(5) ? 2 : 0) | (random32() & 0xf8));
+}
+
+/* A long double into `at`: any double's, or any bits at all. */
+void aLongDouble(CheckApp& g, x86::reg32 at)
+{
+    if (chance(80))
+        g.getMemory<x86::IEEEf80>(at) = x86::Float(anyDouble());
+    else
+        for (x86::reg32 i = 0; i < 10; ++i)
+            g.getMemory<x86::reg8>(at + i) = x86::reg8(random32());
+    if (chance(30))
+        g.getMemory<x86::reg16>(at + 8) = x86::reg16(0x3fff + below(40) - 20 + (chance(50) ? 0x8000 : 0));
+}
+
+/* The x87 as a case finds it: any control word, a stack of a few. */
+void anyX87(x86::CPU& cpu)
+{
+    static const x86::reg16 precisions[] = {0x000, 0x200, 0x300};
+    cpu.fpu.setControl(x86::reg16(0x7f | precisions[below(3)] | below(4) << 10 | (random32() & 0x1000)));
+    cpu.fpu.count = below(6);
+    for (x86::Float& f : cpu.fpu.regs)
+        f = x86::Float(anyDouble());
+}
+
+/* The formatted input's registers; false for a function not of it. */
+bool makeScanArguments(CheckApp& g, const std::string& name, x86::CPU& cpu, x86::reg32* stack)
+{
+    static const char* const names[] = {
+        "cget_string", "uncget_string", "vsscanf", "sscanf", "Strtold", "strtod", "cgetc", "uncget", "scnf", "get_opt",
+        "scan_white", "scan_char", "scan_string", "report_scan", "makelist", "scan_arb", "scan_float", "scan_int",
+        "radix_value", "chktrm", "ZBuf2LD", "normalize", "scalePowers", "scaleEnd", "scaleBy", "LDScale10x", "FDFS",
+        "U8M"};
+    if (std::find_if(std::begin(names), std::end(names), [&](const char* n) { return name == n; }) == std::end(names))
+        return false;
+    for (x86::reg32 i = 0; i < 0x100; ++i)
+        g.getMemory<x86::reg8>(0xa0b211 + i) = chance(20) ? x86::reg8(random32() | 1) : 0;
+    g.word(kScanFloatPointer) = standInFor(kScanFloatPointer);
+    makeScan(g);
+    makeScanSpecs(g);
+
+    if (name == "sscanf")
+    {
+        stack[0] = kScanText;
+        stack[1] = kScanFormat;
+        for (x86::reg32 i = 0; i < 7; ++i)
+            stack[2 + i] = g.word(kScanArgs + 4 * i);
+        for (x86::reg32 i = 7; i < 12; ++i)
+            g.word(cpu.esp + 4 + 4 * (i + 2)) = g.word(kScanArgs + 4 * i);
+    }
+    else if (name == "vsscanf")
+    {
+        cpu.eax = kScanText;
+        cpu.edx = kScanFormat;
+        cpu.ebx = kScanList;
+    }
+    else if (name == "scnf")
+    {
+        g.getMemory<x86::reg8>(kScanSpecs + 0x10) &= 0xfb;
+        cpu.eax = kScanSpecs;
+        cpu.edx = kScanFormat;
+        cpu.ebx = kScanList;
+    }
+    else if (name == "cget_string" || name == "cgetc" || name == "chktrm" || name == "scan_white")
+        cpu.eax = kScanSpecs;
+    else if (name == "uncget_string" || name == "uncget")
+    {
+        cpu.eax = random32();
+        cpu.edx = kScanSpecs;
+    }
+    else if (name == "get_opt")
+    {
+        const char* text = &g.getMemory<char>(kScanFormat);
+        const char* percent = std::strchr(text, '%');
+        cpu.eax = percent ? kScanFormat + x86::reg32(percent - text) + 1 : kScanFormat;
+        cpu.edx = kScanSpecs;
+    }
+    else if (name == "scan_char" || name == "scan_string" || name == "scan_float" || name == "scan_int"
+             || name == "report_scan" || name == "scan_arb")
+    {
+        cpu.eax = kScanSpecs;
+        cpu.edx = kScanList;
+        if (name == "scan_int")
+        {
+            static const x86::reg32 bases[] = {0, 8, 10, 16};
+            cpu.ebx = chance(90) ? bases[below(4)] : 2 + below(15);
+            cpu.ecx = below(2);
+        }
+        else if (name == "report_scan")
+            cpu.ebx = random32();
+        else if (name == "scan_arb")
+        {
+            static const char* const sets[] = {"abc]", "^abc]", "]a]", "^]x]", "", "a", "^", "dcba"};
+            std::strcpy(&g.getMemory<char>(kScanFormat + 0x80), sets[below(8)]);
+            g.word(kScanFormatAt) = kScanFormat + 0x80;
+            cpu.ebx = kScanFormatAt;
+        }
+        else if (name == "scan_float")
+        {
+            const std::string number = aNumberText(false);
+            std::strcpy(&g.getMemory<char>(kScanText + 0x80), number.c_str());
+            if (chance(70))
+                g.word(kScanSpecs + 8) = kScanText + 0x80;
+        }
+        else if (name == "scan_int")
+        {
+            const std::string number = anIntegerText(cpu.ebx);
+            std::strcpy(&g.getMemory<char>(kScanText + 0x80), number.c_str());
+            if (chance(70))
+                g.word(kScanSpecs + 8) = kScanText + 0x80;
+        }
+    }
+    else if (name == "makelist")
+    {
+        cpu.eax = kScanFormat + below(0x10);
+        cpu.edx = kScanSet;
+    }
+    else if (name == "radix_value")
+        cpu.eax = chance(80) ? '0' + below(0x50) : random32();
+    else if (name == "FDFS")
+    {
+        const double value = chance(50) ? anyDouble() : std::ldexp(double(random32()), int(below(300)) - 150);
+        std::uint64_t bits;
+        std::memcpy(&bits, &value, 8);
+        cpu.eax = x86::reg32(bits);
+        cpu.edx = x86::reg32(bits >> 32);
+    }
+    else if (name == "U8M")
+    {
+        cpu.eax = random32();
+        cpu.edx = chance(50) ? 0 : random32();
+        cpu.ebx = random32();
+        cpu.ecx = chance(50) ? 0 : random32();
+    }
+    else if (name == "normalize")
+    {
+        cpu.eax = chance(30) ? 0 : random32() >> below(32);
+        cpu.edx = chance(30) ? 0 : random32() >> below(32);
+        cpu.ebp = chance(30) ? 0 : chance(20) ? 0xffffffff : random32();
+        cpu.edi = chance(70) ? 0x405e : random32();
+    }
+    else if (name == "ZBuf2LD")
+    {
+        std::string digits;
+        const unsigned count = below(chance(10) ? 30 : 20);
+        for (unsigned i = 0; i < count; ++i)
+            digits += char('0' + below(10));
+        std::strcpy(&g.getMemory<char>(kScanText + 0x80), digits.c_str());
+        cpu.eax = kScanText + 0x80;
+        cpu.edx = kScanNumber;
+    }
+    else if (name == "scalePowers" || name == "scaleBy" || name == "LDScale10x")
+    {
+        anyX87(cpu);
+        aLongDouble(g, kScanNumber);
+        cpu.eax = kScanNumber;
+        cpu.edx = chance(60) ? x86::reg32(x86::sreg32(below(80)) - 40)
+                             : chance(50) ? x86::reg32(x86::sreg32(below(0x6000)) - 0x3000) : random32();
+        if (name == "scalePowers")
+        {
+            aLongDouble(g, kScanNumber + 0x10);
+            cpu.eax = kScanNumber + 0x10;
+        }
+    }
+    else if (name == "scaleEnd")
+        cpu.ebp = cpu.esp - 4;  // the frame it leaves: its registers below the return address
+    else if (name == "Strtold" || name == "strtod")
+    {
+        anyX87(cpu);
+        std::string number = aNumberText(true);
+        if (chance(10))
+            number = chance(50) ? "1e400" : "-1e-400";
+        std::strcpy(&g.getMemory<char>(kScanText + 0x80), number.c_str());
+        cpu.eax = kScanText + 0x80;
+        cpu.edx = name == "Strtold" ? kScanNumber : chance(20) ? 0 : kScanEnd;
+        cpu.ebx = chance(20) ? 0 : kScanEnd;
+    }
+    return true;
+}
+
+/* The console's cases (native_watcom.cpp, after the formatted input's): its
+ * HANDLEs open or not, a key ungot or not, do_getch's state -- a character
+ * repeating, an extended key's second half -- and the default windowing's
+ * hooks there or not; the console's records made up by the stand-ins. */
+constexpr x86::reg32 kConsoleIn = 0x568a38, kConsoleOut = 0x568a3c;
+constexpr x86::reg32 kUngotKey = 0x567828, kKeyState = 0x567168;
+constexpr x86::reg32 kKeyScan = 0x9f38b0, kKeyChar = 0x9f38b4, kKeyRepeats = 0x9f38b8;
+constexpr x86::reg32 kWindowsKbhit = 0x5677e0, kWindowsGetch = 0x5677e4, kWindowsPutch = 0x5677ec;
+constexpr x86::reg32 kKeyRecord = kBuffers + 0x200 * 14;  // an INPUT_RECORD
+
+/* The console's registers; false for a function not of it. */
+bool makeConsoleArguments(CheckApp& g, const std::string& name, x86::CPU& cpu, x86::reg32* stack)
+{
+    static const char* const names[] = {"NTRealKey", "openConsoles", "NTConsoleInput", "NTConsoleOutput",
+                                        "putch", "kbhit", "do_getch", "getch", "getche"};
+    if (std::find_if(std::begin(names), std::end(names), [&](const char* n) { return name == n; }) == std::end(names))
+        return false;
+    g.word(kConsoleIn) = chance(50) ? 0xffffffff : 0x7000 + 4 * below(0x100);
+    g.word(kConsoleOut) = chance(50) ? 0xffffffff : 0x7000 + 4 * below(0x100);
+    g.word(kUngotKey) = chance(20) ? (chance(80) ? 1 + below(0xff) : random32()) : 0;
+    g.word(kKeyState) = chance(70) ? below(3) : random32();
+    g.word(kKeyScan) = random32() & (chance(80) ? 0xff : 0xffffffff);
+    g.word(kKeyChar) = chance(30) ? 0 : 'a' + below(26);
+    g.word(kKeyRepeats) = chance(50) ? below(3) : random32();
+    for (const x86::reg32 hook : {kWindowsKbhit, kWindowsGetch, kWindowsPutch})
+        g.word(hook) = chance(25) ? standInFor(hook) : 0;
+    g.word(kIsWindowedHandle) = standInFor(kIsWindowedHandle);
+    g.word(kAccessFile) = standInFor(kAccessFile);
+    g.word(kReleaseFile) = standInFor(kReleaseFile);
+    if (name == "NTRealKey")
+    {
+        g.getMemory<x86::reg16>(kKeyRecord) = x86::reg16(chance(80) ? 1 : below(0x20));
+        g.word(kKeyRecord + 4) = chance(30) ? 0 : chance(80) ? 1 : random32();
+        g.getMemory<x86::reg16>(kKeyRecord + 0xa) = x86::reg16(chance(40) ? 0xe + below(7) : random32());
+        cpu.eax = kKeyRecord;
+    }
+    else if (name == "putch")
+        cpu.eax = chance(80) ? below(0x100) : random32();
+    else if (name == "do_getch")
+        cpu.eax = 0x7000 + 4 * below(0x100);
+    return true;
+}
+
+/* Structured exception handling's cases (native_watcom.cpp, after the
+ * console's): a registration and its scopes' table -- each scope in an outer
+ * one or none, a filter's or a finally block's, the stand-ins (kFilterCode,
+ * kFinallyCode) -- at a level, unwinding to another. */
+constexpr x86::reg32 kRegistration = kBuffers + 0x200 * 15;  // 0x1c bytes
+constexpr x86::reg32 kScopes = kRegistration + 0x40;         // 6 bytes each
+constexpr x86::reg32 kExceptionRecord = kRegistration + 0x100;
+constexpr x86::reg32 kChainHead = kRegistration + 0x180;     // fs:[0]
+
+/* The SEH's registers; false for a function not of it. */
+bool makeSehArguments(CheckApp& g, const std::string& name, x86::CPU& cpu, x86::reg32* stack)
+{
+    static const char* const names[] = {"TryInit", "TryHandler", "TryScope", "TryOuter", "TryDone", "Except",
+                                        "global_unwind", "local_unwind", "RtlUnwindThunk"};
+    if (std::find_if(std::begin(names), std::end(names), [&](const char* n) { return name == n; }) == std::end(names))
+        return false;
+    const x86::reg32 scopes = 1 + below(6);
+    for (x86::reg32 i = 0; i < scopes; ++i)
+    {
+        const bool finally = chance(50);
+        g.getMemory<x86::reg8>(kScopes + 6 * i) = x86::reg8(i == 0 || chance(30) ? 0xff : below(i));
+        g.getMemory<x86::reg8>(kScopes + 6 * i + 1) = x86::reg8(finally ? 1 + below(0xff) : 0);
+        g.word(kScopes + 6 * i + 2) = standInFor(finally ? kFinallyCode : kFilterCode);
+    }
+    auto aLevel = [&] { return chance(15) ? 0xff : below(scopes); };
+    g.word(kRegistration) = random32();
+    g.word(kRegistration + 4) = 0x4f7b2a;
+    g.word(kRegistration + 8) = random32();
+    g.word(kRegistration + 0xc) = kScopes;
+    g.getMemory<x86::reg8>(kRegistration + 0x10) = x86::reg8(aLevel());
+    g.getMemory<x86::reg8>(kRegistration + 0x11) = x86::reg8(random32());
+    g.getMemory<x86::reg8>(kRegistration + 0x12) = x86::reg8(aLevel());
+    g.word(kExceptionRecord + 4) = chance(40) ? (chance(50) ? 2 : 4) : chance(10) ? random32() : 0;
+    g.word(kChainHead) = random32();
+    cpu.efs = kChainHead;
+    if (name == "TryInit")
+        cpu.eax = kRegistration;
+    else if (name == "TryHandler")
+    {
+        stack[0] = kExceptionRecord;
+        stack[1] = kRegistration;
+    }
+    else if (name == "TryScope" || name == "TryOuter")
+    {
+        cpu.ebp = kRegistration;
+        cpu.edi = kScopes;
+        cpu.ebx = name == "TryScope" ? aLevel() : 3 * below(scopes);
+    }
+    else if (name == "Except")
+    {
+        static const x86::reg32 says[] = {0xffffffff, 0, 1};
+        cpu.eax = chance(90) ? says[below(3)] : random32();
+        stack[0] = 3 * below(scopes);
+        stack[1] = kScopes;
+        stack[2] = kRegistration;
+    }
+    else if (name == "global_unwind" || name == "local_unwind")
+        cpu.ebp = kRegistration;
+    return true;
+}
+
+/* The start's cases (native_watcom.cpp, after structured exception
+ * handling's): the initializers' table made up as the finalizers' is, the
+ * thread's data a buffer or none -- calloc's then -- the command lines,
+ * quoted or not, Windows' version of either kind; the game's main and exit
+ * stand-ins. */
+constexpr x86::reg32 kInitTable = 0x56b7de, kInitTableEnd = 0x56b81a;
+constexpr x86::reg32 kThreadDataSizeVar = 0x56af70, kStackSizeVar = 0x567820;
+constexpr x86::reg32 kCommandLineText = kBuffers + 0x200 * 14;          // 0x100
+constexpr x86::reg32 kWideCommandLineText = kCommandLineText + 0x100;   // 0x80 characters
+constexpr x86::reg32 kStartData = kBuffers + 0x200 * 13;                // a thread's data
+constexpr x86::reg32 kStartChain = kBuffers + 0x200 * 15 + 0x180;       // fs:[0]
+
+/* The start's registers; false for a function not of it. */
+bool makeStartArguments(CheckApp& g, const std::string& name, x86::CPU& cpu, x86::reg32* stack)
+{
+    static const char* const names[] = {"startHook", "InitRtns", "stackLimits", "calloc", "initThread",
+                                        "initThreadData", "initPOSIXHandles", "moduleWideName", "copyCommandLine",
+                                        "copyWideCommandLine", "InitExceptionHandling", "NTInit", "NTMain",
+                                        "callMain", "mainStart", "cstart_"};
+    if (std::find_if(std::begin(names), std::end(names), [&](const char* n) { return name == n; }) == std::end(names))
+        return false;
+    if (chance(10))
+        freshHeap(g);
+    for (x86::reg32 at = kInitTable; at < kInitTableEnd; at += 6)
+    {
+        g.getMemory<x86::reg8>(at) = x86::reg8(chance(25) ? 2 : below(2));
+        g.getMemory<x86::reg8>(at + 1) = x86::reg8(chance(50) ? below(0x40) : random32());
+        g.getMemory<x86::reg32>(at + 2) = chance(20) ? 0 : standInFor(kFinalizer);
+    }
+    // The thread's data's size: the runtime writes up to its 0xf4th byte.
+    g.word(kThreadDataSizeVar) = chance(80) ? 0xf4 : 0xf4 + 4 * below(16);
+    g.word(kStackSizeVar) = chance(30) ? 0 : chance(70) ? 0x1000 * below(8) + below(0x10) : below(0x9000);
+    g.getMemory<x86::reg16>(0x567841) = x86::reg16(random32() | (chance(50) ? 0x8000 : 0));
+    g.getMemory<x86::reg8>(0x56783f) = x86::reg8(3 + below(3));
+    // The command lines: the program's name quoted or not, the quote not
+    // closed now and then, the arguments after white space.
+    static const char* const lines[] = {"\"C:\\Games\\NFS3\\nfs3.exe\"  -window x", "nfs3.exe -nosound",
+                                        "\"nfs3.exe", "\"\"", "", "  nfs3", "\"a b\"c d", "nfs3.exe\t\t"};
+    const char* line = lines[below(8)];
+    std::strcpy(&g.getMemory<char>(kCommandLineText), line);
+    for (x86::reg32 i = 0; i <= std::strlen(line); ++i)
+        g.getMemory<x86::reg16>(kWideCommandLineText + 2 * i) = x86::reg16(line[i]);
+    g.word(kStartChain) = random32();
+    cpu.efs = kStartChain;
+    for (x86::reg32 at = kStartData; at < kStartData + 0x100; at += 4)
+        g.word(at) = random32();
+    if (name == "InitRtns")
+        cpu.eax = chance(70) ? (chance(50) ? 1 : chance(50) ? 0x21 : 0xff) : below(0x100);
+    else if (name == "stackLimits")
+    {
+        cpu.eax = chance(20) ? 0 : kStartData;
+        cpu.edx = chance(20) ? 0 : kStartData + 4;
+    }
+    else if (name == "calloc")
+    {
+        cpu.eax = chance(10) ? 0 : 1 + below(8);
+        cpu.edx = chance(10) ? 0 : 1 + below(0x40);
+    }
+    else if (name == "initThread" || name == "initThreadData")
+        cpu.eax = chance(30) ? 0 : kStartData;
+    else if (name == "moduleWideName")
+    {
+        cpu.eax = random32();
+        cpu.edx = kWorkOut;
+        cpu.ebx = chance(70) ? 0x208 : 2 * (1 + below(0x40));
+    }
+    else if (name == "copyCommandLine")
+        cpu.eax = kCommandLineText;
+    else if (name == "copyWideCommandLine")
+        cpu.eax = kWideCommandLineText;
+    else if (name == "InitExceptionHandling")
+        cpu.eax = kStartData + 0x100;
+    else if (name == "NTInit")
+    {
+        cpu.eax = chance(70) ? 0 : 1;
+        cpu.edx = chance(50) ? 0 : kStartData;
+        cpu.ebx = random32();
+    }
+    else if (name == "NTMain")
+    {
+        cpu.eax = kStartData + 0x100;
+        cpu.edx = chance(50) ? 0 : kStartData;
+    }
+    return true;
+}
+
+/* The maths' error report's and the FDIV bug's cases (native_watcom.cpp,
+ * after the start's): long doubles of every kind on the stack and the x87's
+ * -- divisors whose mantissas the bug's table names, denormals, zeros,
+ * infinities -- the error's flags of every kind, _matherr's say made up. */
+constexpr x86::reg32 kMathStruct = kBuffers + 0x200 * 13;  // a struct exception, and doubles after it
+constexpr x86::reg32 kMatherrSlot = 0x56b16c;
+
+/* A long double's 10 bytes into the stack's words from `word` on: any
+ * double's, or a divisor's mantissa the FDIV bug's table has, or a denormal,
+ * or a zero. */
+void aLongOnStack(x86::reg32* stack, unsigned word)
+{
+    x86::reg32 low = random32(), high = random32() | 0x80000000;
+    x86::reg32 exponent = 0x3fff + below(64) - 32 + (chance(50) ? 0x8000 : 0);
+    switch (below(6))
+    {
+    case 0:
+    {
+        // A mantissa of the bug's: the nibble after the integer bit 1, 4, 7,
+        // 0xa or 0xd, the next six bits ones.
+        static const x86::reg32 nibbles[] = {1, 4, 7, 0xa, 0xd};
+        high = 0x80000000 | nibbles[below(5)] << 27 | 0x07e00000 | (random32() & 0x1fffff);
+        break;
+    }
+    case 1: high &= 0x7fffffff; exponent &= 0x8000; break;  // a denormal
+    case 2: high = 0; low = chance(50) ? 0 : low; exponent &= 0x8000; break;
+    case 3: exponent |= chance(50) ? 0x7fff : 1; break;
+    default: break;
+    }
+    stack[word] = low;
+    stack[word + 1] = high;
+    stack[word + 2] = (stack[word + 2] & 0xffff0000) | exponent;
+}
+
+/* The maths' registers; false for a function not of it. */
+bool makeMathArguments(CheckApp& g, const std::string& name, x86::CPU& cpu, x86::reg32* stack)
+{
+    static const char* const names[] = {"fdivSafe", "fdiv_fpr", "atanSafe", "fpatan_wrap", "get_std_stream",
+                                        "printMathError", "callMatherr", "reportError", "reporterror"};
+    if (std::find_if(std::begin(names), std::end(names), [&](const char* n) { return name == n; }) == std::end(names))
+        return false;
+    static const x86::reg16 precisions[] = {0x000, 0x200, 0x300};
+    cpu.fpu.setControl(x86::reg16(0x7f | precisions[below(3)] | below(4) << 10 | (random32() & 0x1000)));
+    cpu.fpu.count = 2 + below(4);
+    for (x86::Float& f : cpu.fpu.regs)
+        f = chance(70) ? x86::Float(double(x86::sreg32(random32() >> below(32))) / double(1 + below(1000)))
+                       : x86::Float(anyDouble());
+    g.word(kMatherrSlot) = standInFor(kMatherrSlot);
+    // The struct exception: a type, a function's name, two arguments, a
+    // result.
+    g.word(kMathStruct) = chance(90) ? 1 + below(6) : random32() % 8;
+    g.word(kMathStruct + 4) = aString();
+    for (x86::reg32 i = 8; i < 0x40; i += 8)
+    {
+        const double value = anyDouble();
+        std::memcpy(&g.getMemory<double>(kMathStruct + i), &value, 8);
+    }
+    if (name == "fdivSafe")
+    {
+        aLongOnStack(stack, 0);
+        aLongOnStack(stack, 3);
+    }
+    else if (name == "fdiv_fpr")
+        cpu.eax = chance(95) ? below(64) : 64 + below(8);
+    else if (name == "get_std_stream")
+        cpu.eax = chance(80) ? below(5) : random32();
+    else if (name == "printMathError")
+    {
+        cpu.eax = below(7);
+        cpu.edx = aString();
+    }
+    else if (name == "callMatherr")
+        cpu.eax = kMathStruct;
+    else if (name == "reportError" || name == "reporterror")
+    {
+        // The function, then of what kind: DOMAIN, SING, OVERFLOW,
+        // UNDERFLOW, PLOSS, TLOSS; the result: -HUGE_VAL, 0, 1, HUGE_VAL.
+        // Always of a kind: with none the code leaves esi as it was, and
+        // prints the type's name from wherever esi points the table.
+        static const x86::reg32 kinds[] = {0x40, 0x80, 0x100, 0x800, 0x200, 0x400};
+        static const x86::reg32 results[] = {0x1000, 0x2000, 0x4000, 0x8000, 0};
+        cpu.eax = (random32() & 0xffff0000) | below(0x16) | kinds[below(6)] | results[below(5)];
+        if (chance(10))
+            cpu.eax |= random32() & 0xff3f;
+        cpu.edx = kMathStruct + 8 * (1 + below(6));
+        cpu.ebx = kMathStruct + 8 * (1 + below(6));
+    }
+    return true;
+}
+
 void makeWatcomArguments(CheckApp& g, const std::string& name, x86::CPU& cpu, x86::reg32* stack)
 {
+    if (makeFormattedArguments(g, name, cpu, stack) || makeEnvironmentArguments(g, name, cpu, stack)
+        || makeSetenvArguments(g, name, cpu, stack) || makeScanArguments(g, name, cpu, stack)
+        || makeConsoleArguments(g, name, cpu, stack) || makeSehArguments(g, name, cpu, stack)
+        || makeStartArguments(g, name, cpu, stack) || makeMathArguments(g, name, cpu, stack))
+        return;
     const x86::reg32 i = below(32);
     static const char* const x87[] = {"CHP", "IF_DATAN2", "floor", "ceil", "modf", "control87", "IF_DEXP", "exp",
                                       "IF_DACOS", "DSQRT", "math87_err"};
@@ -1596,7 +3499,8 @@ void makeWatcomArguments(CheckApp& g, const std::string& name, x86::CPU& cpu, x8
         cpu.fpu.count = name == "CHP" ? 1 + below(8) : 2 + below(5);
         for (x86::Float& f : cpu.fpu.regs)
             f = x86::Float(anyDouble());
-        g.getMemory<x86::reg8>(0x567858) = 0;  // __chipbug: no Pentium with the FDIV bug
+        // __chipbug: a Pentium with the FDIV bug now and then, for __fpatan_wrap.
+        g.getMemory<x86::reg8>(0x567858) = chance(20) ? 1 : 0;
     }
     if (name == "IF_DACOS")
     {
@@ -2390,6 +4294,7 @@ bool runCase(const Tested& t, CheckApp& g, CheckApp& n, Counts& counts)
     for (const auto& word : list)
         g.word(word.first) = word.second;
     if ((p.name == std::string("watcom::nmalloc") || p.name == std::string("watcom::MemAllocator")
+         || p.name == std::string("watcom::nrealloc")
          || (p.name == std::string("watcom::getcwd") && cpu.eax == 0))
         && !generatedCpu.terminate && generatedCpu.eax != 0)
         g_blocks.push_back(generatedCpu.eax);

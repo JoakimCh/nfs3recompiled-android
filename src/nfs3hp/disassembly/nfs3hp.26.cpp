@@ -20661,7 +20661,7 @@ L_0x004bd20e:
     cpu.esp -= 4;
     // 004bd224  e867240200             -call 0x4df690
     cpu.esp -= 4;
-    sub_4df690(app, cpu.sync());
+    nfs3hp::watcom::sprintf(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004bd229  8b3558da7c00           -mov esi, dword ptr [0x7cda58]
@@ -20879,7 +20879,7 @@ void Application::sub_4bd2e0(WinApplication* __restrict app, x86::CPU& cpu_)
     app->getMemory<x86::reg32>(cpu.ebp + x86::reg32(-4) /* -0x4 */) = cpu.edx;
     // 004bd301  e88a230200             -call 0x4df690
     cpu.esp -= 4;
-    sub_4df690(app, cpu.sync());
+    nfs3hp::watcom::sprintf(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004bd306  83c408                 -add esp, 8

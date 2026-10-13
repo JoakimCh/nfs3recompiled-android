@@ -5,7 +5,7 @@ nfs3.exe was linked with the C runtime of Watcom C/C++ 10.x/11.0. From
 manager, files, SND, NET, THRASH's loader, the vector maths -- in the order the
 linker took them in, so no address range is the runtime's alone. This is a
 map of all of it the game reaches: the 62 functions that the game's own code
-and EA's call, everything those call in turn, and the start-up code -- 267
+and EA's call, everything those call in turn, and the start-up code -- 275
 functions. Every other function from `0x4df600` on is EA's.
 
 The names are Open Watcom's (`bld/clib`, `bld/mathlib` of
@@ -19,7 +19,13 @@ not count.
 The port column says what the port has: `native` for a function of
 `src/nfs3hp/native_watcom.cpp` (in `nfs3hp::watcom`, bound to the address by
 `disassemble_nfs3hp.py`, `WATCOM_NATIVES`, and checked against the game's code
-by `tools/game_checks`), `generated` for the game's own code.
+by `tools/game_checks`), `generated` for the game's own code.  All 275 are
+native now.  What the runtime reaches only through pointers the start-up code
+sets stays the game's code, outside this map: the x87's formatter
+(`0x51f140`, `[__EFG_printf]`) and what `[__EFG_scanf]` points at, the
+exception handler and filter `__InitExceptionHandling` installs (`0x51ef08`,
+`0x51ed24`), the default `_matherr` (`0x52e3f8`), and the initializers and
+finalizers the tables at `0x56b7de` and `0x56b81a` name.
 
 ## How it is called
 
@@ -67,41 +73,42 @@ the caller clears. The runtime's helpers -- `__CHP`, `__STOSB`, `__GRO` and the
 | `0x4eff60` | `strtok` | `clib/string/c/strtok.c` | 2 | native |
 | `0x4f0430` | `atoi` | `clib/convert/c/atoi.c` | 7 | native |
 | `0x4f0490` | `atol` | `clib/convert/c/atol.c` | 1 | native |
-| `0x4f0520` | `vsscanf` |  | 1 | generated |
-| `0x4f0548` | `sscanf` | `clib/string/c/sscanf.c` | 8 | generated |
+| `0x4f0520` | `vsscanf` |  | 1 | native |
+| `0x4f0548` | `sscanf` | `clib/string/c/sscanf.c` | 8 | native |
 | `0x4f0ae0` | `tolower` | `clib/char/c/tolower.c` | 5 | native |
 | `0x4f8020` | `_strupr` | `clib/string/c/strupr.c` | 1 | native |
-| `0x4f8122` | `__Strtold` |  | 1 | generated |
-| `0x4f82b6` | `strtod` | `mathlib/c/strtod.c` | 2 | generated |
+| `0x4f8122` | `__Strtold` |  | 1 | native |
+| `0x4f82b6` | `strtod` | `mathlib/c/strtod.c` | 2 | native |
 | `0x50c540` | `__setbits` |  | 1 | native |
-| `0x50c640` | (internal) |  | 8 | generated |
-| `0x50c648` | (internal) |  | 6 | generated |
-| `0x50c650` | `__scnf` |  | 1 | generated |
-| `0x50c904` | (internal) |  | 1 | generated |
-| `0x50ca08` | (internal) |  | 1 | generated |
-| `0x50ca48` | (internal) |  | 1 | generated |
-| `0x50cb30` | (internal) |  | 1 | generated |
-| `0x50cc88` | (internal) |  | 1 | generated |
-| `0x50cce8` | (internal) |  | 1 | generated |
-| `0x50cd2c` | (internal) |  | 1 | generated |
-| `0x50ce18` | (internal) |  | 1 | generated |
-| `0x50d0f0` | (internal) |  | 1 | generated |
-| `0x50d510` | (internal) |  | 1 | generated |
-| `0x50d538` | (internal) |  | 3 | generated |
-| `0x5165d8` | (internal) |  | 1 | generated |
-| `0x51663a` | (internal) |  | 1 | generated |
-| `0x51667b` | (internal) |  | 1 | generated |
-| `0x5166cf` | (internal) |  | 1 | generated |
-| `0x5166d8` | (internal) |  | 1 | generated |
-| `0x516759` | (internal) |  | 3 | generated |
-| `0x518050` | `_mbslen` |  | 3 | generated |
-| `0x518080` | `mbstowcs` |  | 3 | generated |
-| `0x523c00` | (internal) |  | 3 | generated |
-| `0x523ca0` | (internal) |  | 1 | generated |
-| `0x523cec` | (internal) |  | 1 | generated |
-| `0x5250c0` | (internal) |  | 4 | generated |
-| `0x525100` | (internal) |  | 5 | generated |
-| `0x52b5b0` | (internal) |  | 5 | generated |
+| `0x50c640` | (internal): `__scnf`'s next character, by the specs' routine |  | 8 | native |
+| `0x50c648` | (internal): `__scnf`'s character put back |  | 6 | native |
+| `0x50c650` | `__scnf` |  | 1 | native |
+| `0x50c904` | (internal): a conversion's options: `*`, width, `N`/`F`, size |  | 1 | native |
+| `0x50ca08` | (internal): white space skipped |  | 1 | native |
+| `0x50ca48` | (internal): `%c`, `%C` |  | 1 | native |
+| `0x50cb30` | (internal): `%s`, `%S` |  | 1 | native |
+| `0x50cc88` | (internal): `%n` |  | 1 | native |
+| `0x50cce8` | (internal): a `%[` set's bits |  | 1 | native |
+| `0x50cd2c` | (internal): `%[` |  | 1 | native |
+| `0x50ce18` | (internal): `%e`, `%f`, `%g`: the text to `[__EFG_scanf]` |  | 1 | native |
+| `0x50d0f0` | (internal): `%d`, `%i`, `%o`, `%u`, `%x`, `%p` |  | 1 | native |
+| `0x50d510` | (internal): a digit's value in any base |  | 1 | native |
+| `0x50d538` | (internal): the next character while the width lasts |  | 3 | native |
+| `0x5165d8` | `__ZBuf2LD` |  | 1 | native |
+| `0x51663a` | (internal): `__ZBuf2LD`'s normalizing |  | 1 | native |
+| `0x51667b` | (internal): `__LDScale10x`'s powers of ten |  | 1 | native |
+| `0x5166cf` | (internal): the end of `0x51667b`, which `0x5166d8` jumps to |  | 1 | native |
+| `0x5166d8` | (internal): `__LDScale10x`'s scaling by one power |  | 1 | native |
+| `0x516759` | `__LDScale10x` |  | 3 | native |
+| `0x518050` | `_mbslen` |  | 3 | native |
+| `0x518080` | `mbstowcs` |  | 3 | native |
+| `0x523c00` | `mbtowc` |  | 3 | native |
+| `0x523ca0` | `__FDFS` |  | 1 | native |
+| `0x523cec` | `__U8M` |  | 1 | native |
+| `0x5242f0` | `wcstombs` |  | 1 | native |
+| `0x5250c0` | `_mbterm` |  | 4 | native |
+| `0x525100` | `_mbsinc` |  | 5 | native |
+| `0x52b5b0` | `_mbclen` |  | 5 | native |
 
 ### Memory
 
@@ -130,31 +137,39 @@ the caller clears. The runtime's helpers -- `__CHP`, `__STOSB`, `__GRO` and the
 
 ### Formatted output
 
+All native (`native_watcom.cpp`): `__prtf` walks the format and hands each
+character to its caller's function -- `mem_putc` for `sprintf`, `file_putc`
+for `fprintf` -- with the `SPECS` in its own frame; a float's conversion (e,
+f, g) goes to `[0x56ac64]` (`__EFG_printf`, the x87's formatter the start-up
+code puts there, `0x51f140`), which stays generated.
+
 | Address | Name | Open Watcom | Calls to it | Port |
 |---|---|---|---|---|
-| `0x4df660` | `mem_putc` |  | 0 | generated |
-| `0x4df674` | `vsprintf` | `clib/string/c/vsprintf.c` | 11 | generated |
-| `0x4df690` | `sprintf` | `clib/string/c/sprintf.c` | 198 | generated |
-| `0x4f4b80` | `fprintf` | `clib/streamio/c/fprintf.c` | 4 | generated |
-| `0x4fe1d0` | `__prtf` |  | 2 | generated |
-| `0x4fe578` | (internal) |  | 1 | generated |
-| `0x4fe6cc` | (internal) |  | 1 | generated |
-| `0x4fe734` | (internal) |  | 1 | generated |
-| `0x4fe758` | (internal) |  | 1 | generated |
-| `0x4fe7c4` | (internal) |  | 1 | generated |
-| `0x4fe828` | (internal) |  | 1 | generated |
-| `0x4fe924` | (internal) |  | 1 | generated |
-| `0x4fe92c` | (internal) |  | 1 | generated |
-| `0x4fe970` | (internal) |  | 1 | generated |
-| `0x4fe9d4` | (internal) |  | 1 | generated |
-| `0x4fefdc` | (internal) |  | 1 | generated |
-| `0x4ff014` | `vfprintf` |  | 2 | generated |
-| `0x51e060` | (internal) |  | 4 | generated |
-| `0x51e0a0` | (internal) |  | 1 | generated |
-| `0x51e0ec` | (internal) |  | 4 | generated |
-| `0x51e130` | (internal) |  | 2 | generated |
-| `0x51e220` | (internal) |  | 2 | generated |
-| `0x525d59` | (internal) |  | 2 | generated |
+| `0x4df660` | `mem_putc` |  | 0 | native |
+| `0x4df674` | `vsprintf` | `clib/string/c/vsprintf.c` | 11 | native |
+| `0x4df690` | `sprintf` | `clib/string/c/sprintf.c` | 198 | native |
+| `0x4f4b80` | `fprintf` | `clib/streamio/c/fprintf.c` | 4 | native |
+| `0x4fe1d0` | `__prtf` |  | 2 | native |
+| `0x4fe578` | (internal): a specification -- flags, width, precision, size |  | 1 | native |
+| `0x4fe6cc` | (internal): the flags |  | 1 | native |
+| `0x4fe734` | (internal): a string's length, at most the precision |  | 1 | native |
+| `0x4fe758` | (internal): a wide string's, in bytes as `wctomb` makes it |  | 1 | native |
+| `0x4fe7c4` | (internal): `%p`'s hexadecimal digits, zeros before |  | 1 | native |
+| `0x4fe81e` | (internal): the end of `0x4fe7c4`, which `0x4fe828` jumps to |  | 0 | native |
+| `0x4fe828` | (internal): `%hf`, a 16.16 fixed-point number |  | 1 | native |
+| `0x4fe924` | (internal): `[__EFG_printf]` |  | 1 | native |
+| `0x4fe92c` | (internal): `'0'` padding |  | 1 | native |
+| `0x4fe970` | (internal): a wide string out by `wctomb` |  | 1 | native |
+| `0x4fe9d4` | (internal): a conversion's argument made into text |  | 1 | native |
+| `0x4fefdc` | (internal): `strupr` by `toupper`, for `X` and `P` |  | 1 | native |
+| `0x4ff000` | `file_putc` |  | 0 | native |
+| `0x4ff014` | `vfprintf` | `clib/streamio/c/fprintf.c` | 2 | native |
+| `0x51e060` | (internal): `wctomb`'s, by `WideCharToMultiByte` |  | 4 | native |
+| `0x51e0a0` | `utoa` | `clib/convert/c/itoa.c` | 1 | native |
+| `0x51e0ec` | `itoa` | `clib/convert/c/itoa.c` | 4 | native |
+| `0x51e130` | `ulltoa` | `clib/convert/c/lltoa.c` | 2 | native |
+| `0x51e220` | (internal): `__prtf`'s `utoa` |  | 2 | native |
+| `0x525d59` | `__U8D`: unsigned 64-bit division |  | 2 | native |
 
 ### Streams
 
@@ -170,8 +185,8 @@ the caller clears. The runtime's helpers -- `__CHP`, `__STOSB`, `__GRO` and the
 | `0x4edfe8` | `fopen` | `clib/streamio/c/fopen.c` | 20 | native |
 | `0x4ee100` | `fclose` | `clib/streamio/c/fclose.c` | 21 | native |
 | `0x4ee144` | `__shutdown_stream` | `clib/streamio/c/fclose.c` | 3 | native |
-| `0x4ee15c` | (internal): a hex digit, `__MkTmpFile`'s |  | 1 | generated |
-| `0x4ee168` | `__MkTmpFile` | `clib/streamio/c/tmputil.c` | 2 | generated |
+| `0x4ee15c` | (internal): a hex digit, `__MkTmpFile`'s |  | 1 | native |
+| `0x4ee168` | `__MkTmpFile` | `clib/streamio/c/tmputil.c` | 2 | native |
 | `0x4ee214` | `__doclose` | `clib/streamio/c/fclose.c` | 2 | native |
 | `0x4ee420` | `ftell` | `clib/streamio/c/ftell.c` | 3 | native |
 | `0x4eebd0` | `fwrite` | `clib/streamio/c/fwrite.c` | 7 | native |
@@ -188,22 +203,22 @@ the caller clears. The runtime's helpers -- `__CHP`, `__STOSB`, `__GRO` and the
 | `0x509250` | `__allocfp` | `clib/streamio/c/allocfp.c` | 1 | native |
 | `0x509314` | `__freefp` | `clib/streamio/c/allocfp.c` | 2 | native |
 | `0x509380` | `__chktty` | `clib/streamio/c/chktty.c` | 2 | native |
-| `0x5093c0` | `getpid` | `clib/environ/c/gtpidwnt.c` | 1 | generated |
-| `0x5094e0` | (internal): the directory of temporary files |  | 1 | generated |
+| `0x5093c0` | `getpid` | `clib/environ/c/gtpidwnt.c` | 1 | native |
+| `0x5094e0` | `__tmpdir` |  | 1 | native |
 | `0x5095b0` | `__close` | `clib/handleio/c/_clsewnt.c` | 1 | native |
 | `0x5097b0` | `fputc` | `clib/streamio/c/fputc.c` | 4 | native |
-| `0x515734` | (internal) |  | 2 | generated |
+| `0x515734` | `__NTConsoleOutput` |  | 2 | native |
 | `0x515850` | `flushall` | `clib/streamio/c/flushall.c` | 1 | native |
 | `0x515858` | `__flushall` | `clib/streamio/c/flushall.c` | 1 | native |
 | `0x51e2b0` | (internal): whether `__OSHandles` has no slot free, `_sopen`'s |  | 1 | native |
 | `0x51e4f0` | `__NTGetFakeHandle` | `clib/handleio/c/hdlman.c` | 2 | native |
 | `0x522d80` | `fsync` | `clib/handleio/c/fsync.c` | 1 | native |
-| `0x522e60` | `getche` | `clib/conio/c/gtchewnt.c` | 1 | generated |
+| `0x522e60` | `getche` | `clib/conio/c/gtchewnt.c` | 1 | native |
 | `0x5234d0` | `__GetNTAccessAttr` | `clib/streamio/c/ntfio.c` | 1 | native |
 | `0x523504` | `__GetNTShareAttr` | `clib/streamio/c/ntfio.c` | 1 | native |
 | `0x523560` | `isatty` | `clib/environ/c/isattwnt.c` | 3 | native |
-| `0x523610` | `_fullpath` | `clib/misc/c/fullpath.c` | 1 | generated |
-| `0x52b290` | (internal) |  | 1 | generated |
+| `0x523610` | `_fullpath` | `clib/misc/c/fullpath.c` | 1 | native |
+| `0x52b290` | (internal): `putch` |  | 1 | native |
 
 A stream's reading, writing and seeking are native, down to the handles'
 `__qread`, `__qwrite` and `lseek`: `fputc`, `fputs` and `fwrite` into its
@@ -211,7 +226,7 @@ buffer, made by `__ioalloc` (after `__chktty`) the first time, and
 `__flush`, `fflush` and `flushall` out of it, `fsync` after where the stream
 is committed; `fgetc`, `fgets` and `fread` out of it, filled by
 `__fill_buffer` -- by the console's `getche` for an unbuffered tty's handle
-0, still the game's code; `fseek` within it where it can (`__update_buffer`)
+0; `fseek` within it where it can (`__update_buffer`)
 and `ftell`.  Each keeps esp where its frame has it for what it calls, for
 `__qread` and `__qwrite` hand Windows a dword of their own.  So are opening
 and closing: `fopen` and `_fsopen` -- `__open_flags`, a stream from
@@ -266,6 +281,7 @@ the game's code, and `_nrealloc`, which grows `__OSHandles`.
 | `0x5241c0` | `_nheapshrink` | `clib/heap/c/nheapmin.c` | 2 | native |
 | `0x5241fc` | `__ReturnMemToSystem` | `clib/heap/c/nheapmin.c` | 1 | native |
 | `0x52425c` | (internal): `__ReturnMemToSystem`, then `__UnlinkNHeap` | `clib/heap/c/nheapmin.c` | 1 | native |
+| `0x525578` | (internal): `_nexpand`'s way out |  | 1 | native |
 
 The heap itself is in `src/nfs3hp/native_watcom_heap.cpp`, which voodoo2a's
 heap, the same runtime's, shares; `native_watcom.cpp` binds the game's
@@ -285,27 +301,35 @@ call; the rest are called only from these -- `_nheapshrink` also from
 | `0x4f80b4` | `IF@DEXP` | `mathlib/a/exp87.asm` | 1 | native |
 | `0x4f8116` | `exp` | `mathlib/a/exp87.asm` | 1 | native |
 | `0x4f9482` | `IF@DACOS` | `mathlib/a/acos87.asm` | 3 | native |
-| `0x4ff624` | `__fpatan_wrap` |  | 2 | generated |
+| `0x4ff624` | `__fpatan_wrap` |  | 2 | native |
 | `0x502890` | `__set_EDOM` | `clib/startup/c/seterrno.c` | 1 | native |
 | `0x50ea4e` | `modf` |  | 1 | native |
 | `0x51655c` | `__math87_err` |  | 6 | native |
 | `0x51a1ba` | `__@DSQRT` |  | 1 | native |
-| `0x51f320` | (internal) |  | 1 | generated |
-| `0x5243a7` | `__reporterror` |  | 1 | generated |
-| `0x5243b1` | (internal) |  | 2 | generated |
-| `0x5269d4` | (internal) |  | 4 | generated |
-| `0x526aeb` | (internal) |  | 2 | generated |
-| `0x52b647` | (internal) |  | 1 | generated |
-| `0x52b68f` | (internal) |  | 1 | generated |
-| `0x52e400` | (internal) |  | 1 | generated |
+| `0x51f320` | (internal): `__fpatan_wrap`'s atan2, each division by `__fdiv_fpr` |  | 1 | native |
+| `0x5243a7` | `__reporterror` |  | 1 | native |
+| `0x5243b1` | (internal): `__reporterror`'s struct exception |  | 2 | native |
+| `0x5269d4` | (internal): `__fdiv_fpr`'s safe division |  | 4 | native |
+| `0x526aeb` | `__fdiv_fpr` |  | 2 | native |
+| `0x52b647` | (internal): the maths' error printed |  | 1 | native |
+| `0x52b68f` | (internal): `_matherr`'s call |  | 1 | native |
+| `0x52e400` | `__get_std_stream` |  | 1 | native |
 
 The native ones are their instructions as the generated code has them: the
 same operations of the port's x87, in the same order -- fldpi and fldl2e as
-the doubles it loads -- so that they are its to the bit in either FPU.  The
-rest is the Pentium FDIV bug's (`__fpatan_wrap`, and the divisions it takes
-through `0x5269d4` and `0x526aeb`, while `__chipbug` says so) and a math
-error's report (`__reporterror` on: its `struct exception`, `_matherr`, the
-message to `stderr`, `errno`), still the game's code.
+the doubles it loads -- so that they are its to the bit in either FPU.  So are
+the Pentium FDIV bug's (`__fpatan_wrap`, while `__chipbug` says so: an atan2
+of a table and a polynomial, each division through `0x526aeb` and
+`0x5269d4`; its `fnsave` and `frstor` are not the generated code's either)
+and a math error's report (`__reporterror` on: its `struct exception`,
+`_matherr` through its pointer, the message to `stderr`, `errno`).
+
+`sscanf` and `strtod` are native too (with the strings, above): `__scnf`
+reads through the two routines in its specs (`cget_string` at `0x4f04f0` and
+`uncget_string` at `0x4f051c`, sscanf's, native as well), and a float's
+conversion gathers the number's text on its stack for `[__EFG_scanf]`;
+`strtod`'s long double is built by `__ZBuf2LD` and scaled by
+`__LDScale10x` on the x87.
 
 ### Time
 
@@ -316,9 +340,12 @@ message to `stderr`, `errno`), still the game's code.
 | `0x4f8094` | `localtime` | `clib/time/c/localtim.c` | 1 | native |
 | `0x50eb30` | `__getctime` | `clib/time/c/gtctmwnt.c` | 1 | native |
 | `0x50eba0` | `mktime` | `clib/time/c/mktime.c` | 2 | native |
-| `0x515c2c` | `__tzset` | `clib/time/c/tzset.c` | 2 | generated |
-| `0x515c90` | (internal) |  | 2 | generated |
-| `0x515cbc` | (internal) |  | 2 | generated |
+| `0x515b34` | (internal): `__tzset`'s without `TZ` |  | 1 | native |
+| `0x515c2c` | `__tzset` | `clib/time/c/tzset.c` | 2 | native |
+| `0x515c90` | (internal): `__tzset`'s number |  | 2 | native |
+| `0x515cbc` | (internal): `__tzset`'s zone |  | 2 | native |
+| `0x515dd4` | (internal): `__tzset`'s rule |  | 1 | native |
+| `0x515ec2` | (internal): `__tzset`'s daylight saving |  | 1 | native |
 | `0x515fa0` | `__brktime` | `clib/time/c/gmtime.c` | 3 | native |
 | `0x5160f0` | `__leapyear` | `clib/time/c/leapyear.c` | 4 | native |
 | `0x51612c` | `calc_yday` | `clib/time/c/timeutil.c` | 1 | native |
@@ -328,87 +355,88 @@ message to `stderr`, `errno`), still the game's code.
 
 `__tzset` and what it calls -- the zone from `TZ` (`0x515cbc`, `0x515c90`,
 `0x515dd4`, `0x515ec2`) or from `GetTimeZoneInformation` (`0x515b34`), the
-names by `wcstombs` (`0x5242f0`) -- are still the game's code; the natives
-call it where the runtime does.
+names by `wcstombs` (`0x5242f0`) -- are native too, written a push and a pop
+at a time as their code is, `0x515ec2` going on in `__tzset`'s frame.
 
 ### Environment, console, process
 
 | Address | Name | Open Watcom | Calls to it | Port |
 |---|---|---|---|---|
-| `0x4dfd04` | `exit` | `clib/startup/c/exit.c` | 7 | generated |
-| `0x4dfd30` | `_exit` |  | 1 | generated |
-| `0x4f0710` | `sleep` | `clib/process/c/sleepwnt.c` | 1 | generated |
-| `0x4f45c0` | `stackavail` | `clib/startup/c/stackwnt.c` | 2 | generated |
-| `0x4f4610` | `__GRO` | `clib/startup/a/stkwnt.asm` | 5 | generated |
-| `0x4f7af8` | `__TryInit` | `clib/startup/a/seh386.asm` | 1 | generated |
-| `0x4f7b2a` | `__TryHandler` |  | 0 | generated |
-| `0x4f7b61` | `__TryHandler (scope loop)` |  | 3 | generated |
-| `0x4f7b7d` | `__Except` | `clib/startup/a/seh386.asm` | 1 | generated |
-| `0x4f7b8c` | (internal) |  | 2 | generated |
-| `0x4f7ba7` | `__global_unwind` |  | 3 | generated |
-| `0x4f7bc3` | `__local_unwind` |  | 6 | generated |
-| `0x4f7c20` | `atexit` | `clib/startup/c/atexit.c` | 3 | generated |
-| `0x4f7ce0` | `kbhit` | `clib/conio/c/kbhitwnt.c` | 1 | generated |
-| `0x4f7e20` | `do_getch` |  | 1 | generated |
-| `0x4f7f24` | `getch` | `clib/conio/c/getchwnt.c` | 2 | generated |
-| `0x4f7fa0` | `_cstart_` |  | 0 | generated |
-| `0x4f8b50` | `setenv` | `clib/environ/c/setenv.c` | 2 | generated |
-| `0x4f8ce8` | `__setenv` |  | 2 | generated |
-| `0x4f8f38` | (internal) |  | 1 | generated |
+| `0x4dfd04` | `exit` | `clib/startup/c/exit.c` | 7 | native |
+| `0x4dfd30` | `_exit` |  | 1 | native |
+| `0x4f0710` | `sleep` | `clib/process/c/sleepwnt.c` | 1 | native |
+| `0x4f45c0` | `stackavail` | `clib/startup/c/stackwnt.c` | 2 | native |
+| `0x4f4610` | `__GRO` | `clib/startup/a/stkwnt.asm` | 5 | native |
+| `0x4f7af8` | `__TryInit` | `clib/startup/a/seh386.asm` | 1 | native |
+| `0x4f7b2a` | `__TryHandler` |  | 0 | native |
+| `0x4f7b61` | `__TryHandler (scope loop)` |  | 3 | native |
+| `0x4f7b7d` | `__Except` | `clib/startup/a/seh386.asm` | 1 | native |
+| `0x4f7b8c` | (internal): `__TryHandler`'s end |  | 2 | native |
+| `0x4f7ba7` | `__global_unwind` |  | 3 | native |
+| `0x4f7bc3` | `__local_unwind` |  | 6 | native |
+| `0x4f7c20` | `atexit` | `clib/startup/c/atexit.c` | 3 | native |
+| `0x4f7ce0` | `kbhit` | `clib/conio/c/kbhitwnt.c` | 1 | native |
+| `0x4f7e20` | `do_getch` |  | 1 | native |
+| `0x4f7f24` | `getch` | `clib/conio/c/getchwnt.c` | 2 | native |
+| `0x4f7fa0` | `_cstart_` |  | 0 | native |
+| `0x4f8b50` | `setenv` | `clib/environ/c/setenv.c` | 2 | native |
+| `0x4f8ce8` | `__setenv` |  | 2 | native |
+| `0x4f8f38` | (internal): `__findenv` |  | 1 | native |
 | `0x4ff0ec` | `__GetThreadPtr` |  | 0 | native |
 | `0x4ff0f4` | `__NullAccessRtn` |  | 0 | native |
-| `0x4ff108` | (internal) |  | 1 | generated |
-| `0x4ff338` | (internal) |  | 1 | generated |
-| `0x4ff38c` | `__exit` |  | 2 | generated |
-| `0x4ff410` | (internal) |  | 2 | generated |
-| `0x4ff41c` | (internal) |  | 2 | generated |
-| `0x4ff46c` | `__FiniRtns` |  | 3 | generated |
-| `0x50ead0` | `getenv` |  | 7 | generated |
-| `0x511cd0` | (internal) |  | 1 | generated |
-| `0x511d0c` | (internal) |  | 9 | generated |
-| `0x515690` | `__NTRealKey` |  | 2 | generated |
-| `0x5156b8` | (internal) |  | 2 | generated |
-| `0x515728` | `__NTConsoleInput` |  | 2 | generated |
-| `0x5158a0` | (internal) |  | 1 | generated |
-| `0x518290` | `__wsetenv` |  | 2 | generated |
-| `0x518498` | (internal) |  | 1 | generated |
-| `0x5185c0` | (internal) |  | 9 | generated |
-| `0x518640` | (internal) |  | 8 | generated |
+| `0x4ff108` | `__NTInit` |  | 1 | native |
+| `0x4ff338` | (internal): the program's start: `__NTInit`, the initializers |  | 1 | native |
+| `0x4ff38c` | `__exit` |  | 2 | native |
+| `0x4ff3d0` | (internal): the environment's copies freed |  | 1 | native |
+| `0x4ff410` | (internal): `__FiniRtns`' call |  | 2 | native |
+| `0x4ff41c` | `__InitRtns` |  | 2 | native |
+| `0x4ff46c` | `__FiniRtns` |  | 3 | native |
+| `0x50ead0` | `getenv` |  | 7 | native |
+| `0x511cd0` | (internal): `__fatal_runtime_error`'s |  | 1 | native |
+| `0x511d0c` | `__fatal_runtime_error` |  | 9 | native |
+| `0x515690` | `__NTRealKey` |  | 2 | native |
+| `0x5156b8` | (internal): the console's handles opened |  | 2 | native |
+| `0x515728` | `__NTConsoleInput` |  | 2 | native |
+| `0x5158a0` | (internal): the main thread's start |  | 1 | native |
+| `0x518290` | `__wsetenv` |  | 2 | native |
+| `0x518498` | (internal): `__wfindenv` |  | 1 | native |
+| `0x5185c0` | `_nrealloc` |  | 9 | native |
+| `0x518640` | `memmove` |  | 8 | native |
 | `0x51e304` | `__allocPOSIXHandle` | `clib/handleio/c/hdlman.c` | 3 | native |
 | `0x51e45c` | `__freePOSIXHandle` | `clib/handleio/c/hdlman.c` | 0 | native |
-| `0x51e490` | `__initPOSIXHandles` | `clib/handleio/c/hdlman.c` | 1 | generated |
-| `0x51e7ec` | (internal) |  | 2 | generated |
-| `0x51eb00` | (internal) |  | 1 | generated |
-| `0x51eba0` | (internal) |  | 1 | generated |
-| `0x51ebf0` | (internal) |  | 1 | generated |
-| `0x51ec20` | (internal) |  | 2 | generated |
-| `0x51f0d0` | (internal) |  | 2 | generated |
-| `0x51f11c` | (internal) |  | 3 | generated |
-| `0x523d10` | (internal) |  | 1 | generated |
-| `0x524190` | (internal) |  | 1 | generated |
-| `0x524290` | (internal) |  | 1 | generated |
-| `0x5252a0` | (internal) |  | 4 | generated |
-| `0x525300` | (internal) |  | 7 | generated |
-| `0x525320` | (internal) |  | 4 | generated |
-| `0x525350` | (internal) |  | 1 | generated |
-| `0x525370` | (internal) |  | 2 | generated |
-| `0x525380` | (internal) |  | 1 | generated |
-| `0x525390` | (internal) |  | 1 | generated |
-| `0x5253cc` | (internal) |  | 1 | generated |
-| `0x525df0` | (internal) |  | 4 | generated |
-| `0x526030` | (internal) |  | 1 | generated |
-| `0x52b5e0` | (internal) |  | 1 | generated |
-| `0x52b640` | (internal) |  | 1 | generated |
-| `0x52c178` | (internal) |  | 3 | generated |
-| `0x52c300` | (internal) |  | 1 | generated |
-| `0x52e310` | (internal) |  | 2 | generated |
-| `0x52e350` | (internal) |  | 1 | generated |
-| `0x52e3a0` | (internal) |  | 2 | generated |
-| `0x52ed30` | (internal) |  | 2 | generated |
-| `0x52ed70` | (internal) |  | 1 | generated |
-| `0x52ede0` | (internal) |  | 3 | generated |
-| `0x52eec0` | (internal) |  | 1 | generated |
-| `0x52eee0` | (internal) |  | 1 | generated |
-| `0x52ef30` | (internal) |  | 1 | generated |
-| `0x52ef70` | (internal) |  | 1 | generated |
+| `0x51e490` | `__initPOSIXHandles` | `clib/handleio/c/hdlman.c` | 1 | native |
+| `0x51e7ec` | (internal): the main thread's data |  | 2 | native |
+| `0x51eb00` | (internal): the module's wide name |  | 1 | native |
+| `0x51eba0` | (internal): the command line's copy |  | 1 | native |
+| `0x51ebf0` | (internal): the wide command line's copy |  | 1 | native |
+| `0x51ec20` | (internal): the stack's limits, by `VirtualQuery` |  | 2 | native |
+| `0x51f0d0` | `__InitExceptionHandling` |  | 2 | native |
+| `0x51f11c` | `__DoneExceptionHandler` |  | 3 | native |
+| `0x523d10` | `_mbsnicmp` |  | 1 | native |
+| `0x524190` | `__EnterWVIDEO` |  | 1 | native |
+| `0x524290` | (internal): the call of the game's main, then `exit` |  | 1 | native |
+| `0x5252a0` | `__create_wide_environment` |  | 4 | native |
+| `0x525300` | `wcslen` |  | 7 | native |
+| `0x525320` | `memcpy` |  | 4 | native |
+| `0x525350` | `wcscpy` |  | 1 | native |
+| `0x525370` | (internal): the environment's `towupper` |  | 2 | native |
+| `0x525380` | `_msize` |  | 1 | native |
+| `0x525390` | `_nexpand` |  | 1 | native |
+| `0x5253cc` | `__HeapManager_expand` |  | 1 | native |
+| `0x525df0` | (internal): `calloc` |  | 4 | native |
+| `0x526030` | (internal): the thread's data's start |  | 1 | native |
+| `0x52b5e0` | `_mbcicmp` |  | 1 | native |
+| `0x52b640` | (internal): a start-up hook that does nothing |  | 1 | native |
+| `0x52c178` | `__wputenv` |  | 3 | native |
+| `0x52c300` | (internal): `__wputenv`'s find |  | 1 | native |
+| `0x52e310` | `_mbccpy` |  | 2 | native |
+| `0x52e350` | `_mbsupr` |  | 1 | native |
+| `0x52e3a0` | `_mbccmp` |  | 2 | native |
+| `0x52ed30` | `_mbsnextc` |  | 2 | native |
+| `0x52ed70` | `_mbctoupper` |  | 1 | native |
+| `0x52ede0` | `_mbvtop` |  | 3 | native |
+| `0x52eec0` | (internal): `_mbctoupper`'s, code page 932 |  | 1 | native |
+| `0x52eee0` | (internal): `_ismbclower`'s, code page 932 |  | 1 | native |
+| `0x52ef30` | (internal): `_ismbclegal`'s |  | 1 | native |
+| `0x52ef70` | (internal): `_ismbbtrail`'s |  | 1 | native |
 

@@ -364,14 +364,7 @@ void Application::sub_533dde(WinApplication* app, x86::CPU& cpu)
     return app->dynamic_call(app->getMemory<x86::reg32>(5457540), cpu.handOver());
 }
 
-/* align: skip  */
-void Application::sub_533de4(WinApplication* app, x86::CPU& cpu)
-{
-  NFS2_USE(cpu);
-  NFS2_USE(app);
-    // 00533de4  ff25c0455300           -jmp dword ptr [0x5345c0]
-    return app->dynamic_call(app->getMemory<x86::reg32>(5457344), cpu.handOver());
-}
+/* sub_533de4: native, nfs3hp::watcom::RtlUnwindThunk */
 
 /* align: skip  */
 void Application::sub_533dea(WinApplication* app, x86::CPU& cpu)

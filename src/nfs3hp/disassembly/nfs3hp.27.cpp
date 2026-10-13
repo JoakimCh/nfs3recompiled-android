@@ -22747,7 +22747,7 @@ L_0x004c44f9:
     app->getMemory<x86::reg32>(x86::reg32(5636344) /* 0x5600f8 */) = cpu.ecx;
     // 004c451a  e871b10100             -call 0x4df690
     cpu.esp -= 4;
-    sub_4df690(app, cpu.sync());
+    nfs3hp::watcom::sprintf(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004c451f  83c410                 -add esp, 0x10
@@ -23071,7 +23071,7 @@ void Application::sub_4c45f0(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.esp -= 4;
     // 004c46a2  e8e9af0100             -call 0x4df690
     cpu.esp -= 4;
-    sub_4df690(app, cpu.sync());
+    nfs3hp::watcom::sprintf(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004c46a7  83c40c                 -add esp, 0xc

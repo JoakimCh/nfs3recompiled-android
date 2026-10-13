@@ -25,6 +25,32 @@ from disasm.codegen import fpu as fpu_codegen  # noqa: E402
 import disassemble_nfs3hp as nfs3hp  # noqa: E402
 
 
+# The formatted output's entries -- vsprintf, sprintf, vfprintf -- as the
+# other natives call them: by address, so through their stand-ins in
+# game_checks.cpp on both sides, which print text of their own -- what the
+# other natives hand them to format being made up.  The formatted output is
+# tested itself with formats and arguments made to go together, and calls its
+# own entries as it does (sprintf vsprintf, fprintf vfprintf).
+# So are __tzset, exit and __MkTmpFile: the natives that call them (localtime,
+# mktime, Error, tmpfile) are tested with their stand-ins -- the time zone
+# made up, the game not left, a name made up -- and they are tested themselves.
+# And _nrealloc, which __allocPOSIXHandle grows the handles' table with; and
+# getche and __reporterror, the console's echo and the maths' error, whose
+# stand-ins make up a key and _matherr's say.  Each with the natives that
+# call it as they do, in the tests of their own.
+STOOD_IN = {
+    0x4df674: (0x4df690,),  # vsprintf: sprintf's
+    0x4df690: (),
+    0x4ff014: (0x4f4b80,),  # vfprintf: fprintf's
+    0x515c2c: (),
+    0x4dfd04: (),
+    0x4ee168: (),
+    0x5185c0: (0x4f8ce8, 0x518290, 0x52c178),  # _nrealloc: __setenv's, __wsetenv's, __wputenv's
+    0x522e60: (),
+    0x5243a7: (),
+}
+
+
 def main():
     out = Path(sys.argv[1]).resolve()
     out.mkdir(parents=True, exist_ok=True)
@@ -38,8 +64,15 @@ def main():
     for subroutine in game.subroutines:
         entry = subroutine.get_entry_point()
         if entry in natives:
-            game.write_function(code, subroutine, "sub_%x" % entry, {}, nfs3hp.THREAD_SEGMENTS,
+            function = io.StringIO()
+            game.write_function(function, subroutine, "sub_%x" % entry, {}, nfs3hp.THREAD_SEGMENTS,
                                 nfs3hp.SKIP_INSTRUCTIONS)
+            text = function.getvalue()
+            for address, callers in STOOD_IN.items():
+                if entry not in callers:
+                    text = text.replace("sub_%x(app, cpu.sync());" % address,
+                                        "app->dynamic_call(0x%x, cpu.sync());" % address)
+            code.write(text)
             tested.append(entry)
     if sorted(tested) != sorted(natives):
         raise SystemExit("no function at %s" % sorted(set(natives) - set(tested)))

@@ -14580,7 +14580,7 @@ L_0x0040f2d2:
     cpu.esp -= 4;
     // 0040f2d9  e8b2030d00             -call 0x4df690
     cpu.esp -= 4;
-    sub_4df690(app, cpu.sync());
+    nfs3hp::watcom::sprintf(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0040f2de  83c410                 -add esp, 0x10
@@ -18207,7 +18207,7 @@ void Application::sub_40fed0(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.esp -= 4;
     // 0040fee9  e8a2f70c00             -call 0x4df690
     cpu.esp -= 4;
-    sub_4df690(app, cpu.sync());
+    nfs3hp::watcom::sprintf(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0040feee  83c40c                 -add esp, 0xc
@@ -18305,7 +18305,7 @@ void Application::sub_40ff20(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.esp -= 4;
     // 0040ff41  e84af70c00             -call 0x4df690
     cpu.esp -= 4;
-    sub_4df690(app, cpu.sync());
+    nfs3hp::watcom::sprintf(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0040ff46  83c40c                 -add esp, 0xc
@@ -18693,7 +18693,7 @@ void Application::sub_410030(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.esp -= 4;
     // 004100b9  e8d2f50c00             -call 0x4df690
     cpu.esp -= 4;
-    sub_4df690(app, cpu.sync());
+    nfs3hp::watcom::sprintf(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004100be  8a252eeb5500           -mov ah, byte ptr [0x55eb2e]
@@ -18911,7 +18911,7 @@ L_0x00410132:
     cpu.esp -= 4;
     // 00410155  e836f50c00             -call 0x4df690
     cpu.esp -= 4;
-    sub_4df690(app, cpu.sync());
+    nfs3hp::watcom::sprintf(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0041015a  8b0de4bb6f00           -mov ecx, dword ptr [0x6fbbe4]
@@ -19199,7 +19199,7 @@ L_0x00410214:
     cpu.esp -= 4;
     // 00410222  e869f40c00             -call 0x4df690
     cpu.esp -= 4;
-    sub_4df690(app, cpu.sync());
+    nfs3hp::watcom::sprintf(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00410227  83c40c                 -add esp, 0xc

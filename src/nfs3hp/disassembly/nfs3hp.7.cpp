@@ -449,7 +449,7 @@ L_0x0042c9be:
     cpu.esp -= 4;
     // 0042c9cc  e8bf2c0b00             -call 0x4df690
     cpu.esp -= 4;
-    sub_4df690(app, cpu.sync());
+    nfs3hp::watcom::sprintf(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0042c9d1  83c40c                 +add esp, 0xc
@@ -620,7 +620,7 @@ L_0x0042ca50:
     cpu.esp -= 4;
     // 0042ca54  e8372c0b00             -call 0x4df690
     cpu.esp -= 4;
-    sub_4df690(app, cpu.sync());
+    nfs3hp::watcom::sprintf(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0042ca59  83c414                 -add esp, 0x14

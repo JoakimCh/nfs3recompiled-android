@@ -20943,7 +20943,7 @@ void Application::sub_41d8a0(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.esp -= 4;
     // 0041d8bc  e8cf1d0c00             -call 0x4df690
     cpu.esp -= 4;
-    sub_4df690(app, cpu.sync());
+    nfs3hp::watcom::sprintf(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0041d8c1  b86cd85d00             -mov eax, 0x5dd86c
@@ -20994,7 +20994,7 @@ void Application::sub_41d8d0(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.esp -= 4;
     // 0041d8eb  e8a01d0c00             -call 0x4df690
     cpu.esp -= 4;
-    sub_4df690(app, cpu.sync());
+    nfs3hp::watcom::sprintf(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0041d8f0  b8ecd85d00             -mov eax, 0x5dd8ec
@@ -23334,7 +23334,7 @@ void Application::sub_41e180(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.edx ^= x86::reg32(x86::sreg32(cpu.edx));
     // 0041e1b1  e8da140c00             -call 0x4df690
     cpu.esp -= 4;
-    sub_4df690(app, cpu.sync());
+    nfs3hp::watcom::sprintf(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0041e1b6  83c414                 -add esp, 0x14
@@ -23740,7 +23740,7 @@ void Application::sub_41e2f0(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.esp -= 4;
     // 0041e312  e879130c00             -call 0x4df690
     cpu.esp -= 4;
-    sub_4df690(app, cpu.sync());
+    nfs3hp::watcom::sprintf(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0041e317  83c410                 -add esp, 0x10

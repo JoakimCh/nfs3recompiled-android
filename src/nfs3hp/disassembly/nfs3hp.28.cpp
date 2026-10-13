@@ -2500,7 +2500,7 @@ L_0x004c83a4:
     app->getMemory<x86::reg32>(x86::reg32(8247344) /* 0x7dd830 */) = cpu.edi;
     // 004c83ce  e8bd720100             -call 0x4df690
     cpu.esp -= 4;
-    sub_4df690(app, cpu.sync());
+    nfs3hp::watcom::sprintf(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004c83d3  8b35c0d46f00           -mov esi, dword ptr [0x6fd4c0]
@@ -7885,7 +7885,7 @@ L_0x004c9543:
     cpu.esp -= 4;
     // 004c955c  e82f610100             -call 0x4df690
     cpu.esp -= 4;
-    sub_4df690(app, cpu.sync());
+    nfs3hp::watcom::sprintf(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004c9561  83c414                 -add esp, 0x14
@@ -17489,7 +17489,7 @@ L_0x004cb5b3:
     cpu.esp -= 4;
     // 004cb5b7  e8d4400100             -call 0x4df690
     cpu.esp -= 4;
-    sub_4df690(app, cpu.sync());
+    nfs3hp::watcom::sprintf(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004cb5bc  83c40c                 -add esp, 0xc
@@ -17557,7 +17557,7 @@ L_0x004cb5e8:
     cpu.esp -= 4;
     // 004cb600  e88b400100             -call 0x4df690
     cpu.esp -= 4;
-    sub_4df690(app, cpu.sync());
+    nfs3hp::watcom::sprintf(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004cb605  8d04b500000000         -lea eax, [esi*4]
