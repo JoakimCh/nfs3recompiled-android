@@ -76,7 +76,7 @@ constexpr x86::reg32 kAuto = 0xa32800, kAutoBytes = 29696;
 constexpr x86::reg32 kImports = 0xa3a800, kImportsBytes = 1536;
 constexpr x86::reg32 kData = 0xa3b800, kDataBytes = 6656;
 constexpr x86::reg32 kExportTable = 0xa3e800, kExportTableBytes = 1024;
-constexpr x86::reg32 kGlobals = 0xa3c09c, kGlobalsEnd = 0xa3cad0;   // eacsnd's globals, SYMBOLS.md
+constexpr x86::reg32 kGlobals = 0xa3c09c, kGlobalsEnd = 0xa3cad0;   // eacsnd's globals
 constexpr x86::reg32 kWindow = 0xa30000, kWindowEnd = 0xa60000;     // eacsnd, and every record an index reaches
 constexpr x86::reg32 kScratch = 0x800000, kScratchEnd = 0x804000;   // what the caller's esi points at, COM objects
 constexpr x86::reg32 kObjects = 0x802000;                           // 16 COM objects of 16 bytes

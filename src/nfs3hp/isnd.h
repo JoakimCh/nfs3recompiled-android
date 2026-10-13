@@ -9,8 +9,8 @@
  * native_sound.cpp (the driver proper: caps, start, stop, serve) and
  * native_isnd.cpp (the rest).
  *
- * The names are AZHP's (third_party/azhp, AZX/SoundModule.Basic.hxx and
- * S.DirectSound.5.0: a reimplementation of eacsnd), each one checked against
+ * The names are AZHP's (AZX/SoundModule.Basic.hxx and S.DirectSound.5.0: a
+ * reimplementation of eacsnd), each one checked against
  * eacsnd's generated code.  Where the two differ, eacsnd is right: AZHP's start
  * takes the highest rate offered, eacsnd (sub_a33150) tries 22050 first, then
  * 16000, 32000, 44100 and 11025, and so does the port.
@@ -40,8 +40,7 @@
  * take eacsnd's way without DirectSound: they keep what they are given, and
  * play3d, asked to play with no 3D, releases and clears the three pointers
  * at the caller's esi, as eacsnd does.  AZHP's S.DirectSound.5.0/Module.cxx
- * has the whole of what they do with DirectSound, and
- * third_party/azhp/SYMBOLS.md the names of eacsnd's functions and globals. */
+ * has the whole of what they do with DirectSound. */
 
 #include <x86.h>
 

@@ -330,8 +330,7 @@ go through it:
   native and has no generated code: `disassemble_nfs3hp.py` binds the
   seventeen functions of its `GAME_NATIVES` to the port's functions of the
   same names (`src/nfs3hp/native_game.cpp`), and the generated code calls
-  them by name. They are the ones AZHP reimplements
-  (`third_party/azhp/SYMBOLS.md`) -- `THRASH_opendll`, which loads the renderer
+  them by name. They are the ones AZHP reimplements -- `THRASH_opendll`, which loads the renderer
   and looks up its 34 functions; `iSNDloaddll`, `SNDcaps` and the focus and
   serve handlers, which load and drive eacsnd; `Error` and `Message` -- and the
   rest of what `iSNDloaddll` hands eacsnd, among it the sample converter.
@@ -633,10 +632,8 @@ symbolically, and stops on the first one that differs.
 - [motor-dev/nfs-recompiled](https://github.com/motor-dev/nfs-recompiled) — the
   recompilation this is built on.
 - [libsdl-org/SDL](https://github.com/libsdl-org/SDL) — SDL3, zlib licence.
-- [americusmaximus/AZHP](https://github.com/americusmaximus/AZHP) — the names of
-  the THRASH and iSNDdirect interfaces (`src/nfs3hp/thrash.h`,
-  `src/nfs3hp/isnd.h`) and of eacsnd's functions, MIT licence; the files used
-  are kept in `third_party/azhp`.
+- [americusmaximus/AZHP](https://github.com/americusmaximus/AZHP) — AutoZone Hot
+  Pursuit, MIT licence.
 
 Need for Speed III: Hot Pursuit is the property of Electronic Arts. This
 repository contains no game content — no tracks, cars, audio or video. Those you

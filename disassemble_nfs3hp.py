@@ -89,9 +89,8 @@ THREAD_SEGMENTS = [0x43ac67, 0x43ac97, 0x46785e, 0x4f06f7, 0x4f2191, 0x495b68, 0
 
 # The game's own functions that are native: each address is the port's
 # function of that name in src/nfs3hp/native_game.cpp, no code is generated
-# for it, and the generated code calls it by name.  They are AZHP's
-# (third_party/azhp/SYMBOLS.md) -- the game's side of THRASH and iSND, and the
-# logger -- and the four more lambdas iSNDloaddll hands eacsnd with AZHP's
+# for it, and the generated code calls it by name.  They are AZHP's -- the
+# game's side of THRASH and iSND, and the logger -- and the four more lambdas iSNDloaddll hands eacsnd with AZHP's
 # three; EA's names where the game's messages give them.  tools/game_checks
 # generates their code all the same, to compare the natives with.
 GAME_NATIVES = {

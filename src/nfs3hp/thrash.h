@@ -6,8 +6,8 @@
  * GetProcAddress (THRASH_opendll, native_game.cpp).  The port's driver is
  * voodoo2a, every export of it native, in native_thrash.cpp.
  *
- * The names are AZHP's (third_party/azhp, AZX/RendererModule.Basic.hxx: a
- * reimplementation of the renderers of NFS III and the Modern Patch), each one
+ * The names are AZHP's (AZX/RendererModule.Basic.hxx: a reimplementation of
+ * the renderers of NFS III and the Modern Patch), each one
  * checked against what voodoo2a's generated code does with the number.  The
  * header there is shared with High Stakes and Motor City Online; only the
  * numbers voodoo2a knows are here, and where a number means something
