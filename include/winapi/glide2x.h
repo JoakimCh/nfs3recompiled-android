@@ -68,6 +68,10 @@ void useThrashRenderer(bool on);
 static const x86::reg32 kResolution1280x720 = 0x80;
 static const x86::reg32 kResolution1600x900 = 0x81;
 static const x86::reg32 kResolution1920x1080 = 0x82;
+/* Dynamic Fullscreen: a size the game layer works out from the screen it runs
+ * on and sets (setDynamicResolution) before the window opens. */
+static const x86::reg32 kResolutionDynamic = 0x83;
+void setDynamicResolution(x86::reg32 width, x86::reg32 height);
 
 /* A texture format Glide 2 never had: eight bits a channel, numbered as Glide 3
  * numbers it for the Voodoo 4 and 5 (GR_TEXFMT_ARGB_8888), each texel a

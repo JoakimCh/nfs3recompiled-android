@@ -3,12 +3,12 @@
 
 /* nfs3.exe's own functions the port has natively, where their code was:
  * disassemble_nfs3hp.py binds each address to the function of that name here
- * (GAME_NATIVES), and the generated code calls it by name.  They are the ones
- * AZHP reimplements -- the game's side of its two driver interfaces, THRASH and iSND, and the logger they report
- * through -- and the four more functions of the game's that iSNDloaddll hands
- * eacsnd with AZHP's three.  The names are EA's where the game's own messages
- * give them, AZHP's otherwise.  tools/game_checks generates the game's code
- * for them afresh and holds each one against it.
+ * (GAME_NATIVES), and the generated code calls it by name: the game's side
+ * of its two driver interfaces, THRASH and iSND, the logger they report
+ * through, and the functions of the game's that iSNDloaddll hands eacsnd.
+ * The names are EA's where the game's own messages give them.
+ * tools/game_checks generates the game's code for them afresh and holds each
+ * one against it.
  *
  * Each keeps what its caller counts on: the game's own callers are Watcom
  * code, which counts on every register it handed no argument in (and the

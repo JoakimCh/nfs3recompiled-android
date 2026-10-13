@@ -9,11 +9,9 @@
  * native_sound.cpp (the driver proper: caps, start, stop, serve) and
  * native_isnd.cpp (the rest).
  *
- * The names are AZHP's (AZX/SoundModule.Basic.hxx and S.DirectSound.5.0: a
- * reimplementation of eacsnd), each one checked against
- * eacsnd's generated code.  Where the two differ, eacsnd is right: AZHP's start
- * takes the highest rate offered, eacsnd (sub_a33150) tries 22050 first, then
- * 16000, 32000, 44100 and 11025, and so does the port.
+ * Each name is checked against eacsnd's generated code.  eacsnd's start
+ * (sub_a33150) tries 22050 first, then 16000, 32000, 44100 and 11025, and so
+ * does the port.
  *
  * The exports, their address in eacsnd and the argument bytes:
  *
@@ -39,8 +37,7 @@
  * which sets neither.  So the 3D functions always
  * take eacsnd's way without DirectSound: they keep what they are given, and
  * play3d, asked to play with no 3D, releases and clears the three pointers
- * at the caller's esi, as eacsnd does.  AZHP's S.DirectSound.5.0/Module.cxx
- * has the whole of what they do with DirectSound. */
+ * at the caller's esi, as eacsnd does. */
 
 #include <x86.h>
 
@@ -55,7 +52,7 @@ constexpr x86::reg32 kVersion = 0x00100003;
 /* The results: 0, or one of these. */
 constexpr x86::reg32 kFailure = x86::reg32(-1);
 constexpr x86::reg32 kMissingDriver = x86::reg32(-10);    // DSERR_NODRIVER
-constexpr x86::reg32 kInvalidVersion = x86::reg32(-11);   // AZHP's; start does not give it
+constexpr x86::reg32 kInvalidVersion = x86::reg32(-11);   // start does not give it
 constexpr x86::reg32 kAlreadyAllocated = x86::reg32(-18); // DSERR_ALLOCATED
 
 /* What iSNDdirectcaps answers, and what the game hands iSNDdirectstart: the
@@ -70,20 +67,20 @@ constexpr x86::reg32 kCaps16000 = 0x00400;
 constexpr x86::reg32 kCaps22050 = 0x00800;
 constexpr x86::reg32 kCaps32000 = 0x01000;
 constexpr x86::reg32 kCaps44100 = 0x02000;
-constexpr x86::reg32 kCapsUnknown = 0x10000;              // AZHP does not know it either
+constexpr x86::reg32 kCapsUnknown = 0x10000;              // what it means is not known
 constexpr x86::reg32 kCaps3dBuffers = 0x20000;
 constexpr x86::reg32 kCapsReverb = 0x40000;
 constexpr x86::reg32 kCapsAnyRate = kCaps11025 | kCaps16000 | kCaps22050 | kCaps32000 | kCaps44100;
 
 /* eacsnd's data, at its load address. */
 constexpr x86::reg32 kDirectSound = 0xa3c09c;             // IDirectSound*
-constexpr x86::reg32 kDirectSoundMade = 0xa3c0b0;         // byte: 1 once DirectSoundCreate has answered (AZHP's IsInit)
+constexpr x86::reg32 kDirectSoundMade = 0xa3c0b0;         // byte: 1 once DirectSoundCreate has answered
 constexpr x86::reg32 kRate = 0xa3c100;                    // the rate start chose, Hz
 constexpr x86::reg32 kCapsKept = 0xa3c0fc;                // iSNDdirectcaps's answer; -1 until asked, and again after iSNDdllversion
-constexpr x86::reg32 kIs3d = 0xa3c0b7;                    // byte: start was asked for 3D buffers (AZHP's Is3D)
+constexpr x86::reg32 kIs3d = 0xa3c0b7;                    // byte: start was asked for 3D buffers
 constexpr x86::reg32 kPositionScale = 0xa3baec;           // a double: pos3d's factor from the game's position to DirectSound's
 
-/* The buffers playing (AZHP's SoundBuffer), kBufferCount of kBufferBytes. */
+/* The buffers playing, kBufferCount of kBufferBytes. */
 constexpr x86::reg32 kBuffers = 0xa3c124;
 constexpr x86::reg32 kBufferBytes = 0x18;
 constexpr x86::reg32 kBufferCount = 16;
@@ -97,7 +94,7 @@ constexpr x86::reg32 kBufferLooping = 0x12;               // byte
 constexpr x86::reg32 kBufferVolume = 0x13;                // byte
 constexpr x86::reg32 kBufferSlot = 0x14;                  // byte
 
-/* The sounds made (AZHP's SoundSlot), kSlotCount of kSlotBytes; slot 0 is never
+/* The sounds made, kSlotCount of kSlotBytes; slot 0 is never
  * handed out. */
 constexpr x86::reg32 kSlots = 0xa3c2a4;
 constexpr x86::reg32 kSlotBytes = 0x1c;

@@ -15,7 +15,12 @@
   sub_4bee80 runs the list's own tests on the table, the 4:3 one among them
   (0x4beee6), so a 16:9 size was never found and 1920 came back as 1024x768,
   the nearest 4:3 width -- the menu had to be set again every time the game
-  started.  That jump asks nfs3hp::widescreenMode too.
+  started.  That jump asks nfs3hp::widescreenMode too.  Dynamic Fullscreen
+  is kept as a marker rather than a width (its width is the screen's), and
+  as sub_4bee80 ends (0x4bef35) nfs3hp::dynamicSavedMode answers the marker
+  with its mode.  The Graphics menu names it: as sub_448210 has written a
+  mode's line (0x448291), nfs3hp::dynamicFullscreenLabel puts the name in
+  Dynamic Fullscreen's.
 - Field of view.  Every camera -- chase and in-car, the mirror, each half of
   split screen -- sets up its projection in sub_4dbce0 from one horizontal half
   angle, and makes the vertical one 13/16 of it, in whole degrees.  What is
@@ -73,6 +78,21 @@ SITES = [
      "    if (!cpu.flags.zf && !widescreenMode(app->getMemory<x86::reg32>(cpu.ebp + x86::reg32(-4)),"
      " app->getMemory<x86::reg32>(cpu.ebp + x86::reg32(-16)))) /* port: the saved 16:9 size is found again */",
      ""),
+    # The saved size is Dynamic Fullscreen's marker rather than a width: its
+    # mode, whatever the screen makes its width.
+    ("nfs3hp.27.cpp", "004bef35  85db",
+     "    cpu.clear_co();",
+     "    cpu.ebx = dynamicSavedMode(cpu.ebx, app->getMemory<x86::reg32>(cpu.ebp + x86::reg32(-8)));"
+     " /* port: Dynamic Fullscreen found again */\n"
+     "    cpu.clear_co();",
+     "x86::reg32 dynamicSavedMode(x86::reg32 found, x86::reg32 width);\n"),
+    # The Graphics menu's line for Dynamic Fullscreen: its name rather than
+    # the size and depth sub_448210 has just written for it.
+    ("nfs3hp.12.cpp", "00448291  8b1518925500",
+     "    cpu.edx = app->getMemory<x86::reg32>(x86::reg32(5607960) /* 0x559218 */);",
+     "    dynamicFullscreenLabel(app, cpu.edx); /* port: Dynamic Fullscreen named in the list */\n"
+     "    cpu.edx = app->getMemory<x86::reg32>(x86::reg32(5607960) /* 0x559218 */);",
+     "void dynamicFullscreenLabel(win32::WinApplication* app, x86::reg32 entry);\n"),
     ("nfs3hp.31.cpp", "004dbd1b  8945e8",
      "    app->getMemory<x86::reg32>(cpu.ebp + x86::reg32(-24) /* -0x18 */) = cpu.eax;",
      "    app->getMemory<x86::reg32>(cpu.ebp + x86::reg32(-24) /* -0x18 */) = cpu.eax;\n"

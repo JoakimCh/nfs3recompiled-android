@@ -137,8 +137,17 @@ a button press.
 
 ### Widescreen races
 
-Options → Graphics → Screen Size offers 1280x720, 1600x900 and 1920x1080
-beside the original 4:3 modes, and the choice survives a restart. A race then
+Options → Graphics → Screen Size offers 1280x720, 1600x900, 1920x1080 and
+Dynamic Fullscreen beside the original 4:3 modes, and the choice survives a
+restart. Dynamic Fullscreen fits the race to the screen it runs on, whatever
+its shape -- 16:9, 20:9, a tablet's 16:10 -- with no bars: its height is the
+screen's up to 1080 and its width the screen's proportion of it, worked out
+again as each race opens its mode, so a foldable opened or shut between races
+gets its new shape at the next one (during a race the picture keeps its shape
+between bars). Its size is in the Voodoo2 driver's mode table's last entry
+under a resolution id of the port's own; the settings keep a marker for it
+rather than a width (`src/nfs3hp/dynamic_fullscreen.h`), and a fresh import
+starts with it. A race then
 opens the view sideways instead of stretching it: the vertical angle stays what
 the game draws and the horizontal one widens with the screen, in every view —
 chase and in-car, the mirror, both halves of split screen. The menus stay 4:3;
@@ -330,8 +339,8 @@ go through it:
   native and has no generated code: `disassemble_nfs3hp.py` binds the
   seventeen functions of its `GAME_NATIVES` to the port's functions of the
   same names (`src/nfs3hp/native_game.cpp`), and the generated code calls
-  them by name. They are the ones AZHP reimplements -- `THRASH_opendll`, which loads the renderer
-  and looks up its 34 functions; `iSNDloaddll`, `SNDcaps` and the focus and
+  them by name. They are `THRASH_opendll`, which loads the renderer and looks
+  up its 34 functions; `iSNDloaddll`, `SNDcaps` and the focus and
   serve handlers, which load and drive eacsnd; `Error` and `Message` -- and the
   rest of what `iSNDloaddll` hands eacsnd, among it the sample converter.
   `tools/game_checks/run.sh` compares each with the game's code for it, made

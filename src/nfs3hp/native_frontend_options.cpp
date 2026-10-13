@@ -1,4 +1,5 @@
 #include "native_frontend.h"
+#include "dynamic_fullscreen.h"
 #include <cstring>
 #include <iterator>
 #include <utility>
@@ -1483,7 +1484,10 @@ x86::reg32 onGraphicsExit(Guest& guest, x86::reg32 menu)
         return 0;
     }
     guest.call(kListModes);
-    guest.setDword(kScreenModeValue, guest.dword(kModes + 4 + kModeSize * guest.dword(kScreenMode)));
+    const x86::reg32 chosen = kModes + kModeSize * guest.dword(kScreenMode);
+    // port: Dynamic Fullscreen kept as its marker, its width being the screen's
+    guest.setDword(kScreenModeValue, dynamicFullscreenMode(guest.dword(chosen)) ? kDynamicFullscreenWidth
+                                                                                : guest.dword(chosen + 4));
     return 0;
 }
 

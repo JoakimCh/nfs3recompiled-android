@@ -9,6 +9,7 @@
 #include <winapi/version.h>
 #include <lib/gliderenderer.h>
 #include "native_thrash.h"
+#include "dynamic_fullscreen.h"
 #include <SDL3/SDL.h>
 #include <array>
 #include <atomic>
@@ -270,14 +271,141 @@ x86::reg32 carWheelStamp(win32::WinApplication* app, x86::reg32 car, x86::reg32 
     return last;
 }
 
+/* Dynamic Fullscreen: a race on the whole screen, whatever its proportions --
+ * 16:9, 18:9, 19.5:9, 20:9, a tablet's 16:10 or 4:3, a foldable open or shut.
+ * One mode of the Voodoo2 driver's table (kDynamicEntry, the last, so the
+ * Graphics menu lists it last) is the port's: its size is worked out from the
+ * screen, the height the screen's own up to 1080 and the width the screen's
+ * proportion of it, and Glide opens it under kResolutionDynamic.  Nothing of
+ * the game's art is redrawn for it: every camera already widens its view to
+ * the screen's shape (widescreenHalfAngle) and the HUD keeps its proportions
+ * (widescreenHudRect).
+ *
+ * The size is measured again as each race opens its mode (screenModeNative,
+ * sub_4bef50), so a foldable opened or shut between races gets its new shape
+ * at the next one; during a race the picture keeps its shape and the
+ * presenter puts it between bars.  The Graphics menu shows the mode as
+ * "Dynamic Fullscreen", and the settings keep kDynamicFullscreenWidth for it
+ * in place of a width, which sub_4bee80 (tools/apply_widescreen.py) turns
+ * back into the mode at start, on any screen. */
+constexpr x86::reg32 kModeTable = 0xa92018;       // voodoo2a's modes, 40 bytes each
+constexpr x86::reg32 kModeResolutions = 0xa922e8; // each mode's Glide resolution id
+constexpr x86::reg32 kDynamicEntry = 16;
+constexpr x86::reg32 kDynamicMaxHeight = 1080;
+static x86::reg32 s_dynamicWidth = 0;
+static x86::reg32 s_dynamicHeight = 0;
+
+/* The size of the screen the game is drawn on, in pixels: its window's, or
+ * before there is one, the display's. */
+static bool screenPixels(int& w, int& h)
+{
+    w = h = 0;
+    int count = 0;
+    if (SDL_Window** windows = SDL_GetWindows(&count))
+    {
+        if (count > 0)
+            SDL_GetWindowSizeInPixels(windows[0], &w, &h);
+        SDL_free(windows);
+    }
+    if (w <= 0 || h <= 0)
+    {
+        if (const SDL_DisplayMode* mode = SDL_GetCurrentDisplayMode(SDL_GetPrimaryDisplay()))
+        {
+            w = mode->w;
+            h = mode->h;
+        }
+    }
+    return w > 0 && h > 0;
+}
+
+/* Dynamic Fullscreen's size for the screen as it is now, landscape: the
+ * screen's height up to 1080, the width in its proportion, a multiple of 8
+ * and no narrower than 4:3. */
+static void dynamicFullscreenSize(x86::reg32& width, x86::reg32& height)
+{
+    int w = 0, h = 0;
+    if (!screenPixels(w, h))
+    {
+        width = 1920;
+        height = 1080;
+        return;
+    }
+    const x86::reg32 across = x86::reg32(SDL_max(w, h)), down = x86::reg32(SDL_min(w, h));
+    height = SDL_min(down, kDynamicMaxHeight) & ~1u;
+    width = ((across * height / down + 4) / 8) * 8;
+    width = SDL_max(width, (height * 4 / 3 + 7) / 8 * 8);
+}
+
+bool dynamicFullscreenMode(x86::reg32 mode)
+{
+    return mode == kDynamicEntry && s_dynamicWidth != 0;
+}
+
+/* Dynamic Fullscreen's mode measured again and put in the driver's table and
+ * Glide's.  True when its size changed. */
+bool dynamicFullscreenRefresh(win32::WinApplication* app)
+{
+    if (s_dynamicWidth == 0)
+        return false;
+    x86::reg32 width, height;
+    dynamicFullscreenSize(width, height);
+    if (width == s_dynamicWidth && height == s_dynamicHeight)
+        return false;
+    SDL_Log("[SCREEN] Dynamic Fullscreen %ux%u -> %ux%u", unsigned(s_dynamicWidth), unsigned(s_dynamicHeight),
+            unsigned(width), unsigned(height));
+    s_dynamicWidth = width;
+    s_dynamicHeight = height;
+    app->getMemory<x86::reg32>(kModeTable + kDynamicEntry * 40) = width;
+    app->getMemory<x86::reg32>(kModeTable + kDynamicEntry * 40 + 4) = height;
+    win32::glide2x::setDynamicResolution(width, height);
+    return true;
+}
+
+/* Dynamic Fullscreen put in the driver's table at start (main), measured
+ * against the display. */
+void dynamicFullscreenStart(win32::WinApplication* app)
+{
+    x86::reg32 width, height;
+    dynamicFullscreenSize(width, height);
+    s_dynamicWidth = width;
+    s_dynamicHeight = height;
+    const x86::reg32 mode = kModeTable + kDynamicEntry * 40;
+    app->getMemory<x86::reg32>(mode) = width;
+    app->getMemory<x86::reg32>(mode + 4) = height;
+    app->getMemory<x86::reg32>(mode + 16) = 1;
+    app->getMemory<x86::reg32>(kModeResolutions + kDynamicEntry * 4) = win32::glide2x::kResolutionDynamic;
+    win32::glide2x::setDynamicResolution(width, height);
+    SDL_Log("[SCREEN] Dynamic Fullscreen %ux%u", unsigned(width), unsigned(height));
+}
+
+/* The Graphics menu's line for a mode as sub_448210 has just written it (a
+ * list entry: the mode at +0, its line from +0x14 on, 0x100 bytes of room):
+ * Dynamic Fullscreen's by its name (tools/apply_widescreen.py, 0x448291). */
+void dynamicFullscreenLabel(win32::WinApplication* app, x86::reg32 entry)
+{
+    if (!dynamicFullscreenMode(app->getMemory<x86::reg32>(entry)))
+        return;
+    char* line = &app->getMemory<char>(entry + 0x14);
+    SDL_strlcpy(line, kDynamicFullscreenName, 0x100);
+}
+
+/* sub_4bee80's answer for the saved screen size (tools/apply_widescreen.py, at
+ * 0x4bef35): Dynamic Fullscreen's mode where the settings keep its marker,
+ * the nearest mode of that width otherwise. */
+x86::reg32 dynamicSavedMode(x86::reg32 found, x86::reg32 width)
+{
+    return width == kDynamicFullscreenWidth && s_dynamicWidth != 0 ? kDynamicEntry : found;
+}
+
 /* Screen sizes the Graphics menu may list.  sub_4bed90 passes the menu only
  * driver modes whose width is exactly 4/3 of their height, and
  * tools/apply_widescreen.py has it ask here too: an exact 16:9 is taken as
- * well, which is the 1280x720 main() adds to the Voodoo2 driver's table.  The
- * driver's own 856x480 is not quite 16:9 and stays unlisted. */
+ * well, which is the 1280x720 main() adds to the Voodoo2 driver's table, and
+ * Dynamic Fullscreen's size, whatever its shape.  The driver's own 856x480 is
+ * not quite 16:9 and stays unlisted. */
 bool widescreenMode(x86::reg32 width, x86::reg32 height)
 {
-    return width * 9 == height * 16;
+    return width * 9 == height * 16 || (s_dynamicWidth != 0 && width == s_dynamicWidth && height == s_dynamicHeight);
 }
 
 /* A camera's horizontal half field of view, in whole degrees, for the view it
@@ -2441,9 +2569,11 @@ int main(int argc, char* argv[])
          * available, then the colour and aux buffer counts sub_a83ac0 works out
          * from the card's memory) holds entries the card never offered, and the
          * last three are sizes no card could open -- 1280x1200, 1600x1200,
-         * 400x300 -- so they carry the widescreen modes instead, each under a
-         * resolution id of the port's own in the table THRASH_setvideomode hands
-         * grSstWinOpen (0xa922e8).  The Graphics menu lists them once
+         * 400x300 -- so they and the unused 512x256 before them carry the
+         * widescreen modes instead, each under a resolution id of the port's
+         * own in the table THRASH_setvideomode hands grSstWinOpen (0xa922e8):
+         * 1280x720, 1600x900, 1920x1080, then Dynamic Fullscreen last, the
+         * order the menu lists them in (dynamicFullscreenStart).  The Graphics menu lists them once
          * tools/apply_widescreen.py lets a 16:9 mode through sub_4bed90, which
          * still applies every other test of its own: 16 bits, at least two
          * colour buffers, and within the driver's memory limit, which at 8 MB
@@ -2454,9 +2584,9 @@ int main(int argc, char* argv[])
         if (!widescreen || SDL_strcmp(widescreen, "0") != 0)
         {
             static const struct { x86::reg32 entry, width, height, resolution; } kWide[] = {
-                { 14, 1280, 720, win32::glide2x::kResolution1280x720 },
-                { 15, 1600, 900, win32::glide2x::kResolution1600x900 },
-                { 16, 1920, 1080, win32::glide2x::kResolution1920x1080 },
+                { 12, 1280, 720, win32::glide2x::kResolution1280x720 },
+                { 14, 1600, 900, win32::glide2x::kResolution1600x900 },
+                { 15, 1920, 1080, win32::glide2x::kResolution1920x1080 },
             };
             for (const auto& wide : kWide)
             {
@@ -2466,6 +2596,7 @@ int main(int argc, char* argv[])
                 app.getMemory<x86::reg32>(mode + 16) = 1;
                 app.getMemory<x86::reg32>(0xa922e8 + wide.entry * 4) = wide.resolution;
             }
+            nfs3hp::dynamicFullscreenStart(&app);
         }
         /* 512x384, the one size the list held below the game's own 640x480.  A
          * phone has pixels to spare and every menu is drawn for 640x480, so it

@@ -3,6 +3,9 @@
 
 namespace nfs3hp
 {
+// Port (tools/apply_widescreen.py): defined in nfs3hp_main.cpp.
+bool widescreenMode(x86::reg32 width, x86::reg32 height);
+x86::reg32 dynamicSavedMode(x86::reg32 found, x86::reg32 width);
 // Port (tools/apply_native_render.py): defined in native_render.cpp.
 bool line(win32::WinApplication* app, x86::CPU& cpu);
 // Port (tools/apply_native_render.py): defined in native_render.cpp.
@@ -33,8 +36,6 @@ bool clipTriangle(win32::WinApplication* app, x86::CPU& cpu);
 bool clipPolygon(win32::WinApplication* app, x86::CPU& cpu);
 // Port (tools/apply_native_vertices.py): defined in native_vertices.cpp.
 bool objectVertices(win32::WinApplication* app, x86::CPU& cpu);
-// Port (tools/apply_widescreen.py): defined in nfs3hp_main.cpp.
-bool widescreenMode(x86::reg32 width, x86::reg32 height);
 
 /* align: skip 0x8d 0x80 0x00 0x00 0x00 0x00 0x8b 0xd2 */
 void Application::sub_4be970(WinApplication* __restrict app, x86::CPU& cpu_)
@@ -1708,6 +1709,7 @@ L_0x004bef2f:
     goto L_0x004bee9d;
 L_0x004bef35:
     // 004bef35  85db                   +test ebx, ebx
+    cpu.ebx = dynamicSavedMode(cpu.ebx, app->getMemory<x86::reg32>(cpu.ebp + x86::reg32(-8))); /* port: Dynamic Fullscreen found again */
     cpu.clear_co();
     cpu.set_szp(static_cast<x86::reg32>(cpu.ebx & cpu.ebx));
     // 004bef37  7404                   -je 0x4bef3d

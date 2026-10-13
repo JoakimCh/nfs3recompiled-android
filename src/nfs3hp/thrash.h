@@ -6,13 +6,10 @@
  * GetProcAddress (THRASH_opendll, native_game.cpp).  The port's driver is
  * voodoo2a, every export of it native, in native_thrash.cpp.
  *
- * The names are AZHP's (AZX/RendererModule.Basic.hxx: a reimplementation of
- * the renderers of NFS III and the Modern Patch), each one
- * checked against what voodoo2a's generated code does with the number.  The
- * header there is shared with High Stakes and Motor City Online; only the
- * numbers voodoo2a knows are here, and where a number means something
- * different to voodoo2a than to AZHP's Direct3D drivers, voodoo2a's meaning is
- * the one given.
+ * Each name is checked against what voodoo2a's generated code does with the
+ * number; only the numbers voodoo2a knows are here, and where a number means
+ * something different to voodoo2a than to the Direct3D driver, voodoo2a's
+ * meaning is the one given.
  *
  * The exports, voodoo2a's address and the argument bytes:
  *
@@ -52,8 +49,7 @@
  *   THRASH_writerect     @20 0xa85290  native   x, y, width, height, pixels
  *
  * Seven of them the game does not call: drawlinestrip, the three drawpoint
- * ones, drawtristrip, is and writerect.  AZHP's R.DirectX.5.0.A/Module.cxx has
- * what they do on the original Direct3D driver. */
+ * ones, drawtristrip, is and writerect. */
 
 #include <x86.h>
 
@@ -63,7 +59,7 @@ namespace thrash
 {
 
 /* THRASH_setstate(state, value): 1 done, 0 a state or value the driver does
- * not take.  AZHP's name for each, then what voodoo2a does with it. */
+ * not take.  The state's name, then what voodoo2a does with it. */
 constexpr x86::reg32 kStateTexture = 0x01;                // SELECT_TEXTURE: a texture record, or 0
 constexpr x86::reg32 kStateCull = 0x02;                   // SELECT_CULL_STATE: kCull*
 constexpr x86::reg32 kStateClearColour = 0x03;            // SELECT_MATERIAL, "background colour": what clearwindow clears to
@@ -93,8 +89,8 @@ constexpr x86::reg32 kStateFlipRate = 0x67;               // SELECT_TOGGLE_STATE
 constexpr x86::reg32 kStateBlend = 0x68;                  // SELECT_BLEND_STATE_ALTERNATIVE: kBlend*
 constexpr x86::reg32 kStateFogAlphas = 0x69;              // SELECT_FOG_ALPHAS_ALTERNATIVE: the game's 64-entry fog table, or off
 constexpr x86::reg32 kStateDepthWrite = 0x6a;             // SELECT_DEPTH_BUFFER_WRITE_STATE_ALTERNATIVE
-constexpr x86::reg32 kState107 = 0x6b;                    // unnamed in AZHP: kept, [0xa91f10]
-constexpr x86::reg32 kState108 = 0x6c;                    // unnamed in AZHP: Glide's sstControl, not on a Voodoo2
+constexpr x86::reg32 kState107 = 0x6b;                    // unnamed: kept, [0xa91f10]
+constexpr x86::reg32 kState108 = 0x6c;                    // unnamed: Glide's sstControl, not on a Voodoo2
 
 /* The values some of them take. */
 constexpr x86::reg32 kCullNone = 0;                       // grCullMode's GR_CULL_DISABLE
@@ -110,7 +106,7 @@ constexpr x86::reg32 kShadeFlat = 0;                      // the constant colour
 constexpr x86::reg32 kFilterPoint = 0;
 constexpr x86::reg32 kFilterLinear = 1;
 
-/* voodoo2a's meaning: AZHP's Direct3D drivers take 2 as blending on. */
+/* voodoo2a's meaning: the Direct3D driver takes 2 as blending on. */
 constexpr x86::reg32 kTransparencyNone = 0;               // no chroma key, no alpha test
 constexpr x86::reg32 kTransparencyChromaKey = 1;          // chroma key, and alpha test greater
 constexpr x86::reg32 kTransparencyAlpha = 2;              // alpha test greater alone
@@ -134,7 +130,7 @@ constexpr x86::reg32 kBlendSourceAlphaOne = 1;            // source alpha, one: 
 constexpr x86::reg32 kBlendZeroInverseSourceAlpha = 2;    // zero, one minus source alpha
 constexpr x86::reg32 kBlendDestinationColourZero = 3;     // destination colour, zero: multiplied
 
-/* kStateLambdas' record (AZHP's RendererModuleLambdaContainer), the game's
+/* kStateLambdas' record, the game's
  * stdcall functions; voodoo2a keeps four of them. */
 constexpr x86::reg32 kLambdaAcquireWindow = 0x04;         // [0xa91f30]
 constexpr x86::reg32 kLambdaExecute = 0x08;               // [0xa91f3c]; also kStateExecuteLambda
@@ -143,18 +139,18 @@ constexpr x86::reg32 kLambdaLockWindow = 0x14;            // [0xa91f38], told 1 
 constexpr x86::reg32 kLambdaLog = 0x18;                   // [0xa91f34]; also kStateLogLambda
 constexpr x86::reg32 kLambdasBytes = 0x20;
 
-/* The game's vertex (AZHP's RTLVX), kVertexBytes. */
+/* The game's vertex, kVertexBytes. */
 constexpr x86::reg32 kVertexX = 0x00;                     // floats: screen x, y, z, then 1/w
 constexpr x86::reg32 kVertexY = 0x04;
 constexpr x86::reg32 kVertexZ = 0x08;
 constexpr x86::reg32 kVertexRhw = 0x0c;
 constexpr x86::reg32 kVertexColour = 0x10;                // bytes b, g, r, a
-constexpr x86::reg32 kVertexSpecular = 0x14;              // AZHP's; voodoo2a does not read it
+constexpr x86::reg32 kVertexSpecular = 0x14;              // voodoo2a does not read it
 constexpr x86::reg32 kVertexU = 0x18;                     // floats
 constexpr x86::reg32 kVertexV = 0x1c;
 constexpr x86::reg32 kVertexBytes = 0x20;
 
-/* THRASH_about's descriptor (AZHP's RendererModuleDescriptor), 0x80 bytes;
+/* THRASH_about's descriptor, 0x80 bytes;
  * voodoo2a's is at 0xa91f54. */
 constexpr x86::reg32 kAboutSignature = 0x00;              // kSignature3dfx, "XFD3"
 constexpr x86::reg32 kAboutSize = 0x04;                   // kAboutBytes
@@ -169,7 +165,7 @@ constexpr x86::reg32 kAboutTextureHeightMultiple = 0x24;
 constexpr x86::reg32 kAboutClipAlign = 0x28;
 constexpr x86::reg32 kAboutTextureFormatCount = 0x2c;     // voodoo2a: 9
 constexpr x86::reg32 kAboutTextureFormats = 0x30;         // a dword each, non-zero where the format is taken (0xa91fd4)
-constexpr x86::reg32 kAboutUnknownCount = 0x34;           // voodoo2a: 4; AZHP does not know them either
+constexpr x86::reg32 kAboutUnknownCount = 0x34;           // voodoo2a: 4; what they are is not known
 constexpr x86::reg32 kAboutUnknown = 0x38;                // voodoo2a: 0xa92000
 constexpr x86::reg32 kAboutModeCount = 0x3c;              // voodoo2a: 16
 constexpr x86::reg32 kAboutModes = 0x40;                  // kMode* records (0xa92018)
@@ -177,13 +173,13 @@ constexpr x86::reg32 kAboutMaxTextures = 0x44;            // at once
 constexpr x86::reg32 kAboutName = 0x4c;                   // kNameLength chars
 constexpr x86::reg32 kAboutSubType = 0x6c;                // voodoo2a: the card's type from Glide
 constexpr x86::reg32 kAboutVideoMemory = 0x70;            // voodoo2a: the texture memory, a multiple of 16
-constexpr x86::reg32 kAboutTotalMemory = 0x74;            // AZHP's name; voodoo2a puts 1 here
+constexpr x86::reg32 kAboutTotalMemory = 0x74;            // voodoo2a puts 1 here
 constexpr x86::reg32 kAboutAuthor = 0x78;
 constexpr x86::reg32 kAboutDirectXVersion = 0x7c;
 constexpr x86::reg32 kAboutBytes = 0x80;
 constexpr x86::reg32 kNameLength = 32;
 
-constexpr x86::reg32 kSignature3dfx = 0x33444658;         // "XFD3" in memory, AZHP's RENDERER_MODULE_SIGNATURE_3DFX
+constexpr x86::reg32 kSignature3dfx = 0x33444658;         // "XFD3" in memory
 constexpr x86::reg32 kSignatureSoftware = 0x53545249;     // "STRI", softtria's
 
 constexpr x86::reg32 kCapsLineWidth = 0x01;
@@ -195,8 +191,7 @@ constexpr x86::reg32 kCapsWindowed = 0x20;
 constexpr x86::reg32 kCapsGlobalCut = 0x40;
 constexpr x86::reg32 kCapsTrilinearPass = 0x80;
 
-/* A mode of the descriptor's table (AZHP's
- * RendererModuleDescriptorDeviceCapabilities), kModeBytes. */
+/* A mode of the descriptor's table, kModeBytes. */
 constexpr x86::reg32 kModeWidth = 0x00;
 constexpr x86::reg32 kModeHeight = 0x04;
 constexpr x86::reg32 kModeBits = 0x08;
@@ -206,14 +201,14 @@ constexpr x86::reg32 kModeColourBuffers = 0x14;           // voodoo2a: as many a
 constexpr x86::reg32 kModeAuxBuffers = 0x18;              // voodoo2a: one less, at most 3
 constexpr x86::reg32 kModeBytes = 0x28;
 
-/* THRASH_lockwindow's answer (AZHP's RendererModuleWindowLock), a record
+/* THRASH_lockwindow's answer, a record
  * voodoo2a allocates, kLockBytes; unlockwindow takes it back. */
 constexpr x86::reg32 kLockData = 0x00;                    // the pixels
 constexpr x86::reg32 kLockStride = 0x04;                  // bytes a line
-constexpr x86::reg32 kLockFormat = 0x08;                  // voodoo2a: 4, AZHP's RENDERER_PIXEL_FORMAT_R5G6B5
+constexpr x86::reg32 kLockFormat = 0x08;                  // voodoo2a: 4, R5G6B5
 constexpr x86::reg32 kLockWidth = 0x0c;
 constexpr x86::reg32 kLockHeight = 0x10;
-constexpr x86::reg32 kLockBuffer = 0x14;                  // voodoo2a's own: the buffer locked (AZHP's Direct3D 6 drivers keep a RECT here)
+constexpr x86::reg32 kLockBuffer = 0x14;                  // voodoo2a's own: the buffer locked
 constexpr x86::reg32 kLockBytes = 0x18;
 
 }  // namespace thrash

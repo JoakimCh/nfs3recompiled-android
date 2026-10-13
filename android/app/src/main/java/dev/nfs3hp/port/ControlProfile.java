@@ -505,15 +505,18 @@ public final class ControlProfile
     static final int VIEW_DISTANCE = 0xE8;
     /* Screen Size, kept as a width alone ([0x6fbc18]): at start the game takes
      * the screen mode nearest it and finds its place in the menu's list itself
-     * (sub_4730d0), so the list index beside it (+0xD4) need not be written. */
+     * (sub_4730d0), so the list index beside it (+0xD4) need not be written.
+     * Dynamic Fullscreen is kept as a marker rather than a width
+     * (kDynamicFullscreenWidth in src/nfs3hp/dynamic_fullscreen.h): its width
+     * is the screen's own, worked out as the game starts. */
     static final int SCREEN_WIDTH = 0xD8;
-    static final int IMPORT_SCREEN_WIDTH = 1280;
+    static final int IMPORT_SCREEN_WIDTH = 0xFFFF;
 
     /** What a freshly imported game starts with: the gamepad set, which is what
      *  the pads and the on-screen controls send, View Distance at Full, the
-     *  whole track out to the horizon, a 1280x720 screen for races, which
-     *  any phone draws smoothly -- a player after more picks it in the game's
-     *  Graphics menu -- a HUD arranged for a phone (hudDefaults) and the cop's
+     *  whole track out to the horizon, races on the whole screen (Dynamic
+     *  Fullscreen, at most 1080 high, which any phone draws smoothly; a player
+     *  after a fixed size picks it in the game's Graphics menu), a HUD arranged for a phone (hudDefaults) and the cop's
      *  map as a minimap in split screen too (copMinimap).  Written once, as the last step of an
      *  import, into the settings file that came with the data -- and never
      *  again: from then on the file is the player's, whatever they change in

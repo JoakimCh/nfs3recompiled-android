@@ -36,6 +36,16 @@ void setPreferredAtlasSize(x86::reg32 size)
     s_preferredAtlasSize = size;
 }
 
+/* kResolutionDynamic's size (setDynamicResolution); 1920x1080 until it is set. */
+static x86::reg32 s_dynamicWidth = 1920;
+static x86::reg32 s_dynamicHeight = 1080;
+
+void setDynamicResolution(x86::reg32 width, x86::reg32 height)
+{
+    s_dynamicWidth = width;
+    s_dynamicHeight = height;
+}
+
 bool fullColourTextures()
 {
     static const bool on = []() {
@@ -606,6 +616,10 @@ static x86::reg32 grSstWinOpen(WinApplication* app, x86::CPU& cpu, HWND hWnd,
     case win32::glide2x::kResolution1920x1080:
         width = 1920;
         height = 1080;
+        break;
+    case win32::glide2x::kResolutionDynamic:
+        width = x86::sreg32(s_dynamicWidth);
+        height = x86::sreg32(s_dynamicHeight);
         break;
     default:
         SDL_LogError(SDL_LOG_CATEGORY_RENDER, "Unsupported resolution: %d", resolution);

@@ -1,5 +1,6 @@
 #include <nfs3hp.h>
 #include "native_thrash.h"
+#include "dynamic_fullscreen.h"
 #include <SDL3/SDL.h>
 #include <cmath>
 #include <cstring>
@@ -8529,6 +8530,11 @@ void screenModeNative(win32::WinApplication* app, x86::CPU& cpu)
                && callTo(m.word(0x9ef940));
     };
 
+    /* port (Dynamic Fullscreen): the screen measured again as a race opens the
+     * mode, so a foldable opened or shut since gets its new shape; a size that
+     * changed opens the mode afresh rather than only refreshing it. */
+    if (dynamicFullscreenMode(r.eax) && dynamicFullscreenRefresh(app) && m.word(0x55fec0) == r.eax)
+        m.word(0x55fec0, 0);
     r.ebx = r.eax;
     if (!callTo(m.word(0x9ef980)))
         return;
@@ -8615,6 +8621,10 @@ void screenModeNative(win32::WinApplication* app, x86::CPU& cpu)
         return;
     leave();
 }
+
+/* The listing memory Dynamic Fullscreen needs: 32 MB lists modes up to
+ * 8 million pixels, 2600x1080 and more. */
+constexpr x86::reg32 kListingMemory = 0x2000000;
 
 /* sub_4b59c0: the driver eax (0..10) started (edx the window's message
  * when it cannot be): its library (0x55fd68) loaded by sub_4f87e0,
@@ -8855,6 +8865,11 @@ void startDriverNative(win32::WinApplication* app, x86::CPU& cpu)
         m.word(0x7a3a70, 1);
         break;
     }
+    /* port (Dynamic Fullscreen): the memory sub_4bed90 lists a mode by -- twice
+     * its frame, 16-bit, within half of this -- big enough for a race at the
+     * screen's own size; nothing else reads it. */
+    if (m.word(0x55fed0) < kListingMemory)
+        m.word(0x55fed0, kListingMemory);
     leave();
 }
 

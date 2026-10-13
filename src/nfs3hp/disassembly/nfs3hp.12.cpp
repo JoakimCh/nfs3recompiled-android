@@ -3,6 +3,8 @@
 
 namespace nfs3hp
 {
+// Port (tools/apply_widescreen.py): defined in nfs3hp_main.cpp.
+void dynamicFullscreenLabel(win32::WinApplication* app, x86::reg32 entry);
 // Port (tools/apply_native_frontend.py): defined in native_frontend_tracks.cpp.
 bool locationOnExit(win32::WinApplication* app, x86::CPU& cpu);
 // Port (tools/apply_native_frontend.py): defined in native_frontend_tracks.cpp.
@@ -14461,6 +14463,7 @@ L_0x00448290:
     cpu.esp += 4;
 L_0x00448291:
     // 00448291  8b1518925500           -mov edx, dword ptr [0x559218]
+    dynamicFullscreenLabel(app, cpu.edx); /* port: Dynamic Fullscreen named in the list */
     cpu.edx = app->getMemory<x86::reg32>(x86::reg32(5607960) /* 0x559218 */);
     // 00448297  66a118925500           -mov ax, word ptr [0x559218]
     cpu.ax = app->getMemory<x86::reg16>(x86::reg32(5607960) /* 0x559218 */);
