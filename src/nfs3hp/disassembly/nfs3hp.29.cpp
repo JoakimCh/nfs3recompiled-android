@@ -832,7 +832,7 @@ L_0x004cce1c:
     cpu.eax = 5654552 /*0x564818*/;
     // 004cce2f  e8d8380100             -call 0x4e070c
     cpu.esp -= 4;
-    sub_4e070c(app, cpu.sync());
+    nfs3hp::fillZero(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
 L_0x004cce34:

@@ -8,10 +8,11 @@
 namespace win32 { namespace dinput
 {
 
-class IDirectInput2;
-
+/* The game's import of DINPUT.dll.  Nothing calls it: what the game asked of
+ * DirectInput its natives ask of the port (nfs3hp/native_controls_host.h),
+ * and there is no DirectInput behind that.  It answers E_NOTIMPL. */
 HRESULT DirectInputCreateA(WinApplication* app, x86::CPU& cpu,
-                           HINSTANCE hinst, DWORD dwVersion, Packed<IDirectInput2>* lplpDirectInput,
+                           HINSTANCE hinst, DWORD dwVersion, LPVOID lplpDirectInput,
                            LPVOID punkOuter);
 
 }}

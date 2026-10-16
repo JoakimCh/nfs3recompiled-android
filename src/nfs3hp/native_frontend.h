@@ -312,7 +312,7 @@ enum Restores : std::uint8_t
  * strings are looked at once. */
 struct Site
 {
-    const char* name;                 // "sub_45d050", as NFS_FE_NATIVE_OFF names it
+    const char* name;                 // "sub_437e00", as NFS_FE_NATIVE_OFF names it
     x86::reg32 stackBytes;            // the arguments its ret pops
     /* What the generated function's prologue puts on the stack (the registers
      * it pushes, its locals) before it calls anything.  The stand-in leaves
@@ -327,21 +327,22 @@ struct Site
 };
 
 /* Whether `site` runs native: not with NFS_FE_NATIVE=0, nor when
- * NFS_FE_NATIVE_OFF=sub_45d050,sub_45cff0 names it, nor when one of its
+ * NFS_FE_NATIVE_OFF=sub_437e00,sub_438260 names it, nor when one of its
  * strings is not where it expects it.  Decided and logged the first time. */
 bool ready(Guest& guest, Site& site);
+
+/* Whether the strings a screen that is native whole hands to the game are
+ * where it expects them: logged the first time, not, and the screen runs all
+ * the same -- there is no generated code to leave it to. */
+void checkStrings(Guest& guest, Site& site);
 
 /* `body` run as the generated function runs: in a frame of its size, its
  * result in eax, the registers it restores restored, the return address and
  * the arguments popped.  A function with nothing to return returns
- * guest.eax(), what the calls it made left there.  False --
- * the generated code runs -- when the stand-in is not ready. */
+ * guest.eax(), what the calls it made left there. */
 template <typename Body>
-bool run(win32::WinApplication* app, x86::CPU& cpu, Site& site, Body body)
+void perform(Guest& guest, x86::CPU& cpu, const Site& site, Body body)
 {
-    Guest guest(app, cpu);
-    if (site.ready < 0 || (site.ready == 0 && !ready(guest, site)))
-        return false;
     const x86::reg32 ebx = cpu.ebx, ecx = cpu.ecx, edx = cpu.edx;
     const x86::reg32 esi = cpu.esi, edi = cpu.edi, ebp = cpu.ebp, esp = cpu.esp;
     try
@@ -366,7 +367,28 @@ bool run(win32::WinApplication* app, x86::CPU& cpu, Site& site, Body body)
     catch (const Terminated&)
     {
     }
+}
+
+/* A stand-in hooked into its generated function: `body` performed, or false
+ * -- the generated code runs -- when the stand-in is not ready. */
+template <typename Body>
+bool run(win32::WinApplication* app, x86::CPU& cpu, Site& site, Body body)
+{
+    Guest guest(app, cpu);
+    if (site.ready < 0 || (site.ready == 0 && !ready(guest, site)))
+        return false;
+    perform(guest, cpu, site, body);
     return true;
+}
+
+/* A function native whole: `body` performed, always. */
+template <typename Body>
+void runWhole(win32::WinApplication* app, x86::CPU& cpu, Site& site, Body body)
+{
+    Guest guest(app, cpu);
+    if (site.ready == 0)
+        checkStrings(guest, site);
+    perform(guest, cpu, site, body);
 }
 
 }
@@ -410,12 +432,10 @@ bool menuReleaseMouse(win32::WinApplication* app, x86::CPU& cpu);
 bool menuItemUnderMouse(win32::WinApplication* app, x86::CPU& cpu);
 bool menuItemsShown(win32::WinApplication* app, x86::CPU& cpu);
 bool menuPassItems(win32::WinApplication* app, x86::CPU& cpu);
-bool menuShowItems(win32::WinApplication* app, x86::CPU& cpu);
 bool menuHideItems(win32::WinApplication* app, x86::CPU& cpu);
 bool menuLeaveScreen(win32::WinApplication* app, x86::CPU& cpu);
 bool menuResetItems(win32::WinApplication* app, x86::CPU& cpu);
 bool menuEnterScreen(win32::WinApplication* app, x86::CPU& cpu);
-bool menuCurrentName(win32::WinApplication* app, x86::CPU& cpu);
 bool menuByNameStandIn(win32::WinApplication* app, x86::CPU& cpu);
 bool menuCurrent(win32::WinApplication* app, x86::CPU& cpu);
 bool menuPop(win32::WinApplication* app, x86::CPU& cpu);
@@ -432,14 +452,9 @@ bool menuFitRaceSettings(win32::WinApplication* app, x86::CPU& cpu);
 bool dialogShownStandIn(win32::WinApplication* app, x86::CPU& cpu);
 bool dialogKindStandIn(win32::WinApplication* app, x86::CPU& cpu);
 bool dialogFocusStandIn(win32::WinApplication* app, x86::CPU& cpu);
-bool dialogEditText(win32::WinApplication* app, x86::CPU& cpu);
 bool dialogListFocus(win32::WinApplication* app, x86::CPU& cpu);
-bool dialogFadedIn(win32::WinApplication* app, x86::CPU& cpu);
 bool dialogClose(win32::WinApplication* app, x86::CPU& cpu);
 /* the layout, */
-bool dialogLinesBox(win32::WinApplication* app, x86::CPU& cpu);
-bool dialogButtonRowBox(win32::WinApplication* app, x86::CPU& cpu);
-bool dialogPlaceButtons(win32::WinApplication* app, x86::CPU& cpu);
 bool dialogPlaceEntries(win32::WinApplication* app, x86::CPU& cpu);
 /* drawing, */
 bool dialogDrawBox(win32::WinApplication* app, x86::CPU& cpu);
@@ -450,20 +465,15 @@ bool dialogDrawList(win32::WinApplication* app, x86::CPU& cpu);
 bool dialogDrawHelp(win32::WinApplication* app, x86::CPU& cpu);
 bool dialogLoadArt(win32::WinApplication* app, x86::CPU& cpu);
 /* the pointer, */
-bool dialogPointAtButton(win32::WinApplication* app, x86::CPU& cpu);
 bool dialogButtonUnderMouse(win32::WinApplication* app, x86::CPU& cpu);
 bool dialogPointAtEntry(win32::WinApplication* app, x86::CPU& cpu);
 bool dialogEntryUnderMouse(win32::WinApplication* app, x86::CPU& cpu);
 /* each kind opened, its keys and its pass, */
-bool dialogOpenQuestion(win32::WinApplication* app, x86::CPU& cpu);
 bool dialogQuestionKey(win32::WinApplication* app, x86::CPU& cpu);
 bool dialogQuestionPass(win32::WinApplication* app, x86::CPU& cpu);
-bool dialogOpenMessage(win32::WinApplication* app, x86::CPU& cpu);
-bool dialogMessageById(win32::WinApplication* app, x86::CPU& cpu);
 bool dialogEndMessage(win32::WinApplication* app, x86::CPU& cpu);
 bool dialogMessageKey(win32::WinApplication* app, x86::CPU& cpu);
 bool dialogMessagePass(win32::WinApplication* app, x86::CPU& cpu);
-bool dialogOpenEdit(win32::WinApplication* app, x86::CPU& cpu);
 bool dialogEditKey(win32::WinApplication* app, x86::CPU& cpu);
 bool dialogEditPass(win32::WinApplication* app, x86::CPU& cpu);
 bool dialogOpenList(win32::WinApplication* app, x86::CPU& cpu);
@@ -473,26 +483,13 @@ bool dialogListPass(win32::WinApplication* app, x86::CPU& cpu);
 bool dialogKeyStandIn(win32::WinApplication* app, x86::CPU& cpu);
 bool dialogPassStandIn(win32::WinApplication* app, x86::CPU& cpu);
 
-/* The main menu in its three forms (native_frontend_main.cpp): MAIN.MNU, */
-bool mainMenuOnEnter(win32::WinApplication* app, x86::CPU& cpu);
-bool mainMenuOnExit(win32::WinApplication* app, x86::CPU& cpu);
-bool mainMenuOnFrame(win32::WinApplication* app, x86::CPU& cpu);
-bool mainMenuOnPlayerName(win32::WinApplication* app, x86::CPU& cpu);
-bool mainMenuPlayerNameAnswer(win32::WinApplication* app, x86::CPU& cpu);
-/* MAINSPLT.MNU, two players on one machine, */
-bool splitMenuOnEnter(win32::WinApplication* app, x86::CPU& cpu);
-bool splitMenuOnExit(win32::WinApplication* app, x86::CPU& cpu);
-bool splitMenuOnFrame(win32::WinApplication* app, x86::CPU& cpu);
-bool splitMenuOnPlayer2Name(win32::WinApplication* app, x86::CPU& cpu);
-bool splitMenuPlayer2NameAnswer(win32::WinApplication* app, x86::CPU& cpu);
-/* and MAINMULT.MNU, a race over a network. */
-bool multiMenuOnEnter(win32::WinApplication* app, x86::CPU& cpu);
-bool multiMenuOnExit(win32::WinApplication* app, x86::CPU& cpu);
-bool multiMenuOnFrame(win32::WinApplication* app, x86::CPU& cpu);
-bool multiMenuApplyRaceList(win32::WinApplication* app, x86::CPU& cpu);
-bool multiMenuFollowRaceType(win32::WinApplication* app, x86::CPU& cpu);
-bool multiMenuOnBack(win32::WinApplication* app, x86::CPU& cpu);
-bool multiMenuLeaveAnswer(win32::WinApplication* app, x86::CPU& cpu);
+/* The main menu in its three forms (native_frontend_main.cpp) -- MAIN.MNU,
+ * MAINSPLT.MNU, MAINMULT.MNU -- is native whole: its handlers are
+ * disassemble_nfs3hp.py's MENU_NATIVES, in nfs3hp::frontend, declared with
+ * the game's (nfs3hp.h).  So is what it calls of the menu loop and the
+ * dialogs above: a screen's items shown, the shown screen's name; a question,
+ * a message and a line to type in opened, their layout and the pointer on
+ * their button. */
 
 /* The options screens (native_frontend_options.cpp): the options screen and
  * the audio feed's keys (audfeed), */
@@ -506,10 +503,6 @@ bool feedSpeedButtonKey(win32::WinApplication* app, x86::CPU& cpu);
 bool feedTimeListKey(win32::WinApplication* app, x86::CPU& cpu);
 bool feedPositionListKey(win32::WinApplication* app, x86::CPU& cpu);
 bool feedSpeedListKey(win32::WinApplication* app, x86::CPU& cpu);
-/* the function keys and the fixed ones, */
-bool funkeysOnEnter(win32::WinApplication* app, x86::CPU& cpu);
-bool funkeysOnExit(win32::WinApplication* app, x86::CPU& cpu);
-bool hardkeysOnEnter(win32::WinApplication* app, x86::CPU& cpu);
 /* the sound and its sliders, */
 bool audioOnEnter(win32::WinApplication* app, x86::CPU& cpu);
 bool audioOnExit(win32::WinApplication* app, x86::CPU& cpu);
@@ -520,34 +513,9 @@ bool audioRaceMusicMoved(win32::WinApplication* app, x86::CPU& cpu);
 bool audioEffectsMoved(win32::WinApplication* app, x86::CPU& cpu);
 bool audioEngineMoved(win32::WinApplication* app, x86::CPU& cpu);
 bool audioSpeechMoved(win32::WinApplication* app, x86::CPU& cpu);
-/* the controllers, and their dead zones, */
-bool controlsOnEnter(win32::WinApplication* app, x86::CPU& cpu);
-bool controlsOnExit(win32::WinApplication* app, x86::CPU& cpu);
-bool controlsCancelKey(win32::WinApplication* app, x86::CPU& cpu);
-bool controlsResetClicked(win32::WinApplication* app, x86::CPU& cpu);
-bool controlsResetAnswered(win32::WinApplication* app, x86::CPU& cpu);
-bool deadZoneFillList(win32::WinApplication* app, x86::CPU& cpu);
-bool deadZoneOnEnter(win32::WinApplication* app, x86::CPU& cpu);
-bool deadZoneOnExit(win32::WinApplication* app, x86::CPU& cpu);
-bool deadZoneCancelKey(win32::WinApplication* app, x86::CPU& cpu);
-bool deadZoneChooseKey(win32::WinApplication* app, x86::CPU& cpu);
-bool deadZoneChooseKeyInRace(win32::WinApplication* app, x86::CPU& cpu);
-bool deadZoneShowController(win32::WinApplication* app, x86::CPU& cpu);
-bool deadZoneAxisIndex(win32::WinApplication* app, x86::CPU& cpu);
-bool deadZoneApplyAxis(win32::WinApplication* app, x86::CPU& cpu);
-bool deadZoneAxisMoved(win32::WinApplication* app, x86::CPU& cpu);
-bool deadZoneAxisDraw(win32::WinApplication* app, x86::CPU& cpu);
-/* force feedback, */
-bool forceOnEnter(win32::WinApplication* app, x86::CPU& cpu);
-bool forceOnExit(win32::WinApplication* app, x86::CPU& cpu);
-bool forceCancelKey(win32::WinApplication* app, x86::CPU& cpu);
-bool forceStrengthMoved(win32::WinApplication* app, x86::CPU& cpu);
-bool forceRoadEffectsMoved(win32::WinApplication* app, x86::CPU& cpu);
-bool forceCollisionMoved(win32::WinApplication* app, x86::CPU& cpu);
-bool forceEngineMoved(win32::WinApplication* app, x86::CPU& cpu);
-bool forceBodyRollMoved(win32::WinApplication* app, x86::CPU& cpu);
-bool forceRoadGripMoved(win32::WinApplication* app, x86::CPU& cpu);
-/* and the graphics. */
+/* and the graphics.  (The controls' screens -- the function keys, the fixed
+ * ones, the controllers, their dead zones and force feedback -- are native
+ * whole: disassemble_nfs3hp.py's MENU_NATIVES, declared with the game's.) */
 bool graphicsOnEnter(win32::WinApplication* app, x86::CPU& cpu);
 bool graphicsOnExit(win32::WinApplication* app, x86::CPU& cpu);
 bool graphicsOnFrame(win32::WinApplication* app, x86::CPU& cpu);

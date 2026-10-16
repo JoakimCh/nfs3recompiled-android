@@ -1088,7 +1088,7 @@ L_0x004e52ab:
     cpu.esi = cpu.eax;
     // 004e52e3  e824b4ffff             -call 0x4e070c
     cpu.esp -= 4;
-    sub_4e070c(app, cpu.sync());
+    nfs3hp::fillZero(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004e52e8  89be88000000           -mov dword ptr [esi + 0x88], edi

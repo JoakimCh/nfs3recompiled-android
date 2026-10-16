@@ -16880,7 +16880,7 @@ L_0x005085db:
     cpu.eax = cpu.ecx;
     // 005085e2  e82581fdff             -call 0x4e070c
     cpu.esp -= 4;
-    sub_4e070c(app, cpu.sync());
+    nfs3hp::fillZero(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 005085e7  85db                   +test ebx, ebx
@@ -18371,7 +18371,7 @@ L_0x00508ba7:
     cpu.eax = cpu.esi;
     // 00508bb6  e8517bfdff             -call 0x4e070c
     cpu.esp -= 4;
-    sub_4e070c(app, cpu.sync());
+    nfs3hp::fillZero(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00508bbb  c706444e4957           -mov dword ptr [esi], 0x57494e44

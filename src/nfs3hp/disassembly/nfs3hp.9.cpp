@@ -2360,12 +2360,12 @@ void Application::sub_438260(WinApplication* __restrict app, x86::CPU& cpu_)
     app->getMemory<x86::reg32>(x86::reg32(6240624) /* 0x5f3970 */) = cpu.edx;
     // 00438284  e857c90000             -call 0x444be0
     cpu.esp -= 4;
-    sub_444be0(app, cpu.sync());
+    nfs3hp::frontend::dialogMessageById(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00438289  e872dc0000             -call 0x445f00
     cpu.esp -= 4;
-    sub_445f00(app, cpu.sync());
+    nfs3hp::frontend::dialogFadedIn(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0043828e  e88d0e0a00             -call 0x4d9120

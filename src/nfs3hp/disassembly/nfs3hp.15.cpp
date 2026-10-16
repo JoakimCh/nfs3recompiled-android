@@ -1963,7 +1963,7 @@ L_0x00454b3d:
     cpu.edx = 378 /*0x17a*/;
     // 00454b72  e8d9cc0700             -call 0x4d1850
     cpu.esp -= 4;
-    sub_4d1850(app, cpu.sync());
+    nfs3hp::frontend::languageText(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00454b77  e814d6ffff             -call 0x452190
@@ -2478,7 +2478,7 @@ void Application::sub_454d60(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.eax = x86::reg32(x86::sreg32(cpu.eax) >> (16 /*0x10*/ % 32));
     // 00454d8a  e8c1ca0700             -call 0x4d1850
     cpu.esp -= 4;
-    sub_4d1850(app, cpu.sync());
+    nfs3hp::frontend::languageText(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00454d8f  50                     -push eax
@@ -2542,7 +2542,7 @@ void Application::sub_454d60(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.edi = 6702720 /*0x664680*/;
     // 00454dd6  e875ca0700             -call 0x4d1850
     cpu.esp -= 4;
-    sub_4d1850(app, cpu.sync());
+    nfs3hp::frontend::languageText(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00454ddb  89c6                   -mov esi, eax
@@ -2626,7 +2626,7 @@ L_0x00454df9:
     cpu.eax = x86::reg32(x86::sreg32(cpu.eax) >> (16 /*0x10*/ % 32));
     // 00454e17  e834ca0700             -call 0x4d1850
     cpu.esp -= 4;
-    sub_4d1850(app, cpu.sync());
+    nfs3hp::frontend::languageText(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00454e1c  50                     -push eax
@@ -3115,7 +3115,7 @@ L_0x004550db:
     cpu.ebx = 1 /*0x1*/;
     // 004550ea  e81db60800             -call 0x4e070c
     cpu.esp -= 4;
-    sub_4e070c(app, cpu.sync());
+    nfs3hp::fillZero(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004550ef  31f6                   -xor esi, esi
@@ -3319,7 +3319,7 @@ L_0x00455193:
     cpu.ebx = 1 /*0x1*/;
     // 004551a2  e865b50800             -call 0x4e070c
     cpu.esp -= 4;
-    sub_4e070c(app, cpu.sync());
+    nfs3hp::fillZero(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004551a7  31f6                   -xor esi, esi
@@ -4750,7 +4750,7 @@ void Application::sub_4555c0(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.edi = cpu.edx;
     // 004555d0  e87bc20700             -call 0x4d1850
     cpu.esp -= 4;
-    sub_4d1850(app, cpu.sync());
+    nfs3hp::frontend::languageText(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004555d5  89c6                   -mov esi, eax
@@ -5278,7 +5278,7 @@ L_0x0045574c:
     cpu.eax = 343 /*0x157*/;
     // 00455751  e8fac00700             -call 0x4d1850
     cpu.esp -= 4;
-    sub_4d1850(app, cpu.sync());
+    nfs3hp::frontend::languageText(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00455756  d945fc                 +fld dword ptr [ebp - 4]
@@ -5299,7 +5299,7 @@ L_0x00455762:
     cpu.eax = 342 /*0x156*/;
     // 00455767  e8e4c00700             -call 0x4d1850
     cpu.esp -= 4;
-    sub_4d1850(app, cpu.sync());
+    nfs3hp::frontend::languageText(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045576c  d945fc                 -fld dword ptr [ebp - 4]
@@ -7337,7 +7337,7 @@ L_0x00455f3f:
     cpu.ecx = 1065353216 /*0x3f800000*/;
     // 00455f49  e8b2c1ffff             -call 0x452100
     cpu.esp -= 4;
-    sub_452100(app, cpu.sync());
+    nfs3hp::frontend::selectFont(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00455f4e  8b5e3c                 -mov ebx, dword ptr [esi + 0x3c]
@@ -9080,7 +9080,7 @@ L_0x004565d6:
     cpu.eax = 6 /*0x6*/;
     // 004565e5  e866b20700             -call 0x4d1850
     cpu.esp -= 4;
-    sub_4d1850(app, cpu.sync());
+    nfs3hp::frontend::languageText(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004565ea  50                     -push eax
@@ -10105,7 +10105,7 @@ void Application::sub_4569a0(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.eax = 43 /*0x2b*/;
     // 004569b4  e897ae0700             -call 0x4d1850
     cpu.esp -= 4;
-    sub_4d1850(app, cpu.sync());
+    nfs3hp::frontend::languageText(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004569b9  50                     -push eax
@@ -10134,7 +10134,7 @@ void Application::sub_4569a0(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.ebx ^= x86::reg32(x86::sreg32(cpu.ebx));
     // 004569db  e840b6ffff             -call 0x452020
     cpu.esp -= 4;
-    sub_452020(app, cpu.sync());
+    nfs3hp::frontend::textWidth(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004569e0  6689411e               -mov word ptr [ecx + 0x1e], ax
@@ -10172,7 +10172,7 @@ L_0x004569e4:
     cpu.edx = 18 /*0x12*/;
     // 004569fa  e821b6ffff             -call 0x452020
     cpu.esp -= 4;
-    sub_452020(app, cpu.sync());
+    nfs3hp::frontend::textWidth(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004569ff  8b711c                 -mov esi, dword ptr [ecx + 0x1c]
@@ -10802,7 +10802,7 @@ L_0x00456c33:
     cpu.eax = 43 /*0x2b*/;
     // 00456c60  e8ebab0700             -call 0x4d1850
     cpu.esp -= 4;
-    sub_4d1850(app, cpu.sync());
+    nfs3hp::frontend::languageText(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00456c65  50                     -push eax
@@ -10866,7 +10866,7 @@ L_0x00456c8e:
     cpu.ebx = cpu.edi;
     // 00456c9e  e8adab0700             -call 0x4d1850
     cpu.esp -= 4;
-    sub_4d1850(app, cpu.sync());
+    nfs3hp::frontend::languageText(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
 L_0x00456ca3:
@@ -11584,7 +11584,7 @@ void Application::sub_456f10(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.edx = cpu.ebx;
     // 00456f42  e879500400             -call 0x49bfc0
     cpu.esp -= 4;
-    sub_49bfc0(app, cpu.sync());
+    nfs3hp::frontend::setPointer(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00456f47  5d                     -pop ebp
@@ -17442,7 +17442,7 @@ L_0x00457c97:
     cpu.eax = 18 /*0x12*/;
     // 00457cac  e84fa4ffff             -call 0x452100
     cpu.esp -= 4;
-    sub_452100(app, cpu.sync());
+    nfs3hp::frontend::selectFont(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00457cb1  8b4e3c                 -mov ecx, dword ptr [esi + 0x3c]
@@ -17463,7 +17463,7 @@ L_0x00457c97:
     cpu.ebx = app->getMemory<x86::reg32>(cpu.ebp + x86::reg32(-6) /* -0x6 */);
     // 00457cc2  e859a3ffff             -call 0x452020
     cpu.esp -= 4;
-    sub_452020(app, cpu.sync());
+    nfs3hp::frontend::textWidth(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00457cc7  8b55f2                 -mov edx, dword ptr [ebp - 0xe]
@@ -17872,7 +17872,7 @@ void Application::sub_457df0(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.eax = 2 /*0x2*/;
     // 00457e25  e8a6c8feff             -call 0x4446d0
     cpu.esp -= 4;
-    sub_4446d0(app, cpu.sync());
+    nfs3hp::frontend::dialogOpenQuestion(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00457e2a  5d                     -pop ebp
@@ -18378,7 +18378,7 @@ void Application::sub_457f70(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.edx = 18 /*0x12*/;
     // 00457fb5  e866a0ffff             -call 0x452020
     cpu.esp -= 4;
-    sub_452020(app, cpu.sync());
+    nfs3hp::frontend::textWidth(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00457fba  89c6                   -mov esi, eax
@@ -18444,7 +18444,7 @@ L_0x00457fd4:
 L_0x00457ff0:
     // 00457ff0  e82ba0ffff             -call 0x452020
     cpu.esp -= 4;
-    sub_452020(app, cpu.sync());
+    nfs3hp::frontend::textWidth(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00457ff5  89c1                   -mov ecx, eax
@@ -18807,7 +18807,7 @@ L_0x004580ea:
     cpu.eax = 18 /*0x12*/;
     // 004580ff  e8fc9fffff             -call 0x452100
     cpu.esp -= 4;
-    sub_452100(app, cpu.sync());
+    nfs3hp::frontend::selectFont(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00458104  8b563c                 -mov edx, dword ptr [esi + 0x3c]
@@ -18828,7 +18828,7 @@ L_0x004580ea:
     cpu.ecx = 18 /*0x12*/;
     // 00458117  e8049fffff             -call 0x452020
     cpu.esp -= 4;
-    sub_452020(app, cpu.sync());
+    nfs3hp::frontend::textWidth(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045811c  8b55fa                 -mov edx, dword ptr [ebp - 6]
@@ -18975,7 +18975,7 @@ L_0x00458138:
     cpu.ecx = 18 /*0x12*/;
     // 004581b0  e86b9effff             -call 0x452020
     cpu.esp -= 4;
-    sub_452020(app, cpu.sync());
+    nfs3hp::frontend::textWidth(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004581b5  8b55f0                 -mov edx, dword ptr [ebp - 0x10]
@@ -19612,7 +19612,7 @@ void Application::sub_458340(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.edx = 18 /*0x12*/;
     // 0045837d  e89e9cffff             -call 0x452020
     cpu.esp -= 4;
-    sub_452020(app, cpu.sync());
+    nfs3hp::frontend::textWidth(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00458382  89c6                   -mov esi, eax
@@ -19634,7 +19634,7 @@ L_0x00458384:
     cpu.eax = cpu.ecx;
     // 00458392  e8899cffff             -call 0x452020
     cpu.esp -= 4;
-    sub_452020(app, cpu.sync());
+    nfs3hp::frontend::textWidth(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00458397  eb02                   -jmp 0x45839b
@@ -20054,7 +20054,7 @@ L_0x004584d7:
     cpu.eax = 18 /*0x12*/;
     // 004584ec  e80f9cffff             -call 0x452100
     cpu.esp -= 4;
-    sub_452100(app, cpu.sync());
+    nfs3hp::frontend::selectFont(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004584f1  8b4e3c                 -mov ecx, dword ptr [esi + 0x3c]
@@ -20075,7 +20075,7 @@ L_0x004584d7:
     cpu.ebx = app->getMemory<x86::reg32>(cpu.ebp + x86::reg32(-14) /* -0xe */);
     // 00458502  e8199bffff             -call 0x452020
     cpu.esp -= 4;
-    sub_452020(app, cpu.sync());
+    nfs3hp::frontend::textWidth(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00458507  8b55f6                 -mov edx, dword ptr [ebp - 0xa]
@@ -20496,7 +20496,7 @@ void Application::sub_458640(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.eax = 2 /*0x2*/;
     // 0045867f  e84cc0feff             -call 0x4446d0
     cpu.esp -= 4;
-    sub_4446d0(app, cpu.sync());
+    nfs3hp::frontend::dialogOpenQuestion(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00458684  5d                     -pop ebp
@@ -21016,7 +21016,7 @@ void Application::sub_4587e0(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.eax = app->getMemory<x86::reg32>(cpu.ebx + x86::reg32(60) /* 0x3c */);
     // 00458811  e80a98ffff             -call 0x452020
     cpu.esp -= 4;
-    sub_452020(app, cpu.sync());
+    nfs3hp::frontend::textWidth(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00458816  8d700a                 -lea esi, [eax + 0xa]
@@ -21040,7 +21040,7 @@ L_0x00458819:
     app->getMemory<x86::reg16>(cpu.ecx + x86::reg32(32) /* 0x20 */) = 29 /*0x1d*/;
     // 00458839  e8e297ffff             -call 0x452020
     cpu.esp -= 4;
-    sub_452020(app, cpu.sync());
+    nfs3hp::frontend::textWidth(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045883e  8b5150                 -mov edx, dword ptr [ecx + 0x50]
@@ -21119,7 +21119,7 @@ L_0x00458858:
 L_0x0045887c:
     // 0045887c  e89f97ffff             -call 0x452020
     cpu.esp -= 4;
-    sub_452020(app, cpu.sync());
+    nfs3hp::frontend::textWidth(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00458881  89c3                   -mov ebx, eax
@@ -21515,7 +21515,7 @@ L_0x00458997:
     cpu.eax = 18 /*0x12*/;
     // 004589ac  e84f97ffff             -call 0x452100
     cpu.esp -= 4;
-    sub_452100(app, cpu.sync());
+    nfs3hp::frontend::selectFont(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004589b1  8b4e3c                 -mov ecx, dword ptr [esi + 0x3c]
@@ -21536,7 +21536,7 @@ L_0x00458997:
     cpu.ebx = app->getMemory<x86::reg32>(cpu.ebp + x86::reg32(-6) /* -0x6 */);
     // 004589c2  e85996ffff             -call 0x452020
     cpu.esp -= 4;
-    sub_452020(app, cpu.sync());
+    nfs3hp::frontend::textWidth(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004589c7  8b55f6                 -mov edx, dword ptr [ebp - 0xa]
@@ -22008,7 +22008,7 @@ void Application::sub_458b20(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.eax = 2 /*0x2*/;
     // 00458b66  e865bbfeff             -call 0x4446d0
     cpu.esp -= 4;
-    sub_4446d0(app, cpu.sync());
+    nfs3hp::frontend::dialogOpenQuestion(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00458b6b  5d                     -pop ebp

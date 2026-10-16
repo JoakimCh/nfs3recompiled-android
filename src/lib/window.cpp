@@ -364,10 +364,10 @@ x86::reg32 Window::getMessageImpl(const x86::CPU& cpu, MSG* result, Window *wind
                     return 1;
                 /* No gamepad case here, and none is wanted: sdl-backend/gamepad.cpp
                  * polls the pads, pushes their buttons as the key events above
-                 * and hands their sticks and triggers to the game as DirectInput
-                 * axes.  Joystick and gamepad events could not be used anyway --
-                 * the game's own DirectInput device enumeration calls
-                 * SDL_SetJoystickEventsEnabled(false) during startup, which
+                 * and hands their sticks and triggers to the game's controls as
+                 * a joystick's axes.  Joystick and gamepad events could not be
+                 * used anyway -- a Gamepad, made when the game's controls open
+                 * the pads, calls SDL_SetJoystickEventsEnabled(false), which
                  * starves SDL3's joystick-to-gamepad event watcher before a single
                  * frame is drawn. */
                 case SDL_EVENT_TEXT_INPUT:

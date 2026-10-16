@@ -1653,6 +1653,31 @@ bool runForItem(win32::WinApplication* app, x86::CPU& cpu, fe::Site& site, Body 
     return fe::run(app, cpu, site, [&](Guest& guest) { return body(guest, item, edx); });
 }
 
+/* The same, native whole: no generated code to step aside to. */
+template <typename Body>
+void wholeForMenu(win32::WinApplication* app, x86::CPU& cpu, fe::Site& site, Body body)
+{
+    const x86::reg32 menu = cpu.eax;
+    fe::runWhole(app, cpu, site, [&](Guest& guest) { return body(guest, menu); });
+}
+
+template <typename Body>
+void wholeForKey(win32::WinApplication* app, x86::CPU& cpu, fe::Site& site, Body body)
+{
+    const x86::reg32 item = cpu.eax;
+    const x86::reg32 menu = cpu.edx;
+    const std::uint16_t key = std::uint16_t(cpu.ebx);
+    fe::runWhole(app, cpu, site, [&](Guest& guest) { return body(guest, item, menu, key); });
+}
+
+template <typename Body>
+void wholeForItem(win32::WinApplication* app, x86::CPU& cpu, fe::Site& site, Body body)
+{
+    const x86::reg32 item = cpu.eax;
+    const x86::reg32 edx = cpu.edx;
+    fe::runWhole(app, cpu, site, [&](Guest& guest) { return body(guest, item, edx); });
+}
+
 }
 
 /* Each stand-in: the generated function, what its ret pops, what its prologue
@@ -1736,26 +1761,6 @@ bool feedSpeedListKey(win32::WinApplication* app, x86::CPU& cpu)
     });
 }
 
-bool funkeysOnEnter(win32::WinApplication* app, x86::CPU& cpu)
-{
-    static fe::Site site{ "sub_437600", 0, 12, kKeysStrings, std::size(kKeysStrings), kEcxEdx };
-    return runForMenu(app, cpu, site, onKeysEnter);
-}
-
-bool funkeysOnExit(win32::WinApplication* app, x86::CPU& cpu)
-{
-    // sub_4377c0: nothing to undo.
-    static fe::Site site{ "sub_4377c0", 0, 4, nullptr, 0, kRestoreNone };
-    return fe::run(app, cpu, site, [](Guest&) { return x86::reg32(0); });
-}
-
-bool hardkeysOnEnter(win32::WinApplication* app, x86::CPU& cpu)
-{
-    // sub_4377d0: funkeys', instruction for instruction.
-    static fe::Site site{ "sub_4377d0", 0, 12, kKeysStrings, std::size(kKeysStrings), kEcxEdx };
-    return runForMenu(app, cpu, site, onKeysEnter);
-}
-
 bool audioOnEnter(win32::WinApplication* app, x86::CPU& cpu)
 {
     static fe::Site site{ "sub_437e00", 0, 36, kAudioEnterStrings, std::size(kAudioEnterStrings), kAllButEbx };
@@ -1820,193 +1825,6 @@ bool audioSpeechMoved(win32::WinApplication* app, x86::CPU& cpu)
     });
 }
 
-bool controlsOnEnter(win32::WinApplication* app, x86::CPU& cpu)
-{
-    static fe::Site site{ "sub_43d4d0", 0, 0x64, kControlsStrings, std::size(kControlsStrings),
-                          fe::kRestoreEbx | fe::kRestoreEcx | fe::kRestoreEdx | fe::kRestoreEsi };
-    return runForMenu(app, cpu, site, onControlsEnter);
-}
-
-bool controlsOnExit(win32::WinApplication* app, x86::CPU& cpu)
-{
-    static fe::Site site{ "sub_43d5f0", 0, 16, nullptr, 0,
-                          fe::kRestoreEbx | fe::kRestoreEcx | fe::kRestoreEdx };
-    return fe::run(app, cpu, site, [](Guest& guest) { return onControlsExit(guest); });
-}
-
-bool controlsCancelKey(win32::WinApplication* app, x86::CPU& cpu)
-{
-    static fe::Site site{ "sub_43d3f0", 0, 4, nullptr, 0, kRestoreNone };
-    return runForKey(app, cpu, site, [](Guest& g, x86::reg32 i, x86::reg32 m, std::uint16_t k) {
-        return onCancelKey(g, i, m, k, kControlsCancelled, 1);
-    });
-}
-
-bool controlsResetClicked(win32::WinApplication* app, x86::CPU& cpu)
-{
-    static fe::Site site{ "sub_43d460", 0, 16, nullptr, 0,
-                          fe::kRestoreEbx | fe::kRestoreEcx | fe::kRestoreEdx };
-    return fe::run(app, cpu, site, [](Guest& guest) { return onResetClicked(guest); });
-}
-
-bool controlsResetAnswered(win32::WinApplication* app, x86::CPU& cpu)
-{
-    static fe::Site site{ "sub_43d410", 0, 12, nullptr, 0, fe::kRestoreEbx | fe::kRestoreEcx };
-    const std::uint32_t answer = cpu.eax;
-    const x86::reg32 close = cpu.edx;
-    return fe::run(app, cpu, site, [&](Guest& guest) { return onResetAnswered(guest, answer, close); });
-}
-
-bool deadZoneFillList(win32::WinApplication* app, x86::CPU& cpu)
-{
-    static fe::Site site{ "sub_43d9a0", 0, 16, nullptr, 0,
-                          fe::kRestoreEbx | fe::kRestoreEcx | fe::kRestoreEdx };
-    return fe::run(app, cpu, site, [](Guest& guest) { return fillControllerList(guest); });
-}
-
-bool deadZoneOnEnter(win32::WinApplication* app, x86::CPU& cpu)
-{
-    static fe::Site site{ "sub_4432c0", 0, 20, kDeadZoneStrings, std::size(kDeadZoneStrings),
-                          fe::kRestoreEbx | fe::kRestoreEcx | fe::kRestoreEdx | fe::kRestoreEsi };
-    return runForMenu(app, cpu, site, onDeadZoneEnter);
-}
-
-bool deadZoneOnExit(win32::WinApplication* app, x86::CPU& cpu)
-{
-    static fe::Site site{ "sub_443430", 0, 28, nullptr, 0 };
-    return fe::run(app, cpu, site, [](Guest& guest) { return onDeadZoneExit(guest); });
-}
-
-bool deadZoneCancelKey(win32::WinApplication* app, x86::CPU& cpu)
-{
-    static fe::Site site{ "sub_442db0", 0, 8, nullptr, 0, fe::kRestoreEcx };
-    return runForKey(app, cpu, site, [](Guest& g, x86::reg32 i, x86::reg32 m, std::uint16_t k) {
-        return onCancelKey(g, i, m, k, kDeadZoneKept, 0);
-    });
-}
-
-bool deadZoneChooseKey(win32::WinApplication* app, x86::CPU& cpu)
-{
-    static fe::Site site{ "sub_443260", 0, 8, nullptr, 0, fe::kRestoreEcx };
-    return runForKey(app, cpu, site, [](Guest& g, x86::reg32 i, x86::reg32 m, std::uint16_t k) {
-        return onChooseControllerKey(g, kListKey, i, m, k);
-    });
-}
-
-bool deadZoneChooseKeyInRace(win32::WinApplication* app, x86::CPU& cpu)
-{
-    static fe::Site site{ "sub_443290", 0, 8, nullptr, 0, fe::kRestoreEcx };
-    return runForKey(app, cpu, site, [](Guest& g, x86::reg32 i, x86::reg32 m, std::uint16_t k) {
-        return onChooseControllerKey(g, kButtonKey, i, m, k);
-    });
-}
-
-bool deadZoneShowController(win32::WinApplication* app, x86::CPU& cpu)
-{
-    static fe::Site site{ "sub_443070", 0, 28, kShowControllerStrings, std::size(kShowControllerStrings),
-                          kAllButEdx };
-    const x86::reg32 menu = cpu.eax;
-    const x86::reg32 controller = cpu.edx;
-    return fe::run(app, cpu, site, [&](Guest& guest) { return showController(guest, menu, controller); });
-}
-
-bool deadZoneAxisIndex(win32::WinApplication* app, x86::CPU& cpu)
-{
-    static fe::Site site{ "sub_442e60", 0, 8, nullptr, 0, fe::kRestoreEdx };
-    return runForItem(app, cpu, site, [](Guest& g, x86::reg32 item, x86::reg32) { return axisIndex(g, item); });
-}
-
-bool deadZoneApplyAxis(win32::WinApplication* app, x86::CPU& cpu)
-{
-    static fe::Site site{ "sub_442dd0", 16, 32, nullptr, 0 };
-    Guest arguments(app, cpu);
-    const float first = arguments.floatAt(cpu.esp + 4);
-    const float second = arguments.floatAt(cpu.esp + 8);
-    const x86::reg32 controller = arguments.dword(cpu.esp + 12);
-    const x86::reg32 axis = arguments.dword(cpu.esp + 16);
-    return fe::run(app, cpu, site,
-                   [&](Guest& guest) { return applyAxis(guest, first, second, controller, axis); });
-}
-
-bool deadZoneAxisMoved(win32::WinApplication* app, x86::CPU& cpu)
-{
-    static fe::Site site{ "sub_442ef0", 0, 40, nullptr, 0,
-                          fe::kRestoreEbx | fe::kRestoreEcx | fe::kRestoreEdx | fe::kRestoreEsi };
-    return runForItem(app, cpu, site, [](Guest& g, x86::reg32 item, x86::reg32) { return onAxisMoved(g, item); });
-}
-
-bool deadZoneAxisDraw(win32::WinApplication* app, x86::CPU& cpu)
-{
-    static fe::Site site{ "sub_442ff0", 0, 24, nullptr, 0, kAllButEdx };
-    return runForItem(app, cpu, site, onAxisDraw);
-}
-
-bool forceOnEnter(win32::WinApplication* app, x86::CPU& cpu)
-{
-    static fe::Site site{ "sub_447dd0", 0, 32, kForceStrings, std::size(kForceStrings) };
-    return runForMenu(app, cpu, site, onForceEnter);
-}
-
-bool forceOnExit(win32::WinApplication* app, x86::CPU& cpu)
-{
-    static fe::Site site{ "sub_4481c0", 0, 12, nullptr, 0, fe::kRestoreEbx | fe::kRestoreEdx };
-    return fe::run(app, cpu, site, [](Guest& guest) { return onForceExit(guest); });
-}
-
-bool forceCancelKey(win32::WinApplication* app, x86::CPU& cpu)
-{
-    static fe::Site site{ "sub_447b40", 0, 4, nullptr, 0, kRestoreNone };
-    return runForKey(app, cpu, site, [](Guest& g, x86::reg32 i, x86::reg32 m, std::uint16_t k) {
-        return onCancelKey(g, i, m, k, kForceCancelled, 1);
-    });
-}
-
-bool forceStrengthMoved(win32::WinApplication* app, x86::CPU& cpu)
-{
-    static fe::Site site{ "sub_447b60", 0, 36, nullptr, 0 };
-    return runForItem(app, cpu, site, [](Guest& g, x86::reg32 item, x86::reg32) { return onStrengthMoved(g, item); });
-}
-
-bool forceRoadEffectsMoved(win32::WinApplication* app, x86::CPU& cpu)
-{
-    static fe::Site site{ "sub_447c40", 0, 12, nullptr, 0, fe::kRestoreEdx };
-    return runForItem(app, cpu, site, [](Guest& g, x86::reg32 item, x86::reg32) {
-        return onForceMoved(g, item, kRoadEffectsForce);
-    });
-}
-
-bool forceCollisionMoved(win32::WinApplication* app, x86::CPU& cpu)
-{
-    static fe::Site site{ "sub_447c70", 0, 12, nullptr, 0, fe::kRestoreEdx };
-    return runForItem(app, cpu, site, [](Guest& g, x86::reg32 item, x86::reg32) {
-        return onForceMoved(g, item, kCollisionForce);
-    });
-}
-
-bool forceEngineMoved(win32::WinApplication* app, x86::CPU& cpu)
-{
-    static fe::Site site{ "sub_447ca0", 0, 12, nullptr, 0, fe::kRestoreEdx };
-    return runForItem(app, cpu, site, [](Guest& g, x86::reg32 item, x86::reg32) {
-        return onForceMoved(g, item, kEngineForce);
-    });
-}
-
-bool forceBodyRollMoved(win32::WinApplication* app, x86::CPU& cpu)
-{
-    static fe::Site site{ "sub_447cd0", 0, 16, nullptr, 0, kEcxEdx };
-    return runForItem(app, cpu, site, [](Guest& g, x86::reg32 item, x86::reg32) {
-        return onExclusiveForceMoved(g, item, kBodyRollForce, kRoadGripForce, kRoadGripSlider);
-    });
-}
-
-bool forceRoadGripMoved(win32::WinApplication* app, x86::CPU& cpu)
-{
-    static fe::Site site{ "sub_447d50", 0, 16, nullptr, 0, kEcxEdx };
-    return runForItem(app, cpu, site, [](Guest& g, x86::reg32 item, x86::reg32) {
-        return onExclusiveForceMoved(g, item, kRoadGripForce, kBodyRollForce, kBodyRollSlider);
-    });
-}
-
 bool graphicsOnEnter(win32::WinApplication* app, x86::CPU& cpu)
 {
     static fe::Site site{ "sub_448440", 0, 24, kGraphicsEnterStrings, std::size(kGraphicsEnterStrings) };
@@ -2050,5 +1868,221 @@ bool advancedIntensityMoved(win32::WinApplication* app, x86::CPU& cpu)
     return runForItem(app, cpu, site,
                       [](Guest& g, x86::reg32 item, x86::reg32) { return onEffectsIntensityMoved(g, item); });
 }
+
+/* The controls' screens, native whole, no generated code behind them
+ * (disassemble_nfs3hp.py's MENU_NATIVES): the function keys' and the
+ * hardware keys', the controllers' (control1), their dead zones and their
+ * force feedback. */
+namespace frontend
+{
+
+void funkeysOnEnter(win32::WinApplication* app, x86::CPU& cpu)
+{
+    static fe::Site site{ "sub_437600", 0, 12, kKeysStrings, std::size(kKeysStrings), kEcxEdx };
+    wholeForMenu(app, cpu, site, onKeysEnter);
+}
+
+void funkeysOnExit(win32::WinApplication* app, x86::CPU& cpu)
+{
+    // sub_4377c0: nothing to undo.
+    static fe::Site site{ "sub_4377c0", 0, 4, nullptr, 0, kRestoreNone };
+    fe::runWhole(app, cpu, site, [](Guest&) { return x86::reg32(0); });
+}
+
+void hardkeysOnEnter(win32::WinApplication* app, x86::CPU& cpu)
+{
+    // sub_4377d0: funkeys', instruction for instruction.
+    static fe::Site site{ "sub_4377d0", 0, 12, kKeysStrings, std::size(kKeysStrings), kEcxEdx };
+    wholeForMenu(app, cpu, site, onKeysEnter);
+}
+
+void controlsOnEnter(win32::WinApplication* app, x86::CPU& cpu)
+{
+    static fe::Site site{ "sub_43d4d0", 0, 0x64, kControlsStrings, std::size(kControlsStrings),
+                          fe::kRestoreEbx | fe::kRestoreEcx | fe::kRestoreEdx | fe::kRestoreEsi };
+    wholeForMenu(app, cpu, site, onControlsEnter);
+}
+
+void controlsOnExit(win32::WinApplication* app, x86::CPU& cpu)
+{
+    static fe::Site site{ "sub_43d5f0", 0, 16, nullptr, 0,
+                          fe::kRestoreEbx | fe::kRestoreEcx | fe::kRestoreEdx };
+    fe::runWhole(app, cpu, site, [](Guest& guest) { return onControlsExit(guest); });
+}
+
+void controlsCancelKey(win32::WinApplication* app, x86::CPU& cpu)
+{
+    static fe::Site site{ "sub_43d3f0", 0, 4, nullptr, 0, kRestoreNone };
+    wholeForKey(app, cpu, site, [](Guest& g, x86::reg32 i, x86::reg32 m, std::uint16_t k) {
+        return onCancelKey(g, i, m, k, kControlsCancelled, 1);
+    });
+}
+
+void controlsResetClicked(win32::WinApplication* app, x86::CPU& cpu)
+{
+    static fe::Site site{ "sub_43d460", 0, 16, nullptr, 0,
+                          fe::kRestoreEbx | fe::kRestoreEcx | fe::kRestoreEdx };
+    fe::runWhole(app, cpu, site, [](Guest& guest) { return onResetClicked(guest); });
+}
+
+void controlsResetAnswered(win32::WinApplication* app, x86::CPU& cpu)
+{
+    static fe::Site site{ "sub_43d410", 0, 12, nullptr, 0, fe::kRestoreEbx | fe::kRestoreEcx };
+    const std::uint32_t answer = cpu.eax;
+    const x86::reg32 close = cpu.edx;
+    fe::runWhole(app, cpu, site, [&](Guest& guest) { return onResetAnswered(guest, answer, close); });
+}
+
+void deadZoneFillList(win32::WinApplication* app, x86::CPU& cpu)
+{
+    static fe::Site site{ "sub_43d9a0", 0, 16, nullptr, 0,
+                          fe::kRestoreEbx | fe::kRestoreEcx | fe::kRestoreEdx };
+    fe::runWhole(app, cpu, site, [](Guest& guest) { return fillControllerList(guest); });
+}
+
+void deadZoneOnEnter(win32::WinApplication* app, x86::CPU& cpu)
+{
+    static fe::Site site{ "sub_4432c0", 0, 20, kDeadZoneStrings, std::size(kDeadZoneStrings),
+                          fe::kRestoreEbx | fe::kRestoreEcx | fe::kRestoreEdx | fe::kRestoreEsi };
+    wholeForMenu(app, cpu, site, onDeadZoneEnter);
+}
+
+void deadZoneOnExit(win32::WinApplication* app, x86::CPU& cpu)
+{
+    static fe::Site site{ "sub_443430", 0, 28, nullptr, 0 };
+    fe::runWhole(app, cpu, site, [](Guest& guest) { return onDeadZoneExit(guest); });
+}
+
+void deadZoneCancelKey(win32::WinApplication* app, x86::CPU& cpu)
+{
+    static fe::Site site{ "sub_442db0", 0, 8, nullptr, 0, fe::kRestoreEcx };
+    wholeForKey(app, cpu, site, [](Guest& g, x86::reg32 i, x86::reg32 m, std::uint16_t k) {
+        return onCancelKey(g, i, m, k, kDeadZoneKept, 0);
+    });
+}
+
+void deadZoneChooseKey(win32::WinApplication* app, x86::CPU& cpu)
+{
+    static fe::Site site{ "sub_443260", 0, 8, nullptr, 0, fe::kRestoreEcx };
+    wholeForKey(app, cpu, site, [](Guest& g, x86::reg32 i, x86::reg32 m, std::uint16_t k) {
+        return onChooseControllerKey(g, kListKey, i, m, k);
+    });
+}
+
+void deadZoneChooseKeyInRace(win32::WinApplication* app, x86::CPU& cpu)
+{
+    static fe::Site site{ "sub_443290", 0, 8, nullptr, 0, fe::kRestoreEcx };
+    wholeForKey(app, cpu, site, [](Guest& g, x86::reg32 i, x86::reg32 m, std::uint16_t k) {
+        return onChooseControllerKey(g, kButtonKey, i, m, k);
+    });
+}
+
+void deadZoneShowController(win32::WinApplication* app, x86::CPU& cpu)
+{
+    static fe::Site site{ "sub_443070", 0, 28, kShowControllerStrings, std::size(kShowControllerStrings),
+                          kAllButEdx };
+    const x86::reg32 menu = cpu.eax;
+    const x86::reg32 controller = cpu.edx;
+    fe::runWhole(app, cpu, site, [&](Guest& guest) { return showController(guest, menu, controller); });
+}
+
+void deadZoneAxisIndex(win32::WinApplication* app, x86::CPU& cpu)
+{
+    static fe::Site site{ "sub_442e60", 0, 8, nullptr, 0, fe::kRestoreEdx };
+    wholeForItem(app, cpu, site, [](Guest& g, x86::reg32 item, x86::reg32) { return axisIndex(g, item); });
+}
+
+void deadZoneApplyAxis(win32::WinApplication* app, x86::CPU& cpu)
+{
+    static fe::Site site{ "sub_442dd0", 16, 32, nullptr, 0 };
+    Guest arguments(app, cpu);
+    const float first = arguments.floatAt(cpu.esp + 4);
+    const float second = arguments.floatAt(cpu.esp + 8);
+    const x86::reg32 controller = arguments.dword(cpu.esp + 12);
+    const x86::reg32 axis = arguments.dword(cpu.esp + 16);
+    fe::runWhole(app, cpu, site,
+                   [&](Guest& guest) { return applyAxis(guest, first, second, controller, axis); });
+}
+
+void deadZoneAxisMoved(win32::WinApplication* app, x86::CPU& cpu)
+{
+    static fe::Site site{ "sub_442ef0", 0, 40, nullptr, 0,
+                          fe::kRestoreEbx | fe::kRestoreEcx | fe::kRestoreEdx | fe::kRestoreEsi };
+    wholeForItem(app, cpu, site, [](Guest& g, x86::reg32 item, x86::reg32) { return onAxisMoved(g, item); });
+}
+
+void deadZoneAxisDraw(win32::WinApplication* app, x86::CPU& cpu)
+{
+    static fe::Site site{ "sub_442ff0", 0, 24, nullptr, 0, kAllButEdx };
+    wholeForItem(app, cpu, site, onAxisDraw);
+}
+
+void forceOnEnter(win32::WinApplication* app, x86::CPU& cpu)
+{
+    static fe::Site site{ "sub_447dd0", 0, 32, kForceStrings, std::size(kForceStrings) };
+    wholeForMenu(app, cpu, site, onForceEnter);
+}
+
+void forceOnExit(win32::WinApplication* app, x86::CPU& cpu)
+{
+    static fe::Site site{ "sub_4481c0", 0, 12, nullptr, 0, fe::kRestoreEbx | fe::kRestoreEdx };
+    fe::runWhole(app, cpu, site, [](Guest& guest) { return onForceExit(guest); });
+}
+
+void forceCancelKey(win32::WinApplication* app, x86::CPU& cpu)
+{
+    static fe::Site site{ "sub_447b40", 0, 4, nullptr, 0, kRestoreNone };
+    wholeForKey(app, cpu, site, [](Guest& g, x86::reg32 i, x86::reg32 m, std::uint16_t k) {
+        return onCancelKey(g, i, m, k, kForceCancelled, 1);
+    });
+}
+
+void forceStrengthMoved(win32::WinApplication* app, x86::CPU& cpu)
+{
+    static fe::Site site{ "sub_447b60", 0, 36, nullptr, 0 };
+    wholeForItem(app, cpu, site, [](Guest& g, x86::reg32 item, x86::reg32) { return onStrengthMoved(g, item); });
+}
+
+void forceRoadEffectsMoved(win32::WinApplication* app, x86::CPU& cpu)
+{
+    static fe::Site site{ "sub_447c40", 0, 12, nullptr, 0, fe::kRestoreEdx };
+    wholeForItem(app, cpu, site, [](Guest& g, x86::reg32 item, x86::reg32) {
+        return onForceMoved(g, item, kRoadEffectsForce);
+    });
+}
+
+void forceCollisionMoved(win32::WinApplication* app, x86::CPU& cpu)
+{
+    static fe::Site site{ "sub_447c70", 0, 12, nullptr, 0, fe::kRestoreEdx };
+    wholeForItem(app, cpu, site, [](Guest& g, x86::reg32 item, x86::reg32) {
+        return onForceMoved(g, item, kCollisionForce);
+    });
+}
+
+void forceEngineMoved(win32::WinApplication* app, x86::CPU& cpu)
+{
+    static fe::Site site{ "sub_447ca0", 0, 12, nullptr, 0, fe::kRestoreEdx };
+    wholeForItem(app, cpu, site, [](Guest& g, x86::reg32 item, x86::reg32) {
+        return onForceMoved(g, item, kEngineForce);
+    });
+}
+
+void forceBodyRollMoved(win32::WinApplication* app, x86::CPU& cpu)
+{
+    static fe::Site site{ "sub_447cd0", 0, 16, nullptr, 0, kEcxEdx };
+    wholeForItem(app, cpu, site, [](Guest& g, x86::reg32 item, x86::reg32) {
+        return onExclusiveForceMoved(g, item, kBodyRollForce, kRoadGripForce, kRoadGripSlider);
+    });
+}
+
+void forceRoadGripMoved(win32::WinApplication* app, x86::CPU& cpu)
+{
+    static fe::Site site{ "sub_447d50", 0, 16, nullptr, 0, kEcxEdx };
+    wholeForItem(app, cpu, site, [](Guest& g, x86::reg32 item, x86::reg32) {
+        return onExclusiveForceMoved(g, item, kRoadGripForce, kBodyRollForce, kBodyRollSlider);
+    });
+}
+
+}  // namespace frontend
 
 }

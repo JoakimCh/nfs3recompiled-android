@@ -1,12 +1,14 @@
 #include "native_guest.h"
+#include <cstring>
 #include <iterator>
 
 /* nfs3.exe's own functions the port has natively, where their code was:
  * disassemble_nfs3hp.py binds each address to the function of that name here
  * (GAME_NATIVES), and the generated code calls it by name: the game's side
  * of its two driver interfaces, THRASH and iSND, the logger they report
- * through, and the functions of the game's that iSNDloaddll hands eacsnd.
- * The names are EA's where the game's own messages give them.
+ * through, the functions of the game's that iSNDloaddll hands eacsnd, and the
+ * fill the game's code clears and fills its memory with.  The names are EA's
+ * where the game's own messages give them.
  * tools/game_checks generates the game's code for them afresh and holds each
  * one against it.
  *
@@ -763,6 +765,168 @@ void THRASH_opendll(win32::WinApplication* app, x86::CPU& cpu)
     cpu.esi = esi;
     cpu.ebp = ebp;
     cpu.esp = esp + 4;
+}
+
+/* The game's fill (0x4e0721; 0x4e0716 spreads bl over ebx first, 0x4e070c
+ * fills with zeros), EA's, not the runtime's memset: edx bytes at eax from the pattern in ebx --
+ * up to an 8-byte boundary a byte, a word and a dword at a time, then 32 and 8
+ * bytes at a time (as doubles when its two low bytes are one value other than
+ * 0xff), then what is left.  eax ends past the bytes -- but for a last odd
+ * one, which it ends on; edx and the flags as its last steps leave them. */
+namespace
+{
+
+/* What fillCore leaves of the flags: cmp, add and test's. */
+struct IntegerFlags
+{
+    bool cf = false;
+    bool of = false;
+    bool zf = false;
+    bool sf = false;
+
+    void logic(x86::reg32 value)
+    {
+        cf = of = false;
+        zf = !value;
+        sf = value >> 31;
+    }
+    void compare(x86::reg32 a, x86::reg32 b)
+    {
+        const x86::reg32 result = a - b;
+        cf = a < b;
+        of = ((a >> 31) != (result >> 31)) && ((a >> 31) != (b >> 31));
+        zf = !result;
+        sf = result >> 31;
+    }
+    void store(x86::CPU& cpu) const
+    {
+        cpu.flags.cf = cf;
+        cpu.flags.of = of;
+        cpu.flags.zf = zf;
+        cpu.flags.sf = sf;
+    }
+};
+
+void fillCore(win32::WinApplication* app, x86::CPU& cpu)
+{
+    x86::reg32 at = cpu.eax;
+    x86::sreg32 left = x86::sreg32(cpu.edx);
+    const x86::reg32 pattern = cpu.ebx;
+    x86::reg8* memory = &app->getMemory<x86::reg8>(0);
+    auto put = [&](x86::reg32 bytes) {
+        std::memcpy(memory + at, &pattern, bytes);
+        at += bytes;
+    };
+    IntegerFlags flags;
+    if (at & 7)
+    {
+        if ((at & 1) && left >= 1)
+        {
+            put(1);
+            left -= 1;
+        }
+        if ((at & 2) && left >= 2)
+        {
+            put(2);
+            left -= 2;
+        }
+        if ((at & 4) && left >= 4)
+        {
+            put(4);
+            left -= 4;
+        }
+    }
+    flags.compare(x86::reg32(left), 0);  // cmp edx, 0
+    if (left >= 0)
+    {
+        // Eight bytes at a time: the pattern twice, as the dwords store it --
+        // or, bl and bh alike and not 0xff, as a double the x87 loads from
+        // the pattern pushed twice and stores (fld qword, fst qword), which
+        // makes a signalling NaN of it quiet.
+        x86::reg8 unit[8];
+        std::memcpy(unit, &pattern, 4);
+        std::memcpy(unit + 4, &pattern, 4);
+        const bool x87 = (pattern & 0xff) != 0xff && (pattern & 0xff) == (pattern >> 8 & 0xff);
+        if (x87)
+        {
+            double loaded;
+            std::memcpy(&loaded, unit, 8);
+            cpu.fpu.push(x86::Float(loaded));
+            const double stored = double(cpu.fpu.st(0));
+            std::memcpy(unit, &stored, 8);
+        }
+        // 32 at a time: sub edx, 0x20 until it goes negative; then 8 at a time
+        left -= 0x20;
+        if (left >= 0)
+        {
+            // one fill for the whole run of 32-byte blocks
+            const x86::reg32 blocks = x86::reg32(left) / 0x20 + 1;
+            x86::reg8* to = memory + at;
+            for (x86::reg32 i = 0; i < blocks * 4; ++i)
+                std::memcpy(to + i * 8, unit, 8);
+            at += blocks * 0x20;
+            left -= x86::sreg32(blocks * 0x20);
+        }
+        left += 0x18;
+        while (left >= 0)
+        {
+            std::memcpy(memory + at, unit, 8);
+            at += 8;
+            left -= 8;
+        }
+        if (x87)
+            cpu.fpu.count -= 1;  // fstp st(0)
+        const x86::reg32 before = x86::reg32(left);
+        left += 8;
+        // add edx, 8
+        const x86::reg32 sum = x86::reg32(left);
+        flags.cf = sum < before;
+        flags.of = (~(before ^ 8u) & (before ^ sum)) >> 31;
+        flags.zf = sum == 0;
+        flags.sf = sum >> 31;
+        if (left != 0)
+        {
+            if (left & 4)
+                put(4);
+            if (left & 2)
+                put(2);
+            if (left & 1)
+                memory[at] = x86::reg8(pattern);  // the last byte: eax not moved past it
+            flags.logic(x86::reg32(left) & 1);  // test edx, 1
+        }
+    }
+    flags.store(cpu);
+    cpu.eax = at;
+    cpu.edx = x86::reg32(left);
+}
+
+}  // namespace
+
+/* 0x4e0721: edx bytes at eax of the pattern in ebx. */
+void fillWord(win32::WinApplication* app, x86::CPU& cpu)
+{
+    fillCore(app, cpu);
+    cpu.esp += 4;
+}
+
+/* 0x4e0716: edx bytes at eax of bl. */
+void fillByte(win32::WinApplication* app, x86::CPU& cpu)
+{
+    x86::reg32 ebx = (cpu.ebx & 0xffff0000) | (cpu.ebx & 0xff) << 8 | (cpu.ebx & 0xff);
+    ebx |= ebx << 16;
+    cpu.ebx = ebx;
+    fillCore(app, cpu);
+    cpu.esp += 4;
+}
+
+/* 0x4e070c: edx bytes at eax cleared. */
+void fillZero(win32::WinApplication* app, x86::CPU& cpu)
+{
+    const x86::reg32 ebx = cpu.ebx;
+    cpu.ebx = 0;
+    fillCore(app, cpu);
+    cpu.ebx = ebx;
+    cpu.esp += 4;
 }
 
 }  // namespace nfs3hp

@@ -1,5 +1,5 @@
-/* The decompiled screens -- src/nfs3hp/native_frontend_options.cpp, _cars.cpp
- * and _tracks.cpp -- against the generated code they stand in for, on the
+/* The decompiled screens -- src/nfs3hp/native_frontend_options.cpp, _cars.cpp,
+ * _tracks.cpp and _main.cpp -- against the generated code they stand in for, on the
  * desktop, without the game or its data.
  *
  * The generated functions are copied out of src/nfs3hp/disassembly without
@@ -84,6 +84,7 @@ const std::pair<x86::reg32, x86::reg32> kWatched[] = {
     { 0x550000, 0x570000 }, { 0x5f3000, 0x5f4000 }, { 0x604000, 0x608000 },
     { 0x660000, 0x664000 }, { 0x6fb000, 0x6fe000 }, { 0x7a2000, 0x7a4000 },
     { 0x5e1000, 0x5e2000 }, { 0x677000, 0x678000 }, { 0x7dd000, 0x7de000 }, { 0x8b8000, 0x8bb000 },
+    { 0x678000, 0x679000 }, { 0x5f4000, 0x5f5000 }, { 0x664000, 0x665000 },
 };
 
 x86::reg32 watchedHash()
@@ -93,6 +94,10 @@ x86::reg32 watchedHash()
     {
         for (x86::reg32 at = range.first; at < range.second; at += 8)
         {
+            // The rows the items stand in, which mainsplt moves as the port
+            // has it (checked by compare()).
+            if (at >= 0x559c68 && at < 0x559cb8)
+                continue;
             std::uint64_t v;
             std::memcpy(&v, g_memory + at, 8);
             h = (h ^ v) * 1099511628211ull;
@@ -128,6 +133,9 @@ enum class Kind
     NoEax,         // leaves eax as it is
     Shape,         // a shape's record: memory to read
     Tuning,        // 0 or a player's tuning record, 0x1c bytes
+    EditText,      // the dialog's line typed in: a string of the script's
+    Memset,        // memset: eax, the byte in edx, ebx of it
+    Strncpy,       // strncpy: edx to eax, ebx at most
 };
 
 struct Spec
@@ -139,6 +147,9 @@ struct Spec
     Kind kind;
     bool string = false;   // eax a string: what it says is recorded
 };
+
+/* An item's handler as its screen shows it: no code of the game's, a stand-in. */
+constexpr x86::reg32 kShowHandler = 0x7e0100;
 
 const std::map<x86::reg32, Spec> kSpecs = {
     { 0x442a40, { EAX | EDX, 0, 0, EDX, Kind::FindItem } },
@@ -166,10 +177,10 @@ const std::map<x86::reg32, Spec> kSpecs = {
     { 0x4df690, { 0, 0, 0, 0, Kind::Sprintf } },
     { 0x43c040, { 0, 0, 0, 0, Kind::Plain } },
     { 0x44a660, { EAX, 0, 0, 0, Kind::Bool } },
-    { 0x4d1850, { EAX, 0, 0, EBX | EDI | ESI, Kind::Plain } },
+    { 0x4d1850, { EAX, 0, 0, 0, Kind::Plain } },
     { 0x4446c0, { 0, 0, 0, 0, Kind::Focus } },
     { 0x4446d0, { EAX | EBX | ECX | EDX, 4, 16, EBX | ECX | EDX, Kind::Plain } },
-    { 0x444be0, { EAX, 0, 0, EDI | ESI, Kind::Plain } },
+    { 0x444be0, { EAX, 0, 0, 0, Kind::Plain } },
     { 0x445f00, { 0, 0, 0, 0, Kind::NoEax } },
     { 0x445f10, { 0, 0, 0, 0, Kind::Plain } },
     { 0x445f50, { EAX, 0, 0, 0, Kind::Plain } },
@@ -219,6 +230,31 @@ const std::map<x86::reg32, Spec> kSpecs = {
     { 0x4c9490, { 0, 0, 0, ESI, Kind::Plain } },
     { 0x4e8c1c, { EAX, 0, 0, EDI, Kind::Plain } },
     { 0x4e1890, { EAX, 0, 0, 0, Kind::Plain } },
+    // The main menu's.
+    { 0x452020, { EAX | EDX, 0, 0, EDX, Kind::Plain, true } },
+    { 0x444c10, { 0, 0, 0, 0, Kind::EditText } },
+    { 0x444c20, { EAX | EBX | ECX | EDX, 5, 20, EBX | ECX | EDX, Kind::Plain } },
+    { 0x4721f0, { EAX, 0, 0, 0, Kind::Bool, true } },
+    { 0x496200, { EAX, 0, 0, 0, Kind::Bool } },
+    { 0x4a65e0, { 0, 0, 0, 0, Kind::Plain } },
+    // The menus' text past the language's lines: names (native_frontend_text.cpp).
+    { 0x4d17b0, { EAX, 0, 0, 0, Kind::Plain } },
+    { 0x43d9f0, { EAX, 0, 0, 0, Kind::Plain } },
+    { 0x448400, { EAX, 0, 0, 0, Kind::Plain } },
+    // What the main menu's dialogs and the menu loop's parts call: the font,
+    // the dialogs' layout and pointer, the screens' art, an item's handler.
+    { 0x452100, { EAX, 0, 0, 0, Kind::NoEax } },
+    { 0x443a90, { EAX | EBX | ECX | EDX, 1, 4, EBX | ECX | EDX, Kind::Plain } },
+    { 0x443c00, { EAX | EBX | EDX, 0, 0, EBX | EDX, Kind::Plain } },
+    { 0x443d20, { EAX | EBX | ECX | EDX, 0, 0, EBX | ECX | EDX, Kind::Plain } },
+    { 0x444570, { EAX, 0, 0, 0, Kind::Plain } },
+    { 0x444a80, { EAX | EBX | ECX | EDX, 1, 4, EBX | ECX | EDX, Kind::Plain } },
+    { 0x49bfc0, { EAX | EDX, 0, 0, EDX, Kind::Plain } },
+    { 0x443860, { EAX | EDX, 0, 0, 0, Kind::Bool, true } },
+    { 0x4e0640, { EAX | EBX | EDX, 0, 0, 0, Kind::Memset } },
+    { 0x4e0e30, { EAX | EBX | EDX, 0, 0, 0, Kind::Strncpy } },
+    { 0x440970, { 0, 0, 0, 0, Kind::Plain } },
+    { kShowHandler, { EAX | EDX, 0, 0, 0, Kind::Plain } },
 };
 
 x86::reg32* reg(x86::CPU& cpu, std::uint8_t r)
@@ -233,6 +269,13 @@ x86::reg32* reg(x86::CPU& cpu, std::uint8_t r)
     default: return &cpu.edi;
     }
 }
+
+// The rows the screens' items stand in (native_frontend_main.cpp): x and y,
+// int16 every four bytes.
+constexpr x86::reg32 kRowX = 0x559c6c, kRowY = 0x559c94;
+
+// Where the dialog's typed line is, for the main menu's name dialogs.
+constexpr x86::reg32 kEditText = 0x5f3fc0;
 
 // The items findItem hands out, and the screens' slider slots that may hold them.
 constexpr x86::reg32 kItems = 0x604ee0;
@@ -337,6 +380,10 @@ void sprintfMock(x86::CPU& cpu)
 namespace nfs3hp
 {
 
+/* The dialogs' NFS emblem, drawn wide-screen (tools/apply_widescreen.py):
+ * nothing here. */
+void dialogEmblem(bool) {}
+
 /* The port's keyboard, told the game takes typing: recorded. */
 void textEntry(bool taking)
 {
@@ -437,12 +484,107 @@ void mock(win32::WinApplication*, x86::CPU& cpu, x86::reg32 address)
     case Kind::Tuning:
         result = scripted(3) == 0 ? 0 : 0x5f3e00 + 4 * scripted(8);
         break;
+    case Kind::Memset:
+        std::memset(g_memory + cpu.eax, int(cpu.edx & 0xff), cpu.ebx < 0x1000 ? cpu.ebx : 0x1000);
+        result = cpu.eax;
+        break;
+    case Kind::Strncpy:
+    {
+        // As the runtime's: up to ebx, the rest of them 0 past the source's end.
+        const x86::reg32 most = cpu.ebx < 0x1000 ? cpu.ebx : 0x1000;
+        bool ended = false;
+        for (x86::reg32 i = 0; i < most; ++i)
+        {
+            const x86::reg8 c = ended ? 0 : g_memory[cpu.edx + i];
+            ended = ended || c == 0;
+            g_memory[cpu.eax + i] = c;
+        }
+        result = cpu.eax;
+        break;
+    }
+    case Kind::EditText:
+    {
+        // A name of 0 to 14 letters, past the 10 a player's may have now and then.
+        const x86::reg32 length = scripted(15);
+        for (x86::reg32 i = 0; i < length; ++i)
+            g_memory[kEditText + i] = x86::reg8('A' + scripted(26));
+        g_memory[kEditText + length] = 0;
+        result = kEditText;
+        break;
+    }
     }
     for (const std::uint8_t r : { EBX, ECX, EDX, ESI, EDI })
         if (spec.clobbers & r)
             *reg(cpu, r) = 0xc1000000 | (g_calls << 8) | r;
     cpu.eax = result;
     cpu.esp += 4 + spec.pops;
+}
+
+/* The game's own natives (native_game.cpp) the generated code calls by
+ * name: the stand-ins they were at their addresses. */
+void Is3DSoundAvailable(win32::WinApplication* app, x86::CPU& cpu)
+{
+    mock(app, cpu, 0x40faf0);
+}
+
+/* The menus' text, native whole (native_frontend_text.cpp, which
+ * tools/game_checks checks): the stand-ins they were at their addresses. */
+namespace frontend
+{
+
+void languageText(win32::WinApplication* app, x86::CPU& cpu)
+{
+    mock(app, cpu, 0x4d1850);
+}
+
+void specialText(win32::WinApplication* app, x86::CPU& cpu)
+{
+    mock(app, cpu, 0x4d17b0);
+}
+
+void nameValid(win32::WinApplication* app, x86::CPU& cpu)
+{
+    mock(app, cpu, 0x4721f0);
+}
+
+void controllerName(win32::WinApplication* app, x86::CPU& cpu)
+{
+    mock(app, cpu, 0x43d9f0);
+}
+
+void displayModeName(win32::WinApplication* app, x86::CPU& cpu)
+{
+    mock(app, cpu, 0x448400);
+}
+
+}
+
+/* The Watcom runtime's functions the generated code calls by name, native in
+ * the port (native_watcom.cpp): __CHP as it is -- st(0) rounded toward zero,
+ * the screens read what it gives -- and sprintf and mkdir as the stand-ins
+ * they were at their addresses. */
+namespace watcom
+{
+
+void CHP(win32::WinApplication*, x86::CPU& cpu)
+{
+    const auto rc = cpu.fpu.control.rc;
+    cpu.fpu.control.rc = 3;
+    cpu.fpu.st(0) = cpu.fpu.rndint(cpu.fpu.st(0));
+    cpu.fpu.control.rc = rc;
+    cpu.esp += 4;
+}
+
+void sprintf(win32::WinApplication* app, x86::CPU& cpu)
+{
+    mock(app, cpu, 0x4df690);
+}
+
+void mkdir(win32::WinApplication* app, x86::CPU& cpu)
+{
+    mock(app, cpu, 0x4eb1d0);
+}
+
 }
 
 }
@@ -494,6 +636,7 @@ Application::Application(const char* appName)
 {
     g_methods = {
 #include "build/mocks.inc.generated"
+        {0x4dfd56, &watcom::CHP},
     };
 }
 
@@ -503,6 +646,14 @@ namespace
 {
 
 typedef bool (*Native)(win32::WinApplication*, x86::CPU&);
+
+/* A function native whole, which has no generated code to step aside to. */
+template <void (*Function)(win32::WinApplication*, x86::CPU&)>
+bool whole(win32::WinApplication* app, x86::CPU& cpu)
+{
+    Function(app, cpu);
+    return true;
+}
 
 std::mt19937 g_random(1998);
 
@@ -641,7 +792,9 @@ void makeWorld()
     std::memcpy(g_memory + 0x7a2db4, "fedata\\art\\", 12);
 
     // The cars' screens.
-    setWord32(0x6fd3b8, random(5) == 0 ? random(0) : random(4));   // the kind of race
+    // The kind of race: 0 to 3, now and then past them -- by a few only, for
+    // mainmult indexes its list with it, unchecked.
+    setWord32(0x6fd3b8, random(5) == 0 ? 4 + random(12) : random(4));
     setWord32(0x6fd2bc, random(40));
     setWord32(0x6fd328, random(40));
     static const x86::reg32 kPlayers[] = { 0x6fd2bc, 0x6fd328, 0x6fd2bc, 0x6fd328, 0x5f3e80 };
@@ -707,6 +860,26 @@ void makeWorld()
     setWord32(0x7dd838, random(2));
     setWord32(0x7dd84c, random(2) ? 0 : random(0));
     setWord32(0x7a22e0, random(3) == 0);
+
+    // The main menu's: the aids, the network game, mainmult's race list and
+    // its name after it, which the screen checks.
+    for (x86::reg32 i = 0; i < 6; ++i)
+        setWord32(0x6fd474 + 4 * i, random(4) == 0 ? random(0) : 0);
+    setWord32(0x6fd48c, random(2) ? 0 : random(0));
+    setWord32(0x7a22d8, random(0));
+    g_memory[0x7a22da] = x86::reg8(random(2));
+    g_memory[0x7a22db] = x86::reg8(random(4) == 0);
+    g_memory[0x7a22dc] = x86::reg8(random(3) == 0);
+    g_memory[0x7a22dd] = x86::reg8(random(4) == 0);
+    setWord32(0x7a22e4, random(4));
+    setWord32(0x6fd50c, random(2));
+    setWord32(0x5556d8, random(5) == 0 ? random(0) : random(7));
+    setWord32(0x5556dc, random(2) ? word32(0x5556d8) : random(7));
+    setWord32(0x6fd470, random(3));
+    for (x86::reg32 i = 0; i < 7; ++i)
+        g_memory[0x555730 + 2 * i] = x86::reg8(random(2)), g_memory[0x555731 + 2 * i] = x86::reg8(random(8) == 0);
+    std::memcpy(g_memory + 0x55573e, "opcars", 7);
+    setWord32(0x664658, random(2));
 }
 
 x86::CPU entryState()
@@ -766,7 +939,32 @@ void compare(nfs3hp::Application& app, const char* name, x86::reg32 address, Nat
     const bool took = native(&app, mine);
 
     char what[400] = "";
-    if (!took)
+    // The port's own change: mainsplt's rows stand higher while it is up
+    // (native_frontend_main.cpp), back where the game has them as it closes.
+    // Checked here, then the generated code's rows taken for the rest.
+    const bool splitEnter = std::strstr(name, "splitMenuOnEnter") != nullptr;
+    if (took && (splitEnter || std::strstr(name, "splitMenuOnExit")))
+    {
+        static const std::int16_t kSplitX[] = { 18, 8, 2, 0, 1, 3, 10, 19 };
+        static const std::int16_t kSplitY[] = { 115, 150, 185, 220, 255, 290, 325, 360 };
+        static const std::int16_t kGameX[] = { 12, 5, 2, 1, 4, 9, 16, 27 };
+        static const std::int16_t kGameY[] = { 138, 173, 208, 243, 278, 313, 348, 383 };
+        const bool rowsMoved = splitEnter;
+        for (x86::reg32 i = 0; i < 8; ++i)
+        {
+            std::int16_t x, y;
+            std::memcpy(&x, g_memory + kRowX + 4 * i, 2);
+            std::memcpy(&y, g_memory + kRowY + 4 * i, 2);
+            if (x != (rowsMoved ? kSplitX : kGameX)[i] || y != (rowsMoved ? kSplitY : kGameY)[i])
+                std::snprintf(what, sizeof what, "row %u at %d,%d", unsigned(i), x, y);
+        }
+        for (x86::reg32 at : { kRowX, kRowY })
+            std::memcpy(g_memory + at, &g_original[at], 4 * 8);
+    }
+    if (what[0])
+    {
+    }
+    else if (!took)
     {
         std::snprintf(what, sizeof what, "the native stepped aside");
     }
@@ -867,7 +1065,60 @@ enum class Entry
     Advanced,      // eax and edx advanced tunings, or 0
     MenuAndMode,   // eax a screen, edx whom the tuning is for
     Numbers,       // eax and edx small numbers
+    ShowItems,     // eax the screen, its items' show handlers some of them
+    CurrentName,   // the screen shown, or none
+    LinesBox,      // eax lines, edx them, ebx and ecx a row and a field below, the rect on the stack
+    ButtonRowBox,  // eax buttons, edx them, ebx the rect
+    PlaceButtons,  // eax buttons, edx them, ebx a column, ecx the rect
+    PointAt,       // eax a button, the count of them
+    Question,      // a question's lines and buttons, its help, focus, column and callback
+    Message,       // a message's lines, its time and keys, its callback
+    MessageById,   // eax a line of the language's
+    Edit,          // a line to type in: its lines, buttons, focus, source, most, mode and callback
 };
+
+/* A dialog's texts: an array of `count` at `array`, each a text or now and
+ * then none, made up from `strings` on. */
+constexpr x86::reg32 kDialogLines = 0x677000, kDialogButtons = 0x677040, kDialogHelp = 0x677080;
+constexpr x86::reg32 kDialogStrings = 0x677100, kDialogSource = 0x677900, kDialogRect = 0x677a00;
+
+void makeTexts(x86::reg32 array, x86::reg32 count, x86::reg32 strings, bool gaps)
+{
+    for (x86::reg32 i = 0; i < count && i < 12; ++i)
+    {
+        const x86::reg32 text = strings + 0x40 * i;
+        const x86::reg32 length = random(20);
+        for (x86::reg32 c = 0; c < length; ++c)
+            g_memory[text + c] = x86::reg8('A' + random(26));
+        g_memory[text + length] = 0;
+        setWord32(array + 4 * i, gaps && random(6) == 0 ? 0 : text);
+    }
+}
+
+/* Some lines and buttons for a dialog: their counts in eax and ebx, their
+ * arrays in edx and ecx -- none, now and then; ten buttons or more. */
+void dialogTexts(x86::CPU& cpu)
+{
+    const x86::reg32 lines = random(8) == 0 ? 0 : 1 + random(5);
+    const x86::reg32 buttons = random(8) == 0 ? 0 : random(10) == 0 ? 10 + random(3) : 1 + random(4);
+    makeTexts(kDialogLines, lines, kDialogStrings, false);
+    makeTexts(kDialogButtons, buttons, kDialogStrings + 0x40 * 6, true);
+    makeTexts(kDialogHelp, buttons, kDialogStrings + 0x40 * 18, true);
+    cpu.eax = lines;
+    cpu.edx = random(12) == 0 ? 0 : kDialogLines;
+    cpu.ebx = buttons;
+    cpu.ecx = random(12) == 0 ? 0 : kDialogButtons;
+}
+
+/* A rect of floats, top, left, bottom, right, on the 640 by 480 screen. */
+void makeRect(x86::reg32 rect)
+{
+    const x86::reg32 left = random(320), top = random(240);
+    setFloat(rect + 4, float(left));
+    setFloat(rect + 0, float(top));
+    setFloat(rect + 0xc, float(left + 60 + random(320)));
+    setFloat(rect + 8, float(top + 30 + random(240)));
+}
 
 struct Case
 {
@@ -951,6 +1202,80 @@ x86::CPU caseEntry(Entry entry, x86::reg32 address)
         cpu.eax = random(8);
         cpu.edx = random(14);
         break;
+    case Entry::ShowItems:
+    {
+        // The pool's items with their show handlers or none, after a race
+        // only or before one only now and then; past them the table's end.
+        for (std::uint32_t i = 0; i < kPoolItems + 10; ++i)
+        {
+            const x86::reg32 item = kItems + kItemSize * (kPoolFirst + i);
+            setWord32(item + 0x24, random(3) == 0 ? kShowHandler : 0);
+            g_memory[item + 0x14] = x86::reg8(random(4) == 0), g_memory[item + 0x15] = 0;
+            g_memory[item + 0x16] = x86::reg8(random(4) == 0), g_memory[item + 0x17] = 0;
+        }
+        setWord32(kItems + kItemSize * (kPoolFirst + kPoolItems + 10), 0);
+        setWord32(0x662968, random(2));
+        cpu.eax = g_menu;
+        break;
+    }
+    case Entry::CurrentName:
+        setWord32(0x559230, random(4) == 0 ? 0 : g_menu);
+        setWord32(g_menu + 0x14, 0x5f3f20);
+        break;
+    case Entry::LinesBox:
+        dialogTexts(cpu);
+        cpu.ebx = random(2) ? 0 : random(2) ? 1 : random(0);
+        cpu.ecx = random(2) ? 0 : random(2) ? 1 : random(0);
+        setWord32(cpu.esp + 4, kDialogRect);
+        break;
+    case Entry::ButtonRowBox:
+        dialogTexts(cpu);
+        cpu.eax = cpu.ebx, cpu.edx = cpu.ecx;
+        cpu.ebx = kDialogRect;
+        break;
+    case Entry::PlaceButtons:
+        dialogTexts(cpu);
+        cpu.eax = cpu.ebx, cpu.edx = cpu.ecx;
+        cpu.ebx = random(2) ? 0 : random(2) ? 1 : random(0);
+        cpu.ecx = kDialogRect;
+        makeRect(kDialogRect);
+        setWord32(0x558b40, random(640));
+        break;
+    case Entry::PointAt:
+        setWord32(0x558b30, random(12));
+        cpu.eax = x86::reg32(random(14)) - 2;
+        break;
+    case Entry::Question:
+        dialogTexts(cpu);
+        setWord32(cpu.esp + 4, random(3) == 0 ? 0 : kDialogHelp);
+        setWord32(cpu.esp + 8, x86::reg32(random(8)) - 2);
+        setWord32(cpu.esp + 12, random(2) ? 0 : random(2) ? 1 : random(0));
+        setWord32(cpu.esp + 16, random(0));
+        break;
+    case Entry::Message:
+        dialogTexts(cpu);
+        cpu.ebx = random(5) == 0 ? 0 : random(2) ? x86::reg32(0) - random(1000) : random(1000);
+        cpu.ecx = random(0);
+        setWord32(cpu.esp + 4, random(0));
+        break;
+    case Entry::MessageById:
+        cpu.eax = random(0x900);
+        break;
+    case Entry::Edit:
+    {
+        dialogTexts(cpu);
+        setWord32(0x558c5c, random(5) == 0 ? random(0) : random(4));
+        const x86::reg32 length = random(20);
+        for (x86::reg32 c = 0; c < length; ++c)
+            g_memory[kDialogSource + c] = x86::reg8('a' + random(26));
+        g_memory[kDialogSource + length] = 0;
+        setWord32(cpu.esp + 4, x86::reg32(random(8)) - 2);
+        setWord32(cpu.esp + 8, random(6) == 0 ? 0 : kDialogSource);
+        setWord32(cpu.esp + 12, random(5) == 0 ? 0 : random(5) == 0 ? 0x100 + random(0x200) : random(16));
+        setWord32(cpu.esp + 16, random(5));
+        setWord32(cpu.esp + 20, random(0));
+        break;
+    }
     }
     return cpu;
 }
@@ -958,6 +1283,8 @@ x86::CPU caseEntry(Entry entry, x86::reg32 address)
 }
 
 #define CASE(name, address, entry) { #name " sub_" #address, 0x##address, nfs3hp::name, Entry::entry }
+#define WHOLE(name, address, entry) \
+    { #name " sub_" #address, 0x##address, whole<nfs3hp::frontend::name>, Entry::entry }
 
 int main(int argc, char** argv)
 {
@@ -977,9 +1304,9 @@ int main(int argc, char** argv)
         CASE(feedTimeListKey, 437350, Key),
         CASE(feedPositionListKey, 4373e0, Key),
         CASE(feedSpeedListKey, 437470, Key),
-        CASE(funkeysOnEnter, 437600, Menu),
-        CASE(funkeysOnExit, 4377c0, Menu),
-        CASE(hardkeysOnEnter, 4377d0, Menu),
+        WHOLE(funkeysOnEnter, 437600, Menu),
+        WHOLE(funkeysOnExit, 4377c0, Menu),
+        WHOLE(hardkeysOnEnter, 4377d0, Menu),
         CASE(audioOnEnter, 437e00, Menu),
         CASE(audioOnExit, 438070, Menu),
         CASE(audioOnFrame, 438260, Menu),
@@ -989,31 +1316,31 @@ int main(int argc, char** argv)
         CASE(audioEffectsMoved, 4379d0, Item),
         CASE(audioEngineMoved, 437a20, Item),
         CASE(audioSpeechMoved, 437a70, Item),
-        CASE(controlsOnEnter, 43d4d0, Menu),
-        CASE(controlsOnExit, 43d5f0, Menu),
-        CASE(controlsCancelKey, 43d3f0, Key),
-        CASE(controlsResetClicked, 43d460, Item),
-        CASE(controlsResetAnswered, 43d410, Answer),
-        CASE(deadZoneFillList, 43d9a0, None),
-        CASE(deadZoneOnEnter, 4432c0, Menu),
-        CASE(deadZoneOnExit, 443430, Menu),
-        CASE(deadZoneCancelKey, 442db0, Key),
-        CASE(deadZoneChooseKey, 443260, Key),
-        CASE(deadZoneChooseKeyInRace, 443290, Key),
-        CASE(deadZoneShowController, 443070, ShowController),
-        CASE(deadZoneAxisIndex, 442e60, Item),
-        CASE(deadZoneApplyAxis, 442dd0, ApplyAxis),
-        CASE(deadZoneAxisMoved, 442ef0, Item),
-        CASE(deadZoneAxisDraw, 442ff0, Item),
-        CASE(forceOnEnter, 447dd0, Menu),
-        CASE(forceOnExit, 4481c0, Menu),
-        CASE(forceCancelKey, 447b40, Key),
-        CASE(forceStrengthMoved, 447b60, Item),
-        CASE(forceRoadEffectsMoved, 447c40, Item),
-        CASE(forceCollisionMoved, 447c70, Item),
-        CASE(forceEngineMoved, 447ca0, Item),
-        CASE(forceBodyRollMoved, 447cd0, Item),
-        CASE(forceRoadGripMoved, 447d50, Item),
+        WHOLE(controlsOnEnter, 43d4d0, Menu),
+        WHOLE(controlsOnExit, 43d5f0, Menu),
+        WHOLE(controlsCancelKey, 43d3f0, Key),
+        WHOLE(controlsResetClicked, 43d460, Item),
+        WHOLE(controlsResetAnswered, 43d410, Answer),
+        WHOLE(deadZoneFillList, 43d9a0, None),
+        WHOLE(deadZoneOnEnter, 4432c0, Menu),
+        WHOLE(deadZoneOnExit, 443430, Menu),
+        WHOLE(deadZoneCancelKey, 442db0, Key),
+        WHOLE(deadZoneChooseKey, 443260, Key),
+        WHOLE(deadZoneChooseKeyInRace, 443290, Key),
+        WHOLE(deadZoneShowController, 443070, ShowController),
+        WHOLE(deadZoneAxisIndex, 442e60, Item),
+        WHOLE(deadZoneApplyAxis, 442dd0, ApplyAxis),
+        WHOLE(deadZoneAxisMoved, 442ef0, Item),
+        WHOLE(deadZoneAxisDraw, 442ff0, Item),
+        WHOLE(forceOnEnter, 447dd0, Menu),
+        WHOLE(forceOnExit, 4481c0, Menu),
+        WHOLE(forceCancelKey, 447b40, Key),
+        WHOLE(forceStrengthMoved, 447b60, Item),
+        WHOLE(forceRoadEffectsMoved, 447c40, Item),
+        WHOLE(forceCollisionMoved, 447c70, Item),
+        WHOLE(forceEngineMoved, 447ca0, Item),
+        WHOLE(forceBodyRollMoved, 447cd0, Item),
+        WHOLE(forceRoadGripMoved, 447d50, Item),
         CASE(graphicsOnEnter, 448440, Menu),
         CASE(graphicsOnExit, 4484e0, Menu),
         CASE(graphicsOnFrame, 448430, Menu),
@@ -1078,6 +1405,37 @@ int main(int argc, char** argv)
         CASE(infoOnExit, 456990, Menu),
         CASE(infoSpeak, 4c94e0, Numbers),
         CASE(infoStopSpeaking, 4c9590, None),
+        // The main menu: main, mainsplt, mainmult.
+        WHOLE(mainMenuOnEnter, 45d050, Menu),
+        WHOLE(mainMenuOnExit, 45d2f0, Menu),
+        WHOLE(mainMenuOnFrame, 45cff0, Menu),
+        WHOLE(mainMenuOnPlayerName, 45cef0, None),
+        WHOLE(mainMenuPlayerNameAnswer, 45cdd0, Answer),
+        WHOLE(splitMenuOnEnter, 45d360, Menu),
+        WHOLE(splitMenuOnExit, 45d620, Menu),
+        WHOLE(splitMenuOnFrame, 45d300, Menu),
+        WHOLE(splitMenuOnPlayer2Name, 45cf70, None),
+        WHOLE(splitMenuPlayer2NameAnswer, 45ce60, Answer),
+        WHOLE(multiMenuOnEnter, 440470, Menu),
+        WHOLE(multiMenuOnExit, 4405b0, Menu),
+        WHOLE(multiMenuOnFrame, 4403f0, Menu),
+        WHOLE(multiMenuApplyRaceList, 440160, Menu),
+        WHOLE(multiMenuFollowRaceType, 440390, None),
+        WHOLE(multiMenuOnBack, 4400d0, None),
+        WHOLE(multiMenuLeaveAnswer, 43fcb0, Answer),
+        // What the main menu calls of the menu loop and the dialogs, native whole.
+        WHOLE(menuShowItems, 44a960, ShowItems),
+        WHOLE(menuCurrentName, 44ae00, CurrentName),
+        WHOLE(dialogLinesBox, 443a90, LinesBox),
+        WHOLE(dialogButtonRowBox, 443c00, ButtonRowBox),
+        WHOLE(dialogPlaceButtons, 443d20, PlaceButtons),
+        WHOLE(dialogPointAtButton, 444570, PointAt),
+        WHOLE(dialogOpenQuestion, 4446d0, Question),
+        WHOLE(dialogOpenMessage, 444a80, Message),
+        WHOLE(dialogMessageById, 444be0, MessageById),
+        WHOLE(dialogEditText, 444c10, None),
+        WHOLE(dialogOpenEdit, 444c20, Edit),
+        WHOLE(dialogFadedIn, 445f00, None),
     };
 
     for (unsigned round = 0; round < rounds; ++round)

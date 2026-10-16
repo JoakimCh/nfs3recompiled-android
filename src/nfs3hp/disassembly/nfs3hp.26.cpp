@@ -11,12 +11,12 @@ bool mediumCarLights(win32::WinApplication* app, x86::CPU& cpu);
 bool detailedCarLights(win32::WinApplication* app, x86::CPU& cpu);
 // Port (tools/apply_native_render.py): defined in native_render.cpp.
 bool carLights(win32::WinApplication* app, x86::CPU& cpu);
-// Port (tools/apply_race_precision.py): defined in nfs3hp_main.cpp.
-x86::reg16 raceControl(x86::reg16 word);
 // Port (tools/apply_native_vertices.py): defined in native_vertices.cpp.
 bool arenaReset(win32::WinApplication* app, x86::CPU& cpu);
 // Port (tools/apply_native_vertices.py): defined in native_vertices.cpp.
 bool carDetail(win32::WinApplication* app, x86::CPU& cpu);
+// Port (tools/apply_race_precision.py): defined in nfs3hp_main.cpp.
+x86::reg16 raceControl(x86::reg16 word);
 // Port (tools/apply_mirror_detail.py): defined in nfs3hp_main.cpp.
 double mirrorCarScale(double scale);
 x86::reg32 mirrorAsMain(x86::reg32 kind);
@@ -16604,7 +16604,7 @@ void Application::sub_4bc530(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.edx = 8011000 /*0x7a3cf8*/;
     // 004bc54f  e8bc8df7ff             -call 0x435310
     cpu.esp -= 4;
-    sub_435310(app, cpu.sync());
+    nfs3hp::controls::readMouse(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004bc554  5d                     -pop ebp
@@ -16663,7 +16663,7 @@ void Application::sub_4bc560(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.eax = x86::reg32(cpu.ebp + x86::reg32(-4) /* -0x4 */);
     // 004bc57e  e88d8df7ff             -call 0x435310
     cpu.esp -= 4;
-    sub_435310(app, cpu.sync());
+    nfs3hp::controls::readMouse(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004bc583  8b45f4                 -mov eax, dword ptr [ebp - 0xc]
@@ -21358,7 +21358,7 @@ L_0x004bd496:
     }
     // 004bd4b6  e805ebfdff             -call 0x49bfc0
     cpu.esp -= 4;
-    sub_49bfc0(app, cpu.sync());
+    nfs3hp::frontend::setPointer(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004bd4bb  89ec                   -mov esp, ebp
@@ -21434,7 +21434,7 @@ void Application::sub_4bd4d0(WinApplication* __restrict app, x86::CPU& cpu_)
     }
     // 004bd50c  e8ff7df7ff             -call 0x435310
     cpu.esp -= 4;
-    sub_435310(app, cpu.sync());
+    nfs3hp::controls::readMouse(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004bd511  8d55d8                 -lea edx, [ebp - 0x28]

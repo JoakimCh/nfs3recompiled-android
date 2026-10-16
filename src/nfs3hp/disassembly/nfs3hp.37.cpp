@@ -665,7 +665,7 @@ void Application::sub_4f0a90(WinApplication* __restrict app, x86::CPU& cpu_)
     (cpu.eax) += x86::reg32(x86::sreg32(16 /*0x10*/));
     // 004f0abb  e861fcfeff             -call 0x4e0721
     cpu.esp -= 4;
-    sub_4e0721(app, cpu.sync());
+    nfs3hp::fillWord(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004f0ac0  89f3                   -mov ebx, esi
@@ -1478,7 +1478,7 @@ L_0x004f0dc3:
     app->getMemory<x86::reg32>(x86::reg32(10423264) /* 0x9f0be0 */) = cpu.eax;
     // 004f0e08  e8fff8feff             -call 0x4e070c
     cpu.esp -= 4;
-    sub_4e070c(app, cpu.sync());
+    nfs3hp::fillZero(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004f0e0d  31db                   -xor ebx, ebx

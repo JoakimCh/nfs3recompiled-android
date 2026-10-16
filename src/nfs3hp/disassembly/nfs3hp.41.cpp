@@ -2950,7 +2950,7 @@ void Application::sub_4fd490(WinApplication* app, x86::CPU& cpu)
         }
     }
     // 004fd49c  e98032feff             -jmp 0x4e0721
-    return sub_4e0721(app, cpu.handOver());
+    return nfs3hp::fillWord(app, cpu.handOver());
 }
 
 /* align: skip 0x8d 0x80 0x00 0x00 0x00 0x00 0x8d 0x92 0x00 0x00 0x00 0x00 0x8d 0x40 0x00 */
@@ -2965,7 +2965,7 @@ void Application::sub_4fd4b0(WinApplication* app, x86::CPU& cpu)
     // 004fd4b4  8b1dac4f9f00           -mov ebx, dword ptr [0x9f4fac]
     cpu.ebx = app->getMemory<x86::reg32>(x86::reg32(10440620) /* 0x9f4fac */);
     // 004fd4ba  e96232feff             -jmp 0x4e0721
-    return sub_4e0721(app, cpu.handOver());
+    return nfs3hp::fillWord(app, cpu.handOver());
 }
 
 /* align: skip 0x90 */
@@ -2992,7 +2992,7 @@ void Application::sub_4fd4c0(WinApplication* app, x86::CPU& cpu)
         cpu.set_szp(tmp1);
     }
     // 004fd4cc  e95032feff             -jmp 0x4e0721
-    return sub_4e0721(app, cpu.handOver());
+    return nfs3hp::fillWord(app, cpu.handOver());
 }
 
 /* align: skip 0x8d 0x80 0x00 0x00 0x00 0x00 0x8d 0x92 0x00 0x00 0x00 0x00 0x8d 0x40 0x00 */
@@ -3106,7 +3106,7 @@ void Application::sub_4fd520(WinApplication* app, x86::CPU& cpu)
         }
     }
     // 004fd52d  e9ef31feff             -jmp 0x4e0721
-    return sub_4e0721(app, cpu.handOver());
+    return nfs3hp::fillWord(app, cpu.handOver());
 }
 
 /* align: skip 0x8d 0x80 0x00 0x00 0x00 0x00 0x8d 0x92 0x00 0x00 0x00 0x00 0x8b 0xc0 */

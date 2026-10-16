@@ -47672,7 +47672,7 @@ L_0x004b60f8:
     if (cpu.terminate) return;
     // 004b6198  e883edf7ff             -call 0x434f20
     cpu.esp -= 4;
-    sub_434f20(app, cpu.sync());
+    nfs3hp::controls::startDirectInput(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004b619d  f6052eeb550020         +test byte ptr [0x55eb2e], 0x20
@@ -47893,12 +47893,12 @@ void Application::sub_4b6250(WinApplication* __restrict app, x86::CPU& cpu_)
     if (cpu.terminate) return;
     // 004b627e  e82dbdfbff             -call 0x471fb0
     cpu.esp -= 4;
-    sub_471fb0(app, cpu.sync());
+    nfs3hp::controls::allActuatorsOff(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004b6283  e848edf7ff             -call 0x434fd0
     cpu.esp -= 4;
-    sub_434fd0(app, cpu.sync());
+    nfs3hp::controls::stopDirectInput(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004b6288  ff157cf99e00           -call dword ptr [0x9ef97c]
@@ -49773,7 +49773,7 @@ void Application::sub_4b6810(WinApplication* __restrict app, x86::CPU& cpu_)
     app->getMemory<x86::reg32>(x86::reg32(5635528) /* 0x55fdc8 */) = cpu.edx;
     // 004b681b  e830b00100             -call 0x4d1850
     cpu.esp -= 4;
-    sub_4d1850(app, cpu.sync());
+    nfs3hp::frontend::languageText(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004b6820  a3e03b7a00             -mov dword ptr [0x7a3be0], eax
@@ -49782,7 +49782,7 @@ void Application::sub_4b6810(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.eax = 196 /*0xc4*/;
     // 004b682a  e821b00100             -call 0x4d1850
     cpu.esp -= 4;
-    sub_4d1850(app, cpu.sync());
+    nfs3hp::frontend::languageText(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004b682f  a3e43b7a00             -mov dword ptr [0x7a3be4], eax
@@ -49791,7 +49791,7 @@ void Application::sub_4b6810(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.eax = 197 /*0xc5*/;
     // 004b6839  e812b00100             -call 0x4d1850
     cpu.esp -= 4;
-    sub_4d1850(app, cpu.sync());
+    nfs3hp::frontend::languageText(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004b683e  68b0674b00             -push 0x4b67b0
@@ -49818,7 +49818,7 @@ void Application::sub_4b6810(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.eax = 1 /*0x1*/;
     // 004b6862  e869def8ff             -call 0x4446d0
     cpu.esp -= 4;
-    sub_4446d0(app, cpu.sync());
+    nfs3hp::frontend::dialogOpenQuestion(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004b6867  5d                     -pop ebp

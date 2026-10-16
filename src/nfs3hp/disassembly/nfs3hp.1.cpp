@@ -10902,7 +10902,7 @@ void Application::sub_408520(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.eax = cpu.ecx;
     // 004085ba  e84d810d00             -call 0x4e070c
     cpu.esp -= 4;
-    sub_4e070c(app, cpu.sync());
+    nfs3hp::fillZero(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004085bf  8b8324060000           -mov eax, dword ptr [ebx + 0x624]

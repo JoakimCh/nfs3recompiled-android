@@ -17399,7 +17399,7 @@ void Application::sub_5127d0(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.eax = x86::reg32(cpu.esp + x86::reg32(2) /* 0x2 */);
     // 00512800  e811dffcff             -call 0x4e0716
     cpu.esp -= 4;
-    sub_4e0716(app, cpu.sync());
+    nfs3hp::fillByte(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00512805  bbff000000             -mov ebx, 0xff
@@ -17410,7 +17410,7 @@ void Application::sub_5127d0(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.eax = x86::reg32(cpu.esp + x86::reg32(6) /* 0x6 */);
     // 00512813  e8fedefcff             -call 0x4e0716
     cpu.esp -= 4;
-    sub_4e0716(app, cpu.sync());
+    nfs3hp::fillByte(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00512818  b801000000             -mov eax, 1
@@ -18146,7 +18146,7 @@ L_0x00512a11:
     cpu.eax = cpu.esi;
     // 00512a63  e8a4dcfcff             -call 0x4e070c
     cpu.esp -= 4;
-    sub_4e070c(app, cpu.sync());
+    nfs3hp::fillZero(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00512a68  6852040000             -push 0x452

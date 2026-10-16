@@ -177,6 +177,17 @@ std::int32_t X87::truncated(const x86::Float& value)
     return m_fpu.toInteger<x86::sreg32>(m_fpu.pop());
 }
 
+void checkStrings(Guest& guest, Site& site)
+{
+    for (std::size_t i = 0; i < site.stringCount; ++i)
+    {
+        const GuestString& string = site.strings[i];
+        if (!guest.holds(string.address, string.text))
+            SDL_Log("[FE] %s: 0x%x is not \"%s\"", site.name, string.address, string.text);
+    }
+    site.ready = 1;
+}
+
 bool ready(Guest& guest, Site& site)
 {
     if (!allOn() || switchedOff(site.name))

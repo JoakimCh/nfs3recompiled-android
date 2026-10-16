@@ -74,18 +74,16 @@ SITES = [
     ("nfs3hp", "sub_4c7610", "sortedBuckets"),
     # Small helpers called from hundreds of places: a dot product and a
     # normalisation on the x87 stack, the nearest track block, the
-    # transparent buckets gathered, an object's coloured vertices, and the
-    # fills at their three entries.  (The truncation to an integer before a
-    # fistp is Watcom's __CHP, native in src/nfs3hp/native_watcom.cpp.)
+    # transparent buckets gathered and an object's coloured vertices.  (The
+    # truncation to an integer before a fistp is Watcom's __CHP, native in
+    # src/nfs3hp/native_watcom.cpp; the fills at their three entries are
+    # native whole, disassemble_nfs3hp.py's GAME_NATIVES.)
     ("nfs3hp", "sub_4e01f0", "dotPush"),
     ("nfs3hp", "sub_4972f0", "normalise"),
     ("nfs3hp", "sub_41aab0", "groundDistanceOf"),
     ("nfs3hp", "sub_41e0f0", "nearestBlock"),
     ("nfs3hp", "sub_4c7320", "gatherSorted"),
     ("nfs3hp", "sub_41a970", "objectVerticesColoured"),
-    ("nfs3hp", "sub_4e0721", "fillWord"),
-    ("nfs3hp", "sub_4e0716", "fillByte"),
-    ("nfs3hp", "sub_4e070c", "fillZero"),
     # A point onto a frame's ground plane, its height on the x87 stack.
     ("nfs3hp", "sub_4968a0", "groundHeight"),
     # Effects: the particles drawn (sub_4cbc90, the heaviest generated

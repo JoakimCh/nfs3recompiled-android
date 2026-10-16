@@ -28,7 +28,8 @@ class Keyboard : public Input
 };
 
 /* Standard c_dfDIMouse object offsets (from the real dinput.h): the game's
- * SetDataFormat() call is not actually parsed (see idirectinputdevice.cpp),
+ * SetDataFormat() call is not actually parsed (see
+ * nfs3hp/native_controls_host.cpp),
  * but every DirectInput game of this era uses this exact layout for the
  * built-in mouse format, so it is safe to hardcode. */
 enum
@@ -45,7 +46,7 @@ enum
 /* Backs both DirectInput mouse read paths.  GetDeviceState() (immediate mode)
  * wants relative motion since the previous read; GetDeviceData() (buffered
  * mode -- confirmed to be what NFS3 actually calls for the mouse, see the
- * NFS2_ASSERT this used to hard-fail in idirectinputdevice.cpp) wants a
+ * NFS2_ASSERT this used to hard-fail in the old DirectInput emulation) wants a
  * queue of discrete per-axis/button events with real ordering.  Both are fed
  * by the same SDL mouse event watch (installed lazily on first use, so it
  * only starts capturing once the game has actually created a Mouse device),

@@ -641,132 +641,137 @@ const GuestString kMultiFrameStrings[] = { kMultiOpponentButton, kMultiOpponentC
 
 }
 
-/* Each stand-in: the generated function, what its ret pops, what its prologue
+/* The handlers, native whole (disassemble_nfs3hp.py's MENU_NATIVES): each
+ * the generated function it was, what that one's ret pops, what its prologue
  * pushes, and the strings it hands to the game. */
+namespace frontend
+{
 
-bool mainMenuOnEnter(win32::WinApplication* app, x86::CPU& cpu)
+void mainMenuOnEnter(win32::WinApplication* app, x86::CPU& cpu)
 {
     static fe::Site site{ "sub_45d050", 0, 20, kMainEnterStrings, std::size(kMainEnterStrings) };
     const x86::reg32 menu = cpu.eax;
-    return fe::run(app, cpu, site, [&](Guest& guest) { return onMainEnter(guest, menu); });
+    fe::runWhole(app, cpu, site, [&](Guest& guest) { return onMainEnter(guest, menu); });
 }
 
-bool mainMenuOnExit(win32::WinApplication* app, x86::CPU& cpu)
+void mainMenuOnExit(win32::WinApplication* app, x86::CPU& cpu)
 {
     // sub_45d2f0: nothing to undo.
     static fe::Site site{ "sub_45d2f0", 0, 4, nullptr, 0 };
-    return fe::run(app, cpu, site, [](Guest&) { return x86::reg32(0); });
+    fe::runWhole(app, cpu, site, [](Guest&) { return x86::reg32(0); });
 }
 
-bool mainMenuOnFrame(win32::WinApplication* app, x86::CPU& cpu)
+void mainMenuOnFrame(win32::WinApplication* app, x86::CPU& cpu)
 {
     static fe::Site site{ "sub_45cff0", 0, 12, kFrameStrings, std::size(kFrameStrings) };
     const x86::reg32 menu = cpu.eax;
-    return fe::run(app, cpu, site, [&](Guest& guest) { return onFrame(guest, menu); });
+    fe::runWhole(app, cpu, site, [&](Guest& guest) { return onFrame(guest, menu); });
 }
 
-bool mainMenuOnPlayerName(win32::WinApplication* app, x86::CPU& cpu)
+void mainMenuOnPlayerName(win32::WinApplication* app, x86::CPU& cpu)
 {
     static fe::Site site{ "sub_45cef0", 0, 16, nullptr, 0 };
-    return fe::run(app, cpu, site, [](Guest& guest) { return onPlayerName(guest, kPlayer1Name); });
+    fe::runWhole(app, cpu, site, [](Guest& guest) { return onPlayerName(guest, kPlayer1Name); });
 }
 
-bool mainMenuPlayerNameAnswer(win32::WinApplication* app, x86::CPU& cpu)
+void mainMenuPlayerNameAnswer(win32::WinApplication* app, x86::CPU& cpu)
 {
     static fe::Site site{ "sub_45cdd0", 0, 16, nullptr, 0 };
     const std::uint32_t answer = cpu.eax;
     const x86::reg32 close = cpu.edx;
-    return fe::run(app, cpu, site,
+    fe::runWhole(app, cpu, site,
                    [&](Guest& guest) { return onPlayerNameAnswer(guest, kPlayer1Name, answer, close); });
 }
 
-bool splitMenuOnEnter(win32::WinApplication* app, x86::CPU& cpu)
+void splitMenuOnEnter(win32::WinApplication* app, x86::CPU& cpu)
 {
     static fe::Site site{ "sub_45d360", 0, 24, kSplitEnterStrings, std::size(kSplitEnterStrings) };
     const x86::reg32 menu = cpu.eax;
-    return fe::run(app, cpu, site, [&](Guest& guest) { return onSplitEnter(guest, menu); });
+    fe::runWhole(app, cpu, site, [&](Guest& guest) { return onSplitEnter(guest, menu); });
 }
 
-bool splitMenuOnExit(win32::WinApplication* app, x86::CPU& cpu)
+void splitMenuOnExit(win32::WinApplication* app, x86::CPU& cpu)
 {
     // sub_45d620: nothing to undo but the port's rows, back for the other
     // screens.
     static fe::Site site{ "sub_45d620", 0, 4, nullptr, 0 };
-    return fe::run(app, cpu, site, [](Guest& guest) {
+    fe::runWhole(app, cpu, site, [](Guest& guest) {
         setRows(guest, kOriginalRowX, kOriginalRowY);
         return x86::reg32(0);
     });
 }
 
-bool splitMenuOnFrame(win32::WinApplication* app, x86::CPU& cpu)
+void splitMenuOnFrame(win32::WinApplication* app, x86::CPU& cpu)
 {
     // sub_45d300: main's, instruction for instruction.
     static fe::Site site{ "sub_45d300", 0, 12, kFrameStrings, std::size(kFrameStrings) };
     const x86::reg32 menu = cpu.eax;
-    return fe::run(app, cpu, site, [&](Guest& guest) { return onFrame(guest, menu); });
+    fe::runWhole(app, cpu, site, [&](Guest& guest) { return onFrame(guest, menu); });
 }
 
-bool splitMenuOnPlayer2Name(win32::WinApplication* app, x86::CPU& cpu)
+void splitMenuOnPlayer2Name(win32::WinApplication* app, x86::CPU& cpu)
 {
     static fe::Site site{ "sub_45cf70", 0, 16, nullptr, 0 };
-    return fe::run(app, cpu, site, [](Guest& guest) { return onPlayerName(guest, kPlayer2Name); });
+    fe::runWhole(app, cpu, site, [](Guest& guest) { return onPlayerName(guest, kPlayer2Name); });
 }
 
-bool splitMenuPlayer2NameAnswer(win32::WinApplication* app, x86::CPU& cpu)
+void splitMenuPlayer2NameAnswer(win32::WinApplication* app, x86::CPU& cpu)
 {
     static fe::Site site{ "sub_45ce60", 0, 16, nullptr, 0 };
     const std::uint32_t answer = cpu.eax;
     const x86::reg32 close = cpu.edx;
-    return fe::run(app, cpu, site,
+    fe::runWhole(app, cpu, site,
                    [&](Guest& guest) { return onPlayerNameAnswer(guest, kPlayer2Name, answer, close); });
 }
 
-bool multiMenuOnEnter(win32::WinApplication* app, x86::CPU& cpu)
+void multiMenuOnEnter(win32::WinApplication* app, x86::CPU& cpu)
 {
     static fe::Site site{ "sub_440470", 0, 20, kMultiEnterStrings, std::size(kMultiEnterStrings) };
     const x86::reg32 menu = cpu.eax;
-    return fe::run(app, cpu, site, [&](Guest& guest) { return onMultiEnter(guest, menu); });
+    fe::runWhole(app, cpu, site, [&](Guest& guest) { return onMultiEnter(guest, menu); });
 }
 
-bool multiMenuOnExit(win32::WinApplication* app, x86::CPU& cpu)
+void multiMenuOnExit(win32::WinApplication* app, x86::CPU& cpu)
 {
     // sub_4405b0: nothing to undo.
     static fe::Site site{ "sub_4405b0", 0, 4, nullptr, 0 };
-    return fe::run(app, cpu, site, [](Guest&) { return x86::reg32(0); });
+    fe::runWhole(app, cpu, site, [](Guest&) { return x86::reg32(0); });
 }
 
-bool multiMenuOnFrame(win32::WinApplication* app, x86::CPU& cpu)
+void multiMenuOnFrame(win32::WinApplication* app, x86::CPU& cpu)
 {
     static fe::Site site{ "sub_4403f0", 0, 16, kMultiFrameStrings, std::size(kMultiFrameStrings) };
     const x86::reg32 menu = cpu.eax;
-    return fe::run(app, cpu, site, [&](Guest& guest) { return onMultiFrame(guest, menu); });
+    fe::runWhole(app, cpu, site, [&](Guest& guest) { return onMultiFrame(guest, menu); });
 }
 
-bool multiMenuApplyRaceList(win32::WinApplication* app, x86::CPU& cpu)
+void multiMenuApplyRaceList(win32::WinApplication* app, x86::CPU& cpu)
 {
     static fe::Site site{ "sub_440160", 0, 24, kMultiApplyStrings, std::size(kMultiApplyStrings) };
     const x86::reg32 menu = cpu.eax;
-    return fe::run(app, cpu, site, [&](Guest& guest) { return onApplyRaceList(guest, menu); });
+    fe::runWhole(app, cpu, site, [&](Guest& guest) { return onApplyRaceList(guest, menu); });
 }
 
-bool multiMenuFollowRaceType(win32::WinApplication* app, x86::CPU& cpu)
+void multiMenuFollowRaceType(win32::WinApplication* app, x86::CPU& cpu)
 {
     static fe::Site site{ "sub_440390", 0, 8, nullptr, 0 };
-    return fe::run(app, cpu, site, [](Guest& guest) { return onFollowRaceType(guest); });
+    fe::runWhole(app, cpu, site, [](Guest& guest) { return onFollowRaceType(guest); });
 }
 
-bool multiMenuOnBack(win32::WinApplication* app, x86::CPU& cpu)
+void multiMenuOnBack(win32::WinApplication* app, x86::CPU& cpu)
 {
     static fe::Site site{ "sub_4400d0", 0, 16, nullptr, 0 };
-    return fe::run(app, cpu, site, [](Guest& guest) { return onMultiBack(guest); });
+    fe::runWhole(app, cpu, site, [](Guest& guest) { return onMultiBack(guest); });
 }
 
-bool multiMenuLeaveAnswer(win32::WinApplication* app, x86::CPU& cpu)
+void multiMenuLeaveAnswer(win32::WinApplication* app, x86::CPU& cpu)
 {
     static fe::Site site{ "sub_43fcb0", 0, 8, nullptr, 0 };
     const std::uint32_t answer = cpu.eax;
     const x86::reg32 close = cpu.edx;
-    return fe::run(app, cpu, site, [&](Guest& guest) { return onMultiLeaveAnswer(guest, answer, close); });
+    fe::runWhole(app, cpu, site, [&](Guest& guest) { return onMultiLeaveAnswer(guest, answer, close); });
 }
+
+}  // namespace frontend
 
 }

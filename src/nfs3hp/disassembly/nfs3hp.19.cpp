@@ -8016,7 +8016,7 @@ void Application::sub_477a50(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.esi = 7322432 /*0x6fbb40*/;
     // 00477a79  e88e8c0600             -call 0x4e070c
     cpu.esp -= 4;
-    sub_4e070c(app, cpu.sync());
+    nfs3hp::fillZero(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00477a7e  f3a5                   -rep movsd dword ptr es:[edi], dword ptr [esi]
@@ -8360,7 +8360,7 @@ L_0x00477b8d:
     cpu.eax = 7054788 /*0x6ba5c4*/;
     // 00477b97  e8708b0600             -call 0x4e070c
     cpu.esp -= 4;
-    sub_4e070c(app, cpu.sync());
+    nfs3hp::fillZero(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00477b9c  bac4a56b00             -mov edx, 0x6ba5c4
@@ -9399,7 +9399,7 @@ void Application::sub_477f60(WinApplication* __restrict app, x86::CPU& cpu_)
     }
     // 00477f7d  e86e750100             -call 0x48f4f0
     cpu.esp -= 4;
-    sub_48f4f0(app, cpu.sync());
+    nfs3hp::controls::startRaceControls(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
 L_0x00477f82:
@@ -13162,7 +13162,7 @@ void Application::sub_478dc0(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.eax = 7330884 /*0x6fdc44*/;
     // 00478dda  e8a15d0400             -call 0x4beb80
     cpu.esp -= 4;
-    sub_4beb80(app, cpu.sync());
+    nfs3hp::frontend::viewport(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00478ddf  a144dc6f00             -mov eax, dword ptr [0x6fdc44]
@@ -19456,7 +19456,7 @@ L_0x0047a510:
     cpu.esi = x86::reg32(cpu.ebp + x86::reg32(2) /* 0x2 */);
     // 0047a55e  e81d460400             -call 0x4beb80
     cpu.esp -= 4;
-    sub_4beb80(app, cpu.sync());
+    nfs3hp::frontend::viewport(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0047a563  b900ff7f3f             -mov ecx, 0x3f7fff00

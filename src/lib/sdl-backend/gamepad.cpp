@@ -1,5 +1,5 @@
 #include <lib/gamepad.h>
-#include <winapi/dinput/idirectinputeffect.h>
+#include <lib/forcefeedback.h>
 #ifdef __ANDROID__
 #include <jni.h>
 #endif
@@ -180,8 +180,8 @@ void updateButtonKeys();
 void Gamepad::update()
 {
     /* The only place slots are rescanned while the game is running.
-     * IDirectInputDevice::Poll would be the natural home for it, but the game
-     * never calls it -- a full traced session on device shows not one Poll --
+     * The game's Poll (answered in nfs3hp/native_controls_host.cpp) would be
+     * the natural home for it, but the game never calls it -- a full traced session on device shows not one Poll --
      * whereas this runs once per frame from the renderer.  Once a second is
      * quick enough to notice a pad being plugged in and keeps SDL_GetJoysticks'
      * allocation out of the frame loop; an assignment sent from the launcher
@@ -201,7 +201,7 @@ void Gamepad::update()
         refreshSlots();
     }
     updateButtonKeys();
-    dinput::IDirectInputEffect::update();
+    forcefeedback::update();
 }
 
 x86::reg32 Input::getButtonCount() const
@@ -224,7 +224,7 @@ x86::reg32 Input::getAxesCount() const
  * same accumulator the watch fills, so both read paths agree with each
  * other.  Installed lazily from mouseImpl()'s first call -- always after
  * SDL_Init(), since nothing reaches Mouse::getState()/drainBuffer() before
- * the game creates a DirectInput mouse device from guest code. */
+ * the game's controls ask the port for a mouse device. */
 namespace
 {
 
@@ -801,10 +801,10 @@ Gamepad::Gamepad(x86::reg32 gamepadIndex)
 
 Gamepad::~Gamepad()
 {
-    dinput::IDirectInputEffect::detach(this);
+    forcefeedback::detach(this);
     /* The slot outlives the device object: the joystick handle belongs to the
      * slot table, which survives the game releasing and recreating its
-     * DirectInput devices. */
+     * devices. */
 }
 
 x86::reg32 Gamepad::getCount()

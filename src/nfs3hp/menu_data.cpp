@@ -1,6 +1,7 @@
 #include <lib/file.h>
 #include <SDL3/SDL.h>
 #include <cctype>
+#include <cstddef>
 #include <string>
 #include <vector>
 
@@ -15,7 +16,13 @@
  *   later copies have it;
  * - car and opponent lists nine lines long (maxvisitem=9), not seven and five.
  * The rows the items stand in are moved up as the screen opens
- * (native_frontend_main.cpp, onSplitEnter), so the longer lists fit. */
+ * (native_frontend_main.cpp, onSplitEnter), so the longer lists fit.
+ *
+ * MENUS/SETUP.MNU, the first screen: its "NFS Web Site" button opens Options
+ * instead, the way the race screen's Options button does (nextmenu=options,
+ * MAIN.MNU's text for it).  Its codelink goes too, or the screen's code
+ * (sub_452f80) would find it by SETUP_NfsWebSite and make it open the web
+ * site again; the code passes over a button it does not find. */
 
 namespace nfs3hp
 {
@@ -121,6 +128,60 @@ std::string fixSplitMenu(const std::string& original)
     return fixed;
 }
 
+/* The CD's SETUP.MNU with the web site button turned into Options; empty when
+ * it has no such button. */
+std::string fixSetupMenu(const std::string& original)
+{
+    const std::string eol = original.find("\r\n") != std::string::npos ? "\r\n" : "\n";
+    std::vector<std::string> lines;
+    for (size_t at = 0; at <= original.size();)
+    {
+        size_t end = original.find('\n', at);
+        if (end == std::string::npos)
+            end = original.size();
+        std::string line = original.substr(at, end - at);
+        if (!line.empty() && line.back() == '\r')
+            line.pop_back();
+        lines.push_back(line);
+        at = end + 1;
+    }
+
+    // The section the button is in: from the [button] before its codelink to
+    // the next section.
+    size_t codelink = lines.size();
+    for (size_t i = 0; i < lines.size(); ++i)
+        if (lower(lines[i]) == "codelink=setup_nfswebsite")
+            codelink = i;
+    if (codelink == lines.size())
+        return std::string();
+    size_t end = codelink + 1;
+    while (end < lines.size() && (lines[end].empty() || lines[end][0] != '['))
+        ++end;
+    lines[codelink] = "codelink=SETUP_OPTIONS";
+    bool text = false;
+    for (size_t i = codelink + 1; i < end; ++i)
+    {
+        if (lower(lines[i]).rfind("text=", 0) == 0)
+        {
+            lines[i] = "text=kMenuMAINOptions001";
+            lines.insert(lines.begin() + std::ptrdiff_t(i) + 1, "nextmenu=options");
+            text = true;
+            break;
+        }
+    }
+    if (!text)
+        return std::string();
+
+    std::string fixed;
+    for (size_t i = 0; i < lines.size(); ++i)
+    {
+        fixed += lines[i];
+        if (i + 1 < lines.size())
+            fixed += eol;
+    }
+    return fixed;
+}
+
 std::string cacheDirectory()
 {
 #ifdef __ANDROID__
@@ -134,36 +195,46 @@ std::string cacheDirectory()
 #endif
 }
 
-std::string splitMenu(const std::string& path)
+/* The port's version of the menu file at `path`, made once a run by `fix` from
+ * the file the game would have read and kept as `name` in the cache; empty
+ * when there is none, and the game reads its own. */
+struct MadeMenu
 {
-    // Made once a run, from the file the game would have read.
-    static std::string made;
-    static bool tried = false;
-    if (tried)
-        return made;
-    tried = true;
+    std::string made;
+    bool tried = false;
+};
+
+std::string portMenu(const std::string& path, const char* name, std::string (*fix)(const std::string&),
+                     MadeMenu& state)
+{
+    if (state.tried)
+        return state.made;
+    state.tried = true;
     std::string original;
     if (!readWhole(path, original))
-        return made;
-    const std::string fixed = fixSplitMenu(original);
+        return state.made;
+    const std::string fixed = fix(original);
     const std::string directory = cacheDirectory();
     if (fixed.empty() || directory.empty())
-        return made;
-    const std::string copy = directory + "mainsplt.mnu";
+        return state.made;
+    const std::string copy = directory + lower(name);
     if (!SDL_SaveFile(copy.c_str(), fixed.data(), fixed.size()))
     {
-        SDL_Log("[FE] MAINSPLT.MNU: cannot write %s: %s", copy.c_str(), SDL_GetError());
-        return made;
+        SDL_Log("[FE] %s: cannot write %s: %s", name, copy.c_str(), SDL_GetError());
+        return state.made;
     }
-    SDL_Log("[FE] MAINSPLT.MNU: the port's version, %s", copy.c_str());
-    made = copy;
-    return made;
+    SDL_Log("[FE] %s: the port's version, %s", name, copy.c_str());
+    state.made = copy;
+    return state.made;
 }
 
 std::string menuData(const std::string& path)
 {
+    static MadeMenu split, setup;
     if (endsWith(path, "/fedata/menus/mainsplt.mnu"))
-        return splitMenu(path);
+        return portMenu(path, "MAINSPLT.MNU", fixSplitMenu, split);
+    if (endsWith(path, "/fedata/menus/setup.mnu"))
+        return portMenu(path, "SETUP.MNU", fixSetupMenu, setup);
     return std::string();
 }
 

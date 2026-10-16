@@ -17,7 +17,11 @@ own cornering either, which reads the same car (phoneTick).
 
 So the scan now starts from the player who would have had the pad -- player
 one in split screen, the local player in a single race -- instead of from
-nobody.  An axis on the pad still decides as before, the second player's
+nobody.  sub_4710f0 is native whole now (native_controls_race.cpp's
+forcePlayerCar), the change written into it; SITES stays here as the change
+to the game's code, which tools/game_checks/generate.py makes to the code it
+holds the native against, and apply() for a tree where sub_4710f0 is still
+generated.  An axis on the pad still decides as before, the second player's
 included; a race with no force-feedback device still gets no car, because that
 path leaves before either scan.  The bindings, and with them the replays, are
 left exactly as they are.

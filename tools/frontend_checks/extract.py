@@ -1,12 +1,18 @@
 """Copies generated functions out of src/nfs3hp/disassembly, without hooks.
 
-    python3 extract.py <disassembly dir> <out.cpp> <mocks.inc> sub_... sub_...
+    python3 extract.py <disassembly dir> <out.cpp> <mocks.inc> [--native <file>] sub_... sub_...
 
 Every port hook (`/* port: native (tools/apply_*.py) */`) is taken out of
 them on the way: what is left is the generated code alone, for
 frontend_checks.cpp to compare the decompiled functions with.  Each function
 they call that is not among them goes to <mocks.inc> as a stand-in that
-records the call (see frontend_checks.cpp).
+records the call (see frontend_checks.cpp).  A screen that is native whole
+has no generated code in the tree: its function comes from the file
+--native names, which generate.py writes, and the tree's nfs3hp.h, which
+declares no Application::sub_ for it, is copied next to <out.cpp> with the
+declarations it lacks.  The menus' own natives -- nfs3hp::frontend's -- the
+controls' and the game's fill's entries they call by address instead of by
+name, so that each goes to its stand-in as the decompiled code's calls do.
 """
 import re
 import sys
@@ -16,16 +22,28 @@ HOOK = re.compile(r"    if \(\w+\(app, cpu(?:\.sync\(\))?\)\) "
                   r"/\* port: native \(tools/apply_\w+\.py\) \*/\r?\n"
                   r"    \{\r?\n(?:        cpu\.reload\(\);\r?\n)?        return;\r?\n    \}\r?\n")
 CALL = re.compile(r"\bsub_([0-9a-f]{6})\(app")
+# What the generated code calls by address that frontend_checks.cpp runs as
+# it is: __CHP, the truncation before a fistp.
+REAL = {"sub_4dfd56": "watcom::CHP"}
+NATIVE = re.compile(r"^/\* sub_([0-9a-f]+): native, nfs3hp::(frontend::\w+|controls::\w+|fill\w+) \*/$", re.M)
 
 
 def main():
     source = Path(sys.argv[1])
     out = Path(sys.argv[2])
     mocks = Path(sys.argv[3])
-    wanted = set(sys.argv[4:])
+    names = sys.argv[4:]
+    sources = sorted(source.glob("nfs3hp.*.cpp"))
+    if names[:1] == ["--native"]:
+        sources.append(Path(names[1]))
+        names = names[2:]
+    wanted = set(names)
     found = {}
-    for path in sorted(source.glob("nfs3hp.*.cpp")):
-        lines = path.read_text(errors="replace").split("\n")
+    natives = {}
+    for path in sources:
+        text = path.read_text(errors="replace")
+        natives.update({name: int(address, 16) for address, name in NATIVE.findall(text)})
+        lines = text.split("\n")
         i = 0
         while i < len(lines):
             m = re.match(r"^void Application::(sub_[0-9a-f]+)\(", lines[i])
@@ -36,6 +54,10 @@ def main():
                 found[m.group(1)] = HOOK.sub("", "\n".join(lines[i:end + 1]))
                 i = end
             i += 1
+    for name in found:
+        for native, address in natives.items():
+            found[name] = found[name].replace("nfs3hp::%s(app, cpu.sync());" % native,
+                                              "app->dynamic_call(0x%x, cpu.sync());" % address)
     missing = wanted - set(found)
     if missing:
         raise SystemExit("not found: " + " ".join(sorted(missing)))
@@ -53,11 +75,23 @@ def main():
     with mocks.open("w") as f:
         f.write("// Written by extract.py: the generated functions' callees, recorded.\n")
         for name in sorted(called - set(found)):
+            if name in REAL:
+                # The game's own, native: run, not recorded.
+                f.write("void Application::%s(WinApplication* app, x86::CPU& cpu) { %s(app, cpu); }\n"
+                        % (name, REAL[name]))
+                continue
             f.write("void Application::%s(WinApplication* app, x86::CPU& cpu) { mock(app, cpu, 0x%s); }\n"
                     % (name, name[4:]))
     with Path(str(mocks) + ".generated").open("w") as f:
         for name in sorted(found):
             f.write("{0x%s, &Application::%s},\n" % (name[4:], name))
+    header = (source / "nfs3hp.h").read_text()
+    declared = set(re.findall(r"static void (sub_[0-9a-f]+)\(", header))
+    lacking = sorted((set(found) | called) - declared)
+    at = header.index("    static void sub_")
+    header = header[:at] + "".join("    static void %s(WinApplication* app, x86::CPU& cpu);\n" % name
+                                   for name in lacking) + header[at:]
+    (out.parent / "nfs3hp.h").write_text(header)
 
 
 if __name__ == "__main__":

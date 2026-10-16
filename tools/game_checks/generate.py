@@ -51,6 +51,23 @@ STOOD_IN = {
 }
 
 
+def force_feedback_car(text):
+    """tools/apply_force_feedback_car.py's change, which forcePlayerCar has."""
+    from tools.apply_force_feedback_car import SITES
+    for _, instruction, old, new in SITES:
+        start = text.index("    // " + instruction + "  ")
+        stop = text.index("\n    // 00", start + 1)
+        block = text[start:stop]
+        assert block.count(old) == 1, instruction
+        text = text[:start] + block.replace(old, new, 1) + text[stop:]
+    return text
+
+
+# The port's own changes to the game's code that natives carry: made to the
+# game's code for them too, so that each is held against what the port runs.
+PORT_CHANGES = {0x4710f0: force_feedback_car}
+
+
 def main():
     out = Path(sys.argv[1]).resolve()
     out.mkdir(parents=True, exist_ok=True)
@@ -58,7 +75,9 @@ def main():
                                     nfs3hp.KNOWN_SUBROUTINES, nfs3hp.SPLIT_INSTRUCTIONS,
                                     nfs3hp.THREAD_ROUTINES, nfs3hp.THREAD_SEGMENTS, nfs3hp.MERGE_ROUTINES)
     fpu_codegen.EXACT = True  # as Application.write has the game's arithmetic
-    natives = nfs3hp.GAME_NATIVES
+    # The menus' screens are frontend_checks' (tools/frontend_checks).
+    natives = {address: name for address, name in nfs3hp.GAME_NATIVES.items()
+               if address not in nfs3hp.MENU_NATIVES}
     code = io.StringIO()
     tested = []
     for subroutine in game.subroutines:
@@ -68,10 +87,25 @@ def main():
             game.write_function(function, subroutine, "sub_%x" % entry, {}, nfs3hp.THREAD_SEGMENTS,
                                 nfs3hp.SKIP_INSTRUCTIONS)
             text = function.getvalue()
+            if entry in PORT_CHANGES:
+                text = PORT_CHANGES[entry](text)
             for address, callers in STOOD_IN.items():
                 if entry not in callers:
                     text = text.replace("sub_%x(app, cpu.sync());" % address,
                                         "app->dynamic_call(0x%x, cpu.sync());" % address)
+            # The menus' natives that are frontend_checks' are called by
+            # address too, to their stand-ins (loadScreenArt's menuCurrentName).
+            for address, name in nfs3hp.MENU_NATIVES.items():
+                text = text.replace("nfs3hp::%s(app, cpu.sync());" % name,
+                                    "app->dynamic_call(0x%x, cpu.sync());" % address)
+            # And one controls file's natives, from another's: by address, to
+            # stand-ins, as the natives call them.
+            own = [group for group in nfs3hp.CONTROLS_GROUPS if entry in group]
+            for group in nfs3hp.CONTROLS_GROUPS:
+                if own and group is not own[0]:
+                    for address in group:
+                        text = text.replace("sub_%x(app, cpu.sync());" % address,
+                                            "app->dynamic_call(0x%x, cpu.sync());" % address)
             code.write(text)
             tested.append(entry)
     if sorted(tested) != sorted(natives):

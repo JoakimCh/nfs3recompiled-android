@@ -3,6 +3,8 @@
 
 namespace nfs3hp
 {
+// Port (tools/apply_native_loading.py): defined in native_loading.cpp.
+bool frd(win32::WinApplication* app, x86::CPU& cpu);
 // Port (tools/apply_native_render.py): defined in native_render.cpp.
 bool viewDistances(win32::WinApplication* app, x86::CPU& cpu);
 // Port (tools/apply_native_render.py): defined in native_render.cpp.
@@ -11,8 +13,6 @@ bool viewRecord(win32::WinApplication* app, x86::CPU& cpu);
 bool raceViews(win32::WinApplication* app, x86::CPU& cpu);
 // Port (tools/apply_native_render.py): defined in native_render.cpp.
 bool viewPass(win32::WinApplication* app, x86::CPU& cpu);
-// Port (tools/apply_native_loading.py): defined in native_loading.cpp.
-bool frd(win32::WinApplication* app, x86::CPU& cpu);
 // Port (tools/apply_native_vertices.py): defined in native_vertices.cpp.
 bool objectRecords(win32::WinApplication* app, x86::CPU& cpu);
 // Port (tools/apply_native_vertices.py): defined in native_vertices.cpp.

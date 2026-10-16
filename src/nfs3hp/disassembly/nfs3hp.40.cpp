@@ -14668,7 +14668,7 @@ L_0x004fc274:
     app->getMemory<x86::reg32>(x86::reg32(10440544) /* 0x9f4f60 */) = cpu.eax;
     // 004fc2b1  e85644feff             -call 0x4e070c
     cpu.esp -= 4;
-    sub_4e070c(app, cpu.sync());
+    nfs3hp::fillZero(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004fc2b6  89c8                   -mov eax, ecx
@@ -14696,7 +14696,7 @@ L_0x004fc274:
     app->getMemory<x86::reg32>(x86::reg32(10440552) /* 0x9f4f68 */) = cpu.eax;
     // 004fc2db  e82c44feff             -call 0x4e070c
     cpu.esp -= 4;
-    sub_4e070c(app, cpu.sync());
+    nfs3hp::fillZero(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004fc2e0  8b442404               -mov eax, dword ptr [esp + 4]

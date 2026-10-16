@@ -12549,7 +12549,7 @@ L_0x00517b3a:
     cpu.ecx = 1 /*0x1*/;
     // 00517b4b  e8bc8bfcff             -call 0x4e070c
     cpu.esp -= 4;
-    sub_4e070c(app, cpu.sync());
+    nfs3hp::fillZero(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00517b50  b8707b5100             -mov eax, 0x517b70
@@ -12617,7 +12617,7 @@ L_0x00517b7a:
     cpu.ecx ^= x86::reg32(x86::sreg32(cpu.ecx));
     // 00517b8d  e87a8bfcff             -call 0x4e070c
     cpu.esp -= 4;
-    sub_4e070c(app, cpu.sync());
+    nfs3hp::fillZero(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00517b92  890d308f5600           -mov dword ptr [0x568f30], ecx

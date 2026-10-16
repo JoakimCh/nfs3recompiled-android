@@ -19,19 +19,17 @@ x87's own arithmetic, drawn, and answered through their callbacks.  The widgets
 stay generated for now; the decompiled code calls into them by address (see
 src/nfs3hp/native_frontend.h).
 
-First, the main menu, where a race is set up, in its three forms: MAIN.MNU
-for one player, MAINSPLT.MNU for two on one machine, MAINMULT.MNU for a race
-over a network.  Their handlers fit the screen's items to the kind of race; a
-player's name button opens a dialog whose answer comes back to a function of
-its own; mainmult chooses the race from a list of its own (sub_440160,
-sub_440390), and its Back asks before leaving a network game (sub_4400d0,
-which the ipx screen uses too, and the answer, sub_43fcb0).
+The main menu, where a race is set up, in its three forms -- MAIN.MNU for
+one player, MAINSPLT.MNU for two on one machine, MAINMULT.MNU for a race over
+a network -- was the first; it is native whole now, its handlers bound to
+their addresses with no generated code behind them (disassemble_nfs3hp.py's
+MENU_NATIVES, native_frontend_main.cpp), and so is what it calls of the loop
+and the dialogs: those are no longer among the sites below.
 """
 from pathlib import Path
 
 from tools.apply_native_vertices import apply as apply_sites
 
-HEADER = "// Port (tools/apply_native_frontend.py): defined in native_frontend_main.cpp.\n"
 MENUS_HEADER = "// Port (tools/apply_native_frontend.py): defined in native_frontend_menus.cpp.\n"
 LOOP_HEADER = "// Port (tools/apply_native_frontend.py): defined in native_frontend_loop.cpp.\n"
 DIALOG_HEADER = "// Port (tools/apply_native_frontend.py): defined in native_frontend_dialogs.cpp.\n"
@@ -40,30 +38,6 @@ CARS_HEADER = "// Port (tools/apply_native_frontend.py): defined in native_front
 TRACKS_HEADER = "// Port (tools/apply_native_frontend.py): defined in native_frontend_tracks.cpp.\n"
 
 # (module, function, decompiled stand-in)
-SITES = [
-    # main: as the screen opens, as it closes, every pass of the menu loop.
-    ("nfs3hp", "sub_45d050", "mainMenuOnEnter"),
-    ("nfs3hp", "sub_45d2f0", "mainMenuOnExit"),
-    ("nfs3hp", "sub_45cff0", "mainMenuOnFrame"),
-    # The player's name button, and the name dialog's answer.
-    ("nfs3hp", "sub_45cef0", "mainMenuOnPlayerName"),
-    ("nfs3hp", "sub_45cdd0", "mainMenuPlayerNameAnswer"),
-    # mainsplt, and player two's name.
-    ("nfs3hp", "sub_45d360", "splitMenuOnEnter"),
-    ("nfs3hp", "sub_45d620", "splitMenuOnExit"),
-    ("nfs3hp", "sub_45d300", "splitMenuOnFrame"),
-    ("nfs3hp", "sub_45cf70", "splitMenuOnPlayer2Name"),
-    ("nfs3hp", "sub_45ce60", "splitMenuPlayer2NameAnswer"),
-    # mainmult: its race list, its Back and the question before leaving.
-    ("nfs3hp", "sub_440470", "multiMenuOnEnter"),
-    ("nfs3hp", "sub_4405b0", "multiMenuOnExit"),
-    ("nfs3hp", "sub_4403f0", "multiMenuOnFrame"),
-    ("nfs3hp", "sub_440160", "multiMenuApplyRaceList"),
-    ("nfs3hp", "sub_440390", "multiMenuFollowRaceType"),
-    ("nfs3hp", "sub_4400d0", "multiMenuOnBack"),
-    ("nfs3hp", "sub_43fcb0", "multiMenuLeaveAnswer"),
-]
-
 # The menu engine: the .MNU loader and what it reads with.
 MENUS_SITES = [
     # The item lookup: a codelink's names, a screen's item by one of them,
@@ -101,7 +75,6 @@ LOOP_SITES = [
     ("nfs3hp", "sub_44ab40", "menuEnterScreen"),
     ("nfs3hp", "sub_44aa30", "menuLeaveScreen"),
     ("nfs3hp", "sub_44aad0", "menuResetItems"),
-    ("nfs3hp", "sub_44a960", "menuShowItems"),
     ("nfs3hp", "sub_44a860", "menuItemsShown"),
     ("nfs3hp", "sub_44a9e0", "menuHideItems"),
     ("nfs3hp", "sub_44a8b0", "menuPassItems"),
@@ -124,7 +97,6 @@ LOOP_SITES = [
     ("nfs3hp", "sub_449df0", "menuKeysTaken"),
     # The screens gone through: the shown one, by name, the history.
     ("nfs3hp", "sub_44aeb0", "menuCurrent"),
-    ("nfs3hp", "sub_44ae00", "menuCurrentName"),
     ("nfs3hp", "sub_44ae60", "menuByNameStandIn"),
     ("nfs3hp", "sub_44aec0", "menuPop"),
     ("nfs3hp", "sub_44af10", "menuPush"),
@@ -142,24 +114,18 @@ DIALOG_SITES = [
     ("nfs3hp", "sub_445e60", "dialogKeyStandIn"),
     ("nfs3hp", "sub_445ac0", "dialogDrawHelp"),
     ("nfs3hp", "sub_445de0", "dialogLoadArt"),
-    ("nfs3hp", "sub_445f00", "dialogFadedIn"),
     ("nfs3hp", "sub_445f10", "dialogClose"),
     ("nfs3hp", "sub_4438b0", "dialogShownStandIn"),
     ("nfs3hp", "sub_4438c0", "dialogKindStandIn"),
     ("nfs3hp", "sub_4446c0", "dialogFocusStandIn"),
     # A question: opened, its keys, its pass.
-    ("nfs3hp", "sub_4446d0", "dialogOpenQuestion"),
     ("nfs3hp", "sub_444910", "dialogQuestionKey"),
     ("nfs3hp", "sub_4449d0", "dialogQuestionPass"),
     # A message.
-    ("nfs3hp", "sub_444a80", "dialogOpenMessage"),
-    ("nfs3hp", "sub_444be0", "dialogMessageById"),
     ("nfs3hp", "sub_444a60", "dialogEndMessage"),
     ("nfs3hp", "sub_444b20", "dialogMessageKey"),
     ("nfs3hp", "sub_444b60", "dialogMessagePass"),
     # A line to type in.
-    ("nfs3hp", "sub_444c20", "dialogOpenEdit"),
-    ("nfs3hp", "sub_444c10", "dialogEditText"),
     ("nfs3hp", "sub_444f50", "dialogEditKey"),
     ("nfs3hp", "sub_4450c0", "dialogEditPass"),
     # A list to tick entries of.
@@ -172,14 +138,10 @@ DIALOG_SITES = [
     ("nfs3hp", "sub_445160", "dialogPointAtEntry"),
     ("nfs3hp", "sub_4451d0", "dialogEntryUnderMouse"),
     # The layout as one opens, the drawing on each pass, the pointer.
-    ("nfs3hp", "sub_443a90", "dialogLinesBox"),
-    ("nfs3hp", "sub_443c00", "dialogButtonRowBox"),
-    ("nfs3hp", "sub_443d20", "dialogPlaceButtons"),
     ("nfs3hp", "sub_4438d0", "dialogDrawBox"),
     ("nfs3hp", "sub_443f40", "dialogDrawLines"),
     ("nfs3hp", "sub_444000", "dialogDrawButtons"),
     ("nfs3hp", "sub_444350", "dialogDrawEditField"),
-    ("nfs3hp", "sub_444570", "dialogPointAtButton"),
     ("nfs3hp", "sub_4445d0", "dialogButtonUnderMouse"),
 ]
 
@@ -198,9 +160,6 @@ OPTIONS_SITES = [
     ("nfs3hp", "sub_437350", "feedTimeListKey"),
     ("nfs3hp", "sub_4373e0", "feedPositionListKey"),
     ("nfs3hp", "sub_437470", "feedSpeedListKey"),
-    ("nfs3hp", "sub_437600", "funkeysOnEnter"),
-    ("nfs3hp", "sub_4377c0", "funkeysOnExit"),
-    ("nfs3hp", "sub_4377d0", "hardkeysOnEnter"),
     ("nfs3hp", "sub_437e00", "audioOnEnter"),
     ("nfs3hp", "sub_438070", "audioOnExit"),
     ("nfs3hp", "sub_438260", "audioOnFrame"),
@@ -210,31 +169,6 @@ OPTIONS_SITES = [
     ("nfs3hp", "sub_4379d0", "audioEffectsMoved"),
     ("nfs3hp", "sub_437a20", "audioEngineMoved"),
     ("nfs3hp", "sub_437a70", "audioSpeechMoved"),
-    ("nfs3hp", "sub_43d4d0", "controlsOnEnter"),
-    ("nfs3hp", "sub_43d5f0", "controlsOnExit"),
-    ("nfs3hp", "sub_43d3f0", "controlsCancelKey"),
-    ("nfs3hp", "sub_43d460", "controlsResetClicked"),
-    ("nfs3hp", "sub_43d410", "controlsResetAnswered"),
-    ("nfs3hp", "sub_43d9a0", "deadZoneFillList"),
-    ("nfs3hp", "sub_4432c0", "deadZoneOnEnter"),
-    ("nfs3hp", "sub_443430", "deadZoneOnExit"),
-    ("nfs3hp", "sub_442db0", "deadZoneCancelKey"),
-    ("nfs3hp", "sub_443260", "deadZoneChooseKey"),
-    ("nfs3hp", "sub_443290", "deadZoneChooseKeyInRace"),
-    ("nfs3hp", "sub_443070", "deadZoneShowController"),
-    ("nfs3hp", "sub_442e60", "deadZoneAxisIndex"),
-    ("nfs3hp", "sub_442dd0", "deadZoneApplyAxis"),
-    ("nfs3hp", "sub_442ef0", "deadZoneAxisMoved"),
-    ("nfs3hp", "sub_442ff0", "deadZoneAxisDraw"),
-    ("nfs3hp", "sub_447dd0", "forceOnEnter"),
-    ("nfs3hp", "sub_4481c0", "forceOnExit"),
-    ("nfs3hp", "sub_447b40", "forceCancelKey"),
-    ("nfs3hp", "sub_447b60", "forceStrengthMoved"),
-    ("nfs3hp", "sub_447c40", "forceRoadEffectsMoved"),
-    ("nfs3hp", "sub_447c70", "forceCollisionMoved"),
-    ("nfs3hp", "sub_447ca0", "forceEngineMoved"),
-    ("nfs3hp", "sub_447cd0", "forceBodyRollMoved"),
-    ("nfs3hp", "sub_447d50", "forceRoadGripMoved"),
     ("nfs3hp", "sub_448440", "graphicsOnEnter"),
     ("nfs3hp", "sub_4484e0", "graphicsOnExit"),
     ("nfs3hp", "sub_448430", "graphicsOnFrame"),
@@ -310,7 +244,6 @@ TRACKS_SITES = [
 
 
 def apply(root):
-    apply_sites(root, SITES, HEADER, "tools/apply_native_frontend.py")
     apply_sites(root, MENUS_SITES, MENUS_HEADER, "tools/apply_native_frontend.py")
     apply_sites(root, LOOP_SITES, LOOP_HEADER, "tools/apply_native_frontend.py")
     apply_sites(root, DIALOG_SITES, DIALOG_HEADER, "tools/apply_native_frontend.py")

@@ -10688,7 +10688,7 @@ L_0x0051b3a9:
     app->getMemory<x86::reg32>(cpu.ebx + x86::reg32(564) /* 0x234 */) = 0 /*0x0*/;
     // 0051b445  e8c252fcff             -call 0x4e070c
     cpu.esp -= 4;
-    sub_4e070c(app, cpu.sync());
+    nfs3hp::fillZero(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0051b44a  89e0                   -mov eax, esp

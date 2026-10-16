@@ -496,7 +496,6 @@ x86::reg32 selectNext(Guest& guest, x86::reg32 menu)
     return afterSelecting(guest, menu, was, true);
 }
 
-
 /* sub_44a240: a screen's Escape button: the button whose codelink names
  * "escape", the first of them, if it is not greyed out; 0 for none.  Its
  * index from the first item in *offset (0 for none). */
@@ -658,7 +657,8 @@ x86::reg32 passItems(Guest& guest, x86::reg32 menu)
  * is not the time for it.  The network screens get theirs. */
 x86::reg32 showItems(Guest& guest, x86::reg32 menu)
 {
-    for (std::int16_t index = std::int16_t(firstItem(guest, menu)); !isEnd(guest, itemAt(index)); ++index)
+    std::int16_t index = std::int16_t(firstItem(guest, menu));
+    for (; !isEnd(guest, itemAt(index)); ++index)
     {
         const x86::reg32 item = itemAt(index);
         if (guest.dword(item + kOnShow) == 0)
@@ -669,9 +669,11 @@ x86::reg32 showItems(Guest& guest, x86::reg32 menu)
         if (guest.word(item + kMainOnly) != 0 && guest.dword(kAfterRace) != 0)
             guest.setWord(item + kStateWord, guest.word(item + kStateWord) | kGreyAndHide);
     }
+    // eax as the generated function leaves it: the end's offset in the
+    // table, or what the network screens' art leaves.
     if (guest.dword(kNetworkConnected) != 0)
-        guest.call(kNetworkShown);
-    return guest.eax();
+        return guest.call(kNetworkShown);
+    return x86::reg32(std::int32_t(index)) * fe::item::kSize;
 }
 
 /* sub_44a9e0: every item's kOnHide handler, the screen closing. */
@@ -782,7 +784,6 @@ x86::reg32 keysTaken(Guest& guest)
     }
     return (guest.call(kDialogShown) & 0xff) != 0 ? 1 : 0;
 }
-
 
 /* sub_44a2d0: a key on a screen.  In a network race the network screens see
  * it first; then the keys that work anywhere; then the selected item's key
@@ -911,7 +912,6 @@ x86::reg32 drawItems(Guest& guest, x86::reg32 menu)
     guest.setDword(kDepthNear, kFloatAlmostOne);
     return result;
 }
-
 
 /* sub_44aa30: a screen left: its onExit handler (told how, `action`), then,
  * unless a movie played (9) or the pause screens are up, the leaving sound
@@ -1082,7 +1082,6 @@ x86::reg32 quitAnswer(Guest& guest, x86::reg32 answer, x86::reg32 close)
     return 0;
 }
 
-
 /* sub_449aa0: the help box: an item's help text, shown once the pointer has
  * rested on the selected item for 100 ticks, beside the pointer (kept on the
  * 640x480 screen), wrapped at 380 pixels, and gone when the selection moves,
@@ -1172,7 +1171,6 @@ x86::reg32 drawHelp(Guest& guest)
     guest.setDword(kHelpAlpha, kFloatOne);
     return guest.eax();
 }
-
 
 /* sub_44be60: the race settings kept consistent on every pass, and the options
  * the screens offer fitted to them (sub_43a6e0: an option allowed, by its
@@ -1621,7 +1619,6 @@ x86::reg32 menuLoop(Guest& guest, x86::reg32 name, x86::reg32 history)
     return guest.dword(action);
 }
 
-
 const fe::GuestString kUsableStrings[] = { kRaceNow };
 const fe::GuestString kEscapeStrings[] = { kEscape };
 const fe::GuestString kDrawStrings[] = { kIpx };
@@ -1766,13 +1763,6 @@ bool menuPassItems(win32::WinApplication* app, x86::CPU& cpu)
     return fe::run(app, cpu, site, [&](Guest& guest) { return passItems(guest, menu); });
 }
 
-bool menuShowItems(win32::WinApplication* app, x86::CPU& cpu)
-{
-    static fe::Site site{ "sub_44a960", 0, 12, nullptr, 0, kRestoreEbx | kRestoreEdx };
-    const x86::reg32 menu = cpu.eax;
-    return fe::run(app, cpu, site, [&](Guest& guest) { return showItems(guest, menu); });
-}
-
 bool menuHideItems(win32::WinApplication* app, x86::CPU& cpu)
 {
     static fe::Site site{ "sub_44a9e0", 0, 12, nullptr, 0, kRestoreEbx | kRestoreEdx };
@@ -1800,12 +1790,6 @@ bool menuEnterScreen(win32::WinApplication* app, x86::CPU& cpu)
                           kRestoreEcx | kRestoreEdx | kRestoreEsi | kRestoreEdi };
     const x86::reg32 menu = cpu.eax;
     return fe::run(app, cpu, site, [&](Guest& guest) { return enterScreen(guest, menu); });
-}
-
-bool menuCurrentName(win32::WinApplication* app, x86::CPU& cpu)
-{
-    static fe::Site site{ "sub_44ae00", 0, 8, nullptr, 0, kRestoreEdx };
-    return fe::run(app, cpu, site, [&](Guest& guest) { return currentMenuName(guest); });
 }
 
 bool menuByNameStandIn(win32::WinApplication* app, x86::CPU& cpu)
@@ -1884,5 +1868,25 @@ bool menuFitRaceSettings(win32::WinApplication* app, x86::CPU& cpu)
                           kRestoreEbx | kRestoreEdx | kRestoreEsi | kRestoreEdi };
     return fe::run(app, cpu, site, [&](Guest& guest) { return fitRaceSettings(guest); });
 }
+
+/* Native whole, no generated code behind them (disassemble_nfs3hp.py's
+ * MENU_NATIVES): a screen's items shown, the shown screen's name. */
+namespace frontend
+{
+
+void menuShowItems(win32::WinApplication* app, x86::CPU& cpu)
+{
+    static fe::Site site{ "sub_44a960", 0, 12, nullptr, 0, kRestoreEbx | kRestoreEdx };
+    const x86::reg32 menu = cpu.eax;
+    fe::runWhole(app, cpu, site, [&](Guest& guest) { return showItems(guest, menu); });
+}
+
+void menuCurrentName(win32::WinApplication* app, x86::CPU& cpu)
+{
+    static fe::Site site{ "sub_44ae00", 0, 8, nullptr, 0, kRestoreEdx };
+    fe::runWhole(app, cpu, site, [&](Guest& guest) { return currentMenuName(guest); });
+}
+
+}  // namespace frontend
 
 }

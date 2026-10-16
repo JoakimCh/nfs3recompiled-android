@@ -9554,7 +9554,7 @@ void Application::sub_420650(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.edi = x86::reg32(cpu.ebp + x86::reg32(-42) /* -0x2a */);
     // 00420674  e893000c00             -call 0x4e070c
     cpu.esp -= 4;
-    sub_4e070c(app, cpu.sync());
+    nfs3hp::fillZero(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00420679  8d55d2                 -lea edx, [ebp - 0x2e]

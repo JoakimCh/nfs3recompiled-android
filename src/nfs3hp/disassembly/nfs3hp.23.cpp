@@ -3,10 +3,10 @@
 
 namespace nfs3hp
 {
-// Port (tools/apply_native_render.py): defined in native_render.cpp.
-bool glareColours(win32::WinApplication* app, x86::CPU& cpu);
 // Port (tools/apply_native_loading.py): defined in native_loading.cpp.
 bool fceRecords(win32::WinApplication* app, x86::CPU& cpu);
+// Port (tools/apply_native_render.py): defined in native_render.cpp.
+bool glareColours(win32::WinApplication* app, x86::CPU& cpu);
 // Port (tools/apply_native_vertices.py): defined in native_vertices.cpp.
 bool objectVerticesNearest(win32::WinApplication* app, x86::CPU& cpu);
 // Port (tools/apply_native_vertices.py): defined in native_vertices.cpp.
@@ -9174,7 +9174,7 @@ L_0x0049e275:
     cpu.eax = 194 /*0xc2*/;
     // 0049e27a  e86169faff             -call 0x444be0
     cpu.esp -= 4;
-    sub_444be0(app, cpu.sync());
+    nfs3hp::frontend::dialogMessageById(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0049e27f  66c705dc227a000100     -mov word ptr [0x7a22dc], 1
@@ -9224,7 +9224,7 @@ L_0x0049e293:
     cpu.edx = 1 /*0x1*/;
     // 0049e2b2  e82969faff             -call 0x444be0
     cpu.esp -= 4;
-    sub_444be0(app, cpu.sync());
+    nfs3hp::frontend::dialogMessageById(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0049e2b7  668915dc227a00         -mov word ptr [0x7a22dc], dx
@@ -10674,7 +10674,7 @@ L_0x0049e716:
     cpu.eax = 194 /*0xc2*/;
     // 0049e751  e88a64faff             -call 0x444be0
     cpu.esp -= 4;
-    sub_444be0(app, cpu.sync());
+    nfs3hp::frontend::dialogMessageById(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0049e756  31c0                   -xor eax, eax
@@ -10745,7 +10745,7 @@ L_0x0049e764:
     cpu.eax = 194 /*0xc2*/;
     // 0049e7b0  e82b64faff             -call 0x444be0
     cpu.esp -= 4;
-    sub_444be0(app, cpu.sync());
+    nfs3hp::frontend::dialogMessageById(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0049e7b5  e8c66a0500             -call 0x4f5280
@@ -10932,7 +10932,7 @@ void Application::sub_49e800(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.eax = 194 /*0xc2*/;
     // 0049e87f  e85c63faff             -call 0x444be0
     cpu.esp -= 4;
-    sub_444be0(app, cpu.sync());
+    nfs3hp::frontend::dialogMessageById(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0049e884  31c0                   -xor eax, eax
@@ -11035,7 +11035,7 @@ L_0x0049e8b7:
     cpu.edi = 1 /*0x1*/;
     // 0049e8ea  e8f162faff             -call 0x444be0
     cpu.esp -= 4;
-    sub_444be0(app, cpu.sync());
+    nfs3hp::frontend::dialogMessageById(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0049e8ef  66893ddc227a00         -mov word ptr [0x7a22dc], di
@@ -11145,7 +11145,7 @@ L_0x0049e93c:
     cpu.ecx = 1 /*0x1*/;
     // 0049e946  e89562faff             -call 0x444be0
     cpu.esp -= 4;
-    sub_444be0(app, cpu.sync());
+    nfs3hp::frontend::dialogMessageById(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0049e94b  31f6                   -xor esi, esi
@@ -11220,7 +11220,7 @@ L_0x0049e970:
     cpu.edi = 1 /*0x1*/;
     // 0049e994  e84762faff             -call 0x444be0
     cpu.esp -= 4;
-    sub_444be0(app, cpu.sync());
+    nfs3hp::frontend::dialogMessageById(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0049e999  66893ddc227a00         -mov word ptr [0x7a22dc], di
@@ -11458,7 +11458,7 @@ L_0x0049ea02:
     cpu.eax = 194 /*0xc2*/;
     // 0049ea4f  e88c61faff             -call 0x444be0
     cpu.esp -= 4;
-    sub_444be0(app, cpu.sync());
+    nfs3hp::frontend::dialogMessageById(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0049ea54  31c0                   +xor eax, eax
@@ -11630,7 +11630,7 @@ L_0x0049eac1:
     cpu.eax = 194 /*0xc2*/;
     // 0049eac6  e81561faff             -call 0x444be0
     cpu.esp -= 4;
-    sub_444be0(app, cpu.sync());
+    nfs3hp::frontend::dialogMessageById(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
 L_0x0049eacb:
@@ -17249,7 +17249,7 @@ void Application::sub_49fc50(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.eax = 7996864 /*0x7a05c0*/;
     // 0049fc71  e8960a0400             -call 0x4e070c
     cpu.esp -= 4;
-    sub_4e070c(app, cpu.sync());
+    nfs3hp::fillZero(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
 L_0x0049fc76:
@@ -21502,7 +21502,7 @@ void Application::sub_4a0d20(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.edx = 484 /*0x1e4*/;
     // 004a0d31  e8d6f90300             -call 0x4e070c
     cpu.esp -= 4;
-    sub_4e070c(app, cpu.sync());
+    nfs3hp::fillZero(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004a0d36  d94514                 -fld dword ptr [ebp + 0x14]

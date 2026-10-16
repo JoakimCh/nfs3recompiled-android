@@ -90,13 +90,17 @@ THREAD_SEGMENTS = [0x43ac67, 0x43ac97, 0x46785e, 0x4f06f7, 0x4f2191, 0x495b68, 0
 # The game's own functions that are native: each address is the port's
 # function of that name in src/nfs3hp/native_game.cpp, no code is generated
 # for it, and the generated code calls it by name: the game's side of THRASH
-# and iSND, the logger, and the lambdas iSNDloaddll hands eacsnd; EA's names
-# where the game's messages give them.  tools/game_checks generates their code
+# and iSND, the logger, the lambdas iSNDloaddll hands eacsnd, and the fill the
+# game's code clears its memory with; EA's names where the game's messages
+# give them.  tools/game_checks generates their code
 # all the same, to compare the natives with.
 GAME_NATIVES = {
     0x401010: "Error",
     0x40faf0: "Is3DSoundAvailable",
     0x4df6c0: "Message",
+    0x4e070c: "fillZero",               # the game's fill at its three entries: zeros,
+    0x4e0716: "fillByte",               # bl spread,
+    0x4e0721: "fillWord",               # the pattern in ebx
     0x4e1a00: "StopSoundBufferLambda",
     0x4e1a0c: "AcquireSoundBufferPositionLambda",
     0x4e1a24: "AcquireSoundDataLambda",
@@ -400,6 +404,232 @@ WATCOM_NATIVES = {
 }
 GAME_NATIVES.update(WATCOM_NATIVES)
 
+# The menus' text and what the screens do around their items, native: each
+# address is the port's function of that name in nfs3hp::frontend --
+# src/nfs3hp/native_frontend_text.cpp's a line of the language's text by its
+# number, the names past them, the checks of a line typed in, the font a text
+# is measured and drawn in; native_frontend_screen.cpp's the pointer and the
+# screens' art.  tools/game_checks compares them with their generated code.
+FRONTEND_NATIVES = {
+    0x43d9f0: "frontend::controllerName",
+    0x448400: "frontend::displayModeName",
+    0x4721f0: "frontend::nameValid",
+    0x4d17b0: "frontend::specialText",
+    0x4d1850: "frontend::languageText",
+    0x443630: "frontend::shortNameCharacter",
+    0x443660: "frontend::shortNameValid",
+    0x443700: "frontend::languageNameValid",
+    0x443780: "frontend::languageFileNameValid",
+    0x443860: "frontend::lineAllowed",
+    0x452020: "frontend::textWidth",
+    0x452100: "frontend::selectFont",
+    0x4d1430: "frontend::measureText",
+    0x4d1480: "frontend::textWidthWithOverhang",
+    0x4d1000: "frontend::drawText",
+    0x4d06f0: "frontend::drawCharacter",
+    0x49bcd0: "frontend::takeQuad",
+    0x4beb80: "frontend::viewport",
+    0x451400: "frontend::toScreenX",
+    0x451440: "frontend::toScreenY",
+    0x435230: "frontend::placePointer",
+    0x49bfc0: "frontend::setPointer",
+    0x440970: "frontend::loadScreenArt",
+}
+GAME_NATIVES.update(FRONTEND_NATIVES)
+
+# The controls, native: each address is the port's function of that name in
+# nfs3hp::controls -- src/nfs3hp/native_controls_input.cpp's the game's side
+# of DirectInput (the devices found and opened, the mouse, the keyboard, the
+# joysticks read, their force-feedback effects); native_controls_devices.cpp's
+# the control sets the game makes for the devices it knows; and
+# native_controls_race.cpp's the controls read in a race and kept in
+# config.dat; native_controls_pipeline.cpp's the controls read and turned
+# into the players' actions every frame of a race.  tools/game_checks compares
+# them with their generated code;
+# what one of these files calls of another's it calls by address.
+CONTROLS_INPUT_NATIVES = {
+    0x434f20: "controls::startDirectInput",
+    0x434fd0: "controls::stopDirectInput",
+    0x4350a0: "controls::openMouse",
+    0x4352d0: "controls::setPointerBounds",
+    0x435310: "controls::readMouse",
+    0x435600: "controls::findJoysticks",
+    0x435690: "controls::describeJoystick",
+    0x4358f0: "controls::readJoystick",
+    0x435ae0: "controls::readAxisZone",
+    0x435b40: "controls::setAxisZone",
+    0x435b60: "controls::resetForceFeedback",
+    0x435bc0: "controls::setAutocenter",
+    0x435c60: "controls::pauseEffects",
+    0x435cc0: "controls::continueEffects",
+    0x435d20: "controls::actuatorsOn",
+    0x435d90: "controls::actuatorsOff",
+    0x435df0: "controls::setGain",
+    0x435f10: "controls::createEffect",
+    0x4361e0: "controls::startEffect",
+    0x436230: "controls::stopEffect",
+    0x436270: "controls::stopEffects",
+    0x4362f0: "controls::downloadEffect",
+    0x436310: "controls::unloadEffect",
+    0x436330: "controls::updateEffect",
+    0x436610: "controls::setCooperativeLevel",
+    0x4366e0: "controls::acquireDevice",
+    0x436800: "controls::unacquireDevice",
+    0x4368c0: "controls::acquireResult",
+    0x4368f0: "controls::effectPlaying",
+    0x436930: "controls::hideCursor",
+    0x436980: "controls::joystickFound",
+    0x436b10: "controls::axisProperty",
+}
+CONTROLS_DEVICES_NATIVES = {
+    0x4904d0: "controls::controlsFor",
+    0x4904f0: "controls::defaultControls",
+    0x4905b0: "controls::setControls",
+    0x490610: "controls::controllerNamed",
+    0x490640: "controls::knownControllerControls",
+    0x4906b0: "controls::sideWinderGamePadControls",
+    0x490770: "controls::gravisGripControls",
+    0x490830: "controls::wingManForceControls",
+    0x4908f0: "controls::combatStickControls",
+    0x4909b0: "controls::sideWinderProControls",
+    0x490a70: "controls::sideWinderWheelControls",
+    0x490b30: "controls::steeringWheelControls",
+    0x490c40: "controls::keyboardControls",
+    0x490cb0: "controls::gamePadControls",
+    0x490e30: "controls::joystickControls",
+    0x490fa0: "controls::otherControllerControls",
+}
+CONTROLS_RACE_NATIVES = {
+    0x470bc0: "controls::steadyEngineRumble",
+    0x470c60: "controls::startEngineRumble",
+    0x470cb0: "controls::silenceEngineRumble",
+    0x470d10: "controls::setForceGain",
+    0x470d30: "controls::findForceController",
+    0x470dc0: "controls::createForceEffects",
+    0x470f40: "controls::stopForces",
+    0x470f80: "controls::stopForcesAgain",
+    0x470fc0: "controls::stopForcesOnceMore",
+    0x471000: "controls::stopForcesOrActuatorsOn",
+    0x471070: "controls::stopForcesOrActuatorsOff",
+    0x4710f0: "controls::forcePlayerCar",
+    0x4711e0: "controls::startRaceForces",
+    0x471240: "controls::stopRaceEffects",
+    0x471270: "controls::crashJolt",
+    0x471440: "controls::bumpJolt",
+    0x4714f0: "controls::gearChangeKick",
+    0x471650: "controls::steeringAmount",
+    0x4716e0: "controls::playSteeringSpring",
+    0x471860: "controls::playSlideSpring",
+    0x4719f0: "controls::playRoadRumble",
+    0x471af0: "controls::playEngineRumble",
+    0x471dc0: "controls::isForceCar",
+    0x471e10: "controls::raceForcesFrame",
+    0x471fb0: "controls::allActuatorsOff",
+    0x471fd0: "controls::playJolt",
+    0x4720a0: "controls::stopEngineRumble",
+    0x4720e0: "controls::stopSteeringSpring",
+    0x472110: "controls::carSpeedMph",
+    0x472b60: "controls::loadControllers",
+}
+CONTROLS_PIPELINE_NATIVES = {
+    0x431580: "controls::clearJoysticks",
+    0x4315a0: "controls::readJoysticks",
+    0x431690: "controls::pollJoystick",
+    0x4316c0: "controls::buttonHeld",
+    0x4316f0: "controls::hatPointing",
+    0x431740: "controls::axisAmount",
+    0x4317d0: "controls::keyHeld",
+    0x431800: "controls::controlHeld",
+    0x431880: "controls::controlHeldNo",
+    0x431885: "controls::controlHeldYes",
+    0x43188d: "controls::controlHeldByKind",
+    0x4318b0: "controls::noControl",
+    0x48f1f0: "controls::bindPlayersControls",
+    0x48f4f0: "controls::startRaceControls",
+    0x48f550: "controls::readRaceControls",
+    0x48f940: "controls::bindControl",
+    0x48f970: "controls::bindFunctionKeys",
+    0x48fa10: "controls::queueRaceControls",
+}
+CONTROLS_GROUPS = (CONTROLS_INPUT_NATIVES, CONTROLS_DEVICES_NATIVES, CONTROLS_RACE_NATIVES,
+                   CONTROLS_PIPELINE_NATIVES)
+for group in CONTROLS_GROUPS:
+    GAME_NATIVES.update(group)
+
+# The menus' screens that are native whole, no generated code behind them:
+# each address is a handler of native_frontend_main.cpp, in nfs3hp::frontend,
+# that the screens' table at 0x555c48 or a button hands to the menu loop.
+# The main menu in its three forms -- main, mainsplt, mainmult -- each as it
+# opens, as it closes and every pass of the loop; the players' name buttons
+# and their dialogs' answers; mainmult's race list and its Back's question.
+# And what the main menu calls of the menu loop (native_frontend_loop.cpp)
+# and of the dialogs (native_frontend_dialogs.cpp): a screen's items shown,
+# the shown screen's name; a question, a message, a line to type in opened,
+# and their layout.  tools/frontend_checks compares them with the game's
+# code, made afresh (its generate.py); tools/game_checks leaves them out.
+MENU_NATIVES = {
+    0x43fcb0: "frontend::multiMenuLeaveAnswer",
+    0x4400d0: "frontend::multiMenuOnBack",
+    0x440160: "frontend::multiMenuApplyRaceList",
+    0x440390: "frontend::multiMenuFollowRaceType",
+    0x4403f0: "frontend::multiMenuOnFrame",
+    0x440470: "frontend::multiMenuOnEnter",
+    0x4405b0: "frontend::multiMenuOnExit",
+    0x45cdd0: "frontend::mainMenuPlayerNameAnswer",
+    0x45ce60: "frontend::splitMenuPlayer2NameAnswer",
+    0x45cef0: "frontend::mainMenuOnPlayerName",
+    0x45cf70: "frontend::splitMenuOnPlayer2Name",
+    0x45cff0: "frontend::mainMenuOnFrame",
+    0x45d050: "frontend::mainMenuOnEnter",
+    0x45d2f0: "frontend::mainMenuOnExit",
+    0x45d300: "frontend::splitMenuOnFrame",
+    0x45d360: "frontend::splitMenuOnEnter",
+    0x45d620: "frontend::splitMenuOnExit",
+    0x44a960: "frontend::menuShowItems",
+    0x44ae00: "frontend::menuCurrentName",
+    0x443a90: "frontend::dialogLinesBox",
+    0x443c00: "frontend::dialogButtonRowBox",
+    0x443d20: "frontend::dialogPlaceButtons",
+    0x444570: "frontend::dialogPointAtButton",
+    0x4446d0: "frontend::dialogOpenQuestion",
+    0x444a80: "frontend::dialogOpenMessage",
+    0x444be0: "frontend::dialogMessageById",
+    0x444c10: "frontend::dialogEditText",
+    0x444c20: "frontend::dialogOpenEdit",
+    0x445f00: "frontend::dialogFadedIn",
+    # The controls' screens: the function keys', the hardware keys', the
+    # controllers' (control1), their dead zones and force feedback.
+    0x437600: "frontend::funkeysOnEnter",
+    0x4377c0: "frontend::funkeysOnExit",
+    0x4377d0: "frontend::hardkeysOnEnter",
+    0x43d4d0: "frontend::controlsOnEnter",
+    0x43d5f0: "frontend::controlsOnExit",
+    0x43d3f0: "frontend::controlsCancelKey",
+    0x43d460: "frontend::controlsResetClicked",
+    0x43d410: "frontend::controlsResetAnswered",
+    0x43d9a0: "frontend::deadZoneFillList",
+    0x4432c0: "frontend::deadZoneOnEnter",
+    0x443430: "frontend::deadZoneOnExit",
+    0x442db0: "frontend::deadZoneCancelKey",
+    0x443260: "frontend::deadZoneChooseKey",
+    0x443290: "frontend::deadZoneChooseKeyInRace",
+    0x443070: "frontend::deadZoneShowController",
+    0x442e60: "frontend::deadZoneAxisIndex",
+    0x442dd0: "frontend::deadZoneApplyAxis",
+    0x442ef0: "frontend::deadZoneAxisMoved",
+    0x442ff0: "frontend::deadZoneAxisDraw",
+    0x447dd0: "frontend::forceOnEnter",
+    0x4481c0: "frontend::forceOnExit",
+    0x447b40: "frontend::forceCancelKey",
+    0x447b60: "frontend::forceStrengthMoved",
+    0x447c40: "frontend::forceRoadEffectsMoved",
+    0x447c70: "frontend::forceCollisionMoved",
+    0x447ca0: "frontend::forceEngineMoved",
+    0x447cd0: "frontend::forceBodyRollMoved",
+    0x447d50: "frontend::forceRoadGripMoved",
+}
+GAME_NATIVES.update(MENU_NATIVES)
+
 # The game's code that uses MMX, native: each address is the port's function
 # of that name in src/nfs3hp/native_mmx.cpp, in nfs3hp::mmx -- the SND
 # library's MMX routines and the memmove the game's file reads copy with.
@@ -624,8 +854,8 @@ if __name__ == '__main__':
 
     # Force feedback: player one's car keeps its effects when the on-screen
     # controls are bound as keys, which leaves no axis on the pad to claim them.
-    from tools.apply_force_feedback_car import apply as apply_force_feedback_car
-    apply_force_feedback_car(Path(__file__).resolve().parent)
+    # tools/apply_force_feedback_car.py's change is in sub_4710f0's native now
+    # (native_controls_race.cpp's forcePlayerCar).
 
     # Full colour: the Screen Size list shows the depth a race is drawn in (the
     # Voodoo2 driver's taking the game's 32-bit textures is native_thrash.cpp's).

@@ -135,7 +135,6 @@ file(GLOB LIB_CPP_SOURCES CONFIGURE_DEPENDS
      "${NFS_ROOT_DIR}/src/lib/sdl-backend/*.cpp"
      "${NFS_ROOT_DIR}/src/lib/winapi/*.cpp"
      "${NFS_ROOT_DIR}/src/lib/winapi/ddraw/*.cpp"
-     "${NFS_ROOT_DIR}/src/lib/winapi/dinput/*.cpp"
      "${NFS_ROOT_DIR}/src/lib/winapi/dsound/*.cpp")
 
 # src/lib/x87soft.cpp is WITH_PEDANTIC_FPU's 80-bit arithmetic: the x87's,

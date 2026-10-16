@@ -163,12 +163,28 @@ constexpr x86::reg32 kDstStart = 0x568a40, kDstEnd = 0x568a64;
 constexpr x86::reg32 kByDword = 0xfff000, kByByte = 0xfff004, kAtRandom = 0xfff008;
 /* And the scopes' filters and finally blocks __TryHandler runs. */
 constexpr x86::reg32 kFilterCode = 0xfff010, kFinallyCode = 0xfff014;
+/* And the menus': a language's check of a line typed in, the mouse's
+ * DirectInput device's GetDeviceData (the device at kMouseDevice, its methods
+ * after it). */
+constexpr x86::reg32 kLanguageCheck = 0xfff018, kGetDeviceData = 0xfff01c;
+constexpr x86::reg32 kMouseDevice = 0x63f000;
+/* What the menus' art allocates: 8 blocks of 0x400. */
+constexpr x86::reg32 kBlocks = 0x1f0000;
 
 /* What the functions write, and the stack from the arguments up: compared. */
 const std::pair<x86::reg32, x86::reg32> kWindows[] = {
     {kLow, kLowEnd}, {kHeap, kHeapEnd}, {kHarness, kHarnessEnd}, {0x552000, 0x553000}, {0x55e000, 0x55f000},
     {0x564000, 0x565000}, {0x566000, 0x568000}, {0x568000, 0x569000}, {0x56a000, 0x56b000}, {0x56b000, 0x56c000},
-    {0x56e000, 0x56f000},
+    {0x56e000, 0x56f000}, {0x563000, 0x564000}, {0x555000, 0x556000}, {0x661000, 0x662000}, {0x6fc000, 0x6fe000},
+    {0x554000, 0x555000}, {0x558000, 0x55a000}, {0x561000, 0x562000}, {0x5f3000, 0x5f5000}, {0x664000, 0x665000},
+    {0x6fb000, 0x6fc000}, {0x7a3000, 0x7a4000}, {0x7cd000, 0x7ce000}, {0x7f7000, 0x7f8000}, {0x81b000, 0x81c000},
+    {0x83f000, 0x841000},
+#define CONTROLS_WINDOWS
+#include "controls_input.inc"
+#include "controls_devices.inc"
+#include "controls_race.inc"
+#include "controls_pipeline.inc"
+#undef CONTROLS_WINDOWS
     {0x9ef000, 0x9f0000},
     {0x9f3000, 0x9f4000}, {0x9f6000, 0x9f7000}, {0xa09000, 0xa0a000}, {0xa0b000, 0xa0d000}, {kStackLow, kStackHigh},
 };
@@ -243,6 +259,14 @@ enum Effect
     kQuery,         // VirtualQuery: the stack's MEMORY_BASIC_INFORMATION about the address
     kCommandLine,   // GetCommandLineA and W: the case's command line, the wide one or none
     kMatherrSay,    // _matherr: 0 mostly -- the error reported -- or 1
+    kBlock,         // the game's allocation: one of kBlocks, or none
+    kScreenName,    // the shown screen's name: pause, mainmult, postgame, another, or none
+#define CONTROLS_EFFECTS
+#include "controls_input.inc"
+#include "controls_devices.inc"
+#include "controls_race.inc"
+#include "controls_pipeline.inc"
+#undef CONTROLS_EFFECTS
 };
 
 struct StandIn
@@ -285,6 +309,26 @@ const StandIn kGameFunctions[] = {
     {0x5185c0, "_nrealloc", kWatcom, 2, 0, kEax | kEdx, -1, 0, kReallocate},
     {0x4ee168, "__MkTmpFile", kWatcom, 2, 0, kEax | kEdx, -1, 0, kTmpName},
     {0x4a39f0, "the game's main", kWatcom, 2, 0, kEax | kEdx, -1, 0, kNothing},
+    // The cars' names, which the menus' text takes (native_frontend_text.cpp).
+    {0x439cc0, "a car known", kWatcom, 1, 0, kEax, -1, 0, kMainThread},
+    {0x4396b0, "a police car", kWatcom, 1, 0, kEax, -1, 0, kMainThread},
+    {0x439250, "a car's name", kWatcom, 1, 0, kEax, -1, 0, kNothing},
+    // What the menus' font and screens call (native_frontend_text.cpp,
+    // native_frontend_screen.cpp): a text on a 2D screen, a character's quads
+    // handed on, a shape by its name, the game's memory, the shown screen's
+    // name (the menu loop's, native whole: called by address on both sides).
+    {0x4da4a0, "a 2D screen's text", kWatcom, 4, 0, kEax | kEbx | kEcx | kEdx, 0, 4, kNothing},
+    {0x49bd30, "quads drawn", kStdcall, 4, 1, kEax | kEbx | kEcx | kEdx, -1, 0, kNothing},
+    {0x4d5db0, "a shape by its name", kWatcom, 1, 0, kEax, 0, 2, kNothing},
+    {0x4e1620, "allocate", kWatcom, 3, 0, kEax, -1, 0, kBlock},
+    {0x4e1890, "free", kWatcom, 1, 0, kEax, -1, 0, kNothing},
+    {0x44ae00, "the shown screen's name", kWatcom, 0, 0, kEax, -1, 0, kScreenName},
+#define CONTROLS_GAME_FUNCTIONS
+#include "controls_input.inc"
+#include "controls_devices.inc"
+#include "controls_race.inc"
+#include "controls_pipeline.inc"
+#undef CONTROLS_GAME_FUNCTIONS
 };
 
 /* What is called through a pointer: the game's imports, by their slots, and
@@ -388,6 +432,16 @@ const StandIn kPointers[] = {
     {0x5677ec, "_WindowsPutch", kWatcom, 2, 0, kEax, -1, 0, kNothing},
     // The formatted input's: the float's conversion's number, its first 16 bytes logged.
     {0x56ac68, "__EFG_scanf", kWatcom, 2, 0, kEax | kEdx, 0, 4, kScanDouble},
+    // The menus': a language's check of a line, its first 16 bytes logged; the
+    // mouse device's GetDeviceData.
+    {kLanguageCheck, "a language's check of a line", kWatcom, 1, 0, kEax, 0, 4, kNothing},
+    {kGetDeviceData, "GetDeviceData", kStdcall, 0, 5, kScratch, -1, 0, kNothing},
+#define CONTROLS_POINTERS
+#include "controls_input.inc"
+#include "controls_devices.inc"
+#include "controls_race.inc"
+#include "controls_pipeline.inc"
+#undef CONTROLS_POINTERS
 };
 constexpr unsigned kPointerCount = sizeof kPointers / sizeof kPointers[0];
 
@@ -472,6 +526,11 @@ struct Promise
     unsigned arguments = 0;  // registers it is handed arguments in -- eax, edx, ebx, ecx -- the caller's no longer
     bool fpu = false;        // the x87's stack and control word compared too
     HeapUse heap = kNoHeap;
+    /* Only the x87's registers in use compared, not those past its stack: the
+     * generated code keeps the stack in locals and writes the registers only
+     * where it calls out, the native pushes and pops each value as the x87
+     * does -- what is left in a free register no code reads. */
+    bool liveOnly = false;
 };
 
 const Promise kPromises[] = {
@@ -492,6 +551,43 @@ const Promise kPromises[] = {
     {"TraceSoundLambda", false, false},
     {"abortmessagewrapper", false, false},
     {"iSNDconvertsample", false, true},
+    // The game's fill at its three entries: every register, and the x87's
+    // stack the doubles go through.
+    {"fillZero", true, true, 0, true, kNoHeap, true},
+    {"fillByte", true, true, 0, true, kNoHeap, true},
+    {"fillWord", true, true, 0, true, kNoHeap, true},
+    // The menus' text (native_frontend_text.cpp).
+    {"frontend::controllerName", true, true, 1},
+    {"frontend::displayModeName", true, true, 1},
+    {"frontend::nameValid", true, true, 1},
+    {"frontend::specialText", true, true, 1},
+    {"frontend::languageText", true, true, 1},
+    // The checks of a line typed in, the font, the screens (native_frontend_text.cpp,
+    // native_frontend_screen.cpp): every register compared.
+    {"frontend::shortNameCharacter", true, true, 0},
+    {"frontend::shortNameValid", true, true, 0},
+    {"frontend::languageNameValid", true, true, 0},
+    {"frontend::languageFileNameValid", true, true, 0},
+    {"frontend::lineAllowed", true, true, 0},
+    {"frontend::textWidth", true, true, 0, true, kNoHeap, true},
+    {"frontend::selectFont", true, true, 0},
+    {"frontend::measureText", true, true, 0, true, kNoHeap, true},
+    {"frontend::textWidthWithOverhang", true, true, 0, true, kNoHeap, true},
+    {"frontend::drawText", true, true, 0, true, kNoHeap, true},
+    {"frontend::drawCharacter", true, true, 0, true, kNoHeap, true},
+    {"frontend::takeQuad", true, true, 0},
+    {"frontend::viewport", true, true, 0},
+    {"frontend::toScreenX", true, true, 0},
+    {"frontend::toScreenY", true, true, 0},
+    {"frontend::placePointer", true, true, 0},
+    {"frontend::setPointer", true, true, 0},
+    {"frontend::loadScreenArt", true, true, 0},
+#define CONTROLS_PROMISES
+#include "controls_input.inc"
+#include "controls_devices.inc"
+#include "controls_race.inc"
+#include "controls_pipeline.inc"
+#undef CONTROLS_PROMISES
     // The Watcom runtime's (native_watcom.cpp).
     {"watcom::CHP", true, false, 0, true},
     {"watcom::GetThreadPtr", true, true},
@@ -1242,6 +1338,21 @@ public:
         case kMatherrSay:
             result = r % 4 == 0 ? 1 : 0;
             break;
+        case kBlock:
+            result = r % 6 == 0 ? 0 : kBlocks + 0x400 * ((r >> 8) % 8);
+            break;
+#define CONTROLS_EFFECT_CASES
+#include "controls_input.inc"
+#include "controls_devices.inc"
+#include "controls_race.inc"
+#include "controls_pipeline.inc"
+#undef CONTROLS_EFFECT_CASES
+        case kScreenName:
+        {
+            static const x86::reg32 names[] = {0, 0x53793c, 0x537944, 0x537950, 0x53795c};
+            result = names[r % 5];
+            break;
+        }
         case kConsoleMode:
             result = r % 7 != 0 ? 1 : 0;
             if (result != 0)
@@ -3480,6 +3591,28 @@ bool makeMathArguments(CheckApp& g, const std::string& name, x86::CPU& cpu, x86:
     return true;
 }
 
+/* The game's fill's entries: a buffer aligned any way, a count of nothing,
+ * of a few bytes, of many, below 0 now and then; a pattern of one byte or
+ * two, 0, 0xff, or any; the x87 with room on its stack, for the doubles. */
+bool makeFillArguments(CheckApp& g, const std::string& name, x86::CPU& cpu)
+{
+    if (name != "fillZero" && name != "fillByte" && name != "fillWord")
+        return false;
+    cpu.eax = kBuffers + below(0x40);
+    cpu.edx = chance(10) ? below(8) : chance(5) ? 0 - (1 + below(0x40)) : below(0x600);
+    for (x86::reg32 at = kBuffers; at < kBuffers + 0x700; at += 4)
+        g.word(at) = random32();
+    const x86::reg8 b = x86::reg8(chance(20) ? 0 : chance(15) ? 0xff : random32());
+    const x86::reg32 spread = b | b << 8 | b << 16 | x86::reg32(b) << 24;
+    cpu.ebx = chance(40) ? spread : chance(30) ? (random32() & 0xffff0000) | b << 8 | b : random32();
+    static const x86::reg16 precisions[] = {0x000, 0x200, 0x300};
+    cpu.fpu.setControl(x86::reg16(0x7f | precisions[below(3)] | below(4) << 10 | (random32() & 0x1000)));
+    cpu.fpu.count = below(8);
+    for (x86::Float& f : cpu.fpu.regs)
+        f = x86::Float(anyDouble());
+    return true;
+}
+
 void makeWatcomArguments(CheckApp& g, const std::string& name, x86::CPU& cpu, x86::reg32* stack)
 {
     if (makeFormattedArguments(g, name, cpu, stack) || makeEnvironmentArguments(g, name, cpu, stack)
@@ -4091,6 +4224,198 @@ x86::reg32 aCount(x86::reg32 block, x86::reg32 most)
 /* The MMX functions' arguments -- cdecl but for the memmove's copy, in eax,
  * edx and ebx -- their buffers made up, and the MMX registers, which they read
  * before they set some. */
+/* The menus' text's cases (native_frontend_text.cpp): numbers of every kind
+ * -- the language's lines, the display modes', the cars', the controllers',
+ * the ones between that are none -- the language's table in kBuffers, the
+ * controllers there are, named or not; names of every length. */
+/* A text of the menus' at `at`: up to `most` characters, the font's mostly,
+ * now and then one below the space or past its 0xe0. */
+void aMenuText(CheckApp& g, x86::reg32 at, x86::reg32 most)
+{
+    const x86::reg32 length = chance(10) ? 0 : below(most + 1);
+    for (x86::reg32 i = 0; i < length; ++i)
+        g.getMemory<x86::reg8>(at + i) = x86::reg8(chance(95) ? 0x20 + below(0x5f) : 1 + below(0xff));
+    g.getMemory<x86::reg8>(at + length) = 0;
+}
+
+/* The world the menus' font and screens see: the two fonts' metrics, their
+ * textures' sizes, their lists of quads; the screen, the pointer's bounds,
+ * the mouse; the in-race flag, the language and its checks of a line. */
+void makeMenusWorld(CheckApp& g, x86::CPU& cpu)
+{
+    static const x86::reg32 sizes[] = {64, 128, 256, 32, 0};
+    for (x86::reg32 at = 0x83f4e0; at < 0x840000; ++at)
+        g.getMemory<x86::reg8>(at) = x86::reg8(chance(10) ? random32() : below(0x20));
+    for (x86::reg32 font = 0; font < 2; ++font)
+    {
+        g.getMemory<x86::reg16>(0x83f6a8 + 44 * font) = x86::reg16(sizes[chance(97) ? below(4) : 4]);
+        g.getMemory<x86::reg16>(0x83f6aa + 44 * font) = x86::reg16(sizes[chance(97) ? below(4) : 4]);
+        const x86::reg32 list = 0x7f74c0 + 0x24010 * font;
+        g.word(list + 4) = 4 + below(0x38);
+        for (x86::reg32 at = list + 0x10; at < list + 0x800; at += 4)
+            g.word(at) = random32();
+    }
+    g.word(0x840184) = below(2);
+    static const float scales[] = {1.0f, 0.5f, 1.25f, 1.6f, 0.8f, 2.0f};
+    const float scale = chance(90) ? scales[below(6)] : float(below(4000)) / 1000.0f;
+    std::memcpy(&g.word(0x84018c), &scale, 4);
+    g.word(0x561b34) = random32();
+    g.word(0x561b3c) = chance(50) ? 0 : chance(80) ? 1 : random32();
+    static const x86::reg32 widths[] = {640, 800, 1024, 512, 1280};
+    g.word(0x7cdac8) = widths[below(5)];
+    g.word(0x7cdacc) = g.word(0x7cdac8) * 3 / 4;
+    for (x86::reg32 i = 0; i < 4; ++i)
+        g.word(0x7cda70 + 4 * i) = chance(80) ? (i < 2 ? below(64) : 320 + below(1000)) : random32();
+    g.word(0x559234) = chance(50) ? 0 : chance(80) ? 1 : random32();
+    g.word(0x664650) = random32();
+    // The pointer: its bounds, where it is; the mouse device and its methods.
+    g.word(0x5f38e0) = below(100);
+    g.word(0x5f38e4) = below(100);
+    g.word(0x5f38e8) = 400 + below(700);
+    g.word(0x5f38ec) = 300 + below(500);
+    g.word(0x5f38f0) = random32();
+    g.word(0x5f38f4) = random32();
+    g.word(0x554ee8) = chance(20) ? 0 : kMouseDevice;
+    g.word(kMouseDevice) = kMouseDevice + 0x10;
+    g.word(kMouseDevice + 0x10 + 0x28) = standInFor(kGetDeviceData);
+    // The language, and its checks: none, or the stand-in.
+    g.word(0x6fbb4c) = below(8);
+    for (x86::reg32 at = 0x558c80; at < 0x558c80 + 8 * 0x14; at += 4)
+        g.word(at) = chance(40) ? 0 : standInFor(kLanguageCheck);
+    // The menus' art: their buffers, held or not; the detail's glow.
+    g.word(0x5f3fdc) = chance(50) ? 0 : kBlocks + 0x400 * below(8);
+    g.word(0x5f3fd0) = chance(50) ? 0 : kBlocks + 0x400 * below(8);
+    g.getMemory<x86::reg8>(0x7a3a58) = x86::reg8(random32());
+    for (x86::reg32 at = kBlocks; at < kBlocks + 0x2000; at += 4)
+        g.word(at) = random32();
+    // The x87: a control word of every precision and rounding, one or none on its stack.
+    static const x86::reg16 precisions[] = {0x000, 0x200, 0x300};
+    cpu.fpu.setControl(x86::reg16(0x7f | precisions[below(3)] | below(4) << 10 | (random32() & 0x1000)));
+    cpu.fpu.count = below(2);
+    for (x86::Float& f : cpu.fpu.regs)
+        f = x86::Float(anyDouble());
+}
+
+/* A float for the font: a place on the screen mostly, any bits now and then. */
+x86::reg32 aPlace()
+{
+    if (chance(10))
+        return anyFloatBits((std::uint64_t(random32()) << 32) | random32());
+    const float place = float(x86::sreg32(below(1400)) - 200) + float(below(1000)) / 1000.0f;
+    x86::reg32 bits;
+    std::memcpy(&bits, &place, 4);
+    return bits;
+}
+
+bool makeMenusArguments(CheckApp& g, const std::string& name, x86::CPU& cpu, x86::reg32* stack)
+{
+    static const char* const names[] = {
+        "shortNameCharacter", "shortNameValid", "languageNameValid", "languageFileNameValid", "lineAllowed",
+        "textWidth", "selectFont", "measureText", "textWidthWithOverhang", "drawText", "drawCharacter",
+        "takeQuad", "viewport", "toScreenX", "toScreenY", "placePointer", "setPointer", "loadScreenArt"};
+    if (std::find_if(std::begin(names), std::end(names), [&](const char* n) { return name == n; })
+        == std::end(names))
+        return false;
+    makeMenusWorld(g, cpu);
+    const x86::reg32 text = kStrings + 0x40 * 62;
+    aMenuText(g, text, 30);
+    if (name == "shortNameCharacter")
+        cpu.eax = chance(50) ? (cpu.eax & 0xffffff00) | x86::reg8(chance(20) ? '_' : chance(20) ? '-' : random32())
+                             : random32();
+    else if (name == "shortNameValid" || name == "languageNameValid" || name == "languageFileNameValid"
+             || name == "lineAllowed")
+    {
+        // Names of every length, of letters, digits, '_', '-' and others.
+        static const char kinds[] = "abcXYZ019_-. !~";
+        const x86::reg32 length = chance(10) ? 0 : 1 + below(12);
+        for (x86::reg32 i = 0; i < length; ++i)
+            g.getMemory<x86::reg8>(text + i) = x86::reg8(chance(90) ? kinds[below(15)] : 1 + below(0xff));
+        g.getMemory<x86::reg8>(text + length) = 0;
+        cpu.eax = chance(8) ? 0 : text;
+        cpu.edx = chance(85) ? below(3) : random32();
+    }
+    else if (name == "textWidth")
+    {
+        cpu.eax = chance(10) ? 0 : text;
+        cpu.edx = random32();
+    }
+    else if (name == "selectFont")
+        cpu.eax = random32();
+    else if (name == "measureText" || name == "textWidthWithOverhang")
+        cpu.eax = text;
+    else if (name == "drawText")
+    {
+        cpu.eax = text;
+        cpu.edx = chance(90) ? below(800) : random32();
+        cpu.ebx = chance(90) ? below(600) : random32();
+    }
+    else if (name == "drawCharacter")
+    {
+        // A character of either font, a space now and then; its square of
+        // the texture, its place, its colour; measured or drawn.
+        cpu.eax = chance(15) ? 0xe0 * below(2) : chance(95) ? below(0x1c0) : random32() % 0x400;
+        cpu.edx = below(0x100);
+        cpu.ebx = below(0x100);
+        stack[0] = aPlace();
+        stack[1] = chance(90) ? below(600) : random32();
+        stack[2] = below(0x40);
+        stack[3] = 1 + below(0x40);
+        stack[4] = random32();
+        stack[5] = chance(60) ? 0 : chance(70) ? 1 : random32();
+    }
+    else if (name == "takeQuad")
+    {
+        cpu.eax = 0x7f74c0 + 0x24010 * below(2);
+        cpu.edx = kBuffers + 4 * below(0x40);
+        cpu.ebx = kBuffers + 0x100 + 4 * below(0x40);
+    }
+    else if (name == "viewport")
+    {
+        cpu.eax = kBuffers + 4 * below(0x10);
+        cpu.edx = kBuffers + 0x40 + 4 * below(0x10);
+        cpu.ebx = kBuffers + 0x80 + 4 * below(0x10);
+        cpu.ecx = kBuffers + 0xc0 + 4 * below(0x10);
+    }
+    else if (name == "toScreenX" || name == "toScreenY" || name == "placePointer" || name == "setPointer")
+    {
+        cpu.eax = chance(90) ? below(700) - 30 : random32();
+        cpu.edx = chance(90) ? below(520) - 20 : random32();
+    }
+    return true;
+}
+
+void makeFrontendArguments(CheckApp& g, const std::string& name, x86::CPU& cpu, x86::reg32* stack)
+{
+    if (makeMenusArguments(g, name, cpu, stack))
+        return;
+    g.word(0x563a80) = kBuffers;
+    for (x86::reg32 at = kBuffers; at < kBuffers + 0x1ea0; at += 4)
+        g.word(at) = random32() % 0x10000;
+    g.word(0x6fd204) = below(8);
+    for (x86::reg32 c = 0; c < 8; ++c)
+        g.getMemory<x86::reg8>(0x6fc974 + 0x88 * c) = x86::reg8(chance(30) ? 0 : 'A' + below(26));
+    static const x86::reg32 ranges[][2] = {
+        {0, 0x7a7}, {0x7a7, 0x7a8}, {0x7a8, 0x7bd}, {0x7bd, 0x7ef}, {0x7ef, 0x822}, {0x822, 0x855},
+        {0x855, 0x866}, {0x866, 0x900}};
+    const auto& range = ranges[below(8)];
+    const x86::reg32 number = range[0] + below(range[1] - range[0]);
+    if (name == "languageText" || name == "specialText")
+        cpu.eax = name == "specialText" && number < 0x7a7 ? 0x7a7 + below(0x200) : number;
+    else if (name == "displayModeName")
+        cpu.eax = 0x7a8 + below(0x15);
+    else if (name == "controllerName")
+        cpu.eax = chance(80) ? below(10) : random32() % 0x20;
+    else if (name == "nameValid")
+    {
+        const x86::reg32 text = kStrings + 0x40 * 63;
+        const x86::reg32 length = below(14);
+        for (x86::reg32 i = 0; i < length; ++i)
+            g.getMemory<x86::reg8>(text + i) = x86::reg8('a' + below(26));
+        g.getMemory<x86::reg8>(text + length) = 0;
+        cpu.eax = chance(10) ? 0 : text;
+    }
+}
+
 void makeMmxArguments(CheckApp& g, const std::string& name, x86::CPU& cpu, x86::reg32* stack)
 {
     cpu.mmx.mm0 = x86::from_reg64(anMmxValue());
@@ -4192,6 +4517,15 @@ void makeMmxArguments(CheckApp& g, const std::string& name, x86::CPU& cpu, x86::
     }
 }
 
+/* The controls' natives' arguments and worlds (controls_*.inc): each file's
+ * function says whether the name was its own. */
+#define CONTROLS_ARGUMENTS
+#include "controls_input.inc"
+#include "controls_devices.inc"
+#include "controls_race.inc"
+#include "controls_pipeline.inc"
+#undef CONTROLS_ARGUMENTS
+
 /* The function's arguments, on the stack at esp + 4 on, and its registers. */
 void makeArguments(CheckApp& g, const Tested& t, x86::reg32 esp, x86::CPU& cpu)
 {
@@ -4228,8 +4562,18 @@ void makeArguments(CheckApp& g, const Tested& t, x86::reg32 esp, x86::CPU& cpu)
         a[7] = chance(80) ? 0 : below(3);
         a[8] = chance(85) ? 1 : below(3);
     }
+    makeFillArguments(g, name, cpu);
     if (name.compare(0, 8, "watcom::") == 0)
         makeWatcomArguments(g, name.substr(8), cpu, a);
+    if (name.compare(0, 10, "frontend::") == 0)
+        makeFrontendArguments(g, name.substr(10), cpu, a);
+    if (name.compare(0, 10, "controls::") == 0)
+    {
+        const std::string own = name.substr(10);
+        if (!makeInputArguments(g, own, cpu, a) && !makeDevicesArguments(g, own, cpu, a)
+            && !makeRaceArguments(g, own, cpu, a))
+            makePipelineArguments(g, own, cpu, a);
+    }
     if (name.compare(0, 5, "mmx::") == 0)
         makeMmxArguments(g, name.substr(5), cpu, a);
     for (x86::reg32 i = 0; i < 9; ++i)
@@ -4370,7 +4714,8 @@ bool compareRuns(const Tested& t, CheckApp& g, CheckApp& n, const x86::CPU& gene
             if (generatedCpu.fpu.status.word != nativeCpu.fpu.status.word)
                 return report(counts, "the FPU's status word left otherwise");
             for (x86::reg32 i = 0; i < 8; ++i)
-                if (floatBits(generatedCpu.fpu.regs[i]) != floatBits(nativeCpu.fpu.regs[i]))
+                if ((!p.liveOnly || ((generatedCpu.fpu.count - i) & 7) < generatedCpu.fpu.count)
+                    && floatBits(generatedCpu.fpu.regs[i]) != floatBits(nativeCpu.fpu.regs[i]))
                 {
                     std::snprintf(what, sizeof what, "the FPU's register %u: %s generated, %s native", unsigned(i),
                                   floatBits(generatedCpu.fpu.regs[i]).c_str(), floatBits(nativeCpu.fpu.regs[i]).c_str());
