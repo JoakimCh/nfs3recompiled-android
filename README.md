@@ -8,7 +8,7 @@ portable C++ — a static recompilation, built on
 [motor-dev/nfs-recompiled](https://github.com/motor-dev/nfs-recompiled) — and
 the Windows, DirectX and Glide calls it makes are reimplemented on SDL3 and
 OpenGL ES. This project makes it a phone game: a launcher, touch controls, two
-gamepads with split screen, vibration, widescreen races up to 1920x1080 and
+gamepads with split screen, vibration, widescreen races and
 full-colour textures.
 
 Network races work: phone with phone over Wi-Fi (IPX or TCP/IP), and phone
