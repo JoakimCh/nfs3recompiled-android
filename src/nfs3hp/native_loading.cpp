@@ -2,6 +2,8 @@
 #include "native_thrash.h"
 #include <lib/memmap.h>
 #include <SDL3/SDL.h>
+#include <algorithm>
+#include <cmath>
 #include <cstring>
 #include <utility>
 #include <vector>
@@ -1078,6 +1080,90 @@ bool fceRecords(win32::WinApplication* app, x86::CPU& cpu)
     return true;
 }
 
+/* Port: each block's list of the blocks seen from it made longer.  The track
+ * draws only what the list of the block the view is in names (sub_41cdc0, 300
+ * entries at +0xb4: the block's number, then its detail -- 0 to 2, or -1 for
+ * sub_41aa60 to pick by the distance), however far the view reaches.  The
+ * lists were made for a 4:3 picture, so on a wide screen blocks came into view
+ * at its sides.  Every block whose centre (+0x78 x, +0x80 z) is within reach
+ * of the block's is added, the nearest first, its detail by the distance; the
+ * far distance and the view's edges still cull them as they cull the listed
+ * ones.  The reach is View Distance Full's 700 (nfs3hp_main.cpp's
+ * kFullFarDistance) and twice the track's longest step from one block's centre
+ * to the next: the view can stand anywhere in its block, so a piece the far
+ * distance takes in may lie that much further from the block's centre than
+ * from the view.  NFS_TRACK_NEIGHBOURS=0 keeps the track's own lists. */
+constexpr float kNeighbourFar = 700.0f;
+
+void extendNeighbours(win32::WinApplication* app)
+{
+    static const bool on = []() {
+        const char* value = SDL_getenv("NFS_TRACK_NEIGHBOURS");
+        return !value || SDL_strcmp(value, "0") != 0;
+    }();
+    x86::reg8* m = guest(app);
+    const x86::sreg32 last = x86::sreg32(read32(m, 0x5dd83c));
+    if (!on || last < 0 || last >= 2000)
+        return;
+    const x86::reg32 count = x86::reg32(last) + 1;
+    auto record = [](x86::reg32 block) { return 0x571370 + block * 0x5c0; };
+    std::vector<float> x(count), z(count);
+    float step = 0.0f;
+    for (x86::reg32 b = 0; b < count; ++b)
+    {
+        x[b] = app->getMemory<float>(record(b) + 0x78);
+        z[b] = app->getMemory<float>(record(b) + 0x80);
+        if (b > 0)
+            step = std::max(step, std::sqrt((x[b] - x[b - 1]) * (x[b] - x[b - 1]) + (z[b] - z[b - 1]) * (z[b] - z[b - 1])));
+    }
+    step = std::min(step, 200.0f);  // a jump between pieces that do not meet is no step
+    const float reach = kNeighbourFar + 2.0f * step;
+    constexpr x86::reg32 kEntries = 300;
+    std::vector<bool> listed(count);
+    std::vector<std::pair<float, x86::reg32>> near;
+    x86::reg32 ownTotal = 0, ownMost = 0, total = 0, full = 0;
+    for (x86::reg32 b = 0; b < count; ++b)
+    {
+        const x86::reg32 list = record(b) + 0xb4;
+        std::fill(listed.begin(), listed.end(), false);
+        x86::reg32 n = 0;
+        for (; n < kEntries; ++n)
+        {
+            const x86::sreg32 other = x86::sreg16(app->getMemory<x86::reg16>(list + n * 4));
+            if (other == -1)
+                break;
+            if (other >= 0 && x86::reg32(other) < count)
+                listed[other] = true;
+        }
+        ownTotal += n;
+        ownMost = std::max(ownMost, n);
+        near.clear();
+        for (x86::reg32 o = 0; o < count; ++o)
+        {
+            const float dx = x[o] - x[b], dz = z[o] - z[b];
+            const float distance = dx * dx + dz * dz;
+            if (!listed[o] && distance < reach * reach)
+                near.push_back({distance, o});
+        }
+        std::sort(near.begin(), near.end());
+        for (const auto& [distance, o] : near)
+        {
+            if (n >= kEntries)
+                break;
+            write32(m, list + n * 4, 0xffff0000 | o);
+            ++n;
+        }
+        if (n < kEntries)
+            write32(m, list + n * 4, 0xffffffff);
+        total += n;
+        full += n >= kEntries;
+    }
+    SDL_Log("[TRACK] %u blocks, longest step %.0f, reach %.0f; lists %.1f on average (most %u) -> %.1f, "
+            "%u full at %u",
+            unsigned(count), double(step), double(reach), double(ownTotal) / count, unsigned(ownMost),
+            double(total) / count, unsigned(full), unsigned(kEntries));
+}
+
 bool frd(win32::WinApplication* app, x86::CPU& cpu)
 {
     // sub_4ea4f0's copy by the FPU (sub_503281), on a processor without MMX,
@@ -1093,6 +1179,8 @@ bool frd(win32::WinApplication* app, x86::CPU& cpu)
         return true;
     }
     frdNative(app, cpu);
+    if (!cpu.terminate)
+        extendNeighbours(app);
     return true;
 }
 

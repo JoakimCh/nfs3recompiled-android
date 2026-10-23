@@ -996,7 +996,7 @@ void Application::sub_401520(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.edx = app->getMemory<x86::reg32>(x86::reg32(5579340) /* 0x55224c */ + cpu.edx * 4);
     // 00401568  e853120100             -call 0x4127c0
     cpu.esp -= 4;
-    sub_4127c0(app, cpu.sync());
+    nfs3hp::snd::carRadio(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0040156d  a184367d00             -mov eax, dword ptr [0x7d3684]
@@ -1050,7 +1050,7 @@ void Application::sub_401580(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.edx = app->getMemory<x86::reg32>(x86::reg32(5579340) /* 0x55224c */ + cpu.edx * 4);
     // 004015a4  e8d7120100             -call 0x412880
     cpu.esp -= 4;
-    sub_412880(app, cpu.sync());
+    nfs3hp::snd::playerCopRadio(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004015a9  5d                     -pop ebp
@@ -15179,7 +15179,7 @@ L_0x004049e8:
     cpu.eax = cpu.esi;
     // 004049ea  e861cd0000             -call 0x411750
     cpu.esp -= 4;
-    sub_411750(app, cpu.sync());
+    nfs3hp::snd::copChaseSet(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
 L_0x004049ef:
@@ -16570,7 +16570,7 @@ L_0x00404eb0:
     cpu.eax = 17 /*0x11*/;
     // 00404eb5  e8763d0100             -call 0x418c30
     cpu.esp -= 4;
-    sub_418c30(app, cpu.sync());
+    nfs3hp::snd::copEffect(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00404eba  e9a0000000             -jmp 0x404f5f
@@ -16615,7 +16615,7 @@ L_0x00404eda:
     cpu.eax = 18 /*0x12*/;
     // 00404edf  e84c3d0100             -call 0x418c30
     cpu.esp -= 4;
-    sub_418c30(app, cpu.sync());
+    nfs3hp::snd::copEffect(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00404ee4  e976000000             -jmp 0x404f5f
@@ -16753,7 +16753,7 @@ L_0x00404f55:
     cpu.eax = 16 /*0x10*/;
     // 00404f5a  e8d13c0100             -call 0x418c30
     cpu.esp -= 4;
-    sub_418c30(app, cpu.sync());
+    nfs3hp::snd::copEffect(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
 L_0x00404f5f:
@@ -18673,7 +18673,7 @@ L_0x0040559b:
     cpu.eax = cpu.ecx;
     // 0040559d  e80ed20000             -call 0x4127b0
     cpu.esp -= 4;
-    sub_4127b0(app, cpu.sync());
+    nfs3hp::snd::carFlagTest(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004055a2  a184367d00             -mov eax, dword ptr [0x7d3684]

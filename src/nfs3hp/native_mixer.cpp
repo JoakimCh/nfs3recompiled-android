@@ -3,7 +3,6 @@
 #include <SDL3/SDL.h>
 #include <cstdint>
 #include <cstring>
-#include <vector>
 
 /* The game's sound mixer, native: everything sub_500864 does with a sample on
  * its way from a sound's data to what eacsnd's serve hands SDL.
@@ -28,18 +27,18 @@
  *   +0xdc0 the add of a block at that volume into the accumulator; their state
  *          from +0xd90 (+0xddc and +0xdc4 are a second volume, set but unused).
  *
- * These are the plain (not MMX) set the game picks here ([0x9f6a5a] 0), all
- * found by NFS_SND_TRACE in menus, races and movies.  Each is done here as its
- * x86 does it, to the bit -- the MMX of the few that use it included -- on the
- * game's own memory, so the game's half of SND (starting, stopping, volumes,
- * banks, streams) sees no difference.  A function this does not know is called
- * as the game would call it.  What stays the game's: a stream's next chunk
- * ([0x5678b4], sub_5118fc, sub_511998) and a channel's end ([0x9f6b1c]), a few
- * times a second.
+ * These are the MMX set the game picks with the port's CPU ([0x5643b4] set),
+ * all of those found in use in menus, races and movies.  Each is done here as
+ * its x86 does it, to the bit, on the game's own memory, so the game's half of
+ * SND (starting, stopping, volumes, banks, streams) sees no difference.  The
+ * functions the channels are given are set up by native_snd_mixsetup.cpp; the
+ * rest of the game's mixer code is dead (native_snd_dead.inc) and stops the
+ * game if called.  What this calls of the game's half, all of it native too: a
+ * stream's next chunk ([0x5678b4], sub_5118fc, sub_511998) and a channel's end
+ * ([0x9f6b1c]), a few times a second.
  *
- * NFS_SND_MIX=0 (launch extra snd_mix false) leaves it all to the generated
- * code, as does NFS_NATIVES=0.  NFS_SND_CHECK=1 (snd_check true) mixes every
- * call both ways and compares the channels, the buffers and the output. */
+ * sub_500864 (the mix) and sub_5004c8 (a channel's ramp, which iSNDmixstop
+ * runs) are this file's natives, snd::mixerServe and snd::mixerRamp. */
 
 namespace nfs3hp
 {
@@ -104,41 +103,6 @@ constexpr Delay kDelays[4] = {
     {0xa0d2b0, 0xa181c0, 0xa181d0, 0xa18200, 0xa181f0, 0x56ae5c},
 };
 
-bool mixOn()
-{
-    static const bool on = []() {
-        const char* value = SDL_getenv("NFS_SND_MIX");
-        return !value || SDL_strcmp(value, "0") != 0;
-    }();
-    return on && nativesEnabled();
-}
-
-bool mixChecking()
-{
-    static const bool on = []() {
-        const char* value = SDL_getenv("NFS_SND_CHECK");
-        return value && SDL_strcmp(value, "1") == 0;
-    }();
-    return on;
-}
-
-/* Thrown, in a check, where the native mix would call the game: the call is
- * left to the original's run alone, so it happens once. */
-struct GuestCallInCheck
-{
-};
-
-/* The game functions the native mix called in a check, each logged once. */
-void noteGuestCall(u32 address)
-{
-    static std::vector<u32> seen;
-    for (const u32 a : seen)
-        if (a == address)
-            return;
-    seen.push_back(address);
-    SDL_Log("[SNDCHK] the mix calls the game at 0x%x: left to the original", address);
-}
-
 i16 saturate(i32 value)
 {
     return i16(value > 32767 ? 32767 : value < -32768 ? -32768 : value);
@@ -155,7 +119,6 @@ struct Mixer
     win32::WinApplication* app;
     x86::CPU& cpu;
     u8* m;
-    bool checking;
 
     u32 r32(u32 a) const { u32 v; std::memcpy(&v, m + a, 4); return v; }
     i32 s32(u32 a) const { return i32(r32(a)); }
@@ -188,11 +151,6 @@ struct Mixer
      * the stack; every register as it was afterwards but eax, the result. */
     u32 guest(u32 address, u32 eax, u32 edx, u32 ebx, u32 ecx, std::initializer_list<u32> stack = {})
     {
-        if (checking)
-        {
-            noteGuestCall(address);
-            throw GuestCallInCheck();
-        }
         const u32 saved[] = {cpu.eax, cpu.ebx, cpu.ecx, cpu.edx, cpu.esi, cpu.edi, cpu.ebp, cpu.esp};
         u32 slot = cpu.esp - 4 * u32(stack.size());
         const u32 first = slot;
@@ -1112,10 +1070,8 @@ struct Mixer
             /* The frames the last call gave, told to the stream (sub_511998:
              * `sub [stream+0x14], edx`), which is how the game knows how far
              * the sound has played and when it is done -- edx is the count the
-             * original leaves there from its test of it.  Nothing here reads
-             * what that changes, so a check leaves it to the original's run. */
-            if (!checking)
-                guest(0x511998, r32(st + 0x24), r32(st + 0x28), 0, 0);
+             * original leaves there from its test of it. */
+            guest(0x511998, r32(st + 0x24), r32(st + 0x28), 0, 0);
             w32(st + 0x28, 0);
         }
         while (n > 0)
@@ -1474,180 +1430,29 @@ struct Mixer
     }
 };
 
-// ------------------------------------------------------------------ checking
+}  // namespace
 
-struct Region
+namespace snd
 {
-    const char* name;
-    u32 start;
-    u32 size;
-};
 
-struct CheckCounts
+/* 0x500864: `edx` frames mixed into the output at eax, a block at a time. */
+void mixerServe(win32::WinApplication* app, x86::CPU& cpu)
 {
-    unsigned calls = 0;
-    unsigned skipped = 0;
-    unsigned mismatches = 0;
-};
-
-void saveRegions(u8* m, const std::vector<Region>& regions, std::vector<u8>& into)
-{
-    into.clear();
-    for (const Region& r : regions)
-        into.insert(into.end(), m + r.start, m + r.start + r.size);
-}
-
-void restoreRegions(u8* m, const std::vector<Region>& regions, const std::vector<u8>& from)
-{
-    size_t at = 0;
-    for (const Region& r : regions)
-    {
-        std::memcpy(m + r.start, from.data() + at, r.size);
-        at += r.size;
-    }
-}
-
-bool checkMix(win32::WinApplication* app, x86::CPU& cpu, u8* m, u32 target, i32 frames)
-{
-    static CheckCounts counts;
-    static bool original = false;
-    if (original)
-        return false;
-
-    const u32 outputBytes = frames > 0 ? u32(frames) * 4 : 0;
-    const std::vector<Region> regions = {
-        {"channels", kChannels, kChannelCount * kChannelSize},
-        {"buffers", kBuffersStart, kChannels - kBuffersStart},
-        {"output", target - 64, outputBytes + 64},
-        {"reverb", kReverbStateStart, kReverbStateEnd - kReverbStateStart},
-        {"delays", kDelayStart, kDelayEnd - kDelayStart},
-        {"filters", kFilterStart, kFilterEnd - kFilterStart},
-    };
-    std::vector<Region> all = regions;
-    for (const Delay& d : kDelays)
-    {
-        u32 start, end;
-        std::memcpy(&start, m + d.start, 4);
-        std::memcpy(&end, m + d.end, 4);
-        if (start != 0 && end > start && end - start < 0x100000)
-            all.push_back({"delay line", start, end - start});
-    }
-    std::vector<u8> before, mine, theirs;
-    saveRegions(m, all, before);
-    const x86::CPU entry = cpu;
-
-    bool done = false;
-    {
-        Mixer mixer{app, cpu, m, true};
-        try
-        {
-            mixer.mix(target, frames);
-            done = true;
-        }
-        catch (const GuestCallInCheck&)
-        {
-        }
-    }
-    cpu = entry;
-    saveRegions(m, all, mine);
-    restoreRegions(m, all, before);
-
-    original = true;
-    cpu.esp -= 4;
-    const Uint64 started = SDL_GetTicksNS();
-    app->dynamic_call(0x500864, cpu);
-    /* Past the 2 ms slice the original may have handed the context to the
-     * game's thread at a safepoint, which may have changed a channel under it
-     * (a volume, a sound started): a difference then can be the check's own. */
-    const unsigned long long tookUs = (SDL_GetTicksNS() - started) / 1000;
-    original = false;
-    cpu = entry;
-
-    ++counts.calls;
-    if (!done)
-    {
-        ++counts.skipped;
-    }
-    else
-    {
-        saveRegions(m, all, theirs);
-        bool reported = false;
-        size_t at = 0;
-        for (const Region& r : all)
-        {
-            unsigned shown = 0;
-            for (u32 i = 0; i < r.size; ++i)
-            {
-                if (mine[at + i] == theirs[at + i])
-                    continue;
-                if (!reported)
-                {
-                    reported = true;
-                    ++counts.mismatches;
-                }
-                if (counts.mismatches > 6 || ++shown > 12)
-                    break;
-                const u32 address = r.start + i;
-                if (address >= kChannels && address < kChannels + kChannelCount * kChannelSize)
-                    SDL_Log("[SNDCHK] differs at 0x%x, channel %u +0x%x: native %02x, original %02x, before %02x "
-                            "(original %llu us)",
-                            address, (address - kChannels) / kChannelSize, (address - kChannels) % kChannelSize,
-                            mine[at + i], theirs[at + i], before[at + i], tookUs);
-                else
-                    SDL_Log("[SNDCHK] differs at 0x%x (%s +0x%x): native %02x, original %02x (original %llu us)",
-                            address, r.name, i, mine[at + i], theirs[at + i], tookUs);
-            }
-            at += r.size;
-        }
-        /* The channels as they were before the block: their functions and
-         * the first bytes of their state, to tell which path differed. */
-        if (reported && counts.mismatches <= 6)
-        {
-            SDL_Log("[SNDCHK] block of %d frames into 0x%x", frames, target);
-            for (u32 c = 0; c < kChannelCount; ++c)
-            {
-                const u32 o = c * kChannelSize;
-                if (before[o] == 0)
-                    continue;
-                auto word = [&](u32 offset) {
-                    u32 v;
-                    std::memcpy(&v, before.data() + o + offset, 4);
-                    return v;
-                };
-                char head[160];
-                int n = 0;
-                for (u32 b = 0; b < 0x40 && n < int(sizeof head) - 3; ++b)
-                    n += SDL_snprintf(head + n, sizeof head - size_t(n), "%02x", before[o + b]);
-                SDL_Log("[SNDCHK]  channel %u: decode %x needed %x resample %x volume %x add %x; resampler %08x %08x "
-                        "%08x %08x %08x %08x; %s",
-                        c, word(0xda8), word(0xdb4), word(0xdb8), word(0xdbc), word(0xdc0), word(0xd64),
-                        word(0xd68), word(0xd6c), word(0xd70), word(0xd74), word(0xd78), head);
-            }
-        }
-    }
-    if (counts.calls % 2000 == 0)
-        SDL_Log("[SNDCHK] %u mixes, %u left to the original (they call the game), %u differences", counts.calls,
-                counts.skipped, counts.mismatches);
-    cpu.esp += 4;
-    return true;
-}
-
-}
-
-/* sub_500864, Watcom's registers: the output in eax, the frames in edx. */
-bool soundMix(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (!mixOn())
-        return false;
     u8* m = reinterpret_cast<u8*>(&app->getMemory<x86::reg8>(0));
-    const u32 target = cpu.eax;
-    const i32 frames = i32(cpu.edx);
-    if (mixChecking())
-        return checkMix(app, cpu, m, target, frames);
-    Mixer mixer{app, cpu, m, false};
-    mixer.mix(target, frames);
+    Mixer mixer{app, cpu, m};
+    mixer.mix(cpu.eax, i32(cpu.edx));
     cpu.esp += 4;
-    return true;
 }
 
+/* 0x5004c8: channel eax's volume ramped towards its target over at most edx
+ * frames, each mixed by itself.  The frames it took. */
+void mixerRamp(win32::WinApplication* app, x86::CPU& cpu)
+{
+    u8* m = reinterpret_cast<u8*>(&app->getMemory<x86::reg8>(0));
+    Mixer mixer{app, cpu, m};
+    cpu.eax = mixer.ramp(cpu.eax, cpu.edx);
+    cpu.esp += 4;
+}
+
+}  // namespace snd
 }

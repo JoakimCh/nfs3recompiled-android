@@ -594,7 +594,7 @@ L_0x0044a81c:
     cpu.eax ^= x86::reg32(x86::sreg32(cpu.eax));
     // 0044a823  e8a8d9fcff             -call 0x4181d0
     cpu.esp -= 4;
-    sub_4181d0(app, cpu.sync());
+    nfs3hp::port::playMenuEffect(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0044a828  8b4116                 -mov eax, dword ptr [ecx + 0x16]
@@ -1312,7 +1312,7 @@ L_0x0044aa65:
     cpu.eax = 5 /*0x5*/;
     // 0044aa74  e857d7fcff             -call 0x4181d0
     cpu.esp -= 4;
-    sub_4181d0(app, cpu.sync());
+    nfs3hp::port::playMenuEffect(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0044aa79  f605583a7a0002         +test byte ptr [0x7a3a58], 2
@@ -1345,7 +1345,7 @@ L_0x0044aa88:
     }
     // 0044aa94  e887e60800             -call 0x4d9120
     cpu.esp -= 4;
-    sub_4d9120(app, cpu.sync());
+    nfs3hp::graphics::takeWindowAndClear(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0044aa99  89c8                   -mov eax, ecx
@@ -1357,7 +1357,7 @@ L_0x0044aa88:
     if (cpu.terminate) return;
     // 0044aaa0  e89be60800             -call 0x4d9140
     cpu.esp -= 4;
-    sub_4d9140(app, cpu.sync());
+    nfs3hp::graphics::flipAndWaitFrames(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0044aaa5  011d609c5500           +add dword ptr [0x559c60], ebx
@@ -3614,7 +3614,7 @@ void Application::sub_44b170(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.ebp = cpu.esp;
     // 0044b173  e8a8df0800             -call 0x4d9120
     cpu.esp -= 4;
-    sub_4d9120(app, cpu.sync());
+    nfs3hp::graphics::takeWindowAndClear(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0044b178  a130925500             -mov eax, dword ptr [0x559230]
@@ -3645,7 +3645,7 @@ void Application::sub_44b170(WinApplication* __restrict app, x86::CPU& cpu_)
 L_0x0044b190:
     // 0044b190  e8abdf0800             -call 0x4d9140
     cpu.esp -= 4;
-    sub_4d9140(app, cpu.sync());
+    nfs3hp::graphics::flipAndWaitFrames(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0044b195  5d                     -pop ebp
@@ -3730,7 +3730,7 @@ L_0x0044b1be:
     if (cpu.terminate) return;
     // 0044b1c5  e896e60700             -call 0x4c9860
     cpu.esp -= 4;
-    sub_4c9860(app, cpu.sync());
+    nfs3hp::snd::descriptionService(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0044b1ca  8b3544945500           -mov esi, dword ptr [0x559444]
@@ -3929,7 +3929,7 @@ L_0x0044b2b0:
 L_0x0044b2bb:
     // 0044b2bb  e83052fcff             -call 0x4104f0
     cpu.esp -= 4;
-    sub_4104f0(app, cpu.sync());
+    nfs3hp::snd::musicStart(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0044b2c0  ba01000000             -mov edx, 1
@@ -4073,7 +4073,7 @@ L_0x0044b346:
     app->getMemory<x86::reg32>(x86::reg32(9139760) /* 0x8b7630 */) = cpu.ecx;
     // 0044b35b  e870cefcff             -call 0x4181d0
     cpu.esp -= 4;
-    sub_4181d0(app, cpu.sync());
+    nfs3hp::port::playMenuEffect(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
 L_0x0044b360:
@@ -4096,7 +4096,7 @@ L_0x0044b360:
     }
     // 0044b36a  e8f1e40700             -call 0x4c9860
     cpu.esp -= 4;
-    sub_4c9860(app, cpu.sync());
+    nfs3hp::snd::descriptionService(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0044b36f  a130925500             -mov eax, dword ptr [0x559230]
@@ -4151,7 +4151,7 @@ L_0x0044b382:
     }
     // 0044b38d  e88edd0800             -call 0x4d9120
     cpu.esp -= 4;
-    sub_4d9120(app, cpu.sync());
+    nfs3hp::graphics::takeWindowAndClear(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0044b392  a130925500             -mov eax, dword ptr [0x559230]
@@ -4222,7 +4222,7 @@ L_0x0044b3b0:
 L_0x0044b3d4:
     // 0044b3d4  e867dd0800             -call 0x4d9140
     cpu.esp -= 4;
-    sub_4d9140(app, cpu.sync());
+    nfs3hp::graphics::flipAndWaitFrames(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
 L_0x0044b3d9:
@@ -5107,12 +5107,12 @@ L_0x0044b707:
     cpu.ebx = 1 /*0x1*/;
     // 0044b756  e875cafcff             -call 0x4181d0
     cpu.esp -= 4;
-    sub_4181d0(app, cpu.sync());
+    nfs3hp::port::playMenuEffect(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0044b75b  e8c0d90800             -call 0x4d9120
     cpu.esp -= 4;
-    sub_4d9120(app, cpu.sync());
+    nfs3hp::graphics::takeWindowAndClear(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0044b760  a130925500             -mov eax, dword ptr [0x559230]
@@ -5143,7 +5143,7 @@ L_0x0044b707:
     if (cpu.terminate) return;
     // 0044b784  e8b7d90800             -call 0x4d9140
     cpu.esp -= 4;
-    sub_4d9140(app, cpu.sync());
+    nfs3hp::graphics::flipAndWaitFrames(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0044b789  8b55f0                 -mov edx, dword ptr [ebp - 0x10]
@@ -5522,7 +5522,7 @@ L_0x0044b927:
     if (cpu.terminate) return;
     // 0044b931  e89a50fcff             -call 0x4109d0
     cpu.esp -= 4;
-    sub_4109d0(app, cpu.sync());
+    nfs3hp::snd::musicStop(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0044b936  8b45f0                 -mov eax, dword ptr [ebp - 0x10]
@@ -20015,7 +20015,7 @@ L_0x0044ea79:
 L_0x0044ea7e:
     // 0044ea7e  e86daf0700             -call 0x4c99f0
     cpu.esp -= 4;
-    sub_4c99f0(app, cpu.sync());
+    nfs3hp::snd::spokenStatus(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0044ea83  89cb                   -mov ebx, ecx
@@ -20107,7 +20107,7 @@ L_0x0044ea8f:
     cpu.eax = 3 /*0x3*/;
     // 0044eac7  e8c4ae0700             -call 0x4c9990
     cpu.esp -= 4;
-    sub_4c9990(app, cpu.sync());
+    nfs3hp::snd::carLineSpeak(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0044eacc  31c0                   +xor eax, eax
@@ -20160,7 +20160,7 @@ L_0x0044eadf:
     cpu.eax = 4 /*0x4*/;
     // 0044eaff  e88cae0700             -call 0x4c9990
     cpu.esp -= 4;
-    sub_4c9990(app, cpu.sync());
+    nfs3hp::snd::carLineSpeak(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0044eb04  31c0                   -xor eax, eax
@@ -20214,7 +20214,7 @@ L_0x0044eb18:
     cpu.edi ^= x86::reg32(x86::sreg32(cpu.edi));
     // 0044eb31  e85aae0700             -call 0x4c9990
     cpu.esp -= 4;
-    sub_4c9990(app, cpu.sync());
+    nfs3hp::snd::carLineSpeak(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0044eb36  89b950446600           -mov dword ptr [ecx + 0x664450], edi
@@ -20262,7 +20262,7 @@ L_0x0044eb42:
     cpu.edi ^= x86::reg32(x86::sreg32(cpu.edi));
     // 0044eb51  e83aae0700             -call 0x4c9990
     cpu.esp -= 4;
-    sub_4c9990(app, cpu.sync());
+    nfs3hp::snd::carLineSpeak(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0044eb56  89b948446600           -mov dword ptr [ecx + 0x664448], edi
@@ -20310,7 +20310,7 @@ L_0x0044eb62:
     cpu.edi ^= x86::reg32(x86::sreg32(cpu.edi));
     // 0044eb78  e813ae0700             -call 0x4c9990
     cpu.esp -= 4;
-    sub_4c9990(app, cpu.sync());
+    nfs3hp::snd::carLineSpeak(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0044eb7d  89b940446600           -mov dword ptr [ecx + 0x664440], edi
@@ -20360,7 +20360,7 @@ L_0x0044eb62:
     cpu.edi ^= x86::reg32(x86::sreg32(cpu.edi));
     // 0044eba2  e8e9ad0700             -call 0x4c9990
     cpu.esp -= 4;
-    sub_4c9990(app, cpu.sync());
+    nfs3hp::snd::carLineSpeak(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0044eba7  89b990446600           -mov dword ptr [ecx + 0x664490], edi
@@ -20408,7 +20408,7 @@ L_0x0044ebb3:
     cpu.edi ^= x86::reg32(x86::sreg32(cpu.edi));
     // 0044ebc9  e8c2ad0700             -call 0x4c9990
     cpu.esp -= 4;
-    sub_4c9990(app, cpu.sync());
+    nfs3hp::snd::carLineSpeak(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0044ebce  89b9a0446600           -mov dword ptr [ecx + 0x6644a0], edi
@@ -20458,7 +20458,7 @@ L_0x0044ebb3:
     cpu.edi ^= x86::reg32(x86::sreg32(cpu.edi));
     // 0044ebf3  e898ad0700             -call 0x4c9990
     cpu.esp -= 4;
-    sub_4c9990(app, cpu.sync());
+    nfs3hp::snd::carLineSpeak(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0044ebf8  89b978446600           -mov dword ptr [ecx + 0x664478], edi
@@ -20506,7 +20506,7 @@ L_0x0044ec04:
     cpu.edi ^= x86::reg32(x86::sreg32(cpu.edi));
     // 0044ec16  e875ad0700             -call 0x4c9990
     cpu.esp -= 4;
-    sub_4c9990(app, cpu.sync());
+    nfs3hp::snd::carLineSpeak(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0044ec1b  89b980446600           -mov dword ptr [ecx + 0x664480], edi
@@ -20554,7 +20554,7 @@ L_0x0044ec27:
     cpu.edi ^= x86::reg32(x86::sreg32(cpu.edi));
     // 0044ec3d  e84ead0700             -call 0x4c9990
     cpu.esp -= 4;
-    sub_4c9990(app, cpu.sync());
+    nfs3hp::snd::carLineSpeak(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0044ec42  89b988446600           -mov dword ptr [ecx + 0x664488], edi
@@ -20604,7 +20604,7 @@ L_0x0044ec27:
     cpu.edi ^= x86::reg32(x86::sreg32(cpu.edi));
     // 0044ec67  e824ad0700             -call 0x4c9990
     cpu.esp -= 4;
-    sub_4c9990(app, cpu.sync());
+    nfs3hp::snd::carLineSpeak(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0044ec6c  89b958446600           -mov dword ptr [ecx + 0x664458], edi
@@ -20652,7 +20652,7 @@ L_0x0044ec78:
     cpu.edi ^= x86::reg32(x86::sreg32(cpu.edi));
     // 0044ec8a  e801ad0700             -call 0x4c9990
     cpu.esp -= 4;
-    sub_4c9990(app, cpu.sync());
+    nfs3hp::snd::carLineSpeak(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0044ec8f  89b970446600           -mov dword ptr [ecx + 0x664470], edi
@@ -20700,7 +20700,7 @@ L_0x0044ec9b:
     cpu.edi ^= x86::reg32(x86::sreg32(cpu.edi));
     // 0044ecad  e8deac0700             -call 0x4c9990
     cpu.esp -= 4;
-    sub_4c9990(app, cpu.sync());
+    nfs3hp::snd::carLineSpeak(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0044ecb2  89b960446600           -mov dword ptr [ecx + 0x664460], edi
@@ -20748,7 +20748,7 @@ L_0x0044ecbe:
     cpu.edi ^= x86::reg32(x86::sreg32(cpu.edi));
     // 0044ecd0  e8bbac0700             -call 0x4c9990
     cpu.esp -= 4;
-    sub_4c9990(app, cpu.sync());
+    nfs3hp::snd::carLineSpeak(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0044ecd5  89b968446600           -mov dword ptr [ecx + 0x664468], edi
@@ -20799,7 +20799,7 @@ L_0x0044ecbe:
     cpu.set_szp((cpu.edi ^= x86::reg32(x86::sreg32(cpu.edi))));
     // 0044ecfa  e891ac0700             -call 0x4c9990
     cpu.esp -= 4;
-    sub_4c9990(app, cpu.sync());
+    nfs3hp::snd::carLineSpeak(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0044ecff  89b998446600           -mov dword ptr [ecx + 0x664498], edi
@@ -21051,7 +21051,7 @@ start:
     cpu.esi = cpu.eax;
     // 0044edaa  e8b1aa0700             -call 0x4c9860
     cpu.esp -= 4;
-    sub_4c9860(app, cpu.sync());
+    nfs3hp::snd::descriptionService(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0044edaf  833db0d36f0001         +cmp dword ptr [0x6fd3b0], 1
@@ -22926,7 +22926,7 @@ void Application::sub_44f500(WinApplication* app, x86::CPU& cpu)
     cpu.ebp = cpu.esp;
     // 0044f503  e8c8a40700             -call 0x4c99d0
     cpu.esp -= 4;
-    sub_4c99d0(app, cpu.sync());
+    nfs3hp::snd::spokenStop(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0044f508  31c0                   -xor eax, eax

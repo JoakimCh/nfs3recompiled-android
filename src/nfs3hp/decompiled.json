@@ -1,0 +1,911 @@
+[
+ {
+  "address": "0x418840",
+  "name": "swapRaceVolumes",
+  "globals": [
+   "0x552909",
+   "0x552920",
+   "0x552924",
+   "0x6fbbf4",
+   "0x6fbbf8"
+  ]
+ },
+ {
+  "address": "0x42c590",
+  "name": "resetHandlingTunings",
+  "globals": [
+   "0x5efda8",
+   "0x5efdac",
+   "0x5efdb0",
+   "0x5efdb4",
+   "0x5efdb8",
+   "0x5efdbc",
+   "0x5efdc0",
+   "0x5efdc4",
+   "0x5efdc8",
+   "0x5efdcc",
+   "0x5efdd0",
+   "0x5efdd4",
+   "0x5efdd8",
+   "0x5efddc",
+   "0x5efde0",
+   "0x5efde4",
+   "0x5efde8"
+  ]
+ },
+ {
+  "address": "0x431900",
+  "name": "setRenderState",
+  "namespace": "graphics",
+  "globals": [
+   "0x554e54",
+   "0x554e58",
+   "0x554e5c",
+   "0x554e60",
+   "0x554e64",
+   "0x554e68",
+   "0x554e6c"
+  ],
+  "values": [
+   "0x3",
+   "0x4",
+   "0x5",
+   "0xc",
+   "0xd",
+   "0xe",
+   "0xf",
+   "0x10",
+   "0x14",
+   "0x15",
+   "0x16",
+   "0x67",
+   "0x68",
+   "0x69"
+  ]
+ },
+ {
+  "address": "0x432370",
+  "name": "clearSoftwareBlend",
+  "namespace": "graphics",
+  "globals": [],
+  "values": []
+ },
+ {
+  "address": "0x432390",
+  "name": "setSoftwareBlendColour",
+  "namespace": "graphics",
+  "globals": [
+   "0x554e58",
+   "0x56438c",
+   "0x5f1f98",
+   "0x5f1f9c",
+   "0x5f1fa4"
+  ],
+  "values": [
+   "0x0",
+   "0x1",
+   "0x2",
+   "0xe",
+   "0xf",
+   "0x10",
+   "0xfe",
+   "0xff",
+   "0x100"
+  ]
+ },
+ {
+  "address": "0x433d40",
+  "name": "drawColouredQuadRecord",
+  "namespace": "graphics",
+  "globals": [
+   "0x554e54",
+   "0x554e58"
+  ],
+  "values": []
+ },
+ {
+  "address": "0x4347d0",
+  "name": "drawLineRecord",
+  "namespace": "graphics",
+  "globals": [
+   "0x554e54",
+   "0x554e58"
+  ],
+  "values": [
+   "0x1"
+  ]
+ },
+ {
+  "address": "0x434a00",
+  "name": "endFrame",
+  "namespace": "graphics",
+  "globals": [
+   "0x7a3a58"
+  ],
+  "values": [
+   "0x5",
+   "0x6",
+   "0x7",
+   "0x17f",
+   "0x180",
+   "0x181"
+  ]
+ },
+ {
+  "address": "0x434b20",
+  "name": "syncWindow",
+  "namespace": "graphics",
+  "globals": [],
+  "values": []
+ },
+ {
+  "address": "0x434b40",
+  "name": "flushAndFlip",
+  "namespace": "graphics",
+  "globals": [],
+  "values": []
+ },
+ {
+  "address": "0x449a60",
+  "name": "resetMenuHelp",
+  "globals": [
+   "0x559238",
+   "0x55923c",
+   "0x559240",
+   "0x559244",
+   "0x55924c",
+   "0x55e5e4",
+   "0x55e5e8"
+  ]
+ },
+ {
+  "address": "0x459350",
+  "name": "drawFlatRectangle",
+  "namespace": "graphics",
+  "globals": [
+   "0x5599a0",
+   "0x5599a4",
+   "0x5599b0",
+   "0x5599c0",
+   "0x5599c4",
+   "0x5599d0",
+   "0x5599e0",
+   "0x5599e4",
+   "0x5599f0",
+   "0x559a00",
+   "0x559a04",
+   "0x559a10"
+  ],
+  "values": [
+   "0xf",
+   "0x10",
+   "0x11"
+  ],
+  "fpu": true
+ },
+ {
+  "address": "0x459440",
+  "name": "hudEditorFrame",
+  "namespace": "graphics",
+  "globals": [
+   "0x7cdac8"
+  ],
+  "values": [],
+  "fpu": true
+ },
+ {
+  "address": "0x482940",
+  "name": "hudMessageBox",
+  "namespace": "graphics",
+  "globals": [
+   "0x749a38",
+   "0x8b4844",
+   "0x791b50",
+   "0x7cdac8",
+   "0x79c1a4"
+  ],
+  "values": [
+   "0x20"
+  ],
+  "fpu": true
+ },
+ {
+  "address": "0x488a80",
+  "name": "loadCabinInstruments",
+  "namespace": "graphics",
+  "globals": [
+   "0x55eb2e",
+   "0x6fd3b0",
+   "0x79204c",
+   "0x792050",
+   "0x7922d0",
+   "0x55d6a4"
+  ],
+  "values": [
+   "0x1",
+   "0x2",
+   "0x100",
+   "0x200000",
+   "0x400000",
+   "0x3f800000"
+  ],
+  "fpu": true
+ },
+ {
+  "address": "0x494bd0",
+  "name": "drawLoadingAborted",
+  "namespace": "graphics",
+  "globals": [
+   "0x53bdd0",
+   "0x53bdd4",
+   "0x561b34",
+   "0x561b3c",
+   "0x791b54",
+   "0x79f280",
+   "0x79f288"
+  ],
+  "values": [
+   "0x0",
+   "0x1",
+   "0x117",
+   "0x118",
+   "0x119",
+   "0xffffffff"
+  ],
+  "fpu": true
+ },
+ {
+  "address": "0x494fa0",
+  "name": "showLoadingScreen",
+  "namespace": "graphics",
+  "globals": [
+   "0x55e88c",
+   "0x57126b",
+   "0x6fd4fc",
+   "0x79f3ec"
+  ],
+  "values": [
+   "0x0"
+  ],
+  "fpu": true
+ },
+ {
+  "address": "0x495230",
+  "name": "drawLoadingProgress",
+  "namespace": "graphics",
+  "globals": [
+   "0x79f280",
+   "0x79f3ec",
+   "0x7d34f8",
+   "0x7d34fc",
+   "0x7d3500",
+   "0x7d3504",
+   "0x7d350c"
+  ],
+  "values": [],
+  "fpu": true
+ },
+ {
+  "address": "0x49bf60",
+  "name": "flushLineMesh",
+  "namespace": "graphics",
+  "globals": [],
+  "values": []
+ },
+ {
+  "address": "0x49c570",
+  "name": "showPicture",
+  "namespace": "graphics",
+  "globals": [],
+  "values": []
+ },
+ {
+  "address": "0x49c5c0",
+  "name": "textureFormatFor",
+  "namespace": "graphics",
+  "globals": [],
+  "values": []
+ },
+ {
+  "address": "0x49c600",
+  "name": "allocTexture",
+  "namespace": "graphics",
+  "globals": [],
+  "values": []
+ },
+ {
+  "address": "0x49c620",
+  "name": "updateTexture",
+  "namespace": "graphics",
+  "globals": [],
+  "values": []
+ },
+ {
+  "address": "0x49d640",
+  "name": "resetSunLighting",
+  "globals": [
+   "0x55e69c",
+   "0x55e6a0",
+   "0x55e6a4",
+   "0x55e6a8",
+   "0x55e6ac",
+   "0x55e6b0",
+   "0x55e6b4",
+   "0x55e6b8",
+   "0x55e6bc",
+   "0x55e6c0",
+   "0x55e6c4",
+   "0x55e6c8",
+   "0x55e6cc",
+   "0x55e6d0",
+   "0x55e6d4",
+   "0x55e6d8",
+   "0x55e6dc",
+   "0x55e6e0",
+   "0x55e6e4",
+   "0x55e6e8",
+   "0x55e6ec",
+   "0x55e6f0",
+   "0x55e6f4",
+   "0x55e6f8",
+   "0x55e6fc",
+   "0x55e700",
+   "0x55e704",
+   "0x55e708",
+   "0x55e70c"
+  ]
+ },
+ {
+  "address": "0x4a35d0",
+  "name": "takeDownRace",
+  "namespace": "graphics",
+  "globals": [
+   "0x559234",
+   "0x55fec8",
+   "0x560094",
+   "0x560098"
+  ],
+  "values": []
+ },
+ {
+  "address": "0x4a39f0",
+  "name": "gameMain",
+  "namespace": "graphics",
+  "globals": [
+   "0x55eb2e",
+   "0x5643fc",
+   "0x564408",
+   "0x6fbb4c",
+   "0x79f3ec"
+  ],
+  "values": [
+   "0x6",
+   "0x7",
+   "0xa",
+   "0xb",
+   "0xc"
+  ],
+  "fpu": true
+ },
+ {
+  "address": "0x4b5ea0",
+  "name": "warnTextureMemory",
+  "namespace": "graphics",
+  "globals": [],
+  "values": [
+   "0x6"
+  ]
+ },
+ {
+  "address": "0x4b6250",
+  "name": "shutDown",
+  "namespace": "graphics",
+  "globals": [
+   "0x79f3f4"
+  ],
+  "values": [],
+  "fpu": true
+ },
+ {
+  "address": "0x4bc160",
+  "name": "raceFrame",
+  "namespace": "graphics",
+  "globals": [
+   "0x7a3a60",
+   "0x6fbc44",
+   "0x6fd4c8",
+   "0x7d36a0",
+   "0x7a3d10",
+   "0x7a3d18"
+  ],
+  "values": [
+   "0x0",
+   "0x1"
+  ]
+ },
+ {
+  "address": "0x4be570",
+  "name": "modeSize",
+  "namespace": "graphics",
+  "globals": [],
+  "values": []
+ },
+ {
+  "address": "0x4be8e0",
+  "name": "drawViewSurround",
+  "namespace": "graphics",
+  "globals": [
+   "0x6fbc4c",
+   "0x6fd3b0",
+   "0x7a3a60",
+   "0x7cda68",
+   "0x7cdba0",
+   "0x7cdba8"
+  ],
+  "values": [
+   "0x0",
+   "0x1",
+   "0x2",
+   "0xffffffff"
+  ]
+ },
+ {
+  "address": "0x4bebe0",
+  "name": "setClip",
+  "namespace": "graphics",
+  "globals": [
+   "0x7cda68",
+   "0x7cda6c",
+   "0x7cda70",
+   "0x7cda74",
+   "0x7cda78",
+   "0x7cda7c"
+  ],
+  "values": [
+   "0x3",
+   "0x4",
+   "0x5"
+  ]
+ },
+ {
+  "address": "0x4bed90",
+  "name": "listScreenModes",
+  "namespace": "graphics",
+  "globals": [
+   "0x55fed0"
+  ],
+  "values": [
+   "0x2",
+   "0xf",
+   "0x10"
+  ]
+ },
+ {
+  "address": "0x4bee80",
+  "name": "findScreenMode",
+  "namespace": "graphics",
+  "globals": [],
+  "values": [
+   "0x2",
+   "0xf",
+   "0x10"
+  ]
+ },
+ {
+  "address": "0x4c4490",
+  "name": "captureScreen",
+  "namespace": "graphics",
+  "globals": [
+   "0x6fd3b0",
+   "0x5600f8",
+   "0x6fd3a0",
+   "0x7cdae0",
+   "0x7cdae4",
+   "0x7cdae8"
+  ],
+  "values": [
+   "0x2"
+  ]
+ },
+ {
+  "address": "0x4c5c00",
+  "name": "showWaitMessage",
+  "namespace": "graphics",
+  "globals": [
+   "0x6fd3a0"
+  ],
+  "values": [
+   "0x1"
+  ],
+  "fpu": true
+ },
+ {
+  "address": "0x4c7a60",
+  "name": "setDepthOffsets",
+  "globals": [
+   "0x7a3a60",
+   "0x7dcfdc",
+   "0x7dcfe0",
+   "0x7dcfe4",
+   "0x7dcfe8",
+   "0x7dcfec",
+   "0x7dcff0",
+   "0x7dcff4",
+   "0x7dcff8",
+   "0x7dcffc",
+   "0x7dd000"
+  ]
+ },
+ {
+  "address": "0x4d1120",
+  "name": "drawTextBox",
+  "namespace": "graphics",
+  "globals": [
+   "0x561b38",
+   "0x84018c"
+  ],
+  "values": [],
+  "fpu": true
+ },
+ {
+  "address": "0x4d37a0",
+  "name": "shapeToPixels",
+  "namespace": "graphics",
+  "globals": [],
+  "values": [
+   "0x1",
+   "0x2",
+   "0x6",
+   "0x7",
+   "0x200000",
+   "0x400000"
+  ]
+ },
+ {
+  "address": "0x4d5c40",
+  "name": "resetTextures",
+  "namespace": "graphics",
+  "globals": [
+   "0x563d44"
+  ],
+  "values": []
+ },
+ {
+  "address": "0x4d5c90",
+  "name": "clearWithDepth",
+  "namespace": "graphics",
+  "globals": [
+   "0x7a3a60"
+  ],
+  "values": []
+ },
+ {
+  "address": "0x4d5cc0",
+  "name": "beginDrawing",
+  "namespace": "graphics",
+  "globals": [
+   "0x563b30"
+  ],
+  "values": [
+   "0x0",
+   "0x1",
+   "0xffffffff"
+  ]
+ },
+ {
+  "address": "0x4d5d30",
+  "name": "clearBothBuffers",
+  "namespace": "graphics",
+  "globals": [],
+  "values": []
+ },
+ {
+  "address": "0x4d5d70",
+  "name": "clearBothBuffersAndReset",
+  "namespace": "graphics",
+  "globals": [],
+  "values": []
+ },
+ {
+  "address": "0x4d5ed0",
+  "name": "shapeIntoTexture",
+  "namespace": "graphics",
+  "globals": [],
+  "values": []
+ },
+ {
+  "address": "0x4d5f40",
+  "name": "makeArtTexture",
+  "namespace": "graphics",
+  "globals": [],
+  "values": []
+ },
+ {
+  "address": "0x4d6070",
+  "name": "shapeTexture",
+  "namespace": "graphics",
+  "globals": [],
+  "values": []
+ },
+ {
+  "address": "0x4d6390",
+  "name": "artShapeTextures",
+  "namespace": "graphics",
+  "globals": [
+   "0x563a88",
+   "0x8b48c0",
+   "0x8b5090",
+   "0x8b6090",
+   "0x8b7090"
+  ],
+  "values": [
+   "0x0"
+  ]
+ },
+ {
+  "address": "0x4d70f0",
+  "name": "drawShapeQuad",
+  "namespace": "graphics",
+  "globals": [
+   "0x7a3a58"
+  ],
+  "values": [
+   "0x1",
+   "0x2",
+   "0x3"
+  ]
+ },
+ {
+  "address": "0x4d7160",
+  "name": "drawArtShape",
+  "namespace": "graphics",
+  "globals": [
+   "0x563aa8",
+   "0x563aac",
+   "0x7d34f8",
+   "0x7d34fc",
+   "0x7d3500",
+   "0x7d3504",
+   "0x7d350c",
+   "0x8b48c0",
+   "0x8b5090",
+   "0x8b6090",
+   "0x8b7090"
+  ],
+  "values": [
+   "0xa"
+  ],
+  "fpu": true
+ },
+ {
+  "address": "0x4d81b0",
+  "name": "drawShadedRectangle",
+  "namespace": "graphics",
+  "globals": [
+   "0x563aa8",
+   "0x563aac",
+   "0x7d34f8",
+   "0x7d34fc",
+   "0x7d3500",
+   "0x7d3504",
+   "0x7d350c"
+  ],
+  "values": [],
+  "fpu": true
+ },
+ {
+  "address": "0x4d9120",
+  "name": "takeWindowAndClear",
+  "namespace": "graphics",
+  "globals": [
+   "0x7a3a58"
+  ],
+  "values": [
+   "0x1",
+   "0x2",
+   "0x3"
+  ]
+ },
+ {
+  "address": "0x4d9140",
+  "name": "flipAndWaitFrames",
+  "namespace": "graphics",
+  "globals": [
+   "0x56415c",
+   "0x79c1a4"
+  ],
+  "values": []
+ },
+ {
+  "address": "0x4eb3c0",
+  "name": "makeReciprocals",
+  "namespace": "graphics",
+  "globals": [
+   "0x564ed0",
+   "0x9f0000"
+  ],
+  "values": [
+   "0x0"
+  ]
+ },
+ {
+  "address": "0x4f8830",
+  "name": "setScreenFunctions",
+  "namespace": "graphics",
+  "globals": [],
+  "values": []
+ },
+ {
+  "address": "0x517170",
+  "name": "useDriverSlot",
+  "namespace": "graphics",
+  "globals": [
+   "0x564a68"
+  ],
+  "values": []
+ },
+ {
+  "address": "0x517370",
+  "name": "keepDriverSlot",
+  "namespace": "graphics",
+  "globals": [
+   "0x564a6c"
+  ],
+  "values": []
+ },
+ {
+  "address": "0x517610",
+  "name": "setVideoMode",
+  "namespace": "graphics",
+  "globals": [
+   "0x552190",
+   "0x552194",
+   "0x552198",
+   "0x564364",
+   "0x564384",
+   "0x564388",
+   "0x56438c",
+   "0x564390",
+   "0x564394",
+   "0x5643e0",
+   "0x564418",
+   "0x5644fc",
+   "0x565030",
+   "0x565034",
+   "0x565048",
+   "0x565058",
+   "0x56505c",
+   "0x565090",
+   "0x565094"
+  ],
+  "values": [
+   "0x0",
+   "0x1",
+   "0x2",
+   "0xe",
+   "0xf",
+   "0x10",
+   "0x13f",
+   "0x140",
+   "0x141",
+   "0x1f5",
+   "0x1f6",
+   "0x1f7",
+   "0x1ff",
+   "0x200",
+   "0x201",
+   "0x31f",
+   "0x320",
+   "0x321",
+   "0x335",
+   "0x336",
+   "0x337",
+   "0x357",
+   "0x358",
+   "0x359",
+   "0x3bf",
+   "0x3c0",
+   "0x3c1",
+   "0x3ff",
+   "0x400",
+   "0x401",
+   "0xffffffff"
+  ]
+ },
+ {
+  "address": "0x517890",
+  "name": "lockFrameBuffer",
+  "namespace": "graphics",
+  "globals": [
+   "0xa18220",
+   "0x56aff4"
+  ],
+  "values": []
+ },
+ {
+  "address": "0x5178d0",
+  "name": "releaseFrameLock",
+  "namespace": "graphics",
+  "globals": [
+   "0x56aff4",
+   "0xa18220"
+  ],
+  "values": [
+   "0x0",
+   "0x1",
+   "0xffffffff"
+  ]
+ },
+ {
+  "address": "0x517990",
+  "name": "releaseAndFlip",
+  "namespace": "graphics",
+  "globals": [],
+  "values": []
+ },
+ {
+  "address": "0x5179d0",
+  "name": "setUpScreen",
+  "namespace": "graphics",
+  "globals": [],
+  "values": [
+   "0x0",
+   "0xff"
+  ]
+ },
+ {
+  "address": "0x5244e0",
+  "name": "driverIdle",
+  "namespace": "graphics",
+  "globals": [],
+  "values": []
+ },
+ {
+  "address": "0x524640",
+  "name": "closeDriverAtExit",
+  "namespace": "graphics",
+  "globals": [
+   "0x56aff0"
+  ],
+  "values": []
+ },
+ {
+  "address": "0x524650",
+  "name": "closeDriver",
+  "namespace": "graphics",
+  "globals": [
+   "0x56aff0"
+  ],
+  "values": []
+ },
+ {
+  "address": "0x5246a0",
+  "name": "openDriver",
+  "namespace": "graphics",
+  "globals": [
+   "0x564384",
+   "0x564388",
+   "0x564418",
+   "0x564480",
+   "0x56aff0",
+   "0x56aff1",
+   "0x9f3d24"
+  ],
+  "values": [
+   "0x0",
+   "0x1",
+   "0xffffffff"
+  ]
+ },
+ {
+  "address": "0x5248f0",
+  "name": "unlockFrameBuffer",
+  "namespace": "graphics",
+  "globals": [
+   "0x565020",
+   "0x565024",
+   "0xa18220"
+  ],
+  "values": []
+ }
+]

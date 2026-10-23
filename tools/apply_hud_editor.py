@@ -164,14 +164,15 @@ SITES = [
      "    hudEditorDraw(app, cpu.ecx, false);",
      "void hudEditorDraw(win32::WinApplication* app, x86::reg32 object, bool begin);\n"),
     # sub_45bcb0: the frame about it, eax and ebx the item, which sub_459440
-    # keeps in ebx.
+    # keeps in ebx -- native now (src/nfs3hp/native_graphics.cpp's
+    # graphics::hudEditorFrame), called by its name.
     ("nfs3hp.16.cpp", "0045bd0c  e82fd7ffff",
      "    cpu.esp -= 4;\n"
-     "    sub_459440(app, cpu.sync());\n"
+     "    nfs3hp::graphics::hudEditorFrame(app, cpu.sync());\n"
      "    cpu.reload();",
      "    cpu.esp -= 4;\n"
      "    hudEditorFrame(app, cpu.eax, true); /* port: the frame about what is drawn */\n"
-     "    sub_459440(app, cpu.sync());\n"
+     "    nfs3hp::graphics::hudEditorFrame(app, cpu.sync());\n"
      "    cpu.reload();\n"
      "    hudEditorFrame(app, cpu.ebx, false);",
      "void hudEditorFrame(win32::WinApplication* app, x86::reg32 object, bool drawn);\n"),

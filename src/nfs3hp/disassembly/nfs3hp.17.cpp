@@ -2882,7 +2882,7 @@ void Application::sub_465d80(WinApplication* __restrict app, x86::CPU& cpu_)
     app->getMemory<x86::reg32>(x86::reg32(5612760) /* 0x55a4d8 */) = cpu.edi;
     // 00465dc0  e87b010700             -call 0x4d5f40
     cpu.esp -= 4;
-    sub_4d5f40(app, cpu.sync());
+    nfs3hp::graphics::makeArtTexture(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00465dc5  bab8ab5300             -mov edx, 0x53abb8
@@ -2967,7 +2967,7 @@ L_0x00465e08:
     cpu.eax = 5612752 /*0x55a4d0*/;
     // 00465e0d  e85e020700             -call 0x4d6070
     cpu.esp -= 4;
-    sub_4d6070(app, cpu.sync());
+    nfs3hp::graphics::shapeTexture(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00465e12  eb07                   -jmp 0x465e1b
@@ -3039,7 +3039,7 @@ L_0x00465e1b:
     cpu.eax = x86::reg32(cpu.ebp + x86::reg32(-4) /* -0x4 */);
     // 00465e4b  e820020700             -call 0x4d6070
     cpu.esp -= 4;
-    sub_4d6070(app, cpu.sync());
+    nfs3hp::graphics::shapeTexture(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00465e50  8b45fc                 -mov eax, dword ptr [ebp - 4]
@@ -7713,12 +7713,12 @@ L_0x00466f7e:
     cpu.eax = 21 /*0x15*/;
     // 00466fbc  e83fa9fcff             -call 0x431900
     cpu.esp -= 4;
-    sub_431900(app, cpu.sync());
+    nfs3hp::graphics::setRenderState(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00466fc1  e87a660300             -call 0x49d640
     cpu.esp -= 4;
-    sub_49d640(app, cpu.sync());
+    nfs3hp::decompiled::resetSunLighting(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00466fc6  b801000000             -mov eax, 1
@@ -9121,7 +9121,7 @@ L_0x00467565:
     cpu.eax = 4 /*0x4*/;
     // 00467574  e887a3fcff             -call 0x431900
     cpu.esp -= 4;
-    sub_431900(app, cpu.sync());
+    nfs3hp::graphics::setRenderState(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00467579  8b4546                 -mov eax, dword ptr [ebp + 0x46]
@@ -9137,7 +9137,7 @@ L_0x00467565:
     cpu.edx = app->getMemory<x86::reg32>(x86::reg32(8010336) /* 0x7a3a60 */);
     // 0046758c  e86fa3fcff             -call 0x431900
     cpu.esp -= 4;
-    sub_431900(app, cpu.sync());
+    nfs3hp::graphics::setRenderState(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00467591  e8da470500             -call 0x4bbd70
@@ -9802,7 +9802,7 @@ L_0x0046780f:
     cpu.eax = cpu.edx;
     // 00467834  e8c74d0300             -call 0x49c600
     cpu.esp -= 4;
-    sub_49c600(app, cpu.sync());
+    nfs3hp::graphics::allocTexture(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00467839  8981a4000000           -mov dword ptr [ecx + 0xa4], eax
@@ -10994,7 +10994,7 @@ L_0x00467d1b:
     cpu.edx ^= x86::reg32(x86::sreg32(cpu.edx));
     // 00467d32  e851900700             -call 0x4e0d88
     cpu.esp -= 4;
-    sub_4e0d88(app, cpu.sync());
+    nfs3hp::snd::eaRandom(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00467d37  f7f6                   -div esi
@@ -11028,7 +11028,7 @@ L_0x00467d40:
     cpu.edx ^= x86::reg32(x86::sreg32(cpu.edx));
     // 00467d42  e841900700             -call 0x4e0d88
     cpu.esp -= 4;
-    sub_4e0d88(app, cpu.sync());
+    nfs3hp::snd::eaRandom(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00467d47  f7f7                   -div edi
@@ -12845,7 +12845,7 @@ void Application::sub_468410(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.ecx = app->getMemory<x86::reg32>(x86::reg32(5612760) /* 0x55a4d8 */);
     // 00468488  e843da0600             -call 0x4d5ed0
     cpu.esp -= 4;
-    sub_4d5ed0(app, cpu.sync());
+    nfs3hp::graphics::shapeIntoTexture(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0046848d  c686b400000001         -mov byte ptr [esi + 0xb4], 1
@@ -13866,7 +13866,7 @@ L_0x00468896:
     cpu.eax ^= x86::reg32(x86::sreg32(cpu.eax));
     // 004688ac  e87fed0700             -call 0x4e7630
     cpu.esp -= 4;
-    sub_4e7630(app, cpu.sync());
+    nfs3hp::snd::runSystemTasks(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004688b1  8b82b8000000           -mov eax, dword ptr [edx + 0xb8]
@@ -14226,7 +14226,7 @@ L_0x00468b00:
     cpu.eax ^= x86::reg32(x86::sreg32(cpu.eax));
     // 00468b1f  e80ceb0700             -call 0x4e7630
     cpu.esp -= 4;
-    sub_4e7630(app, cpu.sync());
+    nfs3hp::snd::runSystemTasks(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00468b24  8b82b8000000           -mov eax, dword ptr [edx + 0xb8]
@@ -14279,7 +14279,7 @@ L_0x00468b00:
     cpu.eax ^= x86::reg32(x86::sreg32(cpu.eax));
     // 00468b67  e8c4ea0700             -call 0x4e7630
     cpu.esp -= 4;
-    sub_4e7630(app, cpu.sync());
+    nfs3hp::snd::runSystemTasks(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00468b6c  8b82b8000000           -mov eax, dword ptr [edx + 0xb8]
@@ -14332,7 +14332,7 @@ L_0x00468b00:
     cpu.eax ^= x86::reg32(x86::sreg32(cpu.eax));
     // 00468baf  e87cea0700             -call 0x4e7630
     cpu.esp -= 4;
-    sub_4e7630(app, cpu.sync());
+    nfs3hp::snd::runSystemTasks(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00468bb4  8b82b8000000           -mov eax, dword ptr [edx + 0xb8]
@@ -14385,7 +14385,7 @@ L_0x00468b00:
     cpu.eax ^= x86::reg32(x86::sreg32(cpu.eax));
     // 00468bf7  e834ea0700             -call 0x4e7630
     cpu.esp -= 4;
-    sub_4e7630(app, cpu.sync());
+    nfs3hp::snd::runSystemTasks(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00468bfc  8b82b8000000           -mov eax, dword ptr [edx + 0xb8]
@@ -14514,7 +14514,7 @@ L_0x00468c56:
     cpu.eax ^= x86::reg32(x86::sreg32(cpu.eax));
     // 00468c70  e8bbe90700             -call 0x4e7630
     cpu.esp -= 4;
-    sub_4e7630(app, cpu.sync());
+    nfs3hp::snd::runSystemTasks(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00468c75  8b82b8000000           -mov eax, dword ptr [edx + 0xb8]
@@ -14904,7 +14904,7 @@ start:
     }
     // 00468e2b  e8587f0700             -call 0x4e0d88
     cpu.esp -= 4;
-    sub_4e0d88(app, cpu.sync());
+    nfs3hp::snd::eaRandom(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00468e30  8b9efc070000           -mov ebx, dword ptr [esi + 0x7fc]
@@ -18515,7 +18515,7 @@ L_0x004699dc:
     }
     // 00469a94  e847510500             -call 0x4bebe0
     cpu.esp -= 4;
-    sub_4bebe0(app, cpu.sync());
+    nfs3hp::graphics::setClip(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00469a99  8b45fa                 -mov eax, dword ptr [ebp - 6]
@@ -18698,7 +18698,7 @@ L_0x00469acf:
     cpu.eax = x86::reg32(x86::sreg32(cpu.eax) >> (16 /*0x10*/ % 32));
     // 00469b85  e8d6d50600             -call 0x4d7160
     cpu.esp -= 4;
-    sub_4d7160(app, cpu.sync());
+    nfs3hp::graphics::drawArtShape(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00469b8a  8d4dea                 -lea ecx, [ebp - 0x16]
@@ -18863,7 +18863,7 @@ L_0x00469acf:
     }
     // 00469c42  e8994f0500             -call 0x4bebe0
     cpu.esp -= 4;
-    sub_4bebe0(app, cpu.sync());
+    nfs3hp::graphics::setClip(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00469c47  682d0515ff             -push 0xff15052d
@@ -18919,7 +18919,7 @@ L_0x00469acf:
     cpu.eax = app->getMemory<x86::reg32>(cpu.ebp + x86::reg32(-30) /* -0x1e */);
     // 00469c84  e8574f0500             -call 0x4bebe0
     cpu.esp -= 4;
-    sub_4bebe0(app, cpu.sync());
+    nfs3hp::graphics::setClip(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00469c89  ff4d6a                 +dec dword ptr [ebp + 0x6a]
@@ -19133,7 +19133,7 @@ L_0x00469c91:
     }
     // 00469d7c  e85f4e0500             -call 0x4bebe0
     cpu.esp -= 4;
-    sub_4bebe0(app, cpu.sync());
+    nfs3hp::graphics::setClip(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00469d81  8b556e                 -mov edx, dword ptr [ebp + 0x6e]
@@ -19164,7 +19164,7 @@ L_0x00469c91:
     cpu.eax = x86::reg32(x86::sreg32(cpu.eax) >> (16 /*0x10*/ % 32));
     // 00469dab  e8b0d30600             -call 0x4d7160
     cpu.esp -= 4;
-    sub_4d7160(app, cpu.sync());
+    nfs3hp::graphics::drawArtShape(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00469db0  8b4dea                 -mov ecx, dword ptr [ebp - 0x16]
@@ -19177,7 +19177,7 @@ L_0x00469c91:
     cpu.eax = app->getMemory<x86::reg32>(cpu.ebp + x86::reg32(-30) /* -0x1e */);
     // 00469dbc  e81f4e0500             -call 0x4bebe0
     cpu.esp -= 4;
-    sub_4bebe0(app, cpu.sync());
+    nfs3hp::graphics::setClip(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
 L_0x00469dc1:
@@ -19405,7 +19405,7 @@ L_0x00469dc1:
     }
     // 00469ed5  e8064d0500             -call 0x4bebe0
     cpu.esp -= 4;
-    sub_4bebe0(app, cpu.sync());
+    nfs3hp::graphics::setClip(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00469eda  8b556e                 -mov edx, dword ptr [ebp + 0x6e]
@@ -19445,7 +19445,7 @@ L_0x00469dc1:
     }
     // 00469f04  e857d20600             -call 0x4d7160
     cpu.esp -= 4;
-    sub_4d7160(app, cpu.sync());
+    nfs3hp::graphics::drawArtShape(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
 L_0x00469f09:
@@ -19459,7 +19459,7 @@ L_0x00469f09:
     cpu.eax = app->getMemory<x86::reg32>(cpu.ebp + x86::reg32(-30) /* -0x1e */);
     // 00469f15  e8c64c0500             -call 0x4bebe0
     cpu.esp -= 4;
-    sub_4bebe0(app, cpu.sync());
+    nfs3hp::graphics::setClip(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00469f1a  ff4d6a                 +dec dword ptr [ebp + 0x6a]
@@ -19750,7 +19750,7 @@ L_0x0046a00f:
     }
     // 0046a04a  e811d10600             -call 0x4d7160
     cpu.esp -= 4;
-    sub_4d7160(app, cpu.sync());
+    nfs3hp::graphics::drawArtShape(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0046a04f  ff4d6a                 +dec dword ptr [ebp + 0x6a]
@@ -19940,7 +19940,7 @@ L_0x0046a0ed:
     }
     // 0046a12c  e82fd00600             -call 0x4d7160
     cpu.esp -= 4;
-    sub_4d7160(app, cpu.sync());
+    nfs3hp::graphics::drawArtShape(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0046a131  ff4d6a                 +dec dword ptr [ebp + 0x6a]
@@ -27002,7 +27002,7 @@ L_0x0046bcb5:
     }
     // 0046bd8c  e84f2e0500             -call 0x4bebe0
     cpu.esp -= 4;
-    sub_4bebe0(app, cpu.sync());
+    nfs3hp::graphics::setClip(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0046bd91  8b457c                 -mov eax, dword ptr [ebp + 0x7c]
@@ -27178,7 +27178,7 @@ L_0x0046bcb5:
     }
     // 0046be74  e8672d0500             -call 0x4bebe0
     cpu.esp -= 4;
-    sub_4bebe0(app, cpu.sync());
+    nfs3hp::graphics::setClip(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0046be79  8b457c                 -mov eax, dword ptr [ebp + 0x7c]
@@ -27348,7 +27348,7 @@ L_0x0046bcb5:
     }
     // 0046bf57  e8842c0500             -call 0x4bebe0
     cpu.esp -= 4;
-    sub_4bebe0(app, cpu.sync());
+    nfs3hp::graphics::setClip(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0046bf5c  8b457c                 -mov eax, dword ptr [ebp + 0x7c]
@@ -27510,7 +27510,7 @@ L_0x0046bcb5:
     }
     // 0046c02c  e8af2b0500             -call 0x4bebe0
     cpu.esp -= 4;
-    sub_4bebe0(app, cpu.sync());
+    nfs3hp::graphics::setClip(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0046c031  8b4578                 -mov eax, dword ptr [ebp + 0x78]
@@ -27670,7 +27670,7 @@ L_0x0046bcb5:
     }
     // 0046c0fa  e8e12a0500             -call 0x4bebe0
     cpu.esp -= 4;
-    sub_4bebe0(app, cpu.sync());
+    nfs3hp::graphics::setClip(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0046c0ff  8b4578                 -mov eax, dword ptr [ebp + 0x78]
@@ -27705,7 +27705,7 @@ L_0x0046bcb5:
     cpu.eax = app->getMemory<x86::reg32>(cpu.ebp + x86::reg32(50) /* 0x32 */);
     // 0046c11c  e8bf2a0500             -call 0x4bebe0
     cpu.esp -= 4;
-    sub_4bebe0(app, cpu.sync());
+    nfs3hp::graphics::setClip(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
 L_0x0046c121:

@@ -7319,7 +7319,7 @@ L_0x004f014e:
     cpu.eax ^= x86::reg32(x86::sreg32(cpu.eax));
     // 004f0150  e8db74ffff             -call 0x4e7630
     cpu.esp -= 4;
-    sub_4e7630(app, cpu.sync());
+    nfs3hp::snd::runSystemTasks(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004f0155  e8a6ffffff             -call 0x4f0100
@@ -7382,7 +7382,7 @@ L_0x004f018d:
     cpu.eax = cpu.ebx;
     // 004f018f  e89c74ffff             -call 0x4e7630
     cpu.esp -= 4;
-    sub_4e7630(app, cpu.sync());
+    nfs3hp::snd::runSystemTasks(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004f0194  e867ffffff             -call 0x4f0100
@@ -7501,7 +7501,7 @@ L_0x004f01d9:
     cpu.eax = cpu.ecx;
     // 004f01db  e85074ffff             -call 0x4e7630
     cpu.esp -= 4;
-    sub_4e7630(app, cpu.sync());
+    nfs3hp::snd::runSystemTasks(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004f01e0  a1a4c17900             -mov eax, dword ptr [0x79c1a4]
@@ -8366,7 +8366,7 @@ L_0x004f06a1:
     if (app->contextWanted()) app->yieldContext(cpu); /* safepoint */
     // 004f06a1  e88a6fffff             -call 0x4e7630
     cpu.esp -= 4;
-    sub_4e7630(app, cpu.sync());
+    nfs3hp::snd::runSystemTasks(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004f06a6  8d8000000000           -lea eax, [eax]
@@ -8473,7 +8473,7 @@ L_0x004f06f7:
     cpu.eax ^= x86::reg32(x86::sreg32(cpu.eax));
     // 004f06f9  e8326fffff             -call 0x4e7630
     cpu.esp -= 4;
-    sub_4e7630(app, cpu.sync());
+    nfs3hp::snd::runSystemTasks(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004f06fe  e82dffffff             -call 0x4f0630

@@ -21,6 +21,12 @@ distance short of its 500:
   is 500 at every setting, as it is for a single view, where the far distance
   sets the reach.
 
+At Full every view then reaches past 500 -- the far distance (0x41d76d,
+0x41df74, split screen's through splitFarDistance) and the cull (0x41df6d,
+0x41df99) -- to nfs3hp_main.cpp's kFullFarDistance: a wide screen shows the
+track at its sides, where the blocks coming into view were out of a 4:3
+picture.
+
 Below Full the game's own distances stand, and the setting still picks them.
 sub_4dbbf0 reapplies the distances as the race runs and the pause menu's View
 Distance item calls sub_41d620 again, so a change takes effect at once.
@@ -48,10 +54,24 @@ SITES = [
      "    cpu.eax = 28835840 /*0x1b80000*/;",
      "    cpu.eax = splitFarDistance(app, 28835840 /*0x1b80000*/); /* port: Full reaches 500 in split screen too */",
      "x86::reg32 splitFarDistance(win32::WinApplication* app, x86::reg32 distance);\n"),
+    ("nfs3hp.4.cpp", "0041d76d  b80000f401",
+     "    cpu.eax = 32768000 /*0x1f40000*/;",
+     "    cpu.eax = fullFarDistance(app, 32768000 /*0x1f40000*/); /* port: Full reaches past 500 */",
+     "x86::reg32 fullFarDistance(win32::WinApplication* app, x86::reg32 distance);\n"),
+    ("nfs3hp.4.cpp", "0041df6d  c740240000f401",
+     "    app->getMemory<x86::reg32>(cpu.eax + x86::reg32(36) /* 0x24 */) = 32768000 /*0x1f40000*/;",
+     "    app->getMemory<x86::reg32>(cpu.eax + x86::reg32(36) /* 0x24 */) = fullFarDistance(app, 32768000 /*0x1f40000*/);"
+     " /* port: Full culls past 500 */",
+     ""),
+    ("nfs3hp.4.cpp", "0041df74  c740280000f401",
+     "    app->getMemory<x86::reg32>(cpu.eax + x86::reg32(40) /* 0x28 */) = 32768000 /*0x1f40000*/;",
+     "    app->getMemory<x86::reg32>(cpu.eax + x86::reg32(40) /* 0x28 */) = fullFarDistance(app, 32768000 /*0x1f40000*/);"
+     " /* port: Full reaches past 500 */",
+     ""),
     ("nfs3hp.4.cpp", "0041df99  c7402400009001",
      "    app->getMemory<x86::reg32>(cpu.eax + x86::reg32(36) /* 0x24 */) = 26214400 /*0x1900000*/;",
-     "    app->getMemory<x86::reg32>(cpu.eax + x86::reg32(36) /* 0x24 */) = 32768000 /*0x1f40000*/;"
-     " /* port: split screen culls at 500, as a single view does */",
+     "    app->getMemory<x86::reg32>(cpu.eax + x86::reg32(36) /* 0x24 */) = fullFarDistance(app, 32768000 /*0x1f40000*/);"
+     " /* port: split screen culls as a single view does */",
      ""),
     ("nfs3hp.18.cpp", "0047266c  893d28bc6f00",
      "    app->getMemory<x86::reg32>(x86::reg32(7322664) /* 0x6fbc28 */) = cpu.edi;",

@@ -40,6 +40,7 @@ x86::reg32 mirrorAsMain(x86::reg32 kind);
 // Port (tools/apply_track_detail.py): defined in nfs3hp_main.cpp.
 x86::reg32 viewDistanceReduced(win32::WinApplication* app, x86::reg32 reduced);
 x86::reg32 splitFarDistance(win32::WinApplication* app, x86::reg32 distance);
+x86::reg32 fullFarDistance(win32::WinApplication* app, x86::reg32 distance);
 
 /* align: skip 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 */
 void Application::sub_418d00(WinApplication* __restrict app, x86::CPU& cpu_)
@@ -13277,7 +13278,7 @@ L_0x0041bbfe:
 L_0x0041bc03:
     // 0041bc03  e858b3ffff             -call 0x416f60
     cpu.esp -= 4;
-    sub_416f60(app, cpu.sync());
+    nfs3hp::port::slotStop(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
 L_0x0041bc08:
@@ -19142,7 +19143,7 @@ void Application::sub_41d210(WinApplication* __restrict app, x86::CPU& cpu_)
     (cpu.eax) += x86::reg32(x86::sreg32(8 /*0x8*/));
     // 0041d223  e8f853ffff             -call 0x412620
     cpu.esp -= 4;
-    sub_412620(app, cpu.sync());
+    nfs3hp::snd::placeAcross(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0041d228  89c3                   -mov ebx, eax
@@ -19228,7 +19229,7 @@ L_0x0041d256:
     (cpu.eax) += x86::reg32(x86::sreg32(64 /*0x40*/));
     // 0041d26c  e86fb3ffff             -call 0x4185e0
     cpu.esp -= 4;
-    sub_4185e0(app, cpu.sync());
+    nfs3hp::port::panFromSide(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0041d271  89c3                   -mov ebx, eax
@@ -19319,12 +19320,12 @@ L_0x0041d256:
     cpu.ebx = 64 /*0x40*/;
     // 0041d2bf  e8fc9cffff             -call 0x416fc0
     cpu.esp -= 4;
-    sub_416fc0(app, cpu.sync());
+    nfs3hp::port::slotEffect(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0041d2c4  e8bf3a0c00             -call 0x4e0d88
     cpu.esp -= 4;
-    sub_4e0d88(app, cpu.sync());
+    nfs3hp::snd::eaRandom(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0041d2c9  83e007                 +and eax, 7
@@ -19374,7 +19375,7 @@ L_0x0041d2d3:
     cpu.esi = 1 /*0x1*/;
     // 0041d300  e8bb9cffff             -call 0x416fc0
     cpu.esp -= 4;
-    sub_416fc0(app, cpu.sync());
+    nfs3hp::port::slotEffect(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
 L_0x0041d305:
@@ -20622,7 +20623,7 @@ L_0x0041d703:
     goto L_0x0041d7b0;
 L_0x0041d76d:
     // 0041d76d  b80000f401             -mov eax, 0x1f40000
-    cpu.eax = 32768000 /*0x1f40000*/;
+    cpu.eax = fullFarDistance(app, 32768000 /*0x1f40000*/); /* port: Full reaches past 500 */
     // 0041d772  8b5429f4               -mov edx, dword ptr [ecx + ebp - 0xc]
     cpu.edx = app->getMemory<x86::reg32>(cpu.ecx + x86::reg32(-12) /* -0xc */ + cpu.ebp * 1);
     // 0041d776  f7ea                   -imul edx
@@ -21729,7 +21730,7 @@ L_0x0041db8b:
     }
     // 0041db97  e894760700             -call 0x495230
     cpu.esp -= 4;
-    sub_495230(app, cpu.sync());
+    nfs3hp::graphics::drawLoadingProgress(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0041db9c  8b0d8ce85500           -mov ecx, dword ptr [0x55e88c]
@@ -22828,9 +22829,9 @@ start:
     cpu.ip = app->getMemory<x86::reg32>(4316924 + cpu.ecx * 4); goto dynamic_jump;
   case 0x0041df6d:
     // 0041df6d  c740240000f401         -mov dword ptr [eax + 0x24], 0x1f40000
-    app->getMemory<x86::reg32>(cpu.eax + x86::reg32(36) /* 0x24 */) = 32768000 /*0x1f40000*/;
+    app->getMemory<x86::reg32>(cpu.eax + x86::reg32(36) /* 0x24 */) = fullFarDistance(app, 32768000 /*0x1f40000*/); /* port: Full culls past 500 */
     // 0041df74  c740280000f401         -mov dword ptr [eax + 0x28], 0x1f40000
-    app->getMemory<x86::reg32>(cpu.eax + x86::reg32(40) /* 0x28 */) = 32768000 /*0x1f40000*/;
+    app->getMemory<x86::reg32>(cpu.eax + x86::reg32(40) /* 0x28 */) = fullFarDistance(app, 32768000 /*0x1f40000*/); /* port: Full reaches past 500 */
     // 0041df7b  c7403800006e00         -mov dword ptr [eax + 0x38], 0x6e0000
     app->getMemory<x86::reg32>(cpu.eax + x86::reg32(56) /* 0x38 */) = 7208960 /*0x6e0000*/;
     // 0041df82  c7403c00009600         -mov dword ptr [eax + 0x3c], 0x960000
@@ -22843,7 +22844,7 @@ start:
     goto L_0x0041e00a;
   case 0x0041df99:
     // 0041df99  c7402400009001         -mov dword ptr [eax + 0x24], 0x1900000
-    app->getMemory<x86::reg32>(cpu.eax + x86::reg32(36) /* 0x24 */) = 32768000 /*0x1f40000*/; /* port: split screen culls at 500, as a single view does */
+    app->getMemory<x86::reg32>(cpu.eax + x86::reg32(36) /* 0x24 */) = fullFarDistance(app, 32768000 /*0x1f40000*/); /* port: split screen culls as a single view does */
     // 0041dfa0  c740280000b801         -mov dword ptr [eax + 0x28], 0x1b80000
     app->getMemory<x86::reg32>(cpu.eax + x86::reg32(40) /* 0x28 */) = 28835840 /*0x1b80000*/;
     // 0041dfa7  c7403800003c00         -mov dword ptr [eax + 0x38], 0x3c0000

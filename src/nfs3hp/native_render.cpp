@@ -39,6 +39,7 @@ x86::reg32 mirrorAsMain(x86::reg32 kind);
 // distance) and the mirror at the main view's distances.
 x86::reg32 viewDistanceReduced(win32::WinApplication* app, x86::reg32 reduced);
 x86::reg32 splitFarDistance(win32::WinApplication* app, x86::reg32 distance);
+x86::reg32 fullFarDistance(win32::WinApplication* app, x86::reg32 distance);
 void mirrorFollowsMain(win32::WinApplication* app);
 // nfs3hp_main.cpp: the HUD's sizes at 4:3 proportions, and its pictures' shape on a wide screen.
 x86::reg32 hudReferenceWidth(win32::WinApplication* app);
@@ -7601,15 +7602,17 @@ void viewRecordNative(win32::WinApplication* app, x86::CPU& cpu)
         m.word(record + 0x48, cull);
         m.word(record + 0x4c, detail);
     };
+    // port: at Full the views cull past 500 (nfs3hp_main.cpp's kFullFarDistance)
+    const x86::reg32 cullDistance = fullFarDistance(app, 0x1f40000);
     switch (kind)
     {
     case 0:
-        plain(0x1f40000, 0x1f40000, 0x6e0000, 0x960000, 0x7d0, 0x2a);
+        plain(cullDistance, cullDistance, 0x6e0000, 0x960000, 0x7d0, 0x2a);
         break;
     case 1:
     case 2:
-        // port (apply_split_screen_cull): culls at 500, as a single view does
-        plain(0x1f40000, 0x1b80000, 0x3c0000, 0x5c0000, 0x2bc, 0x18);
+        // port (apply_split_screen_cull): culls as a single view does
+        plain(cullDistance, 0x1b80000, 0x3c0000, 0x5c0000, 0x2bc, 0x18);
         break;
     case 3:
         plain(0x960000, 0x640000, 0x280000, 0x500000, 0xfa, 6);
@@ -8377,7 +8380,8 @@ void viewDistancesNative(win32::WinApplication* app, x86::CPU& cpu)
     }
     else
     {
-        m.word(0x5dd108, scale(0x1f40000, false));
+        // port: Full reaches past 500 (nfs3hp_main.cpp's kFullFarDistance)
+        m.word(0x5dd108, scale(reduced ? 0x1f40000 : fullFarDistance(app, 0x1f40000), false));
         m.word(0x5dd118, scale(0x6e0000, false));
         eax = scale(0x960000, true);
     }

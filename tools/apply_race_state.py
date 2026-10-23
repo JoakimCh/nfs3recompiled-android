@@ -6,8 +6,10 @@ pressing a button for it.
 
 A race is one call: sub_4a3690 sets a race up with sub_4a3400, runs it, and
 takes it down again with sub_4a35d0, the only two places either is called from.
-Both are marked here, so nfs3hp::raceRunning() answers for the stretch between
-them (src/nfs3hp/nfs3hp_main.cpp).  Whether the menu is open over that race is a
+The first is marked here; the second, native as graphics::takeDownRace
+(src/nfs3hp/native_graphics.cpp), marks itself.  So nfs3hp::raceRunning()
+answers for the stretch between them (src/nfs3hp/nfs3hp_main.cpp).  Whether
+the menu is open over that race is a
 separate question and needs no mark: sub_4bc680, which opens and closes it, keeps
 [0x7a3d10] set for as long as it is up.
 """
@@ -21,11 +23,6 @@ SITES = [
      "    cpu.edx = 1 /*0x1*/;\n"
      "    raceRunning(true); /* port: sub_4a3400 sets a race up */",
      "void raceRunning(bool running);\n"),
-    ("nfs3hp.24.cpp", "004a35d7  89c6",
-     "    cpu.esi = cpu.eax;",
-     "    cpu.esi = cpu.eax;\n"
-     "    raceRunning(false); /* port: sub_4a35d0 takes it down again */",
-     ""),
 ]
 
 NAMESPACE = "namespace nfs3hp\n{\n"

@@ -72,6 +72,19 @@ namespace nfs3hp
 {
 /* native_vertices.cpp's [COMM] trace, which Error calls first: nothing here. */
 void commMessageTrace(win32::WinApplication*, x86::CPU&) {}
+/* nfs3hp_main.cpp's mark of a race, which takeDownRace clears: nothing here. */
+void raceRunning(bool) {}
+/* nfs3hp_main.cpp's hooks into the race music (tools/apply_music_stream.py):
+ * nothing here, on both sides. */
+void musicIndexOpened(win32::WinApplication*, x86::reg32) {}
+void musicStreamFile(win32::WinApplication*, x86::reg32) {}
+/* nfs3hp_main.cpp's Screen Size list (tools/apply_widescreen.py), on both
+ * sides: 16:9 taken, and Dynamic Fullscreen's marker (0xffff) as mode 16. */
+bool widescreenMode(x86::reg32 width, x86::reg32 height) { return width * 9 == height * 16; }
+x86::reg32 dynamicSavedMode(x86::reg32 found, x86::reg32 width) { return width == 0xffff ? 16 : found; }
+/* nfs3hp_main.cpp's race precision (tools/apply_race_precision.py), on both
+ * sides: extended, as NFS_FPU_EXTENDED has it by default. */
+x86::reg16 raceControl(x86::reg16 word) { return x86::reg16(word | 0x0300); }
 }
 
 namespace
@@ -184,7 +197,17 @@ const std::pair<x86::reg32, x86::reg32> kWindows[] = {
 #include "controls_devices.inc"
 #include "controls_race.inc"
 #include "controls_pipeline.inc"
+#include "controls_queue.inc"
 #undef CONTROLS_WINDOWS
+#include "decompiled_windows.inc"
+#define GRAPHICS_WINDOWS
+#include "graphics_world.inc"
+#undef GRAPHICS_WINDOWS
+#define SOUND_WINDOWS
+#include "sound_lib.inc"
+#undef SOUND_WINDOWS
+    // The fonts' quads, which a text drawn writes its corners into, and their tables.
+    {0x7f7000, 0x841000},
     {0x9ef000, 0x9f0000},
     {0x9f3000, 0x9f4000}, {0x9f6000, 0x9f7000}, {0xa09000, 0xa0a000}, {0xa0b000, 0xa0d000}, {kStackLow, kStackHigh},
 };
@@ -224,6 +247,8 @@ enum Effect
     kLock,          // the game's lock: a critical section, or none
     kCompare,       // a comparison of qsort's or bsearch's: by kByDword, kByByte or kAtRandom
     kSucceed,       // a Windows function's BOOL: now and then FALSE
+    kSomething,     // a result never 0
+    kSoundChunk,    // the movies' file streamer's next chunk: one of the sound world's, or none
     kLastError,     // GetLastError: an error the runtime turns into errno one way or another
     kAttributes,    // GetFileAttributesA: a file's attributes, or -1
     kDirectory,     // GetCurrentDirectoryA: a path into the buffer, if it fits, and its length
@@ -245,6 +270,9 @@ enum Effect
     kReallocate,    // _nrealloc: the handles' table moved, or 0
     kTmpName,       // __MkTmpFile: a name into the buffer
     kWideChar,      // WideCharToMultiByte: a byte or two into the buffer, or none
+    kString,        // the graphics' stand-ins: one of the 64 strings at kStrings
+    kRecord,        // the graphics' stand-ins: a record in the graphics' window (graphics_world.inc)
+    kBankAdd,       // SNDbankadd: a bank's handle at eax, and 0, 7 (its header to copy) or an error
     kFloat,         // __EFG_printf: a double taken, text into the buffer, the parts' lengths
     kZoneInfo,      // GetTimeZoneInformation: a zone, its names, its biases; which of them is on
     kUpper,         // CharUpperBuffA: the buffer's letters as capitals
@@ -261,11 +289,15 @@ enum Effect
     kMatherrSay,    // _matherr: 0 mostly -- the error reported -- or 1
     kBlock,         // the game's allocation: one of kBlocks, or none
     kScreenName,    // the shown screen's name: pause, mainmult, postgame, another, or none
+    kTickWait,      // sub_4c9860, the wait for the clock: the clock [0x79c1a4] a tick or two on
+    kFloatBack,     // a function that leaves a float on the x87's stack: one made up
+    kRectangle,     // sub_4beb20: a rectangle's x, y, width, height to [edx], [ebx], [ecx], [[esp+4]]
 #define CONTROLS_EFFECTS
 #include "controls_input.inc"
 #include "controls_devices.inc"
 #include "controls_race.inc"
 #include "controls_pipeline.inc"
+#include "controls_queue.inc"
 #undef CONTROLS_EFFECTS
 };
 
@@ -291,6 +323,18 @@ const StandIn kGameFunctions[] = {
     {0x4df674, "vsprintf", kWatcom, 3, 0, kEax | kEdx | kEbx, 2, 1, kText, 1},
     {0x4df690, "sprintf", kCdecl, 0, 5, kScratch, -1, 0, kPrint},
     {0x4ff014, "vfprintf", kWatcom, 3, 0, kEax | kEdx | kEbx, 2, 1, kNothing, 1},
+    // fprintf as graphics::warnTextureMemory calls it: the stream, the format and its three words.
+    {0x4f4b80, "fprintf", kCdecl, 0, 5, kScratch, -1, 0, kNothing},
+    // graphics::shapeToPixels as the menus' art calls it -- held against its code on its own.
+    {0x4d37a0, "shapeToPixels", kWatcom, 4, 1, kEax, -1, 0, kNothing},
+    // What the graphics' natives call that hands back a string or a record they read.
+    {0x4b6520, "capture folder", kWatcom, 4, 0, kEax, -1, 0, kString},
+    {0x4d1850, "languageText", kWatcom, 4, 0, kEax, -1, 0, kString},
+    {0x439520, "track name", kWatcom, 4, 0, kEax, -1, 0, kRecord},
+    {0x422bd0, "car record", kWatcom, 4, 0, kEax, -1, 0, kRecord},
+    {0x4f2460, "chunk", kWatcom, 4, 0, kEax, -1, 0, kRecord},
+    {0x4ef1e0, "picture", kWatcom, 4, 0, kEax, -1, 0, kRecord},
+    {0x4ef190, "new bitmap", kWatcom, 4, 0, kEax, -1, 0, kRecord},
     {0x4df930, "main thread", kWatcom, 1, 0, kEax, -1, 0, kMainThread},
     {0x4dfd04, "exit", kWatcom, 1, 0, kEax, -1, 0, kNothing},
     {0x4ffb64, "stop buffer", kWatcom, 1, 0, kEax, -1, 0, kNothing},
@@ -328,12 +372,22 @@ const StandIn kGameFunctions[] = {
 #include "controls_devices.inc"
 #include "controls_race.inc"
 #include "controls_pipeline.inc"
+#include "controls_queue.inc"
 #undef CONTROLS_GAME_FUNCTIONS
+{0x4c9860, "the wait for the clock", kWatcom, 4, 0, kEax, -1, 0, kTickWait},
+{0x4d1390, "the text's scale", kWatcom, 0, 1, 0, -1, 0, kFloatBack},
+{0x4beb20, "a rectangle copied out", kWatcom, 4, 1, kEdx, -1, 0, kRectangle},
+#define SOUND_GAME_FUNCTIONS
+#include "sound_lib.inc"
+#undef SOUND_GAME_FUNCTIONS
+// What the decompiled functions call that has no stand-in above (generate.py).
+#include "decompiled_standins.inc"
 };
 
 /* What is called through a pointer: the game's imports, by their slots, and
  * its callbacks. */
 const StandIn kPointers[] = {
+    {0x534468, "RegFlushKey", kStdcall, 0, 1, kScratch, -1, 0, kNothing},
     {0x534488, "CloseHandle", kStdcall, 0, 1, kScratch, -1, 0, kSucceed},
     {0x534490, "CreateDirectoryA", kStdcall, 0, 2, kScratch, -1, 0, kSucceed},
     {0x534494, "CreateEventA", kStdcall, 0, 4, kScratch, -1, 0, kEvent},
@@ -357,6 +411,7 @@ const StandIn kPointers[] = {
     {0x5345b0, "ReadFile", kStdcall, 0, 5, kScratch, -1, 0, kRead},
     {0x5345b4, "RemoveDirectoryA", kStdcall, 0, 1, kScratch, -1, 0, kSucceed},
     {0x5345d4, "SetCurrentDirectoryA", kStdcall, 0, 1, kScratch, -1, 0, kSucceed},
+    {0x5345e4, "SetErrorMode", kStdcall, 0, 1, kScratch, -1, 0, kNothing},
     {0x5345ec, "SetFileAttributesA", kStdcall, 0, 2, kScratch, -1, 0, kSucceed},
     {0x5345f0, "SetFilePointer", kStdcall, 0, 4, kScratch, -1, 0, kSeek},
     {0x534624, "VirtualAlloc", kStdcall, 0, 4, kScratch, -1, 0, kAllocate},
@@ -441,7 +496,11 @@ const StandIn kPointers[] = {
 #include "controls_devices.inc"
 #include "controls_race.inc"
 #include "controls_pipeline.inc"
+#include "controls_queue.inc"
 #undef CONTROLS_POINTERS
+#define SOUND_POINTERS
+#include "sound_lib.inc"
+#undef SOUND_POINTERS
 };
 constexpr unsigned kPointerCount = sizeof kPointers / sizeof kPointers[0];
 
@@ -481,6 +540,9 @@ std::uint64_t g_seed = 0;
  * environment's) leave otherwise than the game's code does. */
 bool g_shortDirectory = false;
 long g_stopAt = -1;
+/* The calls a case's arguments let it make at most (-1 any): for the loops
+ * that wait on a thread the stand-ins never are. */
+long g_mostCalls = -1;
 bool g_lookupFails = false;
 
 std::uint64_t mix(std::uint64_t x)
@@ -534,6 +596,7 @@ struct Promise
 };
 
 const Promise kPromises[] = {
+#include "decompiled_promises.inc"
     {"Error", true, false},
     {"Message", true, true},
     {"AcquireWindow", true, true},
@@ -587,7 +650,11 @@ const Promise kPromises[] = {
 #include "controls_devices.inc"
 #include "controls_race.inc"
 #include "controls_pipeline.inc"
+#include "controls_queue.inc"
 #undef CONTROLS_PROMISES
+#define SOUND_PROMISES
+#include "sound_lib.inc"
+#undef SOUND_PROMISES
     // The Watcom runtime's (native_watcom.cpp).
     {"watcom::CHP", true, false, 0, true},
     {"watcom::GetThreadPtr", true, true},
@@ -1014,8 +1081,9 @@ public:
         if (s.through >= 0)
         {
             const x86::reg32 from = s.through < 4 ? registers[s.through] : word(esp + 4 + 4 * (s.through - 4));
+            // What a wild pointer would point at: nothing of the guest's.
             for (unsigned i = 0; i < s.deref; ++i)
-                words.push_back(word(from + 4 * i));
+                words.push_back(from + 4 * i < kMemory - 4 ? word(from + 4 * i) : 0xbad0bad0);
         }
         if (s.formats != 0)
         {
@@ -1050,7 +1118,7 @@ public:
             text(cpu.eax, result, random64(id));
             break;
         case kPrint:
-            result = r % 0x70;  // within the caller's buffer
+            result = r % 0x50;  // within the caller's buffer (the speech's name's, 0x64, with its ending)
             text(words[0], result, random64(id));
             break;
         case kLoad:
@@ -1121,6 +1189,18 @@ public:
         case kSucceed:
             result = r % 5 != 0 ? 1 : 0;
             break;
+        case kSomething:
+            result = r | 1;
+            break;
+        case kString:
+            result = kStrings + 0x40 * (r % 64);
+            break;
+        case kRecord:
+            result = 0xc00000 + 0x40 * (r % 64);
+            break;
+        case kSoundChunk:
+            result = r % 4 == 0 ? 0 : 0xc2c000 + 0x40 * (0x10 + (r >> 8) % 0x10);
+            break;
         case kLastError:
             result = anError(r);
             break;
@@ -1178,6 +1258,11 @@ public:
                 word(kTimezone) = x86::reg32(x86::sreg32(random(id + 1) % 100801) - 50400);
                 word(kDstAdjust) = random(id + 2) % 4 != 0 ? 3600 : random(id + 3) % 7201;
             }
+            break;
+        case kBankAdd:
+            if (words[0] < kMemory - 4)
+                word(words[0]) = r % 24;
+            result = r % 5 == 0 ? 0xfffffff7 : r % 3 == 0 ? 7 : 0;
             break;
         case kMathResult:
             cpu.fpu.count += 1;
@@ -1346,7 +1431,22 @@ public:
 #include "controls_devices.inc"
 #include "controls_race.inc"
 #include "controls_pipeline.inc"
+#include "controls_queue.inc"
 #undef CONTROLS_EFFECT_CASES
+        case kRectangle:
+            // A screen's, mostly: 640 by 480 to 1600 by 1200, or any size.
+            word(cpu.edx) = r % 64;
+            word(cpu.ebx) = (r >> 6) % 64;
+            word(cpu.ecx) = 320 + (r >> 12) % 1300;
+            word(word(esp + 4)) = r % 8 == 0 ? random(id + 1) : 240 + (r >> 20) % 1000;
+            break;
+        case kFloatBack:
+            cpu.fpu.count += 1;
+            cpu.fpu.st(0) = x86::Float(double(x86::sreg32(r)) / 7.0);
+            break;
+        case kTickWait:
+            word(0x79c1a4) += 1 + r % 2;
+            break;
         case kScreenName:
         {
             static const x86::reg32 names[] = {0, 0x53793c, 0x537944, 0x537950, 0x53795c};
@@ -1462,8 +1562,8 @@ public:
         Effect effect = kNothing;
         if (name == "_iSNDdllversion@0")
             effect = kVersion;
-        else if (name == "_THRASH_about@0")
-            effect = kAbout;
+        else if (name == "_THRASH_about@0" || name == "_THRASH_lockwindow@0")
+            effect = kAbout;  // a record or none: THRASH_about's, or as the lock's
         const StandIn s = {kNamed + 0x10 * index, name.c_str(), kStdcall, 0, words, kScratch, -1, 0, effect};
         standIn(s, s.address, cpu);
     }
@@ -4524,15 +4624,109 @@ void makeMmxArguments(CheckApp& g, const std::string& name, x86::CPU& cpu, x86::
 #include "controls_devices.inc"
 #include "controls_race.inc"
 #include "controls_pipeline.inc"
+#include "controls_queue.inc"
 #undef CONTROLS_ARGUMENTS
+#define SOUND_ARGUMENTS
+#include "sound_lib.inc"
+#undef SOUND_ARGUMENTS
 
 /* The function's arguments, on the stack at esp + 4 on, and its registers. */
+/* The decompiled functions' cases (native_decompiled.cpp): every global the
+ * function's code uses (decompiled.json) made up -- 0, 1, -1, small, the top
+ * bit set, anything -- on top of the random registers and stack every case
+ * has. */
+struct DecompiledWorld
+{
+    const char* name;
+    std::vector<x86::reg32> globals;
+    std::vector<x86::reg32> values;  // what its code compares with, and one either side
+};
+const DecompiledWorld kDecompiledWorlds[] = {
+#include "decompiled_world.inc"
+};
+
+/* THRASH's functions, as the game finds them in the driver by these names
+ * (the slots at 0x9ef900 on), for the graphics' cases: each a stand-in by its
+ * name, which takes the words its @ says. */
+const char* const kThrashNames[] = {
+    "_THRASH_drawpointmesh@12", "_THRASH_drawpointstrip@8", "_THRASH_drawlinestrip@8", "_THRASH_drawlinemesh@12",
+    "_THRASH_drawpoint@4", "_THRASH_writerect@20", "_THRASH_treset@0", "_THRASH_drawtristrip@8",
+    "_THRASH_readrect@20", "_THRASH_drawtrimesh@12", "_THRASH_drawline@8", "_THRASH_clip@16",
+    "_THRASH_drawquadmesh@12", "_THRASH_settexture@4", "_THRASH_window@4", "_THRASH_idle@0",
+    "_THRASH_pageflip@0", "_THRASH_selectdisplay@4", "_THRASH_sync@4", "_THRASH_drawquad@16",
+    "_THRASH_flushwindow@0", "_THRASH_lockwindow@0", "_THRASH_setvideomode@12", "_THRASH_unlockwindow@4",
+    "_THRASH_drawtrifan@8", "_THRASH_tupdate@12", "_THRASH_talloc@20", "_THRASH_setstate@8",
+    "_THRASH_clearwindow@0", "_THRASH_drawtri@12", "_THRASH_init@0", "_THRASH_restore@0",
+    "_THRASH_about@0", "_THRASH_is@0",
+};
+
+/* A value as the decompiled functions' cases make one up: 0, 1, -1, small,
+ * the top bit set, anything -- so that a register or a global compared with a
+ * small number, a state's or a mode's, takes each way. */
+x86::reg32 decompiledValue()
+{
+    const x86::reg32 kind = below(100);
+    return kind < 25 ? 0 : kind < 35 ? 1 : kind < 45 ? 0xffffffff : kind < 60 ? below(16)
+         : kind < 70 ? below(0x100) : kind < 75 ? 0x80000000 | below(16) : random32();
+}
+
+/* The graphics' records, buffers and the driver's descriptions
+ * (graphics_world.inc). */
+#define GRAPHICS_ARGUMENTS
+#include "graphics_world.inc"
+#undef GRAPHICS_ARGUMENTS
+
+void makeDecompiledArguments(CheckApp& g, const std::string& name, x86::CPU& cpu)
+{
+    const DecompiledWorld* world = nullptr;
+    for (const DecompiledWorld& w : kDecompiledWorlds)
+        if (name == w.name)
+            world = &w;
+    // A value made up, or now and then one its code compares with.
+    auto value = [&]() {
+        return world && !world->values.empty() && chance(35) ? world->values[below(x86::reg32(world->values.size()))]
+                                                            : decompiledValue();
+    };
+    // The argument registers made up the same way, for half the cases.
+    if (chance(50))
+        for (x86::reg32* r : {&cpu.eax, &cpu.edx, &cpu.ebx, &cpu.ecx})
+            *r = chance(60) ? value() : *r;
+    if (name.compare(0, 10, "graphics::") == 0)
+        for (x86::reg32 i = 0; i < sizeof kThrashNames / sizeof *kThrashNames; ++i)
+            g.word(kThrashSlots + 4 * i) = chance(97) ? namedStandIn(kThrashNames[i]) : 0;
+    for (const DecompiledWorld& w : kDecompiledWorlds)
+    {
+        if (name != w.name)
+            continue;
+        for (const x86::reg32 at : w.globals)
+            g.word(at) = value();
+    }
+    // The clock, far from its wrap, and the last flip a few ticks either side
+    // of it, which the wait moves on.
+    // What an Error calls before its box: none, as the game's data has it
+    // until the driver is open -- setVideoMode's Error would call a made-up one.
+    if (name == "graphics::setVideoMode")
+        g.word(0x564418) = 0;
+    // The text drawn: the fonts as the menus' checks make them up.
+    if (name == "graphics::drawLoadingAborted")
+        makeMenusWorld(g, cpu);
+    if (name == "graphics::flipAndWaitFrames")
+    {
+        g.word(0x79c1a4) = below(0x1000000);
+        g.word(0x56415c) = g.word(0x79c1a4) + below(9) - 4;
+    }
+}
+
 void makeArguments(CheckApp& g, const Tested& t, x86::reg32 esp, x86::CPU& cpu)
 {
     x86::reg32 a[9];
     for (x86::reg32& w : a)
         w = random32();
     const std::string name = t.name;
+    if (name.compare(0, 12, "decompiled::") == 0 || name.compare(0, 10, "graphics::") == 0)
+        makeDecompiledArguments(g, name, cpu);
+    if (name.compare(0, 10, "graphics::") == 0)
+        makeGraphicsArguments(g, name.substr(10), cpu, a);
     if (name == "Error" || name == "Message" || name == "PrintSoundLambda" || name == "TraceSoundLambda"
         || name == "abortmessagewrapper")
     {
@@ -4571,11 +4765,16 @@ void makeArguments(CheckApp& g, const Tested& t, x86::reg32 esp, x86::CPU& cpu)
     {
         const std::string own = name.substr(10);
         if (!makeInputArguments(g, own, cpu, a) && !makeDevicesArguments(g, own, cpu, a)
-            && !makeRaceArguments(g, own, cpu, a))
-            makePipelineArguments(g, own, cpu, a);
+            && !makeRaceArguments(g, own, cpu, a) && !makePipelineArguments(g, own, cpu, a))
+            makeQueueArguments(g, own, cpu, a);
     }
     if (name.compare(0, 5, "mmx::") == 0)
         makeMmxArguments(g, name.substr(5), cpu, a);
+    if (name.compare(0, 5, "snd::") == 0)
+        makeSoundArguments(g, name.substr(5), cpu, a);
+    // The port's rewrites of the sound's: the same world.
+    if (name.compare(0, 6, "port::") == 0)
+        makeSoundArguments(g, name.substr(6), cpu, a);
     for (x86::reg32 i = 0; i < 9; ++i)
         g.word(esp + 4 + 4 * i) = a[i];
 }
@@ -4591,6 +4790,7 @@ bool runCase(const Tested& t, CheckApp& g, CheckApp& n, Counts& counts)
     const Promise& p = *promiseOf(t.name);
     g_seed = mix(random32() | std::uint64_t(random32()) << 32);
     g_stopAt = -1;
+    g_mostCalls = -1;
     makeState(g);
     if (p.heap != kNoHeap)
         stirHeap(g);
@@ -4622,6 +4822,8 @@ bool runCase(const Tested& t, CheckApp& g, CheckApp& n, Counts& counts)
     }
 
     g_stopAt = chance(15) ? long(below(p.heap != kNoHeap || chance(50) ? 8 : 40)) : -1;
+    if (g_mostCalls >= 0 && (g_stopAt < 0 || g_stopAt > g_mostCalls))
+        g_stopAt = g_mostCalls;
     g_lookupFails = chance(30);
 
     copyWindows(n, g);
@@ -4634,6 +4836,21 @@ bool runCase(const Tested& t, CheckApp& g, CheckApp& n, Counts& counts)
     win32::g_running = &g;
     t.generated(&g, generatedCpu);
 
+    /* GAME_CHECKS_CLOBBERS: which registers the game's code leaves otherwise
+     * than it got them (eax aside, esp as a ret leaves it), one line a case --
+     * what a typed rewrite's adapter must give back besides the result. */
+    if (std::getenv("GAME_CHECKS_CLOBBERS") != nullptr && !generatedCpu.terminate)
+    {
+        std::printf("CLOBBERS %s:", t.name);
+        const std::pair<const char*, bool> changed[] = {
+            {"ebx", generatedCpu.ebx != cpu.ebx}, {"ecx", generatedCpu.ecx != cpu.ecx},
+            {"edx", generatedCpu.edx != cpu.edx}, {"esi", generatedCpu.esi != cpu.esi},
+            {"edi", generatedCpu.edi != cpu.edi}, {"ebp", generatedCpu.ebp != cpu.ebp}};
+        for (const auto& c : changed)
+            if (c.second)
+                std::printf(" %s", c.first);
+        std::printf("\n");
+    }
     const bool alike = compareRuns(t, g, n, generatedCpu, nativeCpu, esp, counts);
     for (const auto& word : list)
         g.word(word.first) = word.second;
@@ -4679,8 +4896,13 @@ bool compareRuns(const Tested& t, CheckApp& g, CheckApp& n, const x86::CPU& gene
     if (!stopped)
     {
         const Promise& p = *promiseOf(t.name);
-        const bool kept[] = {false, !p.watcom || p.arguments < 2, !p.watcom || p.arguments < 3,
-                             p.watcom && p.arguments < 4};  // eax, edx, ebx, ecx as handed over
+        /* The port's rewrites (port::) are held to Watcom's convention, not to
+         * the scratch the game's code leaves: the result in eax, every other
+         * register as the caller had it -- what the game's callers read (the
+         * sound module's callers were checked for it). */
+        const bool port = std::string(p.name).compare(0, 6, "port::") == 0;
+        const bool kept[] = {false, (!p.watcom || p.arguments < 2) && !port, (!p.watcom || p.arguments < 3) && !port,
+                             p.watcom && p.arguments < 4 && !port};  // eax, edx, ebx, ecx as handed over
         const struct { const char* name; x86::reg32 g, n; bool compared; } registers[] = {
             {"eax", generatedCpu.eax, nativeCpu.eax, p.result}, {"ebx", generatedCpu.ebx, nativeCpu.ebx, kept[2]},
             {"ecx", generatedCpu.ecx, nativeCpu.ecx, kept[3]}, {"edx", generatedCpu.edx, nativeCpu.edx, kept[1] && p.watcom},
@@ -4706,7 +4928,11 @@ bool compareRuns(const Tested& t, CheckApp& g, CheckApp& n, const x86::CPU& gene
                 return report(counts, what);
             }
         if (generatedCpu.fpu.count != nativeCpu.fpu.count)
-            return report(counts, "the FPU's stack left otherwise");
+        {
+            std::snprintf(what, sizeof what, "the FPU's stack left otherwise: %u deep generated, %u native",
+                          unsigned(generatedCpu.fpu.count), unsigned(nativeCpu.fpu.count));
+            return report(counts, what);
+        }
         if (p.fpu)
         {
             if (generatedCpu.fpu.control.word != nativeCpu.fpu.control.word)

@@ -417,6 +417,13 @@ namespace x86
             setControl(0x37f);
         }
 
+        /* An experiment (NFS_FPU_FLOAT=1): every sum, product, quotient and
+         * root of the whole game rounded to a float's 24-bit significand, in
+         * the menus too, whatever precision the game asks for -- the game as
+         * it would run on the host's float alone (the exponent keeps the
+         * x87's range). */
+        static inline bool s_floatEverywhere = false;
+
         /* fldcw and init.  Nothing else writes the control word, so what it
          * asks of the arithmetic below is worked out here, once, rather than
          * pulled out of its bit fields at every fadd. */
@@ -428,7 +435,7 @@ namespace x86
 #elif defined(WITH_WIDE_FPU)
             rounding = kRoundNone;   // as Modern Patch: the race's single precision is never taken
 #elif !defined(WITH_PEDANTIC_FPU)
-            rounding = control.pc != s_singlePrecision ? kRoundNone
+            rounding = control.pc != s_singlePrecision && !s_floatEverywhere ? kRoundNone
                      : control.rc == 0 ? kRoundSingleNearest : kRoundSingleOther;
 #endif
         }

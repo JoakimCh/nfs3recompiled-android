@@ -26,10 +26,11 @@ the Modern Patch does as well:
 sub_40ff20, which reserved 15 MB for the copy, is never called in this
 executable and is left as it is.  The delete stays: it still clears a temp.mus
 left behind by an older build.
-"""
-from pathlib import Path
 
-HEADER = "// Port (tools/apply_music_stream.py): defined in nfs3hp_main.cpp.\n"
+Both functions are native now (src/nfs3hp/native_snd_music.cpp), with the
+change made there; these sites are what tools/game_checks/generate.py makes of
+the game's code to hold those natives against (its music_stream).
+"""
 
 # (generated file, address and bytes of the instruction, original code, patched
 # code, the declaration the patched code needs)
@@ -57,60 +58,15 @@ SITES = [
      "    sub_4e0ec0(app, cpu.sync());\n"
      "    cpu.reload();",
      "void musicIndexOpened(win32::WinApplication* app, x86::reg32 path);\n"),
-    # sub_4107c0: the name queued on the music stream, the copy's until now.
+    # sub_4107c0: the name queued on the music stream, the copy's until now (into
+    # Pathfinder's start, native in native_snd_path.cpp).
     ("nfs3hp.3.cpp", "00410965  e8a2650d00",
      "    cpu.esp -= 4;\n"
-     "    sub_4e6f0c(app, cpu.sync());\n"
+     "    nfs3hp::snd::SNDpathstartstream(app, cpu.sync());\n"
      "    cpu.reload();",
      "    musicStreamFile(app, cpu.edx); /* port: the track itself, not a copy of it */\n"
      "    cpu.esp -= 4;\n"
-     "    sub_4e6f0c(app, cpu.sync());\n"
+     "    nfs3hp::snd::SNDpathstartstream(app, cpu.sync());\n"
      "    cpu.reload();",
      "void musicStreamFile(win32::WinApplication* app, x86::reg32 path);\n"),
 ]
-
-NAMESPACE = "namespace nfs3hp\n{\n"
-
-
-def apply(root):
-    for name in dict.fromkeys(site[0] for site in SITES):
-        path = root / "src/nfs3hp/disassembly" / name
-        with path.open("r", newline="") as source:
-            text = source.read()
-        eol = "\r\n" if text.count("\r\n") * 2 > text.count("\n") else "\n"
-
-        def native(s):
-            return eol.join(s.split("\n"))
-
-        sites = [site for site in SITES if site[0] == name]
-        declarations = native(HEADER + "".join(site[4] for site in sites))
-        if declarations.strip() and declarations not in text:
-            namespace = native(NAMESPACE)
-            if text.count(namespace) != 1:
-                raise RuntimeError("%s: namespace opening changed" % name)
-            text = text.replace(namespace, namespace + declarations, 1)
-
-        for _, instruction, old, new, _ in sites:
-            old, new = native(old), native(new)
-            anchor = "    // " + instruction
-            start = text.find(anchor)
-            if start < 0:
-                raise RuntimeError("%s: no instruction %s" % (name, instruction))
-            # Everything this one instruction generated: from its own address
-            # comment up to the next one.
-            stop = text.find(eol + "    // 00", start + len(anchor))
-            if stop < 0:
-                raise RuntimeError("%s: runaway block at %s" % (name, instruction))
-            block = text[start:stop]
-            if new in block:
-                continue
-            if block.count(old) != 1:
-                raise RuntimeError("%s: unexpected shape at %s" % (name, instruction))
-            text = text[:start] + block.replace(old, new, 1) + text[stop:]
-
-        with path.open("w", newline="") as out:
-            out.write(text)
-
-
-if __name__ == "__main__":
-    apply(Path(__file__).resolve().parents[1])

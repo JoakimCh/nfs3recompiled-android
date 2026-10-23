@@ -48,6 +48,14 @@ SITES = [
 
 NAMESPACE = "namespace nfs3hp\n{\n"
 
+# Sites in functions that are native now and call nfs3hp::raceControl
+# themselves (src/nfs3hp/native_graphics.cpp): the loading screen (sub_494fa0,
+# graphics::showLoadingScreen), the loading bar (sub_495230,
+# graphics::drawLoadingProgress) and the game's main (sub_4a39f0,
+# graphics::gameMain).  tools/game_checks/generate.py still makes them to the
+# game's code those natives are held against.
+NATIVE_SITES = {0x495179, 0x4955e9, 0x4a3e8d, 0x4a3ed3}
+
 
 def apply(root):
     for name in dict.fromkeys(site[0] for site in SITES):
@@ -69,6 +77,8 @@ def apply(root):
         for _, instruction in (site for site in SITES if site[0] == name):
             anchor = "    // " + instruction
             start = text.find(anchor)
+            if start < 0 and int(instruction[:8], 16) in NATIVE_SITES:
+                continue  # its function is native and loads the word through raceControl itself
             if start < 0:
                 raise RuntimeError("%s: no instruction %s" % (name, instruction))
             stop = text.find(eol + "    // 00", start + len(anchor))

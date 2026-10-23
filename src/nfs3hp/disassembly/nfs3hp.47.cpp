@@ -6400,7 +6400,7 @@ L_0x0051a5a9:
     cpu.eax = app->getMemory<x86::reg32>(x86::reg32(5679800) /* 0x56aab8 */);
     // 0051a5bd  e85ed1fcff             -call 0x4e7720
     cpu.esp -= 4;
-    sub_4e7720(app, cpu.sync());
+    nfs3hp::snd::waitSystemTasks(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0051a5c2  85c0                   +test eax, eax
@@ -6735,7 +6735,7 @@ L_0x0051a6f4:
     cpu.eax = app->getMemory<x86::reg32>(x86::reg32(5679800) /* 0x56aab8 */);
     // 0051a704  e817d0fcff             -call 0x4e7720
     cpu.esp -= 4;
-    sub_4e7720(app, cpu.sync());
+    nfs3hp::snd::waitSystemTasks(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0051a709  85c0                   +test eax, eax
@@ -6840,7 +6840,7 @@ L_0x0051a748:
     cpu.eax ^= x86::reg32(x86::sreg32(cpu.eax));
     // 0051a755  e8d6cefcff             -call 0x4e7630
     cpu.esp -= 4;
-    sub_4e7630(app, cpu.sync());
+    nfs3hp::snd::runSystemTasks(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0051a75a  85c0                   +test eax, eax
@@ -7288,7 +7288,7 @@ L_0x0051a86d:
 L_0x0051a8bb:
     // 0051a8bb  e860cefcff             -call 0x4e7720
     cpu.esp -= 4;
-    sub_4e7720(app, cpu.sync());
+    nfs3hp::snd::waitSystemTasks(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0051a8c0  85c0                   +test eax, eax
@@ -7662,7 +7662,7 @@ L_0x0051a9d7:
 L_0x0051a9ea:
     // 0051a9ea  e831cdfcff             -call 0x4e7720
     cpu.esp -= 4;
-    sub_4e7720(app, cpu.sync());
+    nfs3hp::snd::waitSystemTasks(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0051a9ef  85c0                   +test eax, eax
@@ -7808,7 +7808,7 @@ L_0x0051aa47:
 L_0x0051aa5a:
     // 0051aa5a  e8c1ccfcff             -call 0x4e7720
     cpu.esp -= 4;
-    sub_4e7720(app, cpu.sync());
+    nfs3hp::snd::waitSystemTasks(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0051aa5f  85c0                   +test eax, eax
@@ -7932,7 +7932,7 @@ L_0x0051aabc:
     cpu.eax = app->getMemory<x86::reg32>(x86::reg32(5679800) /* 0x56aab8 */);
     // 0051aac1  e85accfcff             -call 0x4e7720
     cpu.esp -= 4;
-    sub_4e7720(app, cpu.sync());
+    nfs3hp::snd::waitSystemTasks(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0051aac6  85c0                   +test eax, eax
@@ -15135,7 +15135,7 @@ L_0x0051c2eb:
     cpu.eax = 1 /*0x1*/;
     // 0051c2ff  e81cb4fcff             -call 0x4e7720
     cpu.esp -= 4;
-    sub_4e7720(app, cpu.sync());
+    nfs3hp::snd::waitSystemTasks(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0051c304  85c0                   +test eax, eax
@@ -20822,7 +20822,7 @@ L_0x0051d62b:
     cpu.eax = 1 /*0x1*/;
     // 0051d63f  e8dca0fcff             -call 0x4e7720
     cpu.esp -= 4;
-    sub_4e7720(app, cpu.sync());
+    nfs3hp::snd::waitSystemTasks(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0051d644  85c0                   +test eax, eax

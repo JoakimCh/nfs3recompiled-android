@@ -224,6 +224,11 @@ public class NFS3Activity extends SDLActivity
             // Races at the original's single precision, not the Modern Patch's extended one.
             if (getIntent().getBooleanExtra("fpu_single_races", false))
                 setEnv("NFS_FPU_EXTENDED", "0");
+            // The whole game in single precision, the menus too (an experiment).
+            if (getIntent().getBooleanExtra("fpu_float", false)) {
+                setEnv("NFS_FPU_FLOAT", "1");
+                setEnv("NFS_FPU_EXTENDED", "0");
+            }
             // The opponents' pull and steering on their generated code (native_ai.cpp off).
             if (getIntent().getBooleanExtra("native_ai_off", false))
                 setEnv("NFS_NATIVE_AI", "0");
@@ -260,15 +265,6 @@ public class NFS3Activity extends SDLActivity
             // The native driver through the old Voodoo2 renderer (GlideRenderer).
             if (!getIntent().getBooleanExtra("thrash_gl", true))
                 setEnv("NFS_THRASH_GL", "0");
-            // The game's mixer functions in use, each set once ([SND]).
-            if (getIntent().getBooleanExtra("snd_trace", false))
-                setEnv("NFS_SND_TRACE", "1");
-            // The game's sound mixer as generated rather than native.
-            if (!getIntent().getBooleanExtra("snd_mix", true))
-                setEnv("NFS_SND_MIX", "0");
-            // Every mix both ways, native and generated, compared ([SNDCHK]).
-            if (getIntent().getBooleanExtra("snd_check", false))
-                setEnv("NFS_SND_CHECK", "1");
             // The movies (MAD player, decoder, display) as generated rather than native,
             // or each part: the player, the full-colour output.
             if (!getIntent().getBooleanExtra("mad", true))

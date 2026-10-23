@@ -23,9 +23,9 @@ android {
          * API 21 on, as SDL3 itself does. */
         minSdk = 26
         targetSdk = 36
-        // Kept in step with versionName so the two can never disagree: 0.77 -> 77.
-        versionCode = 77
-        versionName = "0.77"
+        // Kept in step with versionName so the two can never disagree: 0.78 -> 78.
+        versionCode = 78
+        versionName = "0.78"
         testInstrumentationRunner "dev.nfs3hp.port.TouchOverlayInstrumentation"
         // Only arm64-v8a is packed: Compose brings androidx.graphics.path for
         // four ABIs, and a phone of another ABI would then install an APK with

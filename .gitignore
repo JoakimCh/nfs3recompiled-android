@@ -37,3 +37,6 @@ plan.md
 # Notes handed between the assistants working on this port -- same category as
 # the above, and there is now more than one of them.
 *_HANDOFF.md
+
+# game_checks's Windows build (tools/game_checks/windows/run.py).
+tools/game_checks/windows/build/

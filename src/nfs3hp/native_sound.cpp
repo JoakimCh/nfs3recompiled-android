@@ -6,8 +6,6 @@
 #include <cstring>
 #include <initializer_list>
 #include <mutex>
-#include <string>
-#include <vector>
 
 /* The game's sound driver, eacsnd.dll, native and straight into SDL.
  *
@@ -36,8 +34,10 @@
  * Here serve has the game mix into a buffer of guest memory of our own and puts
  * that on an SDL audio stream, which converts it to the phone's rate: no
  * DirectSound, no ring buffer for SDL's thread to copy out of.  How far ahead
- * it keeps the stream is eacsnd's 20 ms to begin with, raised by what the
- * device found missing whenever it ran dry while serve came on time.
+ * it keeps the stream is eacsnd's 20 ms to begin with, or two of the device's
+ * buffers where those are longer, raised by what the device found missing
+ * whenever it ran dry -- serve on time, or late by a pause the game's sound
+ * thread takes now and then, which the stream then has to bridge.
  *
  * eacsnd's twelve other exports -- the version, the game's functions,
  * recording, the 3D buffers -- are native in native_isnd.cpp.  With no 3D
@@ -105,6 +105,8 @@ struct Sound
     x86::reg32 ahead = 0;
     x86::reg32 aheadLeast = 0;
     x86::reg32 aheadMost = 0;
+    x86::reg32 aheadLateMost = 0;     // the most a late serve may raise it to
+    x86::reg32 deviceFrames = 0;      // the device's buffer, in the game's frames
     std::atomic<int> missing{0};
     Uint64 lastServe = 0;
 
@@ -175,7 +177,10 @@ bool openDevice(Sound& s, const SDL_AudioSpec& game)
     s.format = game;
     SDL_AudioSpec opened;
     int frames = 0;
-    if (SDL_GetAudioDeviceFormat(s.device, &opened, &frames))
+    s.deviceFrames = 0;
+    if (SDL_GetAudioDeviceFormat(s.device, &opened, &frames) && frames > 0 && opened.freq > 0)
+        s.deviceFrames = x86::reg32(uint64_t(frames) * x86::reg32(game.freq) / x86::reg32(opened.freq));
+    if (frames > 0)
         SDL_Log("[SND] native: the game's %d Hz %d-bit %s to %d Hz, %d frames a buffer", game.freq,
                 int(SDL_AUDIO_BITSIZE(game.format)), game.channels == 2 ? "stereo" : "mono", opened.freq,
                 frames);
@@ -232,11 +237,19 @@ bool startNative(win32::WinApplication* app, x86::CPU& cpu)
     s.rate = rate;
     s.frameBytes = x86::reg32(SDL_AUDIO_BYTESIZE(game.format) * game.channels);
     /* eacsnd's write-ahead on a card that is not emulated: 20 ms, in whole
-     * 16-frame steps; the most, a quarter of a second. */
-    s.aheadLeast = (rate * 20 / 1000) & ~0xfu;
+     * 16-frame steps -- or two of the device's buffers, where a device asks
+     * for more at a time than that and would run dry on every one of them;
+     * the most, a quarter of a second, and a late serve's 120 ms. */
     s.aheadMost = (rate / 4) & ~0xfu;
+    s.aheadLateMost = (rate * 120 / 1000) & ~0xfu;
+    s.aheadLeast = (rate * 20 / 1000) & ~0xfu;
+    const x86::reg32 twoBuffers = (2 * s.deviceFrames + 0xf) & ~0xfu;
+    if (twoBuffers > s.aheadLeast)
+        s.aheadLeast = twoBuffers < s.aheadMost ? twoBuffers : s.aheadMost;
     if (s.ahead < s.aheadLeast || s.ahead > s.aheadMost)
         s.ahead = s.aheadLeast;
+    SDL_Log("[SND] write-ahead from %u frames (%u ms), the device's buffer %u", s.ahead, s.ahead * 1000 / rate,
+            s.deviceFrames);
     s.missing.store(0, std::memory_order_relaxed);
     s.lastServe = 0;
     s.toTick = 0;
@@ -290,80 +303,13 @@ void mix(win32::WinApplication* app, x86::CPU& cpu, Sound& s, x86::reg32 buffer,
     }
 }
 
-/* NFS_SND_TRACE=1: the game's mixer as it runs -- its globals once, and each
- * set of functions a channel mixes through the first time it is seen -- to
- * know which of its many variants a native mixer has to stand in for. */
-bool soundTracing()
-{
-    static const bool on = []() {
-        const char* value = SDL_getenv("NFS_SND_TRACE");
-        return value && SDL_strcmp(value, "1") == 0;
-    }();
-    return on;
-}
-
-void traceMixer(win32::WinApplication* app)
-{
-    static bool globals = false;
-    static std::vector<std::string> seen;
-    if (!globals)
-    {
-        globals = true;
-        char line[512];
-        int n = SDL_snprintf(line, sizeof line, "[SND] mixer: [9f6a5a] %u, [9f6a57] %d, block %u, out %x clear %x after %x before %x",
-                             unsigned(app->getMemory<x86::reg8>(0x9f6a5a)),
-                             int(app->getMemory<x86::reg8>(0x9f6a5a - 3)),
-                             unsigned(app->getMemory<x86::reg16>(0x9f6a58)), get(app, 0x9f6b20),
-                             get(app, 0x9f6a5c), get(app, 0x9f6a64), get(app, 0x9f6a68));
-        NFS2_USE(n);
-        SDL_Log("%s", line);
-        std::string table = "[SND] decoders";
-        for (x86::reg32 i = 0; i < 0x1c; ++i)
-        {
-            char item[16];
-            SDL_snprintf(item, sizeof item, " %x", get(app, 0x9f6a6c + 4 * i));
-            table += item;
-        }
-        SDL_Log("%s", table.c_str());
-        table = "[SND] factories";
-        for (x86::reg32 a = 0x9f6adc; a < 0x9f6b28; a += 4)
-        {
-            char item[16];
-            SDL_snprintf(item, sizeof item, " %x", get(app, a));
-            table += item;
-        }
-        SDL_Log("%s", table.c_str());
-    }
-    for (x86::reg32 c = 0; c < 16; ++c)
-    {
-        const x86::reg32 ch = 0x9fbcb4 + c * 0xde4;
-        if (app->getMemory<x86::reg8>(ch) == 0)
-            continue;
-        char key[256];
-        SDL_snprintf(key, sizeof key, "decode %x/%x resample %x/%x/%x/%x mix %x/%x vol %x/%x",
-                     get(app, ch + 0xda8), get(app, ch + 0xdac), get(app, ch + 0xdb0), get(app, ch + 0xdb4),
-                     get(app, ch + 0xdb8), get(app, ch + 0xd64), get(app, ch + 0xdc0), get(app, ch + 0xdbc),
-                     get(app, ch + 0xddc), get(app, ch + 0xde0));
-        bool known = false;
-        for (const std::string& k : seen)
-            known = known || k == key;
-        if (known)
-            continue;
-        seen.push_back(key);
-        char bytes[64];
-        SDL_snprintf(bytes, sizeof bytes, "%02x %02x %02x %02x %02x %02x %02x %02x %02x",
-                     app->getMemory<x86::reg8>(ch), app->getMemory<x86::reg8>(ch + 1),
-                     app->getMemory<x86::reg8>(ch + 2), app->getMemory<x86::reg8>(ch + 3),
-                     app->getMemory<x86::reg8>(ch + 4), app->getMemory<x86::reg8>(ch + 5),
-                     app->getMemory<x86::reg8>(ch + 6), app->getMemory<x86::reg8>(ch + 7),
-                     app->getMemory<x86::reg8>(ch + 8));
-        SDL_Log("[SND] channel %u: %s; head %s", c, key, bytes);
-    }
-}
-
-/* iSNDdirectserve(), stdcall: the stream topped up to its write-ahead.  A serve
- * more than 60 ms after the last found the stream dry because the game's thread
- * did not come, not because the write-ahead is short, and leaves it be. */
+/* iSNDdirectserve(), stdcall: the stream topped up to its write-ahead.  The
+ * game's sound thread comes every 10 to 16 ms; one that ran dry raises the
+ * write-ahead by what was missing.  Late by more than 60 ms, it paused: the
+ * write-ahead has to bridge such a pause if it comes again, so it is raised to
+ * the pause's length, up to 120 ms.  Late by more than 150 ms, the game was
+ * busy elsewhere -- a race loading -- and that leaves it be, or one load would
+ * keep the sound that much behind for good. */
 bool serveNative(win32::WinApplication* app, x86::CPU& cpu)
 {
     Sound& s = sound();
@@ -376,15 +322,26 @@ bool serveNative(win32::WinApplication* app, x86::CPU& cpu)
     }
 
     const Uint64 now = SDL_GetTicksNS();
-    const bool late = s.lastServe == 0 || now - s.lastServe > SDL_NS_PER_MS * 60;  // the first finds it empty
+    const Uint64 gap = s.lastServe == 0 ? 0 : now - s.lastServe;
+    // The first serve finds it empty; a stall is none of the write-ahead's.
+    const bool stalled = s.lastServe == 0 || gap > SDL_NS_PER_MS * 150;
+    const bool late = gap > SDL_NS_PER_MS * 60;
     s.lastServe = now;
     const int missing = s.missing.exchange(0, std::memory_order_relaxed);
-    if (missing > 0 && !late && s.ahead < s.aheadMost)
+    const x86::reg32 most = late ? s.aheadLateMost : s.aheadMost;
+    if (missing > 0 && !stalled && s.ahead < most)
     {
-        const x86::reg32 wanted = (s.ahead + x86::reg32(missing) / s.frameBytes + 0xf) & ~0xfu;
-        s.ahead = wanted < s.aheadMost ? wanted : s.aheadMost;
-        SDL_Log("[SND] the device ran dry by %d frames: %u frames ahead (%u ms) from now",
-                missing / int(s.frameBytes), s.ahead, s.ahead * 1000 / s.rate);
+        x86::reg32 wanted = s.ahead + x86::reg32(missing) / s.frameBytes;
+        if (late)
+        {
+            const x86::reg32 pause = x86::reg32(gap * s.rate / SDL_NS_PER_SECOND);
+            if (pause > wanted)
+                wanted = pause;
+        }
+        wanted = (wanted + 0xf) & ~0xfu;
+        s.ahead = wanted < most ? wanted : most;
+        SDL_Log("[SND] the device ran dry by %d frames%s: %u frames ahead (%u ms) from now",
+                missing / int(s.frameBytes), late ? " after a pause" : "", s.ahead, s.ahead * 1000 / s.rate);
     }
 
     const int queuedBytes = SDL_GetAudioStreamQueued(stream);
@@ -400,8 +357,6 @@ bool serveNative(win32::WinApplication* app, x86::CPU& cpu)
     const x86::reg32 buffer = s.mixMap->getBlockStart();
     std::memset(&app->getMemory<x86::reg8>(buffer), 0, frames * s.frameBytes);
     mix(app, cpu, s, buffer, frames);
-    if (soundTracing())
-        traceMixer(app);
 
     std::lock_guard<std::mutex> guard(s.lock);
     if (s.started && s.stream == stream)

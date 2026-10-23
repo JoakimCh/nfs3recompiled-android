@@ -56,6 +56,16 @@
   nfs3hp::dialogEmblem has that one draw narrowed towards its left edge by the
   4:3 factor: a round emblem on the box as the game stretches it, which is what
   the Modern Patch shows.
+- Wide Screen in the Graphics menu ([0x6fbc4c]): bars above and below the view.
+  sub_4be5e0 makes the view half as high as it is wide and centres it, which
+  on a 4:3 screen leaves bars (drawn by sub_4be8e0); on a screen wider than
+  2:1 the view came out taller than the screen, so no bars and a squeezed
+  picture.  nfs3hp::letterboxHeight keeps 2:1 below that shape and makes the
+  view 2.76:1 above it (0x4be626).  The bars crop the picture: the game
+  projects through a second rectangle, the whole screen's height (sub_4beb00,
+  0x7cdb88), and draws into the bars' (sub_4beb40, 0x7cdb98), so
+  nfs3hp::widescreenHalfAngle takes the horizontal angle from the screen's
+  height there, as the projection does.
 - HUD.  sub_480910 turns an element's layout, a fraction of the screen, into
   the pixel rectangle the HUD is drawn in.  After it stores the last edge
   (0x4809eb), nfs3hp::widescreenHudRect gives the elements drawn as pictures
@@ -99,6 +109,14 @@ SITES = [
      "    cpu.esi = widescreenHalfAngle(app, cpu.esi, cpu.eax);"
      " /* port: the horizontal angle the view's own shape asks for */",
      "x86::reg32 widescreenHalfAngle(win32::WinApplication* app, x86::reg32 half, x86::reg32 vertical);\n"),
+    # Wide Screen's view: 2:1 on a screen narrower than that, as the game has
+    # it, and 2.76:1 on a wider one, where 2:1 was taller than the screen.
+    ("nfs3hp.26.cpp", "004be626  c1f804",
+     "    cpu.eax = x86::reg32(x86::sreg32(cpu.eax) >> (4 /*0x4*/ % 32));",
+     "    cpu.eax = x86::reg32(x86::sreg32(cpu.eax) >> (4 /*0x4*/ % 32));\n"
+     "    cpu.eax = letterboxHeight(app->getMemory<x86::reg32>(cpu.ebp + x86::reg32(-32)),"
+     " app->getMemory<x86::reg32>(cpu.ebp + x86::reg32(-28)), cpu.eax); /* port: bars on any screen */",
+     "x86::reg32 letterboxHeight(x86::reg32 width, x86::reg32 height, x86::reg32 half);\n"),
     ("nfs3hp.31.cpp", "004dbe8f  d905ac005600",
      "x86::Float(app->getMemory<float>(x86::reg32(5636268) /* 0x5600ac */))",
      "x86::Float(zoomHalfWidth(app)) /* port: a racing zoom camera's x scale is its y scale on a wide view */",
@@ -117,6 +135,13 @@ SITES = [
 ]
 
 NAMESPACE = "namespace nfs3hp\n{\n"
+
+# Sites in functions that are native now, the change made in the native
+# (src/nfs3hp/native_graphics.cpp): the Screen Size list (sub_4bed90,
+# graphics::listScreenModes) and the saved size found again (sub_4bee80,
+# graphics::findScreenMode).  tools/game_checks/generate.py still makes them
+# to the game's code the natives are held against.
+NATIVE_SITES = {0x4bedf8, 0x4beee6, 0x4bef35}
 
 # What an earlier version of this tool put after the stored vertical angle.  A
 # tree patched by it goes back to the generated code first, so that one site
@@ -152,6 +177,8 @@ def apply(root):
             old, new = native(old), native(new)
             anchor = "    // " + instruction
             start = text.find(anchor)
+            if start < 0 and int(instruction[:8], 16) in NATIVE_SITES:
+                continue  # its function is native and carries the change itself
             if start < 0:
                 raise RuntimeError("%s: no instruction %s" % (name, instruction))
             # Everything this one instruction generated: from its own address

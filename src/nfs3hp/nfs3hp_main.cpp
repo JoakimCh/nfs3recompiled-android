@@ -100,7 +100,8 @@ x86::reg16 raceControl(x86::reg16 word)
 
 /* Whether the player is driving.  A race is one call of the game's own -- set
  * up by sub_4a3400, taken down again by sub_4a35d0, each called from one place
- * only -- and tools/apply_race_state.py marks both, so this follows it exactly
+ * only -- and both are marked (tools/apply_race_state.py the first, the
+ * native graphics::takeDownRace the second), so this follows it exactly
  * rather than guessing from the screen or from what the car is doing. */
 static bool s_raceRunning = false;
 /* The race's loading screen is up: the race is running, but nobody drives it
@@ -178,8 +179,8 @@ x86::reg32 shownDepth(x86::reg32 depth)
 
 /* View Distance at Full: the player's choice in the Graphics menu, [0x6fbc28],
  * Full to Close as 0 to 3.  At Full the game already draws the track at full
- * detail out to its far distance; tools/apply_track_detail.py has the two below
- * take that distance to 500 wherever the game held it shorter. */
+ * detail out to its far distance; tools/apply_track_detail.py has the ones below
+ * take that distance to 500 wherever the game held it shorter, and past it. */
 static bool viewDistanceFull(win32::WinApplication* app)
 {
     return app->getMemory<x86::reg32>(0x6fbc28) == 0;
@@ -194,11 +195,26 @@ x86::reg32 viewDistanceReduced(win32::WinApplication* app, x86::reg32 reduced)
     return viewDistanceFull(app) ? 0u : reduced;
 }
 
+/* How far View Distance Full reaches, in 16.16: past the game's 500 (and the
+ * Modern Patch's), because a wide screen shows more of the track at its sides,
+ * where the blocks coming into view were out of a 4:3 picture.  The track's
+ * own lists of the blocks seen from each still bound it (2026-10-22: 600 on
+ * trial, better; 800 no better than 600 until the track lists grew
+ * (native_loading.cpp, extendNeighbours, which reaches as far); with them 700). */
+constexpr x86::reg32 kFullFarDistance = x86::reg32(700) << 16;
+
 /* The far distance of each split-screen view, in 16.16: the game's 440, or at
- * Full the 500 a single view has. */
+ * Full the reach a single view has. */
 x86::reg32 splitFarDistance(win32::WinApplication* app, x86::reg32 distance)
 {
-    return viewDistanceFull(app) ? x86::reg32(500) << 16 : distance;
+    return viewDistanceFull(app) ? kFullFarDistance : distance;
+}
+
+/* A view's 500 -- the main view's far distance, the cull distance of the main
+ * and split views -- in 16.16, or at Full kFullFarDistance. */
+x86::reg32 fullFarDistance(win32::WinApplication* app, x86::reg32 distance)
+{
+    return viewDistanceFull(app) ? kFullFarDistance : distance;
 }
 
 /* NFS_MIRROR_FULL, read once: unset or anything but "0" means the rear-view
@@ -361,6 +377,30 @@ bool dynamicFullscreenRefresh(win32::WinApplication* app)
     return true;
 }
 
+/* View Angle ([0x6fbc40]) in the Graphics menu: Normal, 0 -- the game's Wide,
+ * 90 degrees -- Narrow, 1, 75, and Wide, 2, 105, the Modern Patch's widest
+ * (tools/apply_view_angle.py). */
+constexpr x86::reg32 kViewAngle = 0x6fbc40;
+constexpr x86::reg32 kViewAngleList = 0x55675c;   // the settings record's (0x556758) list of its choices
+constexpr x86::reg16 kNormalText = 0xaf, kNarrowText = 0x113, kWideText = 0x112;
+
+x86::reg32 viewAngleFor(win32::WinApplication* app, x86::reg32 angle)
+{
+    return app->getMemory<x86::reg32>(kViewAngle) == 2 ? 105u : angle;
+}
+
+/* The menu's three choices, a list of text lines ending at a zero, in a guest
+ * block of the port's own (the game's list has no room for a third). */
+void viewAngleStart(win32::WinApplication* app)
+{
+    static win32::MemMap* const block = new win32::MemMap(win32::MemMap::granularity());
+    const x86::reg32 list = block->getBlockStart();
+    const x86::reg16 lines[] = {kNormalText, kNarrowText, kWideText, 0};
+    for (x86::reg32 i = 0; i < 4; ++i)
+        app->getMemory<x86::reg16>(list + i * 2) = lines[i];
+    app->getMemory<x86::reg32>(kViewAngleList) = list;
+}
+
 /* Dynamic Fullscreen put in the driver's table at start (main), measured
  * against the display. */
 void dynamicFullscreenStart(win32::WinApplication* app)
@@ -408,6 +448,15 @@ bool widescreenMode(x86::reg32 width, x86::reg32 height)
     return width * 9 == height * 16 || (s_dynamicWidth != 0 && width == s_dynamicWidth && height == s_dynamicHeight);
 }
 
+/* Wide Screen in the Graphics menu ([0x6fbc4c]) has a race of one screen drawn
+ * between bars: a view less high than the screen ([0x7cdba4] against
+ * [0x7cdae4]). */
+static bool letterboxed(win32::WinApplication* app)
+{
+    return raceIsRunning() && app->getMemory<x86::reg32>(0x6fbc4c) != 0 && app->getMemory<x86::reg32>(0x6fd3b0) != 1
+           && x86::sreg32(app->getMemory<x86::reg32>(0x7cdba4)) < x86::sreg32(app->getMemory<x86::reg32>(0x7cdae4));
+}
+
 /* A camera's horizontal half field of view, in whole degrees, for the view it
  * draws into (tools/apply_widescreen.py, in sub_4dbce0).
  *
@@ -438,7 +487,10 @@ x86::reg32 widescreenHalfAngle(win32::WinApplication* app, x86::reg32 half, x86:
      * even one quit on its loading screen.  There the screen is the view. */
     const x86::reg32 at = raceIsRunning() ? 0x7cdba0 : 0x7cdae0;
     const x86::sreg32 width = x86::sreg32(app->getMemory<x86::reg32>(at));
-    const x86::sreg32 height = x86::sreg32(app->getMemory<x86::reg32>(at + 4));
+    /* Behind Wide Screen's bars the game projects through the whole screen's
+     * height (sub_4beb00's rectangle) and draws only into the bars' (sub_4beb40's,
+     * [0x7cdb98]): the angle is the whole screen's. */
+    const x86::sreg32 height = x86::sreg32(app->getMemory<x86::reg32>(letterboxed(app) ? 0x7cdae4 : at + 4));
     const x86::sreg32 down = x86::sreg32(vertical);
     if (width <= 0 || height <= 0 || down <= 0 || down >= 90 || x86::sreg32(half) <= 0 || half >= 90)
         return half;
@@ -446,6 +498,19 @@ x86::reg32 widescreenHalfAngle(win32::WinApplication* app, x86::reg32 half, x86:
                           * 180.0 / SDL_PI_D;
     const x86::sreg32 rounded = x86::sreg32(SDL_lround(across));
     return rounded > 0 && rounded < 90 ? x86::reg32(rounded) : half;
+}
+
+/* Wide Screen's view height (tools/apply_widescreen.py, in sub_4be5e0): the
+ * game's half of the width -- a 2:1 view -- on a screen narrower than 2:1, where
+ * that leaves bars above and below; on a wider one, where 2:1 was taller than
+ * the screen, kLetterbox's -- 2.76:1, Ultra Panavision's. */
+constexpr double kLetterbox = 2.76;
+
+x86::reg32 letterboxHeight(x86::reg32 width, x86::reg32 height, x86::reg32 half)
+{
+    if (x86::sreg32(width) <= 0 || x86::sreg32(height) <= 0 || width < height * 2)
+        return half;
+    return x86::reg32(SDL_min(x86::sreg32(height), x86::sreg32(SDL_lround(double(width) / kLetterbox))));
 }
 
 /* The half width a zoomed camera's x scale is made of (tools/apply_widescreen.py,
@@ -2550,6 +2615,13 @@ int main(int argc, char* argv[])
         if (single && SDL_strcmp(single, "0") == 0)
             x86::FPU::s_singlePrecision = 4;
         SDL_Log("[FPU] single-precision rounding where the game asks for it: %s", x86::FPU::s_singlePrecision == 0 ? "on" : "off");
+#if !defined(WITH_PEDANTIC_FPU) && !defined(WITH_WIDE_FPU)
+        /* NFS_FPU_FLOAT=1: the whole game in single precision (FPU::s_floatEverywhere). */
+        const char* floatAll = SDL_getenv("NFS_FPU_FLOAT");
+        x86::FPU::s_floatEverywhere = floatAll && SDL_strcmp(floatAll, "1") == 0;
+        if (x86::FPU::s_floatEverywhere)
+            SDL_Log("[FPU] float everywhere: every x87 operation of the game rounded to 24 bits, the menus too");
+#endif
 #ifdef WITH_PEDANTIC_FPU
         SDL_Log("[FPU] x87 arithmetic: 80 bits, exact (src/lib/x87soft.cpp); races at %s precision",
                 nfs3hp::extendedRaces() ? "extended, as the Modern Patch" : "single, as the original");
@@ -2603,6 +2675,7 @@ int main(int argc, char* argv[])
          * leaves the table the same way the widescreen modes join it: by the
          * available flag. */
         app.getMemory<x86::reg32>(0xa92018 + 6 * 40 + 16) = 0;
+        nfs3hp::viewAngleStart(&app);
 
 #ifndef __ANDROID__
         // Headless driver metadata regression: exercise the real recompiled queries.

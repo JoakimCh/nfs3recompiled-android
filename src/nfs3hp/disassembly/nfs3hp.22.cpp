@@ -25014,7 +25014,7 @@ L_0x0049b9fb:
     cpu.edx = app->getMemory<x86::reg32>(cpu.ebp + x86::reg32(-16) /* -0x10 */);
     // 0049ba00  e82bbc0400             -call 0x4e7630
     cpu.esp -= 4;
-    sub_4e7630(app, cpu.sync());
+    nfs3hp::snd::runSystemTasks(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0049ba05  8d5e01                 -lea ebx, [esi + 1]
@@ -25163,7 +25163,7 @@ L_0x0049ba43:
     app->getMemory<x86::reg32>(cpu.ebp + x86::reg32(-20) /* -0x14 */) = cpu.ebx;
     // 0049ba74  e8b7bb0400             -call 0x4e7630
     cpu.esp -= 4;
-    sub_4e7630(app, cpu.sync());
+    nfs3hp::snd::runSystemTasks(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0049ba79  8b5df8                 -mov ebx, dword ptr [ebp - 8]
@@ -26318,7 +26318,7 @@ void Application::sub_49be40(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.eax = 1 /*0x1*/;
     // 0049be61  e89a5af9ff             -call 0x431900
     cpu.esp -= 4;
-    sub_431900(app, cpu.sync());
+    nfs3hp::graphics::setRenderState(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0049be66  89c8                   -mov eax, ecx
@@ -26608,101 +26608,7 @@ void Application::sub_49bf40(WinApplication* __restrict app, x86::CPU& cpu_)
     return;
 }
 
-/* align: skip 0x8d 0x80 0x00 0x00 0x00 0x00 0x90 */
-void Application::sub_49bf60(WinApplication* __restrict app, x86::CPU& cpu_)
-{
-  x86::Local cpu(cpu_);
-  NFS2_USE(cpu);
-  NFS2_USE(app);
-    // 0049bf60  53                     -push ebx
-    app->getMemory<x86::reg32>(cpu.esp-4) = cpu.ebx;
-    cpu.esp -= 4;
-    // 0049bf61  51                     -push ecx
-    app->getMemory<x86::reg32>(cpu.esp-4) = cpu.ecx;
-    cpu.esp -= 4;
-    // 0049bf62  52                     -push edx
-    app->getMemory<x86::reg32>(cpu.esp-4) = cpu.edx;
-    cpu.esp -= 4;
-    // 0049bf63  55                     -push ebp
-    app->getMemory<x86::reg32>(cpu.esp-4) = cpu.ebp;
-    cpu.esp -= 4;
-    // 0049bf64  89e5                   -mov ebp, esp
-    cpu.ebp = cpu.esp;
-    // 0049bf66  89c3                   -mov ebx, eax
-    cpu.ebx = cpu.eax;
-    // 0049bf68  833800                 +cmp dword ptr [eax], 0
-    {
-        x86::reg32 tmp1 = app->getMemory<x86::reg32>(cpu.eax);
-        x86::reg32 tmp2 = x86::reg32(x86::sreg32(0 /*0x0*/));
-        x86::reg32 result = tmp1 - tmp2;
-        cpu.flags.cf = tmp1 < tmp2;
-        cpu.flags.of = 1 & (tmp1 >> 31);
-        cpu.flags.of ^= 1 & (result >> 31);
-        cpu.flags.of &= (1 & (tmp1 >> 31)) != (1 & (tmp2 >> 31));
-        cpu.set_szp(result);
-    }
-    // 0049bf6b  742f                   -je 0x49bf9c
-    if (cpu.flags.zf)
-    {
-        goto L_0x0049bf9c;
-    }
-    // 0049bf6d  b801000000             -mov eax, 1
-    cpu.eax = 1 /*0x1*/;
-    // 0049bf72  31d2                   -xor edx, edx
-    cpu.edx ^= x86::reg32(x86::sreg32(cpu.edx));
-    // 0049bf74  e88759f9ff             -call 0x431900
-    cpu.esp -= 4;
-    sub_431900(app, cpu.sync());
-    cpu.reload();
-    if (cpu.terminate) return;
-    // 0049bf79  8d8304800000           -lea eax, [ebx + 0x8004]
-    cpu.eax = x86::reg32(cpu.ebx + x86::reg32(32772) /* 0x8004 */);
-    // 0049bf7f  50                     -push eax
-    app->getMemory<x86::reg32>(cpu.esp-4) = cpu.eax;
-    cpu.esp -= 4;
-    // 0049bf80  8d4304                 -lea eax, [ebx + 4]
-    cpu.eax = x86::reg32(cpu.ebx + x86::reg32(4) /* 0x4 */);
-    // 0049bf83  50                     -push eax
-    app->getMemory<x86::reg32>(cpu.esp-4) = cpu.eax;
-    cpu.esp -= 4;
-    // 0049bf84  8b03                   -mov eax, dword ptr [ebx]
-    cpu.eax = app->getMemory<x86::reg32>(cpu.ebx);
-    // 0049bf86  89c2                   -mov edx, eax
-    cpu.edx = cpu.eax;
-    // 0049bf88  c1fa1f                 -sar edx, 0x1f
-    cpu.edx = x86::reg32(x86::sreg32(cpu.edx) >> (31 /*0x1f*/ % 32));
-    // 0049bf8b  2bc2                   -sub eax, edx
-    (cpu.eax) -= x86::reg32(x86::sreg32(cpu.edx));
-    // 0049bf8d  d1f8                   -sar eax, 1
-    cpu.eax = x86::reg32(x86::sreg32(cpu.eax) >> (1 /*0x1*/ % 32));
-    // 0049bf8f  50                     -push eax
-    app->getMemory<x86::reg32>(cpu.esp-4) = cpu.eax;
-    cpu.esp -= 4;
-    // 0049bf90  ff150cf99e00           -call dword ptr [0x9ef90c]
-    cpu.ip = app->getMemory<x86::reg32>(x86::reg32(10418444) /* 0x9ef90c */);
-    cpu.esp -= 4;
-    app->dynamic_call(cpu.ip, cpu.sync());
-    cpu.reload();
-    if (cpu.terminate) return;
-    // 0049bf96  c70300000000           -mov dword ptr [ebx], 0
-    app->getMemory<x86::reg32>(cpu.ebx) = 0 /*0x0*/;
-L_0x0049bf9c:
-    // 0049bf9c  5d                     -pop ebp
-    cpu.ebp = app->getMemory<x86::reg32>(cpu.esp);
-    cpu.esp += 4;
-    // 0049bf9d  5a                     -pop edx
-    cpu.edx = app->getMemory<x86::reg32>(cpu.esp);
-    cpu.esp += 4;
-    // 0049bf9e  59                     -pop ecx
-    cpu.ecx = app->getMemory<x86::reg32>(cpu.esp);
-    cpu.esp += 4;
-    // 0049bf9f  5b                     -pop ebx
-    cpu.ebx = app->getMemory<x86::reg32>(cpu.esp);
-    cpu.esp += 4;
-    // 0049bfa0  c3                     -ret 
-    cpu.esp += 4;
-    return;
-}
+/* sub_49bf60: native, nfs3hp::graphics::flushLineMesh */
 
 /* align: skip 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 */
 void Application::sub_49bfb0(WinApplication* app, x86::CPU& cpu)

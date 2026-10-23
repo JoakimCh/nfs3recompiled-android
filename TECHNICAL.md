@@ -356,7 +356,10 @@ go through it:
   and the game's own fill at its three entries, which its code clears and
   fills memory with in hundreds of places.
   `tools/game_checks/run.sh` compares each with the game's code for it, made
-  afresh from nfs3.exe, on random states, to the byte.
+  afresh from nfs3.exe, on random states, to the byte; on Windows,
+  `tools/game_checks/windows/run.py [cases] [name]` does the same, built with
+  the NDK's clang-cl and Visual Studio Build Tools (its double-precision build
+  only).
 - The C runtime the game was linked with, Watcom's, goes native family by
   family (`src/nfs3hp/native_watcom.cpp`, in `nfs3hp::watcom`, bound as the
   game's own are, `WATCOM_NATIVES`). `src/nfs3hp/watcom.md` maps all of it in
@@ -397,7 +400,7 @@ go through it:
   translate.
 - The game's controls are native whole, in `nfs3hp::controls`, bound as the
   game's own are (`CONTROLS_INPUT_NATIVES`, `CONTROLS_DEVICES_NATIVES`,
-  `CONTROLS_RACE_NATIVES`, `CONTROLS_PIPELINE_NATIVES`): its side of DirectInput -- DirectInput started and
+  `CONTROLS_RACE_NATIVES`, `CONTROLS_PIPELINE_NATIVES`, `CONTROLS_QUEUE_NATIVES`): its side of DirectInput -- DirectInput started and
   stopped, the mouse opened and read, the joysticks found, described, read and
   acquired, their dead zones and saturation, force feedback's gain, actuators
   and its 30 effects created, changed, started and stopped
@@ -412,7 +415,13 @@ go through it:
   race starts, the joysticks read, each control held or how far, and each
   player's four bytes made of them (steering, throttle, brake and a bit for
   each of 8 more actions, at 0x79c338 and 0x79c33c) and handed to the race's
-  queue of inputs that feeds the cars (`native_controls_pipeline.cpp`). Each is
+  queue of inputs that feeds the cars (`native_controls_pipeline.cpp`); and
+  that queue -- 128 frames of each player's four bytes, filled a few frames
+  ahead and taken a frame at a time, the network race's sent and received
+  through it, the frames a player missed repeated -- with each car's bytes
+  taken from it (0x79c4a8, its one-shot buttons seen once a press), and the
+  keys' and actions' edges the race's screens ask about
+  (`native_controls_queue.cpp`). Each is
   written as its code is, and `tools/game_checks` holds them against their
   generated code, with DirectInput's objects, methods and results stood in.
   There is no DirectInput under them: each call the game made of it --
@@ -423,12 +432,46 @@ go through it:
   objects only handles the game keeps where it kept them; `tools/game_checks`
   answers it as the game's code did, through the objects' tables
   (`controls_host.cpp`).
-- The game's sound mixer (`src/nfs3hp/native_mixer.cpp`): all of a sample's
-  way through EA's SND library -- PCM and XA ADPCM decoding, pitch, volume and
-  pan, the race's reverb, the 16 channels added up -- done as the x86 does it,
-  to the bit. Starting and stopping sounds and reading streams stay the
-  game's. `NFS_SND_MIX=0` goes back to the generated mixer; `NFS_SND_CHECK=1`
-  mixes every block both ways and compares them.
+- Functions decompiled one at a time, wherever they are in the game
+  (`src/nfs3hp/native_decompiled.cpp`): each address of
+  `src/nfs3hp/decompiled.json` is bound to the function of its name there
+  (`DECOMPILED_NATIVES`). They use nothing but registers, the stack and
+  globals at fixed addresses, and `tools/game_checks` holds each against its
+  generated code on random registers and stack and made-up values in every
+  global the list names for it. So far: the menus' help line reset, the
+  race's volumes handed between the settings and the race, the depth offsets
+  for the driver, the sun's lighting of the cars reset, and the handling
+  tunings reset.
+- The game's graphics that drive the THRASH driver
+  (`src/nfs3hp/native_graphics.cpp`, bound the same way, `graphics` in
+  `decompiled.json`): every function the port's driver, voodoo2a, reaches that
+  calls the driver -- the render states, the frame, the window, the screen
+  modes and the Screen Size list, the textures and the shapes' conversion to
+  them, the menus' art, the polygon lists' drawers, the HUD's message box and
+  editor frame, the cabin's instruments, the loading screen and bar, the
+  screen capture, the game's main. Each is written as its code is, port
+  changes included (the widescreen list, the race's x87 word through
+  `raceControl`), and `tools/game_checks` holds it against the game's code
+  with the patch made to it (`graphics_world.inc` makes up the records,
+  modes and formats they read). What only the software renderers or Direct3D
+  reach and nothing else calls is a stub that stops the game
+  (`native_graphics_dead.inc`).
+- The game's sound, native whole but for the game's clock (`sub_48ed30`):
+  EA's SND library -- the mixer (`src/nfs3hp/native_mixer.cpp`), the
+  channels' set-ups, volumes, resamplers and decoders (PCM, XA ADPCM mono and
+  stereo, once, looped, with an intro, streamed from memory or a packet
+  player, and EA's frame-coded speech with its x87 synthesis filter;
+  `native_snd_mixsetup.cpp`, `native_snd_mixfuncs.cpp`, `native_mmx.cpp`), the
+  sample converter, streams and the reverb -- and the game's own use of it,
+  every function the game reaches: music, effects, engines, sirens, cops,
+  the announcer, the co-driver and the radio, the track's description, 3D
+  positions and each race's sound set-up (`native_snd_*.cpp`). Each is the
+  x86 code instruction for instruction, every register and the x87 as it
+  leaves them, and `tools/game_checks` holds every one of them against the
+  generated code. The port's CPU has MMX, so the mixer only ever takes the
+  MMX set; the plain set and what only it reaches are stubs that stop the
+  game with their address (`native_snd_dead.inc`), as is anything that
+  nothing still generated, no game data and no native calls.
 - The loading of the game's data (`src/nfs3hp/native_loading.cpp`, hooked by
   `tools/apply_native_loading.py`): EA's RefPack decoder behind every `.qfs`,
   the alpha scan each FSH texture gets in each of its pixel formats, an FCE
@@ -455,6 +498,27 @@ on — memory, registers, flags, the FPU and the triangles drawn
 (`NFS_NATIVE_CHECK`) — and keeps the x87's single-precision rounding. In a race
 this is about three quarters of the game thread's time. `NFS_NATIVES=0` goes
 back to the generated code, `NFS_THRASH_GL=0` to the old renderer.
+
+### The port's own C++
+
+The natives above keep the x86's registers and the game's flat memory. The
+port is being rewritten past that, module by module, as C++ of its own in
+`nfs3hp::port` (`src/nfs3hp/port.h`): functions with arguments and results,
+the game's records as structs, its variables by name. While code that is still
+the game's shares the game's memory, a rewritten function keeps its data where
+the game has it (`Var`, `Table`, read and written whole), calls what is not
+rewritten yet as Watcom's convention has it (`callGame`), and is entered
+through an adapter that gives the game's callers what that convention
+promises: the result in eax, every other register as it was. The callers of
+the sound module were checked for it -- none reads more. `tools/game_checks`
+holds each `port::` function against the game's code to that: its result,
+the memory it writes and every call it makes, with the registers each callee
+reads on entry (`tools/game_checks/entry_regs.py`). The first is the game's
+sound effects (`port_sound_effects.cpp`).
+
+A test showed the whole game playing normally in single precision
+(`NFS_FPU_FLOAT=1`), the menus too: the port's own C++ can use the host's
+floats.
 
 ### Decompiled menus
 
@@ -665,6 +729,7 @@ from the phone; the rest matter for a desktop run.
 | `NFS_THRASH_GL` | on | `0` draws through the old renderer, the Voodoo2 emulated over a texture atlas with its filtering done in the shader, instead of `ThrashRenderer`, which gives each of the game's textures an OpenGL texture of its own and lets the GPU filter, wrap and clamp it. |
 | *(release)* | | A release build writes nothing to the log and takes none of these flags: the native code is built with `NFS_RELEASE` (log priority critical, SDL's direct Android logging compiled out through `android/app/jni/sdl_quiet.h`), the Java side logs through `AppLog`/`SDLLog` only when `BuildConfig.DEBUG`. Use the debug build (`-Pandroid10`) for diagnostics. |
 | `NFS_FPU_EXTENDED` | on | Races at the x87's extended precision, as the Modern Patch runs them; `0` races in single precision, as the original (see The x87's precision). Every player of a network race needs the same. A debug build takes it from a launch: `adb shell am start -n dev.nfs3hp.port/.SplashActivity --ez fpu_single_races true`. |
+| `NFS_FPU_FLOAT` | off | `1` rounds every x87 operation of the whole game to a float's 24 bits, the menus too, and races in single precision (`NFS_FPU_EXTENDED=0`): the game as it would run on the host's float. An experiment. A debug build takes it from a launch: `--ez fpu_float true`. |
 | `NFS_NATIVE_AI` | on | `0` runs the generated sub_4064f0 and sub_4070c0 instead of their decompiled C++ (`src/nfs3hp/native_ai.h`). A debug build takes it from a launch: `--ez native_ai_off true`. |
 | `NFS_NET_PORT` | `9803` | TCP port of network races, as the Modern Patch has it; the launcher's Network screen offers the original's `1030`. |
 | `NFS_NET_TRACE` | off | `1` (extra `net_trace`) writes a network race into the log: EA's comm library events and packet sends (`[COMM]`), up to 400 datagrams per socket instead of 16 (`[NET]`), and each new indirect call target once per thread after the IPX transport opens (`[CALL]`). For finding where two machines stop on the way into a race. |
@@ -672,7 +737,6 @@ from the phone; the rest matter for a desktop run.
 | `NFS_FE_NATIVE_OFF` | unset | A list of generated functions, `sub_437e00,sub_438260`, left to the generated code while the other decompiled ones run. |
 | `NFS_NATIVE_CHECK` | off | `1` runs each native stand-in against the generated code and logs any difference (`[NATIVE]`). The polygon and car loops are compared over all of guest memory once a second. Slow, and draws some triangles twice. `clip` checks only the stand-ins of the clipping (both ways to the screen, the car's quad mesh included), the track, the effects, the car lights and detail, the objects and the vector math, every call; the small helpers called from hundreds of places are checked on every 64th call. |
 | `NFS_AUDIO_RATE` | unset | The output's own sample rate. The game mixes at 22050 Hz and SDL converts to this; a device opened at any other rate is resampled by Android, off its low-latency path. Unset, the device opens at SDL's default. |
-| `NFS_SND_MIX` | on | `0` leaves the game's sound mixer (`sub_500864` and everything under it) to its generated code instead of `src/nfs3hp/native_mixer.cpp`. `NFS_SND_CHECK=1` (debug) mixes each block natively and with the generated code and logs any byte that differs (`[SNDCHK]`); a block that calls the game, to refill a stream or end a sound, is left to the generated code. |
 | `NFS_TOUCH_STEER_LEFT` etc. | unset | Keys the touch overlay sends for steering and the pedals, so that endpoint can report them as axes. |
 | `NFS_GAMEPAD1_SOUTH` etc. | built-in defaults | What a pad button sends, as `NFS_GAMEPAD<n>_<BUTTON>`: an SDL key name (`Space`, `Return`), `axis:steer_left`, `axis:steer_right`, `axis:accelerate`, `axis:brake`, or empty for nothing. `_UI` after it is the same button in the menus. `LEFT_TRIGGER` and `RIGHT_TRIGGER` are the triggers read as buttons, empty by default; the launcher gives them the pedals' keys for a pad set to Digital. |
 
