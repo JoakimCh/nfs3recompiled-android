@@ -150,49 +150,7 @@ namespace nfs3hp
 
 /* sub_522130: native, nfs3hp::snd::dead_0x522130 */
 
-/* align: skip 0x8d 0x44 0x20 0x00 */
-void Application::sub_5221f0(WinApplication* __restrict app, x86::CPU& cpu_)
-{
-  x86::Local cpu(cpu_);
-  NFS2_USE(cpu);
-  NFS2_USE(app);
-    // 005221f0  51                     -push ecx
-    app->getMemory<x86::reg32>(cpu.esp-4) = cpu.ecx;
-    cpu.esp -= 4;
-    // 005221f1  52                     -push edx
-    app->getMemory<x86::reg32>(cpu.esp-4) = cpu.edx;
-    cpu.esp -= 4;
-    // 005221f2  83ec20                 -sub esp, 0x20
-    (cpu.esp) -= x86::reg32(x86::sreg32(32 /*0x20*/));
-    // 005221f5  89e0                   -mov eax, esp
-    cpu.eax = cpu.esp;
-    // 005221f7  ba20000000             -mov edx, 0x20
-    cpu.edx = 32 /*0x20*/;
-    // 005221fc  50                     -push eax
-    app->getMemory<x86::reg32>(cpu.esp-4) = cpu.eax;
-    cpu.esp -= 4;
-    // 005221fd  89542404               -mov dword ptr [esp + 4], edx
-    app->getMemory<x86::reg32>(cpu.esp + x86::reg32(4) /* 0x4 */) = cpu.edx;
-    // 00522201  2eff1580455300         -call dword ptr cs:[0x534580]
-    cpu.ip = app->getMemory<x86::reg32>(cpu.ecs + x86::reg32(5457280) /* 0x534580 */);
-    cpu.esp -= 4;
-    app->dynamic_call(cpu.ip, cpu.sync());
-    cpu.reload();
-    if (cpu.terminate) return;
-    // 00522208  8b442408               -mov eax, dword ptr [esp + 8]
-    cpu.eax = app->getMemory<x86::reg32>(cpu.esp + x86::reg32(8) /* 0x8 */);
-    // 0052220c  83c420                 -add esp, 0x20
-    (cpu.esp) += x86::reg32(x86::sreg32(32 /*0x20*/));
-    // 0052220f  5a                     -pop edx
-    cpu.edx = app->getMemory<x86::reg32>(cpu.esp);
-    cpu.esp += 4;
-    // 00522210  59                     -pop ecx
-    cpu.ecx = app->getMemory<x86::reg32>(cpu.esp);
-    cpu.esp += 4;
-    // 00522211  c3                     -ret 
-    cpu.esp += 4;
-    return;
-}
+/* sub_5221f0: native, nfs3hp::ea::physicalMemory */
 
 /* sub_522220: native, nfs3hp::snd::dead_0x522220 */
 

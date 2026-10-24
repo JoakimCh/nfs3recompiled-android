@@ -2084,7 +2084,7 @@ L_0x0044acf9:
     cpu.eax = app->getMemory<x86::reg32>(x86::reg32(5607980) /* 0x55922c */);
     // 0044ad17  e8746b0900             -call 0x4e1890
     cpu.esp -= 4;
-    sub_4e1890(app, cpu.sync());
+    nfs3hp::ea::purgememadr(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
 L_0x0044ad1c:
@@ -4931,7 +4931,7 @@ L_0x0044b683:
     cpu.ecx ^= x86::reg32(x86::sreg32(cpu.ecx));
     // 0044b691  e8fa610900             -call 0x4e1890
     cpu.esp -= 4;
-    sub_4e1890(app, cpu.sync());
+    nfs3hp::ea::purgememadr(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0044b696  890d2c925500           -mov dword ptr [0x55922c], ecx
@@ -5504,7 +5504,7 @@ L_0x0044b90b:
     cpu.eax = cpu.ecx;
     // 0044b91c  e86f5f0900             -call 0x4e1890
     cpu.esp -= 4;
-    sub_4e1890(app, cpu.sync());
+    nfs3hp::ea::purgememadr(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0044b921  891d28925500           -mov dword ptr [0x559228], ebx
@@ -12856,7 +12856,7 @@ void Application::sub_44d190(WinApplication* __restrict app, x86::CPU& cpu_)
     if (cpu.terminate) return;
     // 0044d1c1  e82ad30900             -call 0x4ea4f0
     cpu.esp -= 4;
-    sub_4ea4f0(app, cpu.sync());
+    nfs3hp::ea::memmove(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0044d1c6  ba4c935300             -mov edx, 0x53934c
@@ -13034,7 +13034,7 @@ L_0x0044d24e:
     cpu.eax = 6241488 /*0x5f3cd0*/;
     // 0044d255  e896d20900             -call 0x4ea4f0
     cpu.esp -= 4;
-    sub_4ea4f0(app, cpu.sync());
+    nfs3hp::ea::memmove(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0044d25a  eb05                   -jmp 0x44d261
@@ -22058,7 +22058,7 @@ L_0x0044f18a:
     cpu.eax = 5608336 /*0x559390*/;
     // 0044f199  e852b30900             -call 0x4ea4f0
     cpu.esp -= 4;
-    sub_4ea4f0(app, cpu.sync());
+    nfs3hp::ea::memmove(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0044f19e  c7056c93550003000000   -mov dword ptr [0x55936c], 3
@@ -22097,7 +22097,7 @@ L_0x0044f1ad:
     cpu.esi = 2 /*0x2*/;
     // 0044f1d5  e816b30900             -call 0x4ea4f0
     cpu.esp -= 4;
-    sub_4ea4f0(app, cpu.sync());
+    nfs3hp::ea::memmove(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0044f1da  89356c935500           -mov dword ptr [0x55936c], esi
@@ -22113,7 +22113,7 @@ L_0x0044f1e2:
     cpu.eax = 5608400 /*0x5593d0*/;
     // 0044f1f1  e8fab20900             -call 0x4ea4f0
     cpu.esp -= 4;
-    sub_4ea4f0(app, cpu.sync());
+    nfs3hp::ea::memmove(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0044f1f6  b801000000             -mov eax, 1
@@ -22151,7 +22151,7 @@ L_0x0044f222:
     cpu.eax = 5608368 /*0x5593b0*/;
     // 0044f231  e8bab20900             -call 0x4ea4f0
     cpu.esp -= 4;
-    sub_4ea4f0(app, cpu.sync());
+    nfs3hp::ea::memmove(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0044f236  c7056c93550002000000   -mov dword ptr [0x55936c], 2
@@ -22993,7 +22993,7 @@ void Application::sub_44f510(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.eax = x86::reg32(cpu.ebp + x86::reg32(-256) /* -0x100 */);
     // 0044f549  e812190900             -call 0x4e0e60
     cpu.esp -= 4;
-    sub_4e0e60(app, cpu.sync());
+    nfs3hp::ea::fileExists(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0044f54e  85c0                   +test eax, eax
@@ -23008,7 +23008,7 @@ void Application::sub_44f510(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.eax = x86::reg32(cpu.ebp + x86::reg32(-256) /* -0x100 */);
     // 0044f558  e863190900             -call 0x4e0ec0
     cpu.esp -= 4;
-    sub_4e0ec0(app, cpu.sync());
+    nfs3hp::ea::loadFile(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0044f55d  8b08                   -mov ecx, dword ptr [eax]
@@ -23035,7 +23035,7 @@ void Application::sub_44f510(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.ebx ^= x86::reg32(x86::sreg32(cpu.ebx));
     // 0044f56b  e820230900             -call 0x4e1890
     cpu.esp -= 4;
-    sub_4e1890(app, cpu.sync());
+    nfs3hp::ea::purgememadr(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0044f570  891d08945500           -mov dword ptr [0x559408], ebx
@@ -23065,7 +23065,7 @@ L_0x0044f576:
     cpu.ebx ^= x86::reg32(x86::sreg32(cpu.ebx));
     // 0044f58b  e890200900             -call 0x4e1620
     cpu.esp -= 4;
-    sub_4e1620(app, cpu.sync());
+    nfs3hp::ea::reservememadr(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0044f590  ba7c190400             -mov edx, 0x4197c
@@ -23218,7 +23218,7 @@ void Application::sub_44f5f0(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.eax = x86::reg32(cpu.ebp + x86::reg32(-256) /* -0x100 */);
     // 0044f624  e837180900             -call 0x4e0e60
     cpu.esp -= 4;
-    sub_4e0e60(app, cpu.sync());
+    nfs3hp::ea::fileExists(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0044f629  85c0                   +test eax, eax
@@ -23256,7 +23256,7 @@ L_0x0044f63d:
     cpu.ecx ^= x86::reg32(x86::sreg32(cpu.ecx));
     // 0044f65a  e831220900             -call 0x4e1890
     cpu.esp -= 4;
-    sub_4e1890(app, cpu.sync());
+    nfs3hp::ea::purgememadr(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0044f65f  890d08945500           -mov dword ptr [0x559408], ecx

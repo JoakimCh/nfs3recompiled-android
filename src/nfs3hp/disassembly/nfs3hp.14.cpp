@@ -16664,7 +16664,7 @@ L_0x00453133:
     cpu.eax = x86::reg32(cpu.ebp + x86::reg32(-256) /* -0x100 */);
     // 00453139  e822dd0800             -call 0x4e0e60
     cpu.esp -= 4;
-    sub_4e0e60(app, cpu.sync());
+    nfs3hp::ea::fileExists(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045313e  85c0                   +test eax, eax
@@ -16869,7 +16869,7 @@ L_0x004531db:
     cpu.eax = x86::reg32(cpu.ebp + x86::reg32(-256) /* -0x100 */);
     // 004531e1  e87adc0800             -call 0x4e0e60
     cpu.esp -= 4;
-    sub_4e0e60(app, cpu.sync());
+    nfs3hp::ea::fileExists(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004531e6  85c0                   +test eax, eax
@@ -17034,7 +17034,7 @@ L_0x00453264:
     cpu.eax = x86::reg32(cpu.ebp + x86::reg32(-256) /* -0x100 */);
     // 0045326a  e8f1db0800             -call 0x4e0e60
     cpu.esp -= 4;
-    sub_4e0e60(app, cpu.sync());
+    nfs3hp::ea::fileExists(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045326f  85c0                   +test eax, eax
@@ -17195,7 +17195,7 @@ L_0x004532f4:
     cpu.eax = x86::reg32(cpu.ebp + x86::reg32(-256) /* -0x100 */);
     // 004532fa  e861db0800             -call 0x4e0e60
     cpu.esp -= 4;
-    sub_4e0e60(app, cpu.sync());
+    nfs3hp::ea::fileExists(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004532ff  85c0                   +test eax, eax
@@ -17505,7 +17505,7 @@ L_0x00453429:
     cpu.eax = cpu.esi;
     // 0045342b  e860e40800             -call 0x4e1890
     cpu.esp -= 4;
-    sub_4e1890(app, cpu.sync());
+    nfs3hp::ea::purgememadr(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
 L_0x00453430:
@@ -18465,7 +18465,7 @@ L_0x0045379a:
     cpu.eax = cpu.esi;
     // 0045379c  e8efe00800             -call 0x4e1890
     cpu.esp -= 4;
-    sub_4e1890(app, cpu.sync());
+    nfs3hp::ea::purgememadr(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
 L_0x004537a1:
@@ -18897,7 +18897,7 @@ L_0x0045391e:
     cpu.eax = x86::reg32(cpu.ebp + x86::reg32(-268) /* -0x10c */);
     // 00453924  e837d50800             -call 0x4e0e60
     cpu.esp -= 4;
-    sub_4e0e60(app, cpu.sync());
+    nfs3hp::ea::fileExists(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00453929  85c0                   +test eax, eax
@@ -19870,7 +19870,7 @@ L_0x00453cc4:
     cpu.eax = x86::reg32(cpu.ebp + x86::reg32(-100) /* -0x64 */);
     // 00453cc7  e894d10800             -call 0x4e0e60
     cpu.esp -= 4;
-    sub_4e0e60(app, cpu.sync());
+    nfs3hp::ea::fileExists(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00453ccc  85c0                   +test eax, eax
@@ -20127,7 +20127,7 @@ L_0x00453d9a:
     cpu.eax = cpu.edi;
     // 00453dd1  e8bada0800             -call 0x4e1890
     cpu.esp -= 4;
-    sub_4e1890(app, cpu.sync());
+    nfs3hp::ea::purgememadr(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00453dd6  6834327a00             -push 0x7a3234
@@ -20181,7 +20181,7 @@ L_0x00453d9a:
     cpu.edx = 5478360 /*0x5397d8*/;
     // 00453e18  e873da0800             -call 0x4e1890
     cpu.esp -= 4;
-    sub_4e1890(app, cpu.sync());
+    nfs3hp::ea::purgememadr(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00453e1d  89f0                   -mov eax, esi
@@ -20308,7 +20308,7 @@ L_0x00453ea0:
     cpu.eax = cpu.edi;
     // 00453ea2  e8e9d90800             -call 0x4e1890
     cpu.esp -= 4;
-    sub_4e1890(app, cpu.sync());
+    nfs3hp::ea::purgememadr(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
 L_0x00453ea7:
@@ -21011,7 +21011,7 @@ L_0x004540e0:
     cpu.eax = x86::reg32(cpu.ebp + x86::reg32(-272) /* -0x110 */);
     // 004540e6  e875cd0800             -call 0x4e0e60
     cpu.esp -= 4;
-    sub_4e0e60(app, cpu.sync());
+    nfs3hp::ea::fileExists(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004540eb  85c0                   +test eax, eax
@@ -21317,7 +21317,7 @@ L_0x004541ef:
     cpu.eax = cpu.ecx;
     // 004541f1  e89ad60800             -call 0x4e1890
     cpu.esp -= 4;
-    sub_4e1890(app, cpu.sync());
+    nfs3hp::ea::purgememadr(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004541f6  31c0                   -xor eax, eax
@@ -21613,7 +21613,7 @@ L_0x004542d2:
     cpu.eax = cpu.esi;
     // 004542d4  e8b7d50800             -call 0x4e1890
     cpu.esp -= 4;
-    sub_4e1890(app, cpu.sync());
+    nfs3hp::ea::purgememadr(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
 L_0x004542d9:
@@ -21830,7 +21830,7 @@ L_0x004543b7:
     cpu.eax = cpu.edi;
     // 004543b9  e8d2d40800             -call 0x4e1890
     cpu.esp -= 4;
-    sub_4e1890(app, cpu.sync());
+    nfs3hp::ea::purgememadr(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
 L_0x004543be:

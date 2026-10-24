@@ -10688,7 +10688,7 @@ L_0x00436c62:
     cpu.eax = 5469328 /*0x537490*/;
     // 00436c71  e8aaa90a00             -call 0x4e1620
     cpu.esp -= 4;
-    sub_4e1620(app, cpu.sync());
+    nfs3hp::ea::reservememadr(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00436c76  bac8240000             -mov edx, 0x24c8
@@ -10710,7 +10710,7 @@ L_0x00436c62:
     cpu.eax = cpu.ecx;
     // 00436c94  e857380b00             -call 0x4ea4f0
     cpu.esp -= 4;
-    sub_4ea4f0(app, cpu.sync());
+    nfs3hp::ea::memmove(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00436c99  a1044f5500             -mov eax, dword ptr [0x554f04]
@@ -10727,7 +10727,7 @@ L_0x00436c62:
     cpu.eax = 5469328 /*0x537490*/;
     // 00436cb2  e869a90a00             -call 0x4e1620
     cpu.esp -= 4;
-    sub_4e1620(app, cpu.sync());
+    nfs3hp::ea::reservememadr(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00436cb7  baf8030000             -mov edx, 0x3f8
@@ -10811,7 +10811,7 @@ void Application::sub_436cf0(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.eax = cpu.ecx;
     // 00436d0b  e880ab0a00             -call 0x4e1890
     cpu.esp -= 4;
-    sub_4e1890(app, cpu.sync());
+    nfs3hp::ea::purgememadr(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
 L_0x00436d10:
@@ -10829,7 +10829,7 @@ L_0x00436d10:
     cpu.eax = cpu.ebx;
     // 00436d1c  e86fab0a00             -call 0x4e1890
     cpu.esp -= 4;
-    sub_4e1890(app, cpu.sync());
+    nfs3hp::ea::purgememadr(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
 L_0x00436d21:
@@ -12022,7 +12022,7 @@ L_0x004370bd:
     cpu.edx = app->getMemory<x86::reg32>(cpu.ebp + x86::reg32(-8) /* -0x8 */);
     // 004370e2  e809340b00             -call 0x4ea4f0
     cpu.esp -= 4;
-    sub_4ea4f0(app, cpu.sync());
+    nfs3hp::ea::memmove(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004370e7  39f1                   +cmp ecx, esi
@@ -12071,7 +12071,7 @@ L_0x004370bd:
     }
     // 0043710b  e8e0330b00             -call 0x4ea4f0
     cpu.esp -= 4;
-    sub_4ea4f0(app, cpu.sync());
+    nfs3hp::ea::memmove(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00437110  e97a000000             -jmp 0x43718f

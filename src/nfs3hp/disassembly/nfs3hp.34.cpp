@@ -447,7 +447,7 @@ L_0x004e5272:
     app->getMemory<x86::reg32>(x86::reg32(5579160) /* 0x552198 */) = cpu.edi;
     // 004e529c  e87fc3ffff             -call 0x4e1620
     cpu.esp -= 4;
-    sub_4e1620(app, cpu.sync());
+    nfs3hp::ea::reservememadr(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004e52a1  89c7                   -mov edi, eax
@@ -482,7 +482,7 @@ L_0x004e52ab:
     cpu.ebx = cpu.esi;
     // 004e52d7  e844c3ffff             -call 0x4e1620
     cpu.esp -= 4;
-    sub_4e1620(app, cpu.sync());
+    nfs3hp::ea::reservememadr(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004e52dc  bac0000000             -mov edx, 0xc0
@@ -506,7 +506,7 @@ L_0x004e52ab:
     cpu.eax = cpu.edi;
     // 004e52fd  e89ebe0100             -call 0x5011a0
     cpu.esp -= 4;
-    sub_5011a0(app, cpu.sync());
+    nfs3hp::ea::touchMemoryPages(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004e5302  bb00100000             -mov ebx, 0x1000
@@ -519,7 +519,7 @@ L_0x004e52ab:
     cpu.ecx = 192 /*0xc0*/;
     // 004e5313  e888be0100             -call 0x5011a0
     cpu.esp -= 4;
-    sub_5011a0(app, cpu.sync());
+    nfs3hp::ea::touchMemoryPages(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004e5318  8b1c24                 -mov ebx, dword ptr [esp]

@@ -523,7 +523,7 @@ L_0x0040be25:
     cpu.esp -= 4;
     // 0040be4f  e89c4d0100             -call 0x420bf0
     cpu.esp -= 4;
-    sub_420bf0(app, cpu.sync());
+    nfs3hp::trackdata::inTunnel(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0040be54  85c0                   +test eax, eax
@@ -9469,7 +9469,7 @@ L_0x0040e01c:
     cpu.eax = cpu.ecx;
     // 0040e025  e8362e0d00             -call 0x4e0e60
     cpu.esp -= 4;
-    sub_4e0e60(app, cpu.sync());
+    nfs3hp::ea::fileExists(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0040e02a  85c0                   +test eax, eax
@@ -9486,7 +9486,7 @@ L_0x0040e01c:
     cpu.eax = cpu.ecx;
     // 0040e035  e8862e0d00             -call 0x4e0ec0
     cpu.esp -= 4;
-    sub_4e0ec0(app, cpu.sync());
+    nfs3hp::ea::loadFile(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0040e03a  89c1                   -mov ecx, eax
@@ -12391,7 +12391,7 @@ void Application::sub_40ec40(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.ecx ^= x86::reg32(x86::sreg32(cpu.ecx));
     // 0040ec53  e8382c0d00             -call 0x4e1890
     cpu.esp -= 4;
-    sub_4e1890(app, cpu.sync());
+    nfs3hp::ea::purgememadr(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0040ec58  890d58255500           -mov dword ptr [0x552558], ecx
@@ -14604,7 +14604,7 @@ L_0x0040f2d2:
     cpu.eax = x86::reg32(cpu.ebp + x86::reg32(-256) /* -0x100 */);
     // 0040f2ec  e86f1b0d00             -call 0x4e0e60
     cpu.esp -= 4;
-    sub_4e0e60(app, cpu.sync());
+    nfs3hp::ea::fileExists(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0040f2f1  85c0                   +test eax, eax
@@ -14635,7 +14635,7 @@ L_0x0040f2d2:
     }
     // 0040f303  e8b81b0d00             -call 0x4e0ec0
     cpu.esp -= 4;
-    sub_4e0ec0(app, cpu.sync());
+    nfs3hp::ea::loadFile(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0040f308  51                     -push ecx
@@ -14743,7 +14743,7 @@ L_0x0040f340:
     cpu.set_szp((cpu.esi ^= x86::reg32(x86::sreg32(cpu.esi))));
     // 0040f355  e836250d00             -call 0x4e1890
     cpu.esp -= 4;
-    sub_4e1890(app, cpu.sync());
+    nfs3hp::ea::purgememadr(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0040f35a  89b1340a5700           -mov dword ptr [ecx + 0x570a34], esi
@@ -17142,7 +17142,7 @@ L_0x0040fb82:
     cpu.esp -= 4;
     // 0040fba0  e86bd90100             -call 0x42d510
     cpu.esp -= 4;
-    sub_42d510(app, cpu.sync());
+    nfs3hp::ea::gameTrace(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0040fba5  83c40c                 -add esp, 0xc
@@ -17706,7 +17706,7 @@ L_0x0040fd38:
     cpu.esp -= 4;
     // 0040fd57  e8b4d70100             -call 0x42d510
     cpu.esp -= 4;
-    sub_42d510(app, cpu.sync());
+    nfs3hp::ea::gameTrace(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0040fd5c  83c40c                 -add esp, 0xc
@@ -18171,7 +18171,7 @@ void Application::sub_40ff20(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.esi = 15728640 /*0xf00000*/;
     // 0040ff51  e80a0f0d00             -call 0x4e0e60
     cpu.esp -= 4;
-    sub_4e0e60(app, cpu.sync());
+    nfs3hp::ea::fileExists(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0040ff56  85c0                   +test eax, eax
@@ -18214,7 +18214,7 @@ L_0x0040ff6f:
     cpu.eax = x86::reg32(cpu.ebp + x86::reg32(-10) /* -0xa */);
     // 0040ff7b  e8602b0d00             -call 0x4e2ae0
     cpu.esp -= 4;
-    sub_4e2ae0(app, cpu.sync());
+    nfs3hp::ea::openHandleToWrite(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0040ff80  8b4576                 -mov eax, dword ptr [ebp + 0x76]
@@ -18232,7 +18232,7 @@ L_0x0040ff6f:
     cpu.eax = app->getMemory<x86::reg32>(cpu.ebp + x86::reg32(118) /* 0x76 */);
     // 0040ff8f  e80c2e0d00             -call 0x4e2da0
     cpu.esp -= 4;
-    sub_4e2da0(app, cpu.sync());
+    nfs3hp::ea::closeHandle(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0040ff94  89d0                   -mov eax, edx

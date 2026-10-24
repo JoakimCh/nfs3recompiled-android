@@ -2729,7 +2729,7 @@ L_0x00401bbb:
     }
     // 00401bcd  e80ee20d00             -call 0x4dfde0
     cpu.esp -= 4;
-    sub_4dfde0(app, cpu.sync());
+    nfs3hp::ea::yRotation(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00401bd2  8d45dc                 -lea eax, [ebp - 0x24]
@@ -3089,7 +3089,7 @@ L_0x00401d55:
     (cpu.eax) += x86::reg32(x86::sreg32(2320 /*0x910*/));
     // 00401d73  e828e80100             -call 0x4205a0
     cpu.esp -= 4;
-    sub_4205a0(app, cpu.sync());
+    nfs3hp::trackdata::snapToTrack(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00401d78  837d3600               +cmp dword ptr [ebp + 0x36], 0
@@ -3235,7 +3235,7 @@ L_0x00401dc4:
     (cpu.eax) += x86::reg32(x86::sreg32(2320 /*0x910*/));
     // 00401dee  e8ade70100             -call 0x4205a0
     cpu.esp -= 4;
-    sub_4205a0(app, cpu.sync());
+    nfs3hp::trackdata::snapToTrack(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
 L_0x00401df3:
@@ -8745,7 +8745,7 @@ L_0x00403221:
 L_0x00403229:
     // 00403229  e8b2cb0d00             -call 0x4dfde0
     cpu.esp -= 4;
-    sub_4dfde0(app, cpu.sync());
+    nfs3hp::ea::yRotation(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0040322e  8d81c0000000           -lea eax, [ecx + 0xc0]
@@ -16207,7 +16207,7 @@ L_0x00404d48:
     cpu.set_szp((cpu.eax ^= x86::reg32(x86::sreg32(cpu.eax))));
     // 00404d7b  e8f06e0200             -call 0x42bc70
     cpu.esp -= 4;
-    sub_42bc70(app, cpu.sync());
+    nfs3hp::racestart::gridPlace(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00404d80  8b45f8                 -mov eax, dword ptr [ebp - 8]
@@ -17846,7 +17846,7 @@ L_0x004052c5:
     cpu.eax = cpu.ecx;
     // 004052c7  e8343e0200             -call 0x429100
     cpu.esp -= 4;
-    sub_429100(app, cpu.sync());
+    nfs3hp::racestart::resetCar(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
 L_0x004052cc:
@@ -19086,7 +19086,7 @@ void Application::sub_4056e0(WinApplication* __restrict app, x86::CPU& cpu_)
     }
     // 0040570b  e8f0390200             -call 0x429100
     cpu.esp -= 4;
-    sub_429100(app, cpu.sync());
+    nfs3hp::racestart::resetCar(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
 L_0x00405710:
@@ -19846,7 +19846,7 @@ L_0x004059a4:
     app->getMemory<x86::reg8>(cpu.edx + x86::reg32(512) /* 0x200 */) = cpu.bh;
     // 004059f5  e806370200             -call 0x429100
     cpu.esp -= 4;
-    sub_429100(app, cpu.sync());
+    nfs3hp::racestart::resetCar(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
 L_0x004059fa:

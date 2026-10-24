@@ -174,6 +174,8 @@ def main():
                 if address != entry:
                     text = text.replace("sub_%x(app, cpu.sync());" % address,
                                         "app->dynamic_call(0x%x, cpu.sync());" % address)
+                    text = text.replace("return sub_%x(app, cpu.handOver());" % address,
+                                        "return app->dynamic_call(0x%x, cpu.handOver());" % address)
             for address, callers in STOOD_IN.items():
                 if entry not in callers:
                     text = text.replace("sub_%x(app, cpu.sync());" % address,

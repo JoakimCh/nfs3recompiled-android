@@ -280,7 +280,7 @@ void Application::sub_4fcbc0(WinApplication* __restrict app, x86::CPU& cpu_)
     app->getMemory<x86::reg32>(x86::reg32(5579160) /* 0x552198 */) = cpu.edi;
     // 004fcbf7  e8244afeff             -call 0x4e1620
     cpu.esp -= 4;
-    sub_4e1620(app, cpu.sync());
+    nfs3hp::ea::reservememadr(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004fcbfc  89c5                   -mov ebp, eax
@@ -686,7 +686,7 @@ L_0x004fcd28:
     app->getMemory<x86::reg32>(cpu.ebx + x86::reg32(100) /* 0x64 */) = cpu.ecx;
     // 004fcd4b  e8e02dfeff             -call 0x4dfb30
     cpu.esp -= 4;
-    sub_4dfb30(app, cpu.sync());
+    nfs3hp::ea::signalEvent(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004fcd50  8b7358                 -mov esi, dword ptr [ebx + 0x58]
@@ -873,7 +873,7 @@ void Application::sub_4fce20(WinApplication* app, x86::CPU& cpu)
     cpu.ebx = 260 /*0x104*/;
     // 004fce26  e8a561feff             -call 0x4e2fd0
     cpu.esp -= 4;
-    sub_4e2fd0(app, cpu.sync());
+    nfs3hp::ea::fullPathName(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004fce2b  5b                     -pop ebx
@@ -890,7 +890,7 @@ void Application::sub_4fce30(WinApplication* app, x86::CPU& cpu)
   NFS2_USE(cpu);
   NFS2_USE(app);
     // 004fce30  e90b65feff             -jmp 0x4e3340
-    return sub_4e3340(app, cpu.handOver());
+    return nfs3hp::ea::setDirectory(app, cpu.handOver());
 }
 
 /* align: skip 0x8d 0x80 0x00 0x00 0x00 0x00 0x8d 0x52 0x00 0x8b 0xdb */
@@ -899,7 +899,7 @@ void Application::sub_4fce40(WinApplication* app, x86::CPU& cpu)
   NFS2_USE(cpu);
   NFS2_USE(app);
     // 004fce40  e95b65feff             -jmp 0x4e33a0
-    return sub_4e33a0(app, cpu.handOver());
+    return nfs3hp::ea::getDirectory(app, cpu.handOver());
 }
 
 /* align: skip 0x8d 0x80 0x00 0x00 0x00 0x00 0x8d 0x52 0x00 0x8b 0xdb */
@@ -1028,7 +1028,7 @@ L_0x004fce7b:
     cpu.eax = cpu.ecx;
     // 004fce7d  e8ae64feff             -call 0x4e3330
     cpu.esp -= 4;
-    sub_4e3330(app, cpu.sync());
+    nfs3hp::ea::driveNumber(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004fce82  5e                     -pop esi
@@ -1060,7 +1060,7 @@ void Application::sub_4fcea0(WinApplication* app, x86::CPU& cpu)
   NFS2_USE(cpu);
   NFS2_USE(app);
     // 004fcea0  e94b73feff             -jmp 0x4e41f0
-    return sub_4e41f0(app, cpu.handOver());
+    return nfs3hp::ea::handleMemory(app, cpu.handOver());
 }
 
 /* align: skip 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 */

@@ -456,6 +456,38 @@ go through it:
   modes and formats they read). What only the software renderers or Direct3D
   reach and nothing else calls is a stub that stops the game
   (`native_graphics_dead.inc`).
+- EA's platform libraries under the game, native whole, in `nfs3hp::ea`
+  (`EA_THREADS_NATIVES`, `EA_MEMORY_NATIVES`, `EA_FILES_NATIVES`,
+  `EA_SUPPORT_NATIVES`): `win\threads.c` -- threads made and their
+  priorities, events, waits and sleeps, the locks over critical sections and
+  their pool (`src/nfs3hp/native_ea_threads.cpp`, with a few neighbours that
+  are not threads: rotation matrices, a random fraction, whether a surface
+  is locked, the memory there is); `cmn\memstd.c` -- the game's malloc and
+  free, its memory classes and their blocks, and the memmove with its MMX,
+  x87 and dword copies (`native_ea_memory.cpp`); `win\fileio.c`, `file.c`,
+  `blockio.c` and `touchmem.c` -- the handles' table, files opened, read,
+  written and seeked a block at a time or mapped, falling back to the
+  archive, paths and drives, pages from `VirtualAlloc`, and the error and
+  trace reporter (`native_ea_files.cpp`); and EA's trace onto the
+  monochrome monitor, a file loaded whole (`loadfileadr`) or looked for, and
+  `.viv` archives opened, searched and closed (`native_ea_support.cpp`).
+  132 functions, each the x86 code instruction for instruction and held
+  against the generated code by `tools/game_checks`.
+- The race's own code, native whole a module at a time, the same way
+  (each function the x86 code instruction for instruction, held against the
+  generated code by `tools/game_checks`): `nfs3hp::trackdata`
+  (`TRACKDATA_NATIVES`, `native_trackdata.cpp`) -- where a car is on the
+  track: the nearest node, the road's quads found and followed, lanes,
+  tunnels and the surface under it, the track's `.ccm` points and
+  `simhts.dat`; `nfs3hp::racestart` (`RACESTART_NATIVES`,
+  `native_racestart.cpp`) -- a car's race state each frame: put back on the
+  road, the camera's shake, wheel slip, skid marks and their sounds, dust and
+  sparks, the crash's effects, and the start grid from `start.dat` or
+  computed; `nfs3hp::raceload` (`RACELOAD_NATIVES`, `native_raceload.cpp`) --
+  the race's cars loaded from their `.viv` and handed their handlers, the
+  laps, speeds and places counted each frame, the race's messages, the
+  race-controls thread and its tick, and the cars against walls and each
+  other. 122 functions.
 - The game's sound, native whole but for the game's clock (`sub_48ed30`):
   EA's SND library -- the mixer (`src/nfs3hp/native_mixer.cpp`), the
   channels' set-ups, volumes, resamplers and decoders (PCM, XA ADPCM mono and

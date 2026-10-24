@@ -2303,7 +2303,7 @@ L_0x005245bd:
     cpu.esp -= 4;
     // 005245c1  e82ac3fbff             -call 0x4e08f0
     cpu.esp -= 4;
-    sub_4e08f0(app, cpu.sync());
+    nfs3hp::ea::monoPrintf(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 005245c6  83c404                 -add esp, 4
@@ -3164,7 +3164,7 @@ void Application::sub_524bb0(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.eax ^= x86::reg32(x86::sreg32(cpu.eax));
     // 00524bbe  e86dadfbff             -call 0x4df930
     cpu.esp -= 4;
-    sub_4df930(app, cpu.sync());
+    nfs3hp::ea::isThread(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00524bc3  85c0                   +test eax, eax
@@ -3728,7 +3728,7 @@ L_0x00524e20:
     cpu.eax = cpu.ebp;
     // 00524e37  e8a4c2fbff             -call 0x4e10e0
     cpu.esp -= 4;
-    sub_4e10e0(app, cpu.sync());
+    nfs3hp::ea::unlinkFreeBlock(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00524e3c  8b44240c               -mov eax, dword ptr [esp + 0xc]
@@ -3788,12 +3788,12 @@ L_0x00524e67:
     cpu.edx = cpu.ebx;
     // 00524e6b  e870c7fbff             -call 0x4e15e0
     cpu.esp -= 4;
-    sub_4e15e0(app, cpu.sync());
+    nfs3hp::ea::memBlockName(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00524e70  e87bc3fbff             -call 0x4e11f0
     cpu.esp -= 4;
-    sub_4e11f0(app, cpu.sync());
+    nfs3hp::ea::memBlockOverhead(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00524e75  8b5528                 -mov edx, dword ptr [ebp + 0x28]
@@ -3859,7 +3859,7 @@ L_0x00524ea2:
     (cpu.eax) += x86::reg32(x86::sreg32(cpu.edi));
     // 00524eb4  e83756fcff             -call 0x4ea4f0
     cpu.esp -= 4;
-    sub_4ea4f0(app, cpu.sync());
+    nfs3hp::ea::memmove(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00524eb9  8b442408               -mov eax, dword ptr [esp + 8]
@@ -3913,7 +3913,7 @@ L_0x00524ea2:
     cpu.ebx ^= x86::reg32(x86::sreg32(cpu.ebx));
     // 00524ee4  e837c2fbff             -call 0x4e1120
     cpu.esp -= 4;
-    sub_4e1120(app, cpu.sync());
+    nfs3hp::ea::markMemBlock(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00524ee9  89f2                   -mov edx, esi
@@ -3922,7 +3922,7 @@ L_0x00524ea2:
     cpu.eax = cpu.ebp;
     // 00524eed  e88ec1fbff             -call 0x4e1080
     cpu.esp -= 4;
-    sub_4e1080(app, cpu.sync());
+    nfs3hp::ea::linkFreeBlock(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00524ef2  8b44240c               -mov eax, dword ptr [esp + 0xc]

@@ -1563,7 +1563,7 @@ void Application::sub_52bb80(WinApplication* app, x86::CPU& cpu)
   NFS2_USE(cpu);
   NFS2_USE(app);
     // 0052bb80  e91b51fbff             -jmp 0x4e0ca0
-    return sub_4e0ca0(app, cpu.handOver());
+    return nfs3hp::ea::monoClear(app, cpu.handOver());
 }
 
 /* align: skip 0x8d 0x80 0x00 0x00 0x00 0x00 0x8d 0x52 0x00 0x8b 0xdb */
@@ -1635,7 +1635,7 @@ void Application::sub_52bb90(WinApplication* __restrict app, x86::CPU& cpu_)
     if (cpu.terminate) return;
     // 0052bbd8  e8c350fbff             -call 0x4e0ca0
     cpu.esp -= 4;
-    sub_4e0ca0(app, cpu.sync());
+    nfs3hp::ea::monoClear(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0052bbdd  89f0                   -mov eax, esi
@@ -1669,7 +1669,7 @@ void Application::sub_52bbf0(WinApplication* app, x86::CPU& cpu)
     cpu.reload();
     if (cpu.terminate) return;
     // 0052bbf5  e95651fbff             -jmp 0x4e0d50
-    return sub_4e0d50(app, cpu.handOver());
+    return nfs3hp::ea::monoSetAttribute(app, cpu.handOver());
 }
 
 /* align: skip 0x8d 0x80 0x00 0x00 0x00 0x00 */
@@ -2044,7 +2044,7 @@ L_0x0052bd8b:
     cpu.esp -= 4;
     // 0052bd92  e8e94bfbff             -call 0x4e0980
     cpu.esp -= 4;
-    sub_4e0980(app, cpu.sync());
+    nfs3hp::ea::monoPrintfAt(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0052bd97  42                     -inc edx

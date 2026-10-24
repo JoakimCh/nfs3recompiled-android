@@ -205,7 +205,7 @@ void Application::sub_410a40(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.eax = cpu.edi;
     // 00410a84  e8070e0d00             -call 0x4e1890
     cpu.esp -= 4;
-    sub_4e1890(app, cpu.sync());
+    nfs3hp::ea::purgememadr(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00410a89  8915500a5700           -mov dword ptr [0x570a50], edx

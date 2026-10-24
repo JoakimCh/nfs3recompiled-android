@@ -7024,7 +7024,7 @@ void Application::sub_455dd0(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.eax = cpu.edi;
     // 00455df4  e8f7460900             -call 0x4ea4f0
     cpu.esp -= 4;
-    sub_4ea4f0(app, cpu.sync());
+    nfs3hp::ea::memmove(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00455df9  8b55f8                 -mov edx, dword ptr [ebp - 8]
@@ -7061,7 +7061,7 @@ void Application::sub_455dd0(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.eax = x86::reg32(cpu.ebp + x86::reg32(-40) /* -0x28 */);
     // 00455e21  e8ca460900             -call 0x4ea4f0
     cpu.esp -= 4;
-    sub_4ea4f0(app, cpu.sync());
+    nfs3hp::ea::memmove(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00455e26  89c8                   -mov eax, ecx
@@ -8002,7 +8002,7 @@ void Application::sub_4561d0(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.eax = app->getMemory<x86::reg32>(cpu.ecx + x86::reg32(60) /* 0x3c */);
     // 004561ef  e89cb60800             -call 0x4e1890
     cpu.esp -= 4;
-    sub_4e1890(app, cpu.sync());
+    nfs3hp::ea::purgememadr(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004561f4  66c741400000           -mov word ptr [ecx + 0x40], 0
@@ -19762,7 +19762,7 @@ L_0x004583e3:
     cpu.eax = 5479228 /*0x539b3c*/;
     // 004583f3  e828920800             -call 0x4e1620
     cpu.esp -= 4;
-    sub_4e1620(app, cpu.sync());
+    nfs3hp::ea::reservememadr(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004583f8  894648                 -mov dword ptr [esi + 0x48], eax
@@ -19860,7 +19860,7 @@ L_0x00458435:
     cpu.eax = cpu.edx;
     // 0045843e  e84d940800             -call 0x4e1890
     cpu.esp -= 4;
-    sub_4e1890(app, cpu.sync());
+    nfs3hp::ea::purgememadr(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00458443  c7434800000000         -mov dword ptr [ebx + 0x48], 0

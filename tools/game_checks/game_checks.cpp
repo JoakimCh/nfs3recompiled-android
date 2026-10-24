@@ -199,6 +199,21 @@ const std::pair<x86::reg32, x86::reg32> kWindows[] = {
 #include "controls_pipeline.inc"
 #include "controls_queue.inc"
 #undef CONTROLS_WINDOWS
+#define EA_WINDOWS
+#include "ea_threads.inc"
+#include "ea_memory.inc"
+#include "ea_files.inc"
+#include "ea_support.inc"
+#undef EA_WINDOWS
+#define RACESTART_WINDOWS
+#include "racestart.inc"
+#undef RACESTART_WINDOWS
+#define RACELOAD_WINDOWS
+#include "raceload.inc"
+#undef RACELOAD_WINDOWS
+#define TRACKDATA_WINDOWS
+#include "trackdata.inc"
+#undef TRACKDATA_WINDOWS
 #include "decompiled_windows.inc"
 #define GRAPHICS_WINDOWS
 #include "graphics_world.inc"
@@ -299,6 +314,21 @@ enum Effect
 #include "controls_pipeline.inc"
 #include "controls_queue.inc"
 #undef CONTROLS_EFFECTS
+#define EA_EFFECTS
+#include "ea_threads.inc"
+#include "ea_memory.inc"
+#include "ea_files.inc"
+#include "ea_support.inc"
+#undef EA_EFFECTS
+#define RACESTART_EFFECTS
+#include "racestart.inc"
+#undef RACESTART_EFFECTS
+#define RACELOAD_EFFECTS
+#include "raceload.inc"
+#undef RACELOAD_EFFECTS
+#define TRACKDATA_EFFECTS
+#include "trackdata.inc"
+#undef TRACKDATA_EFFECTS
 };
 
 struct StandIn
@@ -321,7 +351,9 @@ struct StandIn
 /* The game's own functions the code under test calls. */
 const StandIn kGameFunctions[] = {
     {0x4df674, "vsprintf", kWatcom, 3, 0, kEax | kEdx | kEbx, 2, 1, kText, 1},
-    {0x4df690, "sprintf", kCdecl, 0, 5, kScratch, -1, 0, kPrint},
+    // sprintf keeps every register but eax, as the runtime's own does (watcom::sprintf's
+    // promise): the race's car loading counts on ecx across it.
+    {0x4df690, "sprintf", kCdecl, 0, 5, kEax, -1, 0, kPrint},
     {0x4ff014, "vfprintf", kWatcom, 3, 0, kEax | kEdx | kEbx, 2, 1, kNothing, 1},
     // fprintf as graphics::warnTextureMemory calls it: the stream, the format and its three words.
     {0x4f4b80, "fprintf", kCdecl, 0, 5, kScratch, -1, 0, kNothing},
@@ -374,6 +406,21 @@ const StandIn kGameFunctions[] = {
 #include "controls_pipeline.inc"
 #include "controls_queue.inc"
 #undef CONTROLS_GAME_FUNCTIONS
+#define TRACKDATA_GAME_FUNCTIONS
+#include "trackdata.inc"
+#undef TRACKDATA_GAME_FUNCTIONS
+#define EA_GAME_FUNCTIONS
+#include "ea_threads.inc"
+#include "ea_memory.inc"
+#include "ea_files.inc"
+#include "ea_support.inc"
+#undef EA_GAME_FUNCTIONS
+#define RACESTART_GAME_FUNCTIONS
+#include "racestart.inc"
+#undef RACESTART_GAME_FUNCTIONS
+#define RACELOAD_GAME_FUNCTIONS
+#include "raceload.inc"
+#undef RACELOAD_GAME_FUNCTIONS
 {0x4c9860, "the wait for the clock", kWatcom, 4, 0, kEax, -1, 0, kTickWait},
 {0x4d1390, "the text's scale", kWatcom, 0, 1, 0, -1, 0, kFloatBack},
 {0x4beb20, "a rectangle copied out", kWatcom, 4, 1, kEdx, -1, 0, kRectangle},
@@ -498,6 +545,21 @@ const StandIn kPointers[] = {
 #include "controls_pipeline.inc"
 #include "controls_queue.inc"
 #undef CONTROLS_POINTERS
+#define EA_POINTERS
+#include "ea_threads.inc"
+#include "ea_memory.inc"
+#include "ea_files.inc"
+#include "ea_support.inc"
+#undef EA_POINTERS
+#define RACESTART_POINTERS
+#include "racestart.inc"
+#undef RACESTART_POINTERS
+#define RACELOAD_POINTERS
+#include "raceload.inc"
+#undef RACELOAD_POINTERS
+#define TRACKDATA_POINTERS
+#include "trackdata.inc"
+#undef TRACKDATA_POINTERS
 #define SOUND_POINTERS
 #include "sound_lib.inc"
 #undef SOUND_POINTERS
@@ -652,6 +714,21 @@ const Promise kPromises[] = {
 #include "controls_pipeline.inc"
 #include "controls_queue.inc"
 #undef CONTROLS_PROMISES
+#define EA_PROMISES
+#include "ea_threads.inc"
+#include "ea_memory.inc"
+#include "ea_files.inc"
+#include "ea_support.inc"
+#undef EA_PROMISES
+#define RACESTART_PROMISES
+#include "racestart.inc"
+#undef RACESTART_PROMISES
+#define RACELOAD_PROMISES
+#include "raceload.inc"
+#undef RACELOAD_PROMISES
+#define TRACKDATA_PROMISES
+#include "trackdata.inc"
+#undef TRACKDATA_PROMISES
 #define SOUND_PROMISES
 #include "sound_lib.inc"
 #undef SOUND_PROMISES
@@ -1119,6 +1196,8 @@ public:
             break;
         case kPrint:
             result = r % 0x50;  // within the caller's buffer (the speech's name's, 0x64, with its ending)
+            if (words[1] == 0x537330)
+                result = r % 0x10;  // "%sp": a car's folder's name, into 0x14 bytes (raceload::loadRaceCar)
             text(words[0], result, random64(id));
             break;
         case kLoad:
@@ -1433,6 +1512,21 @@ public:
 #include "controls_pipeline.inc"
 #include "controls_queue.inc"
 #undef CONTROLS_EFFECT_CASES
+#define EA_EFFECT_CASES
+#include "ea_threads.inc"
+#include "ea_memory.inc"
+#include "ea_files.inc"
+#include "ea_support.inc"
+#undef EA_EFFECT_CASES
+#define RACESTART_EFFECT_CASES
+#include "racestart.inc"
+#undef RACESTART_EFFECT_CASES
+#define RACELOAD_EFFECT_CASES
+#include "raceload.inc"
+#undef RACELOAD_EFFECT_CASES
+#define TRACKDATA_EFFECT_CASES
+#include "trackdata.inc"
+#undef TRACKDATA_EFFECT_CASES
         case kRectangle:
             // A screen's, mostly: 640 by 480 to 1600 by 1200, or any size.
             word(cpu.edx) = r % 64;
@@ -4626,6 +4720,21 @@ void makeMmxArguments(CheckApp& g, const std::string& name, x86::CPU& cpu, x86::
 #include "controls_pipeline.inc"
 #include "controls_queue.inc"
 #undef CONTROLS_ARGUMENTS
+#define EA_ARGUMENTS
+#include "ea_threads.inc"
+#include "ea_memory.inc"
+#include "ea_files.inc"
+#include "ea_support.inc"
+#undef EA_ARGUMENTS
+#define RACESTART_ARGUMENTS
+#include "racestart.inc"
+#undef RACESTART_ARGUMENTS
+#define RACELOAD_ARGUMENTS
+#include "raceload.inc"
+#undef RACELOAD_ARGUMENTS
+#define TRACKDATA_ARGUMENTS
+#include "trackdata.inc"
+#undef TRACKDATA_ARGUMENTS
 #define SOUND_ARGUMENTS
 #include "sound_lib.inc"
 #undef SOUND_ARGUMENTS
@@ -4768,6 +4877,19 @@ void makeArguments(CheckApp& g, const Tested& t, x86::reg32 esp, x86::CPU& cpu)
             && !makeRaceArguments(g, own, cpu, a) && !makePipelineArguments(g, own, cpu, a))
             makeQueueArguments(g, own, cpu, a);
     }
+    if (name.compare(0, 4, "ea::") == 0)
+    {
+        const std::string own = name.substr(4);
+        if (!makeEaThreadsArguments(g, own, cpu, a) && !makeEaMemoryArguments(g, own, cpu, a)
+            && !makeEaFilesArguments(g, own, cpu, a))
+            makeEaSupportArguments(g, own, cpu, a);
+    }
+    if (name.compare(0, 11, "racestart::") == 0)
+        makeRaceStartArguments(g, name.substr(11), cpu, a);
+    if (name.compare(0, 10, "raceload::") == 0)
+        makeRaceloadArguments(g, name.substr(10), cpu, a);
+    if (name.compare(0, 11, "trackdata::") == 0)
+        makeTrackdataArguments(g, name.substr(11), cpu, a);
     if (name.compare(0, 5, "mmx::") == 0)
         makeMmxArguments(g, name.substr(5), cpu, a);
     if (name.compare(0, 5, "snd::") == 0)
