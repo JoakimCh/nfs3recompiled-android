@@ -3110,7 +3110,7 @@ void Application::sub_4e06fa(WinApplication* app, x86::CPU& cpu)
 
 /* sub_4e0d80: native, nfs3hp::ea::monoNoCursor */
 
-/* sub_4e0d88: native, nfs3hp::snd::eaRandom */
+/* sub_4e0d88: native, nfs3hp::port::eaRandom */
 
 /* sub_4e0dee: native, nfs3hp::ea::seedRandom */
 

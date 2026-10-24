@@ -2,16 +2,17 @@
 
 An Android port of the static recompilation of **Need for Speed III: Hot Pursuit**.
 The original 1998 Win32 x86 executable is translated into portable C++ that runs
-on a virtual x86 CPU, with the Win32, DirectDraw, DirectSound and Glide 2x
-calls it makes reimplemented on top of SDL3 and OpenGL ES. DirectInput is not
-reimplemented: the game's controls are native, and ask the port's own pads,
+on a virtual x86 CPU, with the Win32, DirectDraw and DirectSound calls it
+makes reimplemented on top of SDL3 and OpenGL ES. Glide is not: the game's
+Voodoo2 driver is the port's own C++ and draws with OpenGL ES itself. Nor is
+DirectInput: the game's controls are native, and ask the port's own pads,
 mouse and keyboard directly.
 
 Based on [motor-dev/nfs-recompiled](https://github.com/motor-dev/nfs-recompiled),
 which does the recompilation itself and targets desktop. This project adds the
 Android target: a launcher, touch controls, gamepad handling, widescreen races,
-and a number of fixes in the Glide layer that only showed up once the game ran
-on a phone.
+and a number of fixes in the graphics layer that only showed up once the game
+ran on a phone.
 
 ## Game data you supply
 
@@ -197,7 +198,7 @@ is. `NFS_TEXTURES32=0` goes back to 16-bit textures.
 ### Projected headlights
 
 With projected headlights the game draws the lit road a second time over
-itself, and that pass hands the Glide layer texture coordinates up to thirty
+itself, and that pass hands the driver texture coordinates up to thirty
 repeats of the road texture away from the origin. On Mali GPUs that was enough
 to lose the fraction of a texel per pixel, and the lit area broke into moving
 blocks — the same artefact the Modern Patch shows under dgVoodoo. A triangle
@@ -282,16 +283,9 @@ ground's height, the particles — step aside for the generated code.
 The game runs on a virtual x86 CPU, and the parts that cost the most no longer
 go through it:
 
-- voodoo2a, the THRASH driver behind the game's renderer, is native whole and
-  has no generated code: `disassemble_nfs3hp.py` binds its 34 exports to the
-  port's functions of the same names (`src/nfs3hp/native_thrash.cpp`, its heap
-  -- Watcom's, the game's too -- in `native_watcom_heap.cpp`) and writes only
-  its data. It draws every way voodoo2a does -- Glide's own triangles and
-  lines, antialiased, two passes for trilinear mipmapping -- through its own
-  renderer (`src/lib/thrashrenderer.cpp`): an OpenGL texture for each of the
-  game's, the texture formats as they are, hardware filtering.
-  `tools/thrash_checks/run.sh` compares every export with voodoo2a's generated
-  code, made afresh from the DLL, on random states, to the byte.
+- voodoo2a, the THRASH driver behind the game's renderer, has no generated
+  code: `disassemble_nfs3hp.py` binds its 34 exports to the port's own C++
+  (`src/nfs3hp/port_thrash.cpp`, below) and writes only its data.
 - softtria, the software renderer, is not built at all -- no code, no data,
   no library. The game loads one renderer, the one the registry's "Thrash
   Driver" names (`sub_4b5720`) unless a command-line option names another;
@@ -489,7 +483,8 @@ go through it:
   race-controls thread and its tick, and the cars against walls and each
   other. 122 functions.
 - The game's sound, native whole but for the game's clock (`sub_48ed30`):
-  EA's SND library -- the mixer (`src/nfs3hp/native_mixer.cpp`), the
+  EA's SND library -- its voices, banks and playing rewritten as the port's
+  own C++ (below), the mixer (`src/nfs3hp/native_mixer.cpp`), the
   channels' set-ups, volumes, resamplers and decoders (PCM, XA ADPCM mono and
   stereo, once, looped, with an intro, streamed from memory or a packet
   player, and EA's frame-coded speech with its x87 synthesis filter;
@@ -529,7 +524,7 @@ Each was compared with the generated code bit for bit before it was switched
 on — memory, registers, flags, the FPU and the triangles drawn
 (`NFS_NATIVE_CHECK`) — and keeps the x87's single-precision rounding. In a race
 this is about three quarters of the game thread's time. `NFS_NATIVES=0` goes
-back to the generated code, `NFS_THRASH_GL=0` to the old renderer.
+back to the generated code.
 
 ### The port's own C++
 
@@ -538,15 +533,45 @@ port is being rewritten past that, module by module, as C++ of its own in
 `nfs3hp::port` (`src/nfs3hp/port.h`): functions with arguments and results,
 the game's records as structs, its variables by name. While code that is still
 the game's shares the game's memory, a rewritten function keeps its data where
-the game has it (`Var`, `Table`, read and written whole), calls what is not
-rewritten yet as Watcom's convention has it (`callGame`), and is entered
-through an adapter that gives the game's callers what that convention
-promises: the result in eax, every other register as it was. The callers of
-the sound module were checked for it -- none reads more. `tools/game_checks`
-holds each `port::` function against the game's code to that: its result,
-the memory it writes and every call it makes, with the registers each callee
-reads on entry (`tools/game_checks/entry_regs.py`). The first is the game's
-sound effects (`port_sound_effects.cpp`).
+the game has it (`Var`, `Table`, read and written whole; `record`, a record
+in place, field by field), calls what is not rewritten yet as Watcom's
+convention has it (`callGame`), and is entered through an adapter that gives
+the game's callers what that convention promises: the result in eax, every
+other register as it was. The callers of the sound module and of EA's SND
+library were checked for it -- none reads more. Rewrites call each other as
+C++; to call the game's code they keep its stack where the game's code had
+it, and where EA's code reads a register it never set (an uninitialised
+variable the compiler kept in ebp), the rewrite reads it from the x86 as the
+game's code would find it (`HeldEbp`). `tools/game_checks` holds each
+`port::` function against the game's code to that: its result, the memory it
+writes and every call it makes, with the registers each callee reads on
+entry (`tools/game_checks/entry_regs.py`); a rewrite's calls to rewrites run
+the game's code for them on the generated side.
+
+So far: EA's SND library -- the voices, their volume, pan and pitch, the
+100 Hz tick, the platform layer over the mixer, banks, patches, timbres and a
+sample started on a channel (`port_snd.h`, `port_snd_voices.cpp`,
+`port_snd_play.cpp`, 74 functions) -- and the game's sound effects and race
+slots on it (`port_sound_effects.cpp`, 18).
+
+And the THRASH driver (`port_thrash.h`, `port_thrash.cpp`): voodoo2a's 34
+exports drawing straight through `ThrashRenderer` (`src/lib/thrashrenderer.cpp`
+-- an OpenGL texture for each of the game's, the formats as they are, the
+GPU's filtering), with no Glide emulated under it and none of the Win32 it set
+the card up with: no glide2x.dll, no DirectDraw, no mode set on the window's
+thread. What the game sees of the driver stays in voodoo2a's data, where the
+game layer patches its mode table; its records come from voodoo2a's own heap
+(`native_watcom_heap.cpp`). It draws as voodoo2a did over the port's Glide:
+Glide's triangles, its lines as four triangles, nothing of the antialiased
+ones or of points, trilinear mipmapping's two passes. The port's own features
+moved in with it -- the 4:3 fit of the loading screen, the dialog emblem's
+narrowing, the widescreen and Dynamic Fullscreen resolutions, full-colour
+textures, the triangle trace of `NFS_NATIVE_CHECK`. `tools/thrash_checks`
+(`windows/run.py`) holds it against the driver and Glide as they were, frozen
+in `tools/thrash_checks/reference/`, both under the same renderer: random
+sessions of the game's calls, and after each call what the renderer was
+handed and its state, the window, the frame buffer's locks, the game's
+callbacks, the registers and the memory the game sees, all compared.
 
 A test showed the whole game playing normally in single precision
 (`NFS_FPU_FLOAT=1`), the menus too: the port's own C++ can use the host's
@@ -729,10 +754,10 @@ directory and the disc.
 |---|---|---|
 | `WITH_MMX` | `ON` | MMX bit in the emulated CPUID. Leave it on: reported absent, the game picks different copy routines and the movie streamer breaks. |
 | `WITH_PEDANTIC_FPU` | `OFF` | Every x87 value in 80 bits and the x87's own arithmetic to the bit (`src/lib/x87soft.cpp`). Any GCC or Clang build, Android included (`-Px87Exact`); not MSVC. |
-| `NFS_TRACE_MSG` | `OFF` | Message-pump and Glide state tracing. Very verbose. |
+| `NFS_TRACE_MSG` | `OFF` | Message-pump tracing. Very verbose. |
 | `NFS2_ASSERT_TRAP` | `OFF` | Unsupported-path asserts break into the debugger instead of logging. |
 | `NFS_BUILD_FF_TESTS` | `OFF` | Build `force_feedback_checks`, the force-feedback (`lib/forcefeedback.h`) regression test, against an SDL virtual joystick. |
-| `NFS_BUILD_MEMORY_TESTS` | `OFF` | Build the guest memory allocator checks and `glidetmu_checks`, the texture atlas regression test. |
+| `NFS_BUILD_MEMORY_TESTS` | `OFF` | Build the guest memory allocator checks. |
 
 ## Environment variables
 
@@ -751,14 +776,11 @@ from the phone; the rest matter for a desktop run.
 | `NFS_WIDESCREEN` | on | `0` takes the 1280x720, 1600x900 and 1920x1080 modes back out of the Screen Size list. |
 | `NFS_TEXTURES32` | on | `0` has the Voodoo2 driver refuse 32-bit textures again, so the game shrinks them to 16 bits as it used to. |
 | `NFS_TEXCOORD_REBASE` | on | `0` leaves far-out texture coordinates as the game sends them (see Projected headlights), to compare. |
-| `NFS_DEPTH16` | auto | On where the depth buffer has more than 16 bits and the GPU is not an Adreno 5xx. `0` keeps the GPU's own depth precision, `1` forces the Voodoo's 16-bit steps (see Projected headlights). `ab` switches between the two every 5 s, so both can be compared in one race; the `[GPU]` lines count the frames of each. |
-| `NFS_GPU_FILTER` | on | `0` filters every texel in the shader. By default the GPU's bilinear filter takes a pixel whose 2x2 texels lie inside their atlas tile and have no chroma key. |
-| `NFS_TEXCOORD_CUT` | off | `1` cuts triangles with far-out clamped texture coordinates along the texture's edges. An experiment, not needed for the headlights. |
+| `NFS_DEPTH16` | auto | On where the depth buffer has more than 16 bits and the GPU is not an Adreno 5xx. `0` keeps the GPU's own depth precision, `1` forces the Voodoo's 16-bit steps (see Projected headlights); the `[GPU]` lines count the frames drawn in them. |
 | `NFS_NATIVES` | on | `0` runs the generated code instead of every native stand-in for the hot vertex and polygon loops; `vertices` keeps only the three vertex loops; `no-clip` all but the clipping of off-screen polygons (`sub_4c2cd0` and its callers `sub_4c11b0`, `sub_4c12e0`); `no-render` all but the ones in `src/nfs3hp/native_render.cpp`. For comparing speeds. |
 | `NFS_RENDER_OFF` | unset | Addresses of functions in `src/nfs3hp/native_render.cpp` to leave to their generated code, e.g. `4bf790,47a880`. |
 | `NFS_NATIVE_LOAD` | on | `0` leaves the loading of the game's data to the generated code: RefPack, the FSH textures' alpha scans, FCE models and FRD tracks (`src/nfs3hp/native_loading.cpp`). `NFS_NATIVE_CHECK=load` checks only these, every call. |
 | `NFS_MAD` | on | `0` plays the movies with the generated MAD player, decoder and display instead of `src/nfs3hp/native_movie.cpp`; `NFS_MAD_PLAYER=0` and `NFS_MAD_GL=0` leave just the player or the full-colour output generated. `NFS_MAD_CHECK=1` (debug) runs the generated player and checks the native decoder against the generated one ([MAD]). |
-| `NFS_THRASH_GL` | on | `0` draws through the old renderer, the Voodoo2 emulated over a texture atlas with its filtering done in the shader, instead of `ThrashRenderer`, which gives each of the game's textures an OpenGL texture of its own and lets the GPU filter, wrap and clamp it. |
 | *(release)* | | A release build writes nothing to the log and takes none of these flags: the native code is built with `NFS_RELEASE` (log priority critical, SDL's direct Android logging compiled out through `android/app/jni/sdl_quiet.h`), the Java side logs through `AppLog`/`SDLLog` only when `BuildConfig.DEBUG`. Use the debug build (`-Pandroid10`) for diagnostics. |
 | `NFS_FPU_EXTENDED` | on | Races at the x87's extended precision, as the Modern Patch runs them; `0` races in single precision, as the original (see The x87's precision). Every player of a network race needs the same. A debug build takes it from a launch: `adb shell am start -n dev.nfs3hp.port/.SplashActivity --ez fpu_single_races true`. |
 | `NFS_FPU_FLOAT` | off | `1` rounds every x87 operation of the whole game to a float's 24 bits, the menus too, and races in single precision (`NFS_FPU_EXTENDED=0`): the game as it would run on the host's float. An experiment. A debug build takes it from a launch: `--ez fpu_float true`. |

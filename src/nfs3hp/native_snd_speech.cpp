@@ -1,6 +1,6 @@
 #include "native_snd.h"
 
-/* The race's speech, native (native_snd.cpp says how): what the cops' radio
+/* The race's speech, native (native_snd.h says how): what the cops' radio
  * and the race's voices say, each player's (two in the split screen) played
  * in turn from a queue, faded with the distance of whoever speaks.
  *

@@ -1,53 +1,57 @@
-/* src/nfs3hp/native_thrash.cpp against voodoo2a's generated code, on the
- * desktop, without the game.
+/* src/nfs3hp/port_thrash.cpp, the THRASH driver as the port's own, against
+ * the driver as it was -- native_thrash.cpp's voodoo2a over the port's Glide,
+ * frozen in reference/ -- on the desktop, without the game.
  *
- * voodoo2a's generated code is made afresh from nfs3hp/voodoo2a.dll by the
- * port's own generator, without the hooks of the tree's copy (generate.py), and
- * built with the port's headers.  Two guest memories hold the same state:
- * voodoo2a's image as it loads, its variables made up for every case, the
- * game's vertices, records and buffers, and the stack.  An export runs
- * generated on one and natively (THRASH_*, native_thrash.cpp) on the other,
- * and then they are compared: every call out in order -- Glide's functions,
- * Win32's through voodoo2a's imports, the game's callbacks, DirectDraw's
- * methods -- with what it was handed (a vertex as the ten fields voodoo2a
- * sets); eax where the export gives something back, esp, ebx, esi, edi and
- * ebp; and every byte of voodoo2a's image, the game's buffers, the heap and
- * the stack from the arguments up.  The stack below them is the exports' own
- * and nobody else's.  Every so often all of both memories are compared, for a
- * write anywhere else.
+ * Two guest memories, each with voodoo2a's image as the DLL loads, the
+ * game's vertices, texels and records, a heap and a stack; under each driver
+ * the one ThrashRenderer, its game thread's half (the GL thread's work is
+ * dropped, glthread below).  A session sets the driver up -- THRASH_about,
+ * THRASH_init, a mode -- makes a run of random calls, the way the game makes
+ * them, and ends in THRASH_restore.  Each call goes to both drivers, and then
+ * they are compared:
  *
- * Glide is called two ways: voodoo2a's code through its table of Glide's
- * functions, the natives straight (glide2x::drawTriangle, drawLine and
- * glide2x::direct) or through the same table.  Here both go to one stand-in
- * per function, which takes what the port's Glide would take of its arguments
- * -- a byte, a word, a float's bits -- and does what it would with eax: a
- * function the port has as void leaves it as it was.
+ *   - what the renderer handed the GL thread (ThrashRenderer::Watcher), its
+ *     own state after the call (snapshot), and the Renderer under it -- the
+ *     window opened, its mode, the frame buffer's locks, the presents -- the
+ *     resources made and freed and the guest context let go and taken back,
+ *     all in order;
+ *   - the calls of the game's own functions the driver was handed (its
+ *     lambdas) and of VirtualAlloc and VirtualFree, voodoo2a's heap's, in
+ *     order, with their arguments;
+ *   - eax where the export gives something back, esp, ebx, esi, edi and ebp;
+ *   - the memory the game sees: voodoo2a's data but for what only the old
+ *     driver kept (Glide's table, its drawing pointers, its colour table, the
+ *     event, DirectDraw's object, its atexit list), the game's area, the heap,
+ *     and the stack from the arguments up;
+ *   - the triangles traced (NFS_NATIVE_CHECK's), with the port's own features
+ *     -- the 4:3 fit, the emblem's narrowing, clearPicture -- switched alike
+ *     in both now and then.
  *
- * The stand-ins' results come from the case's seed and the call's place in
- * the case, the same for both runs as long as both make the same calls.
- * Win32's functions and the game's may stop the game (cpu.terminate) at a
- * call a case picks: from there on neither run may do anything.
+ * The game's callbacks and VirtualAlloc may stop the game (cpu.terminate) at a
+ * call a session picks; from there on neither driver may do anything.  What
+ * the old driver crashed in on the port -- a state set with no window, Glide's
+ * pointers cleared by THRASH_is under an open window, a mode set before
+ * THRASH_init -- no session does, nor does any hand the driver a window
+ * thread to set its mode on (the execute lambda), which the game never does.
  *
- * Every drawing export runs with voodoo2a's drawing pointed every way
- * THRASH_setstate points it -- Glide's own triangle and line, antialiased,
- * in two passes, both -- and now and then at the game's own functions.
- * "malloc/free" is voodoo2a's heap alone: a run of allocations and frees,
- * the heap growing by VirtualAlloc and giving miniheaps back.
- *
- * See run.sh. */
-#include "voodoo2a.h"
+ * Built and run on Windows by windows/run.py. */
+#include "port_thrash.h"
 #include "native_thrash.h"
 #include "thrash.h"
-#include <lib/gliderenderer.h>
+#include "reference/glide2x.h"
+#include <lib/glthread.h>
+#include <lib/library.h>
 #include <lib/memmap.h>
+#include <lib/renderer.h>
 #include <lib/thrashrenderer.h>
-#include <winapi/glide2x.h>
 #include <SDL3/SDL.h>
 #include <algorithm>
 #include <cmath>
+#include <cstdarg>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <map>
 #include <random>
 #include <string>
 #include <vector>
@@ -55,147 +59,98 @@
 
 namespace x86
 {
-void assertLog(const char* file, int line, const char* expr)
-{
-    std::printf("assert %s:%d %s\n", file, line, expr);
-}
+void assertLog(const char*, int, const char*) {}
 }
 
-/* What native_thrash.cpp and src/lib/cpu.cpp want of SDL. */
+/* What the drivers, the renderer and src/lib/cpu.cpp want of SDL. */
 extern "C"
 {
-Uint64 SDL_GetPerformanceCounter(void) { return 0; }
-Uint64 SDL_GetPerformanceFrequency(void) { return 1; }
-const char* SDL_getenv(const char* name) { return std::getenv(name); }
-int SDL_strcmp(const char* a, const char* b) { return std::strcmp(a, b); }
+Uint64 SDLCALL SDL_GetPerformanceCounter(void) { return 0; }
+Uint64 SDLCALL SDL_GetPerformanceFrequency(void) { return 1; }
+const char* SDLCALL SDL_getenv(const char* name) { return std::getenv(name); }
+int SDLCALL SDL_strcmp(const char* a, const char* b) { return std::strcmp(a, b); }
+char* SDLCALL SDL_strstr(const char* a, const char* b) { return const_cast<char*>(std::strstr(a, b)); }
+void SDLCALL SDL_Log(const char*, ...) {}
+void SDLCALL SDL_LogInfo(int, const char*, ...) {}
+void SDLCALL SDL_LogError(int, const char*, ...) {}
+void SDLCALL SDL_LogWarn(int, const char*, ...) {}
+void SDLCALL SDL_LogCritical(int, const char*, ...) {}
+void SDLCALL SDL_LockSpinlock(SDL_SpinLock*) {}
+void SDLCALL SDL_UnlockSpinlock(SDL_SpinLock*) {}
+SDL_FunctionPointer SDLCALL SDL_GL_GetProcAddress(const char*) { return nullptr; }
 }
+
+/* The drivers' exports: the reference's and the new one's. */
+#define THRASH_EXPORTS(X)                                                                                         \
+    X(about) X(clearwindow) X(clip) X(drawline) X(drawlinemesh) X(drawlinestrip) X(drawpoint) X(drawpointmesh)    \
+    X(drawpointstrip) X(drawquad) X(drawquadmesh) X(drawtri) X(drawtrifan) X(drawtrimesh) X(drawtristrip)         \
+    X(flushwindow) X(idle) X(init) X(is) X(lockwindow) X(pageflip) X(readrect) X(restore) X(selectdisplay)        \
+    X(setstate) X(settexture) X(setvideomode) X(sync) X(talloc) X(treset) X(tupdate) X(unlockwindow) X(window)    \
+    X(writerect) X(modemessage)
+#define DECLARE(name) void THRASH_##name(win32::WinApplication* app, x86::CPU& cpu);
+namespace reference
+{
+THRASH_EXPORTS(DECLARE)
+}
+namespace nfs3hp
+{
+THRASH_EXPORTS(DECLARE)
+}
+#undef DECLARE
 
 namespace
 {
 
-constexpr x86::reg32 kMemory = 0x1000000;
+using x86::reg32;
+namespace driver = nfs3hp::port::driver;
+
+constexpr reg32 kMemory = 0x1000000;
 
 /* Where things are, in both memories. */
-constexpr x86::reg32 kImage = 0xa83200, kImageEnd = 0xa97600;      // voodoo2a as it loads
-constexpr x86::reg32 kCodeEnd = 0xa8fe00;
-constexpr x86::reg32 kGame = 0x600000, kGameEnd = 0x680000;        // the game's vertices, records, buffers
-constexpr x86::reg32 kVertices = 0x600000;                         // 512 of the game's vertices
-constexpr x86::reg32 kVertexCount = 512;
-constexpr x86::reg32 kIndices = 0x610000;                          // 4096 vertex indices
-constexpr x86::reg32 kRecords = 0x620000;                          // 16 texture records of 0x20 bytes
-constexpr x86::reg32 kLambdaRecord = 0x621000;                     // THRASH_setstate 0x13's
-constexpr x86::reg32 kFogBytes = 0x622000;                         // THRASH_setstate 0x69's
-constexpr x86::reg32 kPixels = 0x630000;
-constexpr x86::reg32 kResult = 0x631000;                           // where the mode message's result goes
-constexpr x86::reg32 kDirectDraw = 0x632000, kDirectDrawVtable = 0x632100;
-constexpr x86::reg32 kSlotMap = 0x633000;                          // VirtualAlloc's slots in use
-constexpr x86::reg32 kHeap = 0x100000, kHeapEnd = 0x500000;        // VirtualAlloc's 16 slots
-constexpr x86::reg32 kSlotSize = 0x40000;
-constexpr x86::reg32 kStackLow = 0xef0000, kStackHigh = 0xf00000;
+constexpr reg32 kImageBase = 0xa82200;                       // voodoo2a's RVA 0
+constexpr reg32 kImage = 0xa83200, kImageEnd = 0xa97600;    // voodoo2a as it loads
+constexpr reg32 kGame = 0x600000, kGameEnd = 0x6c0000;      // the game's vertices, records, pixels
+constexpr reg32 kVertices = 0x600000;                       // 512 of the game's vertices
+constexpr reg32 kVertexCount = 512;
+constexpr reg32 kIndices = 0x610000;                        // 4096 vertex indices
+constexpr reg32 kRecords = 0x620000;                        // 16 texture records of 0x20 bytes
+constexpr reg32 kLambdaRecord = 0x621000;                   // THRASH_setstate 0x13's
+constexpr reg32 kFogBytes = 0x622000;                       // THRASH_setstate 0x69's
+constexpr reg32 kSlotMap = 0x623000;                        // VirtualAlloc's slots in use
+constexpr reg32 kPixels = 0x630000, kPixelsEnd = 0x6a0000;  // texels, and what readrect and writerect take
+constexpr reg32 kDirectDrawObject = 0x6b0000, kDirectDrawVtable = 0x6b0100;
+constexpr reg32 kHeap = 0x100000, kHeapEnd = 0x500000;      // VirtualAlloc's 16 slots
+constexpr reg32 kSlotSize = 0x40000;
+constexpr reg32 kStackLow = 0xef0000, kStackHigh = 0xf00000;
+constexpr reg32 kFrameBuffers = 0x800000;                   // what Renderer::lock hands out
 
-/* The stand-ins' addresses: anything dynamic_call does not know. */
-constexpr x86::reg32 kGlideStub = 0xe00000;     // + 0x10 a function of voodoo2a's Glide table
-constexpr x86::reg32 kImportStub = 0xe10000;    // + an import's offset in voodoo2a's table
-constexpr x86::reg32 kFindWindow = 0xe20000;    // the game's callbacks
-constexpr x86::reg32 kExecute = 0xe20010;
-constexpr x86::reg32 kLockHook = 0xe20020;
-constexpr x86::reg32 kLog = 0xe20030;
-constexpr x86::reg32 kGameTriangle = 0xe20040;  // a drawing pointer the game set
-constexpr x86::reg32 kGameLine = 0xe20050;
-constexpr x86::reg32 kSetCooperativeLevel = 0xe20060;
-constexpr x86::reg32 kRelease = 0xe20070;
-constexpr x86::reg32 kGlideModule = 0x7700;     // what LoadLibraryA hands back
-
-constexpr x86::reg32 kGlideTable = 0xa93614;
-
-/* voodoo2a's Glide table, in its order, and what the port's Glide takes of
- * each argument: w a dword, b its byte, h its word, s its word sign-extended,
- * p a pointer that is logged, o one that is not (into the caller's frame), v
- * a GrVertex (the ten fields voodoo2a sets), f the 64 bytes of a fog table. */
-struct GlideFunction
-{
-    const char* name;
-    const char* arguments;
-    bool returns;
+/* What only the old driver kept of voodoo2a's data. */
+const std::pair<reg32, reg32> kOldOnly[] = {
+    {0xa91f14, 0xa91f18},  // the mode the window's thread opened
+    {0xa91f40, 0xa91f44},  // the event the window's thread set
+    {0xa91f48, 0xa91f4c},  // DirectDraw's object
+    {0xa91f50, 0xa91f54},  // glide2x.dll
+    {0xa92334, 0xa92338},  // the window's thread to open the mode
+    {0xa93210, 0xa93610},  // a colour byte as Glide's float
+    {0xa93610, 0xa93714},  // the line's pointer, Glide's functions, and the drawing's other pointers
+    {0xa937bc, 0xa93844},  // atexit's list
 };
 
-const GlideFunction kGlide[] = {
-    {"_grGlideInit@0", "", false},
-    {"_grSstQueryHardware@4", "p", true},
-    {"_grSstQueryBoards@4", "p", true},
-    {"_grGlideShutdown@0", "", false},
-    {"_grSstSelect@4", "w", false},
-    {"_grSstWinClose@0", "", false},
-    {"_grSstWinOpen@28", "wwwwwww", true},
-    {"_grTexCombineFunction@8", "ww", false},
-    {"_grChromakeyValue@4", "w", false},
-    {"_grAlphaTestReferenceValue@4", "b", false},
-    {"_grTexDownloadTable@12", "wwp", false},
-    {"_grRenderBuffer@4", "w", false},
-    {"_grBufferClear@12", "wbh", false},
-    {"_grBufferSwap@4", "w", false},
-    {"_grSstStatus@0", "", true},
-    {"_grSstVRetraceOn@0", "", true},
-    {"_grSstIdle@0", "", false},
-    {"_grSstIsBusy@0", "", false},
-    {"_grClipWindow@16", "wwww", false},
-    {"_grColorCombine@20", "wwwww", false},
-    {"_grAlphaCombine@20", "wwwww", false},
-    {"_grAlphaBlendFunction@16", "wwww", false},
-    {"_grCullMode@4", "w", false},
-    {"_grTexFilterMode@12", "www", false},
-    {"_grDitherMode@4", "w", false},
-    {"_grChromakeyMode@4", "w", false},
-    {"_grAlphaTestFunction@4", "w", false},
-    {"_grDepthBufferMode@4", "w", false},
-    {"_grDepthBufferFunction@4", "w", false},
-    {"_grDepthMask@4", "w", false},
-    {"_grFogColorValue@4", "w", false},
-    {"_grFogMode@4", "w", false},
-    {"_grFogTable@4", "f", false},
-    {"_grLfbLock@24", "wwwwwo", true},
-    {"_grLfbUnlock@8", "ww", true},
-    {"_grLfbWriteRegion@32", "wwwwwwwp", true},
-    {"_grLfbReadRegion@28", "wwwwwwp", true},
-    {"_grDrawTriangle@12", "vvv", false},
-    {"_grDrawLine@8", "vv", false},
-    {"_grDrawPoint@4", "v", false},
-    {"_grGammaCorrectionValue@4", "w", false},
-    {"_grDepthBiasLevel@4", "s", false},
-    {"_grTexMipMapMode@12", "www", false},
-    {"_grTexCombine@28", "wwwwwww", false},
-    {"_grTexCalcMemRequired@16", "wwww", true},
-    {"_grTexDownloadMipMap@16", "wwwp", false},
-    {"_grTexMinAddress@4", "w", true},
-    {"_grTexMaxAddress@4", "w", true},
-    {"_grTexSource@16", "wwwp", false},
-    {"_grTexClampMode@12", "www", false},
-    {"_grGlideGetVersion@4", "o", false},
-    {"_grAADrawTriangle@24", "vvvwww", false},
-    {"_grAADrawLine@8", "vv", false},
-    {"_grHints@8", "ww", false},
-    {"_grTexLodBiasValue@8", "ww", false},
-    {"_grSstScreenWidth@0", "", true},
-    {"_grSstScreenHeight@0", "", true},
-    {"_grBufferNumPending@0", "", true},
-    {"_grSstControl@4", "w", true},
-};
-constexpr unsigned kGlideCount = sizeof kGlide / sizeof kGlide[0];
+/* The stand-ins' addresses: what dynamic_call finds nothing at. */
+constexpr reg32 kGlideStub = 0xe00000;   // + 0x10 a Glide function the reference looked up
+constexpr reg32 kImportStub = 0xe10000;  // + an import's offset in voodoo2a's table
+constexpr reg32 kFindWindow = 0xe20000;  // the game's lambdas
+constexpr reg32 kLockHook = 0xe20020;
+constexpr reg32 kLog = 0xe20030;
+constexpr reg32 kSetCooperativeLevel = 0xe20060, kRelease = 0xe20070;  // DirectDraw's object's
+constexpr reg32 kGlideModule = 0x7700;   // what LoadLibraryA hands back
 
-enum Glide : unsigned
-{
-    kQueryHardware = 1, kQueryBoards = 2, kWinOpen = 6, kStatus = 14, kRetraceOn = 15, kLfbLock = 33,
-    kLfbUnlock = 34, kLfbWrite = 35, kLfbRead = 36, kDrawTriangle = 37, kDrawLine = 38, kCalcMemory = 44,
-    kTexMin = 46, kTexMax = 47, kGetVersion = 50, kScreenWidth = 55, kScreenHeight = 56, kPending = 57,
-    kControl = 58,
-};
-
-/* voodoo2a's imports that its code calls, by their place in its table. */
+/* voodoo2a's imports, by their place in its table. */
 struct Import
 {
-    x86::reg32 slot;
+    reg32 slot;
     const char* name;
-    x86::reg32 arguments;
+    reg32 arguments;
 };
 
 const Import kImports[] = {
@@ -204,19 +159,9 @@ const Import kImports[] = {
     {0xa90358, "PostMessageA", 4}, {0xa90438, "WaitForSingleObject", 2}, {0xa90404, "SetEvent", 1},
     {0xa90448, "DirectDrawCreate", 3}, {0xa9042c, "VirtualAlloc", 4}, {0xa90430, "VirtualFree", 3},
 };
+constexpr reg32 kVirtualAlloc = 0xa9042c, kVirtualFree = 0xa90430;
 
-struct Call
-{
-    x86::reg32 id;
-    std::vector<x86::reg32> words;
-    bool operator==(const Call& o) const { return id == o.id && words == o.words; }
-};
-
-/* The case: its seed and the call the game stops at, if any. */
-std::uint64_t g_seed = 0;
-long g_stopAt = -1;
-bool g_lookupFails = false;  // GetProcAddress may not find grGlideInit and the two queries
-x86::reg32 g_texMin = 0, g_texMax = 0;
+typedef std::vector<reg32> Words;
 
 std::uint64_t mix(std::uint64_t x)
 {
@@ -226,206 +171,108 @@ std::uint64_t mix(std::uint64_t x)
     return x ^ (x >> 31);
 }
 
-typedef void (*Generated)(win32::WinApplication*, x86::CPU&);
-
-struct Method
+reg32 bitsOf(float f)
 {
-    x86::reg32 address;
-    Generated function;
-};
-
-const Method kMethods[] = {
-#include "voodoo2a_methods.inc"
-};
-
-Generated generatedAt(x86::reg32 address)
-{
-    const Method* end = kMethods + sizeof kMethods / sizeof kMethods[0];
-    const Method* found = std::lower_bound(kMethods, end, address,
-                                           [](const Method& m, x86::reg32 a) { return m.address < a; });
-    return found != end && found->address == address ? found->function : nullptr;
+    reg32 bits;
+    std::memcpy(&bits, &f, sizeof bits);
+    return bits;
 }
 
-}
+/* The session's seed and the compared call the game stops at, if any. */
+std::uint64_t g_seed = 0;
+long g_stopAt = -1;
+/* The Glide functions the reference looked up, by the stand-in's number. */
+std::vector<std::string> g_glideNames;
+
+}  // namespace
 
 namespace win32
 {
 
-/* A guest memory of its own, and its own log of calls out. */
+/* A guest memory of its own, and its own logs. */
 class CheckApp : public WinApplication
 {
 public:
-    CheckApp(bool generated) : WinApplication("thrash_checks", 0, {}), generated(generated) {}
-    bool generated;
-    std::vector<Call> calls;
-    bool reachedGenerated = false;  // the native side called into voodoo2a's code
+    explicit CheckApp(bool reference) : WinApplication("thrash_checks", 0, {}), reference(reference) {}
+    bool reference;
+    Words calls;                           // the compared calls out: id, then the arguments, each
+    std::vector<Words> events;             // the renderer's and the Renderer's
+    ThrashRenderer* renderer = nullptr;    // the one the driver made, while it lives
+    reg32 resources = 0;
+    bool reachedGlide = false;             // the new driver called a Glide function
+    long callCount = 0;
 
-    x86::reg32& word(x86::reg32 address) { return reinterpret_cast<x86::reg32&>(*&getMemory<x86::reg8>(address)); }
+    reg32& word(reg32 address) { return reinterpret_cast<reg32&>(*&getMemory<x86::reg8>(address)); }
 
-    x86::reg32 random(x86::reg32 id)
+    reg32 random(reg32 id) { return reg32(mix(g_seed ^ (std::uint64_t(callCount) << 32) ^ id)); }
+
+    void event(Words e) { events.push_back(std::move(e)); }
+
+    /* A compared call: true when the game stops in it. */
+    bool compared(reg32 id, const Words& arguments, x86::CPU& cpu)
     {
-        return x86::reg32(mix(g_seed ^ (std::uint64_t(calls.size()) << 32) ^ id));
-    }
-
-    /* The call just logged stops the game: true when it does. */
-    bool stops(x86::CPU& cpu)
-    {
-        if (long(calls.size()) - 1 != g_stopAt)
+        calls.push_back(id);
+        calls.push_back(reg32(arguments.size()));
+        calls.insert(calls.end(), arguments.begin(), arguments.end());
+        if (callCount++ != g_stopAt)
             return false;
         cpu.terminate = true;
         return true;
     }
 
-    void logVertex(std::vector<x86::reg32>& words, x86::reg32 at)
-    {
-        for (const x86::reg32 offset : {0x00u, 0x04u, 0x0cu, 0x10u, 0x14u, 0x18u, 0x1cu, 0x20u, 0x24u, 0x28u})
-            words.push_back(word(at + offset));
-    }
+    void outside(reg32 address, x86::CPU& cpu);
+};
 
-    /* A Glide function, both ways: `words` already as the port's Glide takes
-     * them; `out` where it writes, if it does.  Its result. */
-    x86::reg32 glide(unsigned i, std::vector<x86::reg32> words, x86::reg32 out)
-    {
-        calls.push_back({kGlideTable + 4 * i, std::move(words)});
-        const x86::reg32 r = random(i);
-        switch (i)
-        {
-        case kQueryHardware:
-            word(out + 4) = r % 3;
-            word(out + 8) = 1 + (r >> 4) % 8;
-            word(out + 0xc) = (r >> 8) % 4 == 0 ? 0 : (r >> 8) % 4 == 1 ? 0x100 : (r >> 8) % 4 == 2 ? 0x1000 : 2;
-            word(out + 0x14) = (r >> 12) & 1;
-            return (r >> 16) % 8 != 0;
-        case kQueryBoards:
-            word(out) = (r >> 4) % 4 == 0 ? 0 : (r >> 4) % 4 == 1 ? 0xffffffff : 1 + (r >> 6) % 2;
-            return (r >> 16) % 6 != 0;
-        case kWinOpen:
-        case kLfbLock:
-            if (i == kLfbLock)
-            {
-                word(out + 4) = 0x200000 + (r & 0xfff0);
-                word(out + 8) = 0x800 + (r >> 16) % 4 * 0x200;
-                word(out + 0xc) = 0;
-                word(out + 0x10) = 0;
-            }
-            return (r >> 20) % 7 != 0;
-        case kCalcMemory:
-            return ((r % 0x60000) + 8) & ~7u;
-        case kTexMin:
-            return g_texMin;
-        case kTexMax:
-            return g_texMax;
-        case kGetVersion:
-        {
-            static const char* const versions[] = {"Glide Version 2.43", "2.42", "2.41", "2.5", "2.53", "3.0",
-                                                   "", "v2.4", "x", "Glide 2.42b"};
-            if (r % 4 != 0)
-                std::strcpy(&getMemory<char>(out), versions[(r >> 4) % 10]);
-            return 0;
-        }
-        case kScreenWidth:
-        case kScreenHeight:
-            return 512 + (r % 4) * 128;
-        case kPending:
-        case kRetraceOn:
-            return r % 10 < 3 ? 1 + (r >> 8) % 3 : 0;
-        default:
-            return r;
-        }
-    }
+CheckApp* g_running = nullptr;  // whose run the watcher's events belong to
 
-    /* A Glide function called from guest code, through voodoo2a's table. */
-    void glideStub(unsigned i, x86::CPU& cpu)
+void CheckApp::outside(reg32 address, x86::CPU& cpu)
+{
+    static const bool trace = std::getenv("THRASH_CHECKS_TRACE") != nullptr;
+    if (trace)
+        std::printf("  %s: %08x\n", reference ? "reference" : "new", unsigned(address));
+    const reg32 esp = cpu.esp;
+    auto argument = [&](reg32 i) { return word(esp + 4 + 4 * i); };
+    auto finish = [&](reg32 result, reg32 count) {
+        cpu.eax = result;
+        cpu.ecx = 0x33333333;
+        cpu.edx = 0x44444444;
+        cpu.esp = esp + 4 + 4 * count;
+    };
+    if (address >= kGlideStub && address < kGlideStub + 0x10 * reg32(g_glideNames.size()) && (address & 0xf) == 0)
     {
-        const GlideFunction& f = kGlide[i];
-        const x86::reg32 esp = cpu.esp;
-        std::vector<x86::reg32> words;
-        x86::reg32 out = 0;
-        x86::reg32 at = esp + 4;
-        for (const char* kind = f.arguments; *kind; ++kind, at += 4)
+        if (!reference)
+            reachedGlide = true;
+        const std::string& name = g_glideNames[(address - kGlideStub) / 0x10];
+        const Library::Symbol symbol = (*glide2x::s_glide2xRegistry)[name];
+        if (!symbol.second)
         {
-            const x86::reg32 raw = word(at);
-            switch (*kind)
-            {
-            case 'w': case 'p': words.push_back(raw); break;
-            case 'b': words.push_back(raw & 0xff); break;
-            case 'h': words.push_back(raw & 0xffff); break;
-            case 's': words.push_back(x86::reg32(x86::sreg32(x86::sreg16(raw)))); break;
-            case 'v': logVertex(words, raw); break;
-            case 'f':
-                for (x86::reg32 j = 0; j < 64; j += 4)
-                    words.push_back(word(raw + j));
-                break;
-            case 'o': break;
-            }
-            if (*kind == 'o' || i == kQueryHardware || i == kQueryBoards)
-                out = raw;
+            std::printf("Glide's %s is not in the reference\n", name.c_str());
+            std::exit(2);
         }
-        const x86::reg32 result = glide(i, std::move(words), out);
-        if (f.returns)
-            cpu.eax = result;
-        cpu.ecx = 0x11111111;
-        cpu.edx = 0x22222222;
-        cpu.esp = esp + 4 + 4 * x86::reg32(std::strlen(f.arguments));
+        if (trace)
+            std::printf("    %s\n", name.c_str());
+        symbol.second(this, cpu);
+        if (trace)
+            std::printf("    back\n");
+        return;
     }
-
-    /* An import, a callback of the game's or a method of DirectDraw's. */
-    void outside(x86::reg32 id, x86::reg32 count, x86::CPU& cpu)
+    for (const Import& import : kImports)
     {
-        const x86::reg32 esp = cpu.esp;
-        std::vector<x86::reg32> words;
-        for (x86::reg32 i = 0; i < count; ++i)
-            words.push_back(word(esp + 4 + 4 * i));
-        if (id == kGameTriangle || id == kGameLine)
+        if (address != kImportStub + (import.slot & 0xfff))
+            continue;
+        Words words;
+        for (reg32 i = 0; i < import.arguments; ++i)
+            words.push_back(argument(i));
+        reg32 result = 1;
+        switch (import.slot)
         {
-            words.clear();
-            for (x86::reg32 i = 0; i < count; ++i)
-                logVertex(words, word(esp + 4 + 4 * i));
-        }
-        calls.push_back({id, words});
-        if (stops(cpu))
-            return;
-        const x86::reg32 r = random(id);
-        x86::reg32 result = r;
-        switch (id)
+        case kVirtualAlloc:  // the lowest slot free
         {
-        case 0xa903ec:  // LoadLibraryA
-            result = r % 10 != 0 ? kGlideModule : 0;
-            break;
-        case 0xa903d8:  // GetProcAddress
-        {
-            const std::string name = &getMemory<char>(words[1]);
+            if (compared(import.slot, words, cpu))
+                return;
             result = 0;
-            for (unsigned i = 0; i < kGlideCount; ++i)
-                if (name == kGlide[i].name)
-                    result = g_lookupFails && i <= kQueryBoards && r % 14 == 0 ? 0 : kGlideStub + 0x10 * i;
-            break;
-        }
-        case 0xa90390: case 0xa90364: case 0xa9035c: case 0xa90358: case 0xa90404:
-            result = 1;
-            break;
-        case 0xa90368:  // CreateEventA
-            result = r % 10 != 0 ? 0x5000 + (r >> 8) % 0x100 : 0;
-            break;
-        case 0xa90438:  // WaitForSingleObject
-            result = 0;
-            break;
-        case 0xa90448:  // DirectDrawCreate
-            if (r % 5 != 0)
-            {
-                word(words[1]) = kDirectDraw;
-                result = 0;
-            }
-            else
-            {
-                result = 0x80004005;
-            }
-            break;
-        case 0xa9042c:  // VirtualAlloc: the lowest slot free
-        {
-            result = 0;
-            if (r % 25 != 0 && words[1] <= kSlotSize)
-                for (x86::reg32 slot = 0; slot < (kHeapEnd - kHeap) / kSlotSize; ++slot)
+            if (random(import.slot) % 25 != 0 && words[1] <= kSlotSize)
+                for (reg32 slot = 0; slot < (kHeapEnd - kHeap) / kSlotSize; ++slot)
                     if (!(word(kSlotMap) & (1u << slot)))
                     {
                         word(kSlotMap) |= 1u << slot;
@@ -434,31 +281,72 @@ public:
                     }
             break;
         }
-        case 0xa90430:  // VirtualFree
+        case kVirtualFree:
+            if (compared(import.slot, words, cpu))
+                return;
             result = 0;
-            if (r % 25 != 0 && words[0] >= kHeap && words[0] < kHeapEnd)
+            if (random(import.slot) % 25 != 0 && words[0] >= kHeap && words[0] < kHeapEnd)
             {
                 word(kSlotMap) &= ~(1u << ((words[0] - kHeap) / kSlotSize));
                 result = 1;
             }
             break;
-        case kFindWindow:
-            result = r % 8 != 0 ? 0x9000 + r % 0x100 : 0;
+        // The Win32 the old driver set the card up with, as the port's answered.
+        case 0xa903ec:  // LoadLibraryA
+            result = kGlideModule;
             break;
-        case kSetCooperativeLevel:
-            result = r % 5 != 0 ? 0 : 0x80004005;
+        case 0xa903d8:  // GetProcAddress: a stand-in of the reference's Glide
+        {
+            const std::string name = &getMemory<char>(words[1]);
+            const auto at = std::find(g_glideNames.begin(), g_glideNames.end(), name);
+            result = kGlideStub + 0x10 * reg32(at - g_glideNames.begin());
+            if (at == g_glideNames.end())
+                g_glideNames.push_back(name);
             break;
+        }
+        case 0xa90368:  // CreateEventA
+            result = 0x5001;
+            break;
+        case 0xa90438:  // WaitForSingleObject
+            result = 0;
+            break;
+        case 0xa90448:  // DirectDrawCreate
+            word(words[1]) = kDirectDrawObject;
+            result = 0;
+            break;
+        case 0xa90358:  // PostMessageA: no session hands the driver a window thread
+            std::printf("the reference posted the window's thread a message\n");
+            std::exit(2);
         default:
             break;
         }
-        cpu.eax = result;
-        cpu.ecx = 0x33333333;
-        cpu.edx = 0x44444444;
-        cpu.esp = esp + 4 + 4 * count;
+        finish(result, import.arguments);
+        return;
     }
-};
-
-CheckApp* g_running = nullptr;  // whose run the host's Glide calls belong to
+    switch (address)
+    {
+    case kFindWindow:
+        if (compared(address, {}, cpu))
+            return;
+        finish(random(address) % 8 != 0 ? 0x9000 + random(address) % 0x100 : 0, 0);
+        return;
+    case kLockHook:
+        if (compared(address, {argument(0)}, cpu))
+            return;
+        finish(random(address), 1);
+        return;
+    case kSetCooperativeLevel:
+        finish(0, 3);
+        return;
+    case kRelease:
+        finish(0, 1);
+        return;
+    default:
+        break;
+    }
+    std::printf("a call to %08x, no stand-in there (%s)\n", unsigned(address), reference ? "reference" : "new");
+    std::exit(2);
+}
 
 WinApplication::WinApplication(const char*, x86::reg32, const std::vector<Section>&)
 {
@@ -477,304 +365,200 @@ void WinApplication::yieldContext(const x86::CPU&) {}
 
 void WinApplication::dynamicCallElsewhere(x86::reg32 address, x86::CPU& cpu)
 {
-    CheckApp* app = static_cast<CheckApp*>(this);
-    if (address >= kGlideStub && address < kGlideStub + 0x10 * kGlideCount && (address & 0xf) == 0)
-    {
-        app->glideStub((address - kGlideStub) / 0x10, cpu);
-        return;
-    }
-    for (const Import& import : kImports)
-        if (address == kImportStub + (import.slot & 0xfff))
-        {
-            app->outside(import.slot, import.arguments, cpu);
-            return;
-        }
-    switch (address)
-    {
-    case kFindWindow: app->outside(address, 0, cpu); return;
-    case kExecute: app->outside(address, 2, cpu); return;
-    case kLockHook: app->outside(address, 1, cpu); return;
-    case kGameTriangle: app->outside(address, 3, cpu); return;
-    case kGameLine: app->outside(address, 2, cpu); return;
-    case kSetCooperativeLevel: app->outside(address, 3, cpu); return;
-    case kRelease: app->outside(address, 1, cpu); return;
-    default: break;
-    }
-    if (const Generated generated = generatedAt(address))
-    {
-        if (!app->generated)
-            app->reachedGenerated = true;
-        generated(this, cpu);
-        return;
-    }
-    std::printf("a call to %08x, no stand-in there (%s, %zu calls)\n", unsigned(address),
-                app->generated ? "generated" : "native", app->calls.size());
-    for (const Call& c : app->calls)
-        std::printf("  %08x %zu\n", c.id, c.words.size());
-    std::exit(2);
+    static_cast<CheckApp*>(this)->outside(address, cpu);
 }
+
+static reg32 kindOf(GenericResource* resource)
+{
+    return dynamic_cast<ThrashRenderer*>(resource) ? 'T' : dynamic_cast<Renderer*>(resource) ? 'R' : '?';
+}
+
+GenericResource* WinApplication::getResource(x86::reg32 resource)
+{
+    const auto it = m_resources.find(resource);
+    return it == m_resources.end() ? nullptr : it->second;
+}
+
+x86::reg32 WinApplication::allocateResource(GenericResource* resource)
+{
+    CheckApp* app = static_cast<CheckApp*>(this);
+    const reg32 index = ++app->resources + 0x20000;
+    resource->setResourceIndex(index);
+    m_resources[index] = resource;
+    app->event({'A', kindOf(resource), index});
+    if (ThrashRenderer* renderer = dynamic_cast<ThrashRenderer*>(resource))
+        app->renderer = renderer;
+    return index;
+}
+
+void WinApplication::freeResource(x86::reg32 resource)
+{
+    CheckApp* app = static_cast<CheckApp*>(this);
+    const auto it = m_resources.find(resource);
+    if (it == m_resources.end())
+    {
+        app->event({'F', '?', resource});
+        return;
+    }
+    app->event({'F', kindOf(it->second), resource});
+    if (it->second == app->renderer)
+        app->renderer = nullptr;
+    delete it->second;
+    m_resources.erase(it);
+}
+
+void WinApplication::lockContext(const x86::CPU&) { static_cast<CheckApp*>(this)->event({'l'}); }
+void WinApplication::unlockContext(const x86::CPU&) { static_cast<CheckApp*>(this)->event({'u'}); }
+
+GenericResource::GenericResource() : m_resourceIndex(0) {}
+GenericResource::~GenericResource() {}
+x86::reg32 GenericResource::getResourceIndex() const { return m_resourceIndex; }
+void GenericResource::setResourceIndex(x86::reg32 resourceIndex) { m_resourceIndex = resourceIndex; }
 
 void MemMap::usedRanges(std::vector<std::pair<x86::reg32, x86::reg32>>& ranges)
 {
     ranges.assign(1, {0, kMemory});
 }
 
-void ThrashRenderer::finishTriangle(ThrashVertex*)
+/* The Renderer as the drivers see it: the window's mode, the frame buffer's
+ * locks and the presents, logged. */
+Renderer::Renderer(WinApplication* application, Window* window)
 {
-    std::abort();  // thrashRenderer() is null here
+    m_application = application;
+    m_window = window;
+    m_videoMemory = nullptr;
+    m_currentBuffer = 0;
+    m_width = m_height = m_depth = 0;
+    m_lastWindowW = m_lastWindowH = -1;
+    m_vpX = m_vpY = 0;
+    m_vpW = 640;
+    m_vpH = 480;
+    m_keyboardShift = 0;
+    static_cast<CheckApp*>(application)->event({'r', window != nullptr});
 }
 
-void ThrashRenderer::renderPending()
+Renderer::~Renderer() { static_cast<CheckApp*>(m_application)->event({'~'}); }
+
+void Renderer::setVideoMode(x86::reg32 w, x86::reg32 h, x86::reg32 bpp)
 {
-    std::abort();
+    m_currentBuffer = 0;
+    m_width = w;
+    m_height = h;
+    m_depth = bpp;
+    static_cast<CheckApp*>(m_application)->event({'M', w, h, bpp});
 }
 
-namespace glide2x
+x86::reg32 Renderer::lock(x86::reg32 index)
 {
-
-namespace
-{
-
-std::vector<x86::reg32> vertexWords(const GrVertex* v)
-{
-    const float fields[] = {v->x, v->y, v->r, v->g, v->b, v->ooz, v->a, v->oow, v->tmuvtx[0].sow, v->tmuvtx[0].tow};
-    std::vector<x86::reg32> words;
-    for (const float f : fields)
-    {
-        x86::reg32 bits;
-        std::memcpy(&bits, &f, sizeof bits);
-        words.push_back(bits);
-    }
-    return words;
+    static_cast<CheckApp*>(m_application)->event({'K', index});
+    return kFrameBuffers + (index & 3) * 0x100000;
 }
 
-x86::reg32 bitsOf(float f)
+void Renderer::unlock(x86::reg32 index) { static_cast<CheckApp*>(m_application)->event({'k', index}); }
+void Renderer::ensureFramePacing() { static_cast<CheckApp*>(m_application)->event({'e'}); }
+void Renderer::paceFrame() { static_cast<CheckApp*>(m_application)->event({'p'}); }
+void Renderer::present() { static_cast<CheckApp*>(m_application)->event({'P'}); }
+
+/* The GL thread, its work dropped: only the game thread's half of the
+ * renderer is checked. */
+namespace glthread
 {
-    x86::reg32 bits;
-    std::memcpy(&bits, &f, sizeof bits);
-    return bits;
+bool on() { return false; }
+void post(Renderer*, std::function<void()>) {}
+void finish() {}
+void release() {}
+unsigned long long presentPosted(int) { return 0; }
+void presentDone() {}
 }
 
-x86::reg32 call(unsigned i, std::vector<x86::reg32> words, x86::reg32 out = 0)
-{
-    return g_running->glide(i, std::move(words), out);
-}
+}  // namespace win32
 
-}
-
-void drawTriangle(const GrVertex* a, const GrVertex* b, const GrVertex* c)
+/* Libraries, for the reference's Glide registry. */
+namespace win32
 {
-    std::vector<x86::reg32> words = vertexWords(a);
-    for (const GrVertex* v : {b, c})
-    {
-        const std::vector<x86::reg32> more = vertexWords(v);
-        words.insert(words.end(), more.begin(), more.end());
-    }
-    call(kDrawTriangle, words);
-}
-
-void drawLine(const GrVertex* a, const GrVertex* b)
-{
-    std::vector<x86::reg32> words = vertexWords(a);
-    const std::vector<x86::reg32> more = vertexWords(b);
-    words.insert(words.end(), more.begin(), more.end());
-    call(kDrawLine, words);
-}
-
-bool fullColourTextures() { return false; }
-
-namespace direct
-{
-void chromakeyValue(WinApplication*, x86::CPU&, x86::reg32 color) { call(8, {color}); }
-void colorCombine(WinApplication*, x86::CPU&, x86::reg32 function, x86::reg32 factor, x86::reg32 local,
-                  x86::reg32 other, x86::reg32 invert)
-{
-    call(19, {function, factor, local, other, invert});
-}
-void alphaCombine(WinApplication*, x86::CPU&, x86::reg32 function, x86::reg32 factor, x86::reg32 local,
-                  x86::reg32 other, x86::reg32 invert)
-{
-    call(20, {function, factor, local, other, invert});
-}
-void alphaBlendFunction(WinApplication*, x86::CPU&, x86::reg32 a, x86::reg32 b, x86::reg32 c, x86::reg32 d)
-{
-    call(21, {a, b, c, d});
-}
-void cullMode(WinApplication*, x86::CPU&, x86::reg32 mode) { call(22, {mode}); }
-void texFilterMode(WinApplication*, x86::CPU&, x86::reg32 tmu, x86::reg32 a, x86::reg32 b) { call(23, {tmu, a, b}); }
-void ditherMode(WinApplication*, x86::CPU&, x86::reg32 mode) { call(24, {mode}); }
-void chromakeyMode(WinApplication*, x86::CPU&, x86::reg32 mode) { call(25, {mode}); }
-void alphaTestFunction(WinApplication*, x86::CPU&, x86::reg32 function) { call(26, {function}); }
-void depthBufferMode(WinApplication*, x86::CPU&, x86::reg32 mode) { call(27, {mode}); }
-void depthBufferFunction(WinApplication*, x86::CPU&, x86::reg32 function) { call(28, {function}); }
-void depthMask(WinApplication*, x86::CPU&, x86::reg32 mask) { call(29, {mask}); }
-void fogColorValue(WinApplication*, x86::CPU&, x86::reg32 colour) { call(30, {colour}); }
-void fogMode(WinApplication*, x86::CPU&, x86::reg32 mode) { call(31, {mode}); }
-void fogTable(WinApplication*, x86::CPU&, const x86::reg8* table)
-{
-    std::vector<x86::reg32> words(16);
-    std::memcpy(words.data(), table, 64);
-    call(32, words);
-}
-void gammaCorrectionValue(WinApplication*, x86::CPU&, float gamma) { call(40, {bitsOf(gamma)}); }
-void depthBiasLevel(WinApplication*, x86::CPU&, x86::sreg16 bias) { call(41, {x86::reg32(x86::sreg32(bias))}); }
-void texMipMapMode(WinApplication*, x86::CPU&, x86::reg32 tmu, x86::reg32 mode, x86::reg32 blend)
-{
-    call(42, {tmu, mode, blend});
-}
-void texCombine(WinApplication*, x86::CPU&, x86::reg32 tmu, x86::reg32 a, x86::reg32 b, x86::reg32 c, x86::reg32 d,
-                x86::reg32 e, x86::reg32 f)
-{
-    call(43, {tmu, a, b, c, d, e, f});
-}
-void texClampMode(WinApplication*, x86::CPU&, x86::reg32 tmu, x86::reg32 s, x86::reg32 t) { call(49, {tmu, s, t}); }
-void texLodBiasValue(WinApplication*, x86::CPU&, x86::reg32 tmu, float bias) { call(54, {tmu, bitsOf(bias)}); }
-x86::reg32 texCalcMemRequired(WinApplication*, x86::CPU&, x86::reg32 a, x86::reg32 b, x86::reg32 c, x86::reg32 d)
-{
-    return call(44, {a, b, c, d});
-}
-x86::reg32 texMinAddress(WinApplication*, x86::CPU&, x86::reg32 tmu) { return call(46, {tmu}); }
-x86::reg32 texMaxAddress(WinApplication*, x86::CPU&, x86::reg32 tmu) { return call(47, {tmu}); }
-void texSource(WinApplication*, x86::CPU&, x86::reg32 tmu, x86::reg32 start, x86::reg32 evenOdd, x86::reg32 info)
-{
-    call(48, {tmu, start, evenOdd, info});
-}
-void texDownloadMipMap(WinApplication*, x86::CPU&, x86::reg32 tmu, x86::reg32 start, x86::reg32 evenOdd,
-                       x86::reg32 info)
-{
-    call(45, {tmu, start, evenOdd, info});
-}
-void texDownloadTable(WinApplication*, x86::CPU&, x86::reg32 tmu, x86::reg32 type, x86::reg32 data)
-{
-    call(10, {tmu, type, data});
-}
-void renderBuffer(WinApplication*, x86::CPU&, x86::reg32 buffer) { call(11, {buffer}); }
-void bufferClear(WinApplication*, x86::CPU&, x86::reg32 colour, x86::reg8 alpha, x86::reg16 depth)
-{
-    call(12, {colour, alpha, depth});
-}
-void bufferSwap(WinApplication*, x86::CPU&, x86::reg32 interval) { call(13, {interval}); }
-x86::sreg32 bufferNumPending(WinApplication*, x86::CPU&) { return x86::sreg32(call(kPending, {})); }
-x86::reg32 sstStatus(WinApplication*, x86::CPU&) { return call(kStatus, {}); }
-x86::reg32 sstVRetraceOn(WinApplication*, x86::CPU&) { return call(kRetraceOn, {}); }
-void sstIdle(WinApplication*, x86::CPU&) { call(16, {}); }
-void sstIsBusy(WinApplication*, x86::CPU&) { call(17, {}); }
-void clipWindow(WinApplication*, x86::CPU&, x86::reg32 a, x86::reg32 b, x86::reg32 c, x86::reg32 d)
-{
-    call(18, {a, b, c, d});
-}
-x86::reg32 lfbLock(WinApplication*, x86::CPU&, x86::reg32 type, x86::reg32 buffer, x86::reg32 writeMode,
-                   x86::reg32 origin, x86::reg32 pipeline, x86::reg32 info)
-{
-    return call(kLfbLock, {type, buffer, writeMode, origin, pipeline}, info);
-}
-x86::reg32 lfbUnlock(WinApplication*, x86::CPU&, x86::reg32 type, x86::reg32 buffer)
-{
-    return call(kLfbUnlock, {type, buffer});
-}
-x86::reg32 lfbReadRegion(WinApplication*, x86::CPU&, x86::reg32 buffer, x86::reg32 x, x86::reg32 y, x86::reg32 width,
-                         x86::reg32 height, x86::reg32 stride, x86::reg32 data)
-{
-    return call(kLfbRead, {buffer, x, y, width, height, stride, data});
-}
-void resetTextures() {}
-ThrashRenderer* thrashRenderer() { return nullptr; }
-x86::reg32 sstControl(WinApplication*, x86::CPU&, x86::reg32 code) { return call(kControl, {code}); }
-}
-
-}
-
+static reg32 s_symbolIndex = 0x400500;
+x86::reg32 Library::getSymbolIndex() { return s_symbolIndex++; }
+Library::Library(const char* name) : m_next(nullptr), m_name(name) {}
+Library::~Library() {}
 }
 
 namespace
 {
 
 using win32::CheckApp;
+using win32::g_running;
 
-enum Kind
+/* What the renderer hands the GL thread, logged; a draw's vertices given up
+ * here, as the dropped GL work would have given them back. */
+struct Watch : win32::ThrashRenderer::Watcher
 {
-    kDraw, kState, kTextures, kFrame, kSetup, kHeapOps,
-};
+    void drawn(const win32::ThrashDraw& d) override
+    {
+        Words e = {'D', d.vertexCount, d.width, d.height, bitsOf(d.alphaTestRef), d.chromaKeyColor,
+                   bitsOf(d.fogColor[0]), bitsOf(d.fogColor[1]), bitsOf(d.fogColor[2])};
+        for (reg32 i = 0; i < d.vertexCount; ++i)
+        {
+            reg32 words[sizeof(win32::ThrashVertex) / 4];
+            std::memcpy(words, &d.vertices[i], sizeof words);
+            e.insert(e.end(), words, words + sizeof words / 4);
+        }
+        e.push_back(reg32(d.batches.size()));
+        for (const auto& b : d.batches)
+            for (const reg32 w : {b.end, b.texture, b.levels, reg32(b.format), reg32(b.wrapS), reg32(b.wrapT),
+                                  reg32(b.zTest), reg32(b.zTestAlways), reg32(b.zBuffer), reg32(b.alphaBlend),
+                                  reg32(b.cull), reg32(b.chromaKey), b.cullMode, b.clipMinX, b.clipMinY,
+                                  b.clipMaxX, b.clipMaxY, bitsOf(b.gamma), reg32(b.fogTable)})
+                e.push_back(w);
+        e.push_back(reg32(d.fogTables.size()));
+        for (const auto& table : d.fogTables)
+            for (const float f : table)
+                e.push_back(bitsOf(f));
+        g_running->event(std::move(e));
+        delete[] d.vertices;
+    }
+    void uploaded(reg32 index, reg32 size, reg32 levels, win32::TextureFormat format, bool fresh,
+                  const std::vector<x86::reg8>& texels) override
+    {
+        Words e = {'U', index, size, levels, reg32(format), reg32(fresh), reg32(texels.size())};
+        for (std::size_t i = 0; i < texels.size(); i += 4)
+        {
+            reg32 w = 0;
+            std::memcpy(&w, texels.data() + i, std::min<std::size_t>(4, texels.size() - i));
+            e.push_back(w);
+        }
+        g_running->event(std::move(e));
+    }
+    void cleared(reg32 color, reg32 minX, reg32 minY, reg32 maxX, reg32 maxY) override
+    {
+        g_running->event({'C', color, minX, minY, maxX, maxY});
+    }
+    void swapped() override { g_running->event({'S'}); }
+    void rendered(reg32 buffer) override { g_running->event({'B', buffer}); }
+    void released(const std::vector<reg32>& indices) override
+    {
+        Words e = {'X', reg32(indices.size())};
+        e.insert(e.end(), indices.begin(), indices.end());
+        g_running->event(std::move(e));
+    }
+} g_watch;
 
-struct Export
+void observeSwap(win32::WinApplication* app)
 {
-    const char* name;
-    x86::reg32 address;  // voodoo2a's function
-    void (*native)(win32::WinApplication*, x86::CPU&);
-    x86::reg32 argumentBytes;
-    bool result;          // eax is one
-    Kind kind;
-};
-
-const Export kExports[] = {
-    {"THRASH_drawtri", 0xa85770, &nfs3hp::THRASH_drawtri, 0xc, false, kDraw},
-    {"THRASH_drawquad", 0xa85300, &nfs3hp::THRASH_drawquad, 0x10, false, kDraw},
-    {"THRASH_drawquadmesh", 0xa85520, &nfs3hp::THRASH_drawquadmesh, 0xc, false, kDraw},
-    {"THRASH_drawtrimesh", 0xa85900, &nfs3hp::THRASH_drawtrimesh, 0xc, false, kDraw},
-    {"THRASH_drawtrifan", 0xa86000, &nfs3hp::THRASH_drawtrifan, 8, false, kDraw},
-    {"THRASH_drawtristrip", 0xa85ac0, &nfs3hp::THRASH_drawtristrip, 8, false, kDraw},
-    {"THRASH_drawline", 0xa86240, &nfs3hp::THRASH_drawline, 8, false, kDraw},
-    {"THRASH_drawlinemesh", 0xa86350, &nfs3hp::THRASH_drawlinemesh, 0xc, false, kDraw},
-    {"THRASH_drawlinestrip", 0xa86490, &nfs3hp::THRASH_drawlinestrip, 8, false, kDraw},
-    {"THRASH_drawpoint", 0xa86650, &nfs3hp::THRASH_drawpoint, 4, false, kDraw},
-    {"THRASH_drawpointmesh", 0xa866e0, &nfs3hp::THRASH_drawpointmesh, 0xc, false, kDraw},
-    {"THRASH_drawpointstrip", 0xa86790, &nfs3hp::THRASH_drawpointstrip, 8, false, kDraw},
-    {"THRASH_setstate", 0xa84990, &nfs3hp::THRASH_setstate, 8, true, kState},
-    {"THRASH_talloc", 0xa844b0, &nfs3hp::THRASH_talloc, 0x14, true, kTextures},
-    {"THRASH_tupdate", 0xa84630, &nfs3hp::THRASH_tupdate, 0xc, true, kTextures},
-    {"THRASH_treset", 0xa84690, &nfs3hp::THRASH_treset, 0, true, kTextures},
-    {"THRASH_settexture", 0xa846d0, &nfs3hp::THRASH_settexture, 4, true, kTextures},
-    {"THRASH_window", 0xa84780, &nfs3hp::THRASH_window, 4, true, kFrame},
-    {"THRASH_clearwindow", 0xa847b0, &nfs3hp::THRASH_clearwindow, 0, true, kFrame},
-    {"THRASH_flushwindow", 0xa847d0, &nfs3hp::THRASH_flushwindow, 0, true, kFrame},
-    {"THRASH_pageflip", 0xa847e0, &nfs3hp::THRASH_pageflip, 0, false, kFrame},
-    {"THRASH_idle", 0xa84810, &nfs3hp::THRASH_idle, 0, true, kFrame},
-    {"THRASH_sync", 0xa84830, &nfs3hp::THRASH_sync, 4, true, kFrame},
-    {"THRASH_clip", 0xa848b0, &nfs3hp::THRASH_clip, 0x10, true, kFrame},
-    {"THRASH_lockwindow", 0xa850f0, &nfs3hp::THRASH_lockwindow, 0, true, kFrame},
-    {"THRASH_unlockwindow", 0xa851d0, &nfs3hp::THRASH_unlockwindow, 4, true, kFrame},
-    {"THRASH_readrect", 0xa85220, &nfs3hp::THRASH_readrect, 0x14, true, kFrame},
-    {"THRASH_writerect", 0xa85290, &nfs3hp::THRASH_writerect, 0x14, true, kFrame},
-    {"THRASH_about", 0xa83c60, &nfs3hp::THRASH_about, 0, true, kSetup},
-    {"THRASH_init", 0xa83f50, &nfs3hp::THRASH_init, 0, true, kSetup},
-    {"THRASH_is", 0xa83df0, &nfs3hp::THRASH_is, 0, true, kSetup},
-    {"THRASH_selectdisplay", 0xa83f10, &nfs3hp::THRASH_selectdisplay, 4, true, kSetup},
-    {"THRASH_setvideomode", 0xa843d0, &nfs3hp::THRASH_setvideomode, 0xc, true, kSetup},
-    {"THRASH_restore", 0xa84100, &nfs3hp::THRASH_restore, 0, true, kSetup},
-    {"THRASH_modemessage", 0xa84360, &nfs3hp::THRASH_modemessage, 0x18, true, kSetup},
-    {"malloc/free", 0, nullptr, 0, true, kHeapOps},
-};
+    static_cast<CheckApp*>(app)->event({'O'});
+}
 
 std::mt19937 g_random(1998);
 
-x86::reg32 random32()
-{
-    return x86::reg32(g_random());
-}
-
-x86::reg32 below(x86::reg32 n)
-{
-    return x86::reg32(g_random() % n);
-}
-
-bool chance(int percent)
-{
-    return int(g_random() % 100) < percent;
-}
-
-x86::reg32 bitsOf(float f)
-{
-    x86::reg32 bits;
-    std::memcpy(&bits, &f, sizeof bits);
-    return bits;
-}
+reg32 random32() { return reg32(g_random()); }
+reg32 below(reg32 n) { return reg32(g_random() % n); }
+bool chance(int percent) { return int(g_random() % 100) < percent; }
 
 /* A float of every kind: ordinary, tiny, huge, denormal, zero, infinite, NaN. */
 float anyFloat()
 {
     switch (g_random() % 8)
     {
-    case 0: { float f; x86::reg32 bits = random32(); std::memcpy(&f, &bits, 4); return f; }
+    case 0: { float f; reg32 bits = random32(); std::memcpy(&f, &bits, 4); return f; }
     case 1: return 0.0f;
     case 2: return -0.0f;
     case 3: return std::ldexp(float(int(g_random() % 2001) - 1000), -140);
@@ -784,307 +568,364 @@ float anyFloat()
     }
 }
 
-x86::reg8* bytes(win32::WinApplication& app, x86::reg32 at)
+/* A float as the game's vertices have them: on the screen, a depth, a 1/w. */
+float screenFloat(float most)
 {
-    return &app.getMemory<x86::reg8>(at);
+    return chance(10) ? anyFloat() : float(g_random() % 100000) / 100000.0f * most;
+}
+
+x86::reg8* bytes(win32::WinApplication& app, reg32 at) { return &app.getMemory<x86::reg8>(at); }
+
+/* voodoo2a's image as it loads, from the DLL. */
+std::vector<x86::reg8> g_image;
+
+bool loadImage(const char* path)
+{
+    std::FILE* f = std::fopen(path, "rb");
+    if (!f)
+        return false;
+    std::vector<x86::reg8> dll;
+    x86::reg8 buffer[65536];
+    for (std::size_t n; (n = std::fread(buffer, 1, sizeof buffer, f)) > 0;)
+        dll.insert(dll.end(), buffer, buffer + n);
+    std::fclose(f);
+    auto u16 = [&](std::size_t at) { return reg32(dll[at] | dll[at + 1] << 8); };
+    auto u32 = [&](std::size_t at) { return reg32(dll[at] | dll[at + 1] << 8 | dll[at + 2] << 16 | reg32(dll[at + 3]) << 24); };
+    const std::size_t pe = u32(0x3c);
+    const reg32 sections = u16(pe + 6), optional = u16(pe + 20);
+    g_image.assign(kImageEnd - kImage, 0);
+    for (reg32 i = 0; i < sections; ++i)
+    {
+        const std::size_t s = pe + 24 + optional + 40 * i;
+        const reg32 va = u32(s + 12), raw = u32(s + 16), offset = u32(s + 20);
+        if (offset == 0)
+            continue;  // .bss: a size, and nothing in the file
+        for (reg32 j = 0; j < raw; ++j)
+        {
+            const reg32 at = kImageBase + va + j;
+            if (at >= kImage && at < kImageEnd && offset + j < dll.size())
+                g_image[at - kImage] = dll[offset + j];
+        }
+    }
+    return true;
 }
 
 struct Counts
 {
-    unsigned cases = 0, stopped = 0, failed = 0;
+    unsigned sessions = 0, calls = 0, stopped = 0, failed = 0;
+    std::map<std::string, unsigned> byExport;
 };
 
-const char* g_name = "";
-unsigned g_case = 0;
+unsigned g_session = 0;
+const char* g_export = "";
 
-bool report(Counts& counts, const char* what)
+bool report(Counts& counts, const std::string& what)
 {
-    if (++counts.failed <= 10)
-        std::printf("  %s case %u: %s\n", g_name, g_case, what);
+    if (++counts.failed <= 20)
+        std::printf("  session %u, %s: %s\n", g_session, g_export, what.c_str());
     return false;
 }
 
 /* The first byte of [from, to) where the two memories differ, or `to`. */
-x86::reg32 firstDifference(win32::WinApplication& a, win32::WinApplication& b, x86::reg32 from, x86::reg32 to)
+reg32 firstDifference(CheckApp& a, CheckApp& b, reg32 from, reg32 to)
 {
     if (to <= from || std::memcmp(bytes(a, from), bytes(b, from), to - from) == 0)
         return to;
-    for (x86::reg32 at = from; at < to; ++at)
+    for (reg32 at = from; at < to; ++at)
         if (*bytes(a, at) != *bytes(b, at))
             return at;
     return to;
 }
 
-const std::pair<x86::reg32, x86::reg32> kWindows[] = {
-    {kImage, kImageEnd}, {kGame, kGameEnd}, {kHeap, kHeapEnd}, {kStackLow, kStackHigh},
+bool oldOnly(reg32 at)
+{
+    for (const auto& range : kOldOnly)
+        if (at >= range.first && at < range.second)
+            return true;
+    return false;
+}
+
+/* The first byte the game sees where the two differ, or 0. */
+reg32 seenDifference(CheckApp& r, CheckApp& n, reg32 esp)
+{
+    const std::pair<reg32, reg32> windows[] = {{kImage, kImageEnd}, {kGame, kGameEnd}, {kHeap, kHeapEnd}, {esp, kStackHigh}};
+    for (const auto& w : windows)
+        for (reg32 from = w.first; from < w.second;)
+        {
+            const reg32 at = firstDifference(r, n, from, w.second);
+            if (at == w.second)
+                break;
+            if (!oldOnly(at))
+                return at;
+            from = at + 1;
+        }
+    return 0;
+}
+
+std::string describe(const Words& a, const Words& b, const char* what)
+{
+    std::size_t i = 0;
+    while (i < a.size() && i < b.size() && a[i] == b[i])
+        ++i;
+    char text[300];
+    std::snprintf(text, sizeof text, "%s: %zu words reference, %zu new, first difference at %zu (%08x reference, %08x new)",
+                  what, a.size(), b.size(), i, i < a.size() ? unsigned(a[i]) : 0u, i < b.size() ? unsigned(b[i]) : 0u);
+    return text;
+}
+
+std::string describeEvents(const std::vector<Words>& a, const std::vector<Words>& b)
+{
+    std::size_t i = 0;
+    while (i < a.size() && i < b.size() && a[i] == b[i])
+        ++i;
+    char text[400];
+    if (i < a.size() && i < b.size())
+        return describe(a[i], b[i], ("renderer event " + std::to_string(i) + " '" + char(a[i][0]) + "'/'"
+                                     + char(b[i][0]) + "'").c_str());
+    std::snprintf(text, sizeof text, "renderer events: %zu reference, %zu new (the next '%c')", a.size(), b.size(),
+                  i < a.size() ? char(a[i][0]) : i < b.size() ? char(b[i][0]) : '-');
+    return text;
+}
+
+/* ---- A session ---- */
+
+struct Driver
+{
+    void (*reference)(win32::WinApplication*, x86::CPU&);
+    void (*mine)(win32::WinApplication*, x86::CPU&);
+    reg32 argumentBytes;
+    bool result;
 };
 
-void copyWindows(win32::WinApplication& to, win32::WinApplication& from)
+#define EXPORT(name, bytes, result) {#name, {&reference::THRASH_##name, &nfs3hp::THRASH_##name, bytes, result}}
+const std::map<std::string, Driver> kDrivers = {
+    EXPORT(about, 0, true), EXPORT(clearwindow, 0, true), EXPORT(clip, 0x10, true), EXPORT(drawline, 8, false),
+    EXPORT(drawlinemesh, 0xc, false), EXPORT(drawlinestrip, 8, false), EXPORT(drawpoint, 4, false),
+    EXPORT(drawpointmesh, 0xc, false), EXPORT(drawpointstrip, 8, false), EXPORT(drawquad, 0x10, false),
+    EXPORT(drawquadmesh, 0xc, false), EXPORT(drawtri, 0xc, false), EXPORT(drawtrifan, 8, false),
+    EXPORT(drawtrimesh, 0xc, false), EXPORT(drawtristrip, 8, false), EXPORT(flushwindow, 0, false),
+    EXPORT(idle, 0, false), EXPORT(init, 0, true), EXPORT(is, 0, true), EXPORT(lockwindow, 0, true),
+    EXPORT(pageflip, 0, false), EXPORT(readrect, 0x14, true), EXPORT(restore, 0, true),
+    EXPORT(selectdisplay, 4, true), EXPORT(setstate, 8, true), EXPORT(settexture, 4, true),
+    EXPORT(setvideomode, 0xc, true), EXPORT(sync, 4, true), EXPORT(talloc, 0x14, true), EXPORT(treset, 0, true),
+    EXPORT(tupdate, 0xc, true), EXPORT(unlockwindow, 4, true), EXPORT(window, 4, true),
+    EXPORT(writerect, 0x14, true), EXPORT(modemessage, 0x18, true),
+};
+#undef EXPORT
+
+/* What the session knows of the driver: the old one crashes on what it must
+ * not be handed. */
+struct Session
 {
-    for (const auto& w : kWindows)
-        std::memcpy(bytes(to, w.first), bytes(from, w.first), w.second - w.first);
-}
+    bool setUp = false, window = false;
+    std::vector<reg32> textures;   // THRASH_talloc's records
+    std::vector<reg32> locks;      // THRASH_lockwindow's
+    std::vector<driver::GrVertex> traceReference, traceMine;
+    bool tracing = false;
+};
 
-/* What the game's code keeps of voodoo2a's records, from what the generated
- * runs gave it: the lock records THRASH_lockwindow made. */
-std::vector<x86::reg32> g_locks;
-std::vector<x86::reg32> g_allocations;  // malloc/free's own
-
-/* drawPointers, as THRASH_setstate 9 and 0xb leave them. */
-void pointDrawing(CheckApp& g)
-{
-    const bool twoPass = chance(40), antialiased = chance(40);
-    x86::reg32 triangle = kGlideStub + 0x10 * kDrawTriangle, line = kGlideStub + 0x10 * kDrawLine, quad = triangle;
-    if (antialiased)
-    {
-        quad = 0xa83a60;
-        triangle = 0xa83a40;
-        line = kGlideStub + 0x10 * 52;  // grAADrawLine
-    }
-    x86::reg32 lineDraw = line;
-    g.word(0xa93710) = twoPass ? 0xa83930 : triangle;
-    g.word(0xa9370c) = twoPass ? 0xa839b0 : quad;
-    if (twoPass)
-        lineDraw = 0xa83a30;
-    g.word(0xa93610) = lineDraw;
-    g.word(0xa93708) = triangle;
-    g.word(0xa93704) = line;
-    g.word(0xa93700) = quad;
-    // Now and then a pointer the game set itself.
-    for (const x86::reg32 slot : {0xa93710u, 0xa9370cu, 0xa93708u, 0xa93700u})
-        if (chance(3))
-            g.word(slot) = kGameTriangle;
-    if (chance(3))
-        g.word(0xa93610) = kGameLine;
-    g.word(0xa91f20) = antialiased ? 1 : 0;
-    g.word(0xa91f24) = twoPass ? 1 : 0;
-}
-
-/* voodoo2a's variables made up afresh, every one a case can reach, in ways
- * that keep its pointers pointing where they may. */
-void makeState(CheckApp& g, const Export& e)
-{
-    // Glide's table as voodoo2a's loading leaves it; its imports at the stand-ins.
-    for (unsigned i = 0; i < kGlideCount; ++i)
-        g.word(kGlideTable + 4 * i) = kGlideStub + 0x10 * i;
-    for (x86::reg32 slot = 0xa90350; slot < 0xa9044c; slot += 4)
-        g.word(slot) = 0xe1ff00;  // nothing there
-    for (const Import& import : kImports)
-        g.word(import.slot) = kImportStub + (import.slot & 0xfff);
-    g.word(0xa93ea4) = 0;  // the environment, never set up on the port
-    g.word(0xa9235c) = bitsOf(anyFloat());
-    g.word(0xa92358) = bitsOf(anyFloat());
-    if (chance(20))
-        for (x86::reg32 i = 0; i < 256; ++i)
-            g.word(0xa93210 + 4 * i) = chance(80) ? bitsOf(float(i)) : bitsOf(anyFloat());
-    pointDrawing(g);
-    g.word(0xa92354) = below(3);
-    g.word(0xa91f2c) = below(2);
-    g.word(0xa91f04) = below(3);
-    g.word(0xa91efc) = random32();
-    g.word(0xa91f00) = random32();
-    g.word(0xa91f0c) = below(4);
-    g.word(0xa91f18) = 512 + below(4) * 128;
-    g.word(0xa91f1c) = 384 + below(4) * 96;
-    g.word(0xa91f30) = chance(50) ? kFindWindow : 0;
-    g.word(0xa91f3c) = chance(50) ? kExecute : 0;
-    g.word(0xa91f38) = chance(50) ? kLockHook : 0;
-    g.word(0xa91f34) = chance(50) ? kLog : 0;
-    g.word(0xa91f08) = chance(80) ? 0x9000 + below(0x100) : 0;
-    g.word(0xa91f40) = chance(80) ? 0x5000 + below(0x100) : 0;
-    g.word(0xa91f44) = below(2);
-    g.word(0xa91f48) = chance(30) ? kDirectDraw : 0;
-    g.word(0xa91ef8) = below(2);
-    g.word(0xa91f10) = below(2);
-    g.word(0xa92334) = below(2);
-    g.word(0xa91f14) = random32();
-    g.word(0xa91f50) = chance(50) ? kGlideModule : 0;
-    g.word(0xa91ef4) = chance(70) ? below(4) : random32();
-    g.word(0xa91f54) = chance(50) ? 0 : 0x33444658;
-    g.word(0xa93714) = chance(10) ? 0xffffffff : below(3);
-    g.word(0xa93718) = below(3);
-    g.word(0xa9371c) = 1 + below(8);
-    g.word(0xa93720) = chance(50) ? 0 : chance(50) ? 0x100 : 0x1000;
-    g.word(0xa93728) = below(2);
-    g.word(0xa93840) = below(0x24);
-    static const x86::reg32 widths[] = {512, 640, 800, 960, 1024, 1280};
-    for (x86::reg32 mode = 0; mode < 17; ++mode)
-    {
-        const x86::reg32 entry = 0xa92018 + mode * 0x28;
-        g.word(entry) = widths[below(6)];
-        g.word(entry + 4) = g.word(entry) * 3 / 4;
-        g.word(entry + 8) = chance(80) ? 16 : 32;
-        g.word(entry + 0x10) = below(3);
-        g.word(0xa922e8 + mode * 4) = below(16);
-    }
-    g_texMin = chance(50) ? 0 : 0x200000 * below(3);
-    g_texMax = g_texMin + 0x200000 * (1 + below(2)) - 8 * below(4);
-    if (e.kind == kTextures || chance(5))
-        g.word(0xa937a8) = g_texMin + below(g_texMax - g_texMin + 0x100);
-    // The heap may not grow, now and then, or by other steps.
-    g.word(0xa92830) = chance(97) ? 1 : 0;
-    g.word(0xa9273c) = chance(97) ? 0 : 0xfffffffe;
-    g.word(0xa92834) = chance(90) ? 0x10000 : chance(50) ? 0x1000 : 0x20001;
-}
-
-void makeGame(CheckApp& g)
-{
-    for (x86::reg32 i = 0; i < kVertexCount; ++i)
-    {
-        const x86::reg32 v = kVertices + i * 0x20;
-        for (const x86::reg32 offset : {0u, 4u, 8u, 0xcu, 0x18u, 0x1cu})
-            g.word(v + offset) = bitsOf(anyFloat());
-        g.word(v + 0x10) = random32();
-        g.word(v + 0x14) = random32();
-    }
-    for (x86::reg32 i = 0; i < 4096; ++i)
-        g.word(kIndices + 4 * i) = below(kVertexCount);
-    for (x86::reg32 i = 0; i < 16; ++i)
-        for (x86::reg32 j = 0; j < 0x20; j += 4)
-            g.word(kRecords + 0x20 * i + j) = j == 0x1c ? 0 : random32();
-    g.word(kLambdaRecord + 4) = kFindWindow;
-    g.word(kLambdaRecord + 8) = kExecute;
-    g.word(kLambdaRecord + 0x14) = kLockHook;
-    g.word(kLambdaRecord + 0x18) = kLog;
-    for (x86::reg32 j = 0; j < 64; j += 4)
-        g.word(kFogBytes + j) = random32();
-    g.word(kDirectDraw) = kDirectDrawVtable;
-    g.word(kDirectDrawVtable + 8) = kRelease;
-    g.word(kDirectDrawVtable + 0x50) = kSetCooperativeLevel;
-    g.word(kResult) = random32();
-}
-
-/* A vertex pointer, or the first of `count` in a row. */
-x86::reg32 vertex(x86::reg32 count = 1)
+reg32 vertex(reg32 count = 1)
 {
     return kVertices + 0x20 * below(kVertexCount - count + 1);
 }
 
-x86::sreg32 anyCount(x86::reg32 most)
+int32_t anyCount(reg32 most)
 {
-    return chance(5) ? -x86::sreg32(below(3)) : x86::sreg32(below(most + 1));
+    return chance(3) ? -int32_t(below(3)) : int32_t(below(most + 1));
 }
 
-/* The arguments of a case, as the game would push them. */
-void makeArguments(CheckApp& g, const Export& e, x86::reg32 (&a)[8])
+/* The arguments of a call, as the game would push them. */
+void makeArguments(const std::string& name, Session& s, reg32 (&a)[8])
 {
-    for (x86::reg32& word : a)
+    for (reg32& word : a)
         word = random32();
-    const std::string name = e.name;
-    if (name == "THRASH_drawtri")
+    if (name == "drawtri")
     {
         a[0] = vertex(); a[1] = vertex(); a[2] = vertex();
     }
-    else if (name == "THRASH_drawquad")
+    else if (name == "drawquad")
     {
         a[0] = vertex(); a[1] = vertex(); a[2] = vertex(); a[3] = vertex();
     }
-    else if (name == "THRASH_drawline")
+    else if (name == "drawline")
     {
         a[0] = vertex(); a[1] = vertex();
     }
-    else if (name == "THRASH_drawpoint")
+    else if (name == "drawpoint")
     {
         a[0] = vertex();
     }
-    else if (name == "THRASH_drawtrimesh" || name == "THRASH_drawquadmesh" || name == "THRASH_drawlinemesh"
-             || name == "THRASH_drawpointmesh")
+    else if (name == "drawtrimesh" || name == "drawquadmesh" || name == "drawlinemesh" || name == "drawpointmesh")
     {
-        a[0] = x86::reg32(anyCount(60));
+        a[0] = reg32(anyCount(60));
         a[1] = kVertices;
         a[2] = kIndices + 4 * below(1000);
     }
-    else if (name == "THRASH_drawtrifan" || name == "THRASH_drawtristrip" || name == "THRASH_drawlinestrip"
-             || name == "THRASH_drawpointstrip")
+    else if (name == "drawtrifan" || name == "drawtristrip" || name == "drawlinestrip" || name == "drawpointstrip")
     {
-        const x86::sreg32 count = anyCount(60);
-        a[0] = x86::reg32(count);
-        a[1] = vertex(x86::reg32(std::max(count, 0)) + 2);
+        const int32_t count = anyCount(60);
+        a[0] = reg32(count);
+        a[1] = vertex(reg32(std::max(count, 0)) + 2);
     }
-    else if (name == "THRASH_setstate")
+    else if (name == "setstate")
     {
-        static const x86::reg32 states[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 0xa, 0xb, 0xc, 0xd, 0xe, 0xf, 0x12, 0x13,
-                                            0x15, 0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x65, 0x66, 0x67, 0x68, 0x69, 0x6a,
-                                            0x6b, 0x6c};
-        a[0] = chance(95) ? states[below(sizeof states / sizeof states[0])] : below(0x80);
+        static const reg32 states[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 0xa, 0xb, 0xc, 0xd, 0xe, 0xf, 0x12, 0x13, 0x15,
+                                       0x18, 0x19, 0x1a, 0x1c, 0x1f, 0x65, 0x66, 0x67, 0x68, 0x69, 0x6a, 0x6b, 0x6c,
+                                       0x2bf, 0x2c2, 0xc9, 0xce};
+        a[0] = chance(97) ? states[below(sizeof states / sizeof states[0])] : below(0x80);
+        if (a[0] == 0x1b)
+            a[0] = 0x1a;  // no execute lambda: no window thread
         a[1] = chance(70) ? below(5) : random32();
         if (a[0] == 1)
-            a[1] = chance(30) ? 0 : kRecords + 0x20 * below(16);
+            a[1] = chance(30) || s.textures.empty() ? 0 : s.textures[below(reg32(s.textures.size()))];
         if (a[0] == 0x13)
             a[1] = chance(30) ? 0 : kLambdaRecord;
+        if (a[0] == 0x1a || a[0] == 0x1c)
+            a[1] = chance(50) ? 0 : a[0] == 0x1a ? kLog : kLockHook;
         if (a[0] == 0x69)
             a[1] = chance(30) ? 0 : kFogBytes;
         if (a[0] == 0xe && chance(50))
             a[1] = 1 + below(5000);
         if ((a[0] == 8 || a[0] == 0x65) && chance(70))
             a[1] = bitsOf(anyFloat());
+        if (a[0] == 0xb && chance(40))
+            a[1] = 3;
     }
-    else if (name == "THRASH_talloc")
+    else if (name == "talloc")
     {
-        a[0] = chance(90) ? 1u << below(9) : below(300);
-        a[1] = chance(90) ? 1u << below(9) : below(300);
-        a[2] = chance(95) ? below(10) : below(0x100);
+        a[0] = chance(95) ? 1u << below(9) : 1 + below(256);
+        a[1] = chance(95) ? 1u << below(9) : 1 + below(256);
+        a[2] = chance(95) ? below(10) : below(0x20);
         a[4] = below(10);
     }
-    else if (name == "THRASH_tupdate" || name == "THRASH_settexture")
+    else if (name == "tupdate" || name == "settexture")
     {
-        a[0] = kRecords + 0x20 * below(16);
-        if (name == "THRASH_settexture" && chance(30))
+        a[0] = s.textures.empty() ? 0 : s.textures[below(reg32(s.textures.size()))];
+        if (name == "settexture" && chance(30))
             a[0] = 0;
-        a[1] = chance(30) ? 0 : kPixels + below(0x1000);
+        a[1] = chance(20) ? 0 : kPixels + 4 * below(0x400);
         a[2] = chance(50) ? 0 : kPixels + below(0x1000);
     }
-    else if (name == "THRASH_window")
+    else if (name == "window")
     {
         a[0] = below(4);
     }
-    else if (name == "THRASH_sync")
+    else if (name == "sync")
     {
         a[0] = below(5);
     }
-    else if (name == "THRASH_unlockwindow")
+    else if (name == "unlockwindow")
     {
-        a[0] = g_locks.empty() || chance(20) ? 0 : g_locks[below(x86::reg32(g_locks.size()))];
+        a[0] = s.locks.empty() || chance(20) ? 0 : s.locks[below(reg32(s.locks.size()))];
     }
-    else if (name == "THRASH_readrect" || name == "THRASH_writerect")
+    else if (name == "readrect" || name == "writerect")
     {
         a[0] = below(640); a[1] = below(480); a[2] = below(640); a[3] = below(480);
         a[4] = kPixels;
     }
-    else if (name == "THRASH_selectdisplay")
+    else if (name == "selectdisplay")
     {
         a[0] = below(4) - 1;
     }
-    else if (name == "THRASH_setvideomode")
+    else if (name == "setvideomode")
     {
-        a[0] = below(17); a[1] = below(4); a[2] = below(3);
+        a[0] = below(17); a[1] = chance(10) ? 0 : 1 + below(3); a[2] = below(3);
     }
-    else if (name == "THRASH_modemessage")
+    else if (name == "modemessage")
     {
         a[3] = below(17);
         a[4] = below(4) | below(3) << 8;
-        a[5] = kResult;
+        a[5] = kGame + 0x10;
     }
 }
 
-/* One case of one export: the state made up on `g`, copied to `n`, then both
- * run and compared. */
-bool runCase(const Export& e, CheckApp& g, CheckApp& n, Counts& counts)
+/* The calls a session may make now. */
+std::string pickCall(const Session& s)
 {
-    ++counts.cases;
-    g_seed = mix(random32() | std::uint64_t(random32()) << 32);
-    makeState(g, e);
-    if (chance(30) || g_case == 0)
-        makeGame(g);
+    static const char* const anytime[] = {"sync", "flushwindow", "idle", "modemessage", "talloc", "treset"};
+    static const char* const drawing[] = {
+        "drawtri", "drawquad", "drawquadmesh", "drawtrimesh", "drawtrifan", "drawtristrip", "drawline",
+        "drawlinemesh", "drawlinestrip", "drawpoint", "drawpointmesh", "drawpointstrip",
+    };
+    static const char* const windowed[] = {
+        "setstate", "setstate", "setstate", "setstate", "talloc", "tupdate", "tupdate", "settexture", "settexture",
+        "window", "clearwindow", "pageflip", "clip", "lockwindow", "unlockwindow", "readrect", "writerect", "about",
+        "selectdisplay", "init",
+    };
+    if (!s.setUp)
+    {
+        static const char* const setup[] = {"about", "is", "init", "init", "restore"};
+        return chance(70) ? setup[below(5)] : anytime[below(6)];
+    }
+    if (!s.window)
+    {
+        static const char* const ready[] = {"about", "init", "selectdisplay", "setvideomode", "setvideomode", "is"};
+        return chance(80) ? ready[below(6)] : anytime[below(6)];
+    }
+    if (chance(1))
+        return "restore";
+    if (chance(1))
+        return "setvideomode";
+    if (chance(45))
+        return drawing[below(12)];
+    if (chance(85))
+    {
+        // THRASH_tupdate takes a record the game has, which THRASH_talloc made.
+        const std::string picked = windowed[below(sizeof windowed / sizeof windowed[0])];
+        return picked == "tupdate" && s.textures.empty() ? "talloc" : picked;
+    }
+    return anytime[below(6)];
+}
 
-    for (x86::reg32 at = kStackLow; at < kStackHigh; at += 4)
-        g.word(at) = random32();
-    const x86::reg32 esp = kStackHigh - 0x800 - 4 * below(64);
-    x86::reg32 arguments[8];
-    makeArguments(g, e, arguments);
-    for (x86::reg32 i = 0; i < 8; ++i)
-        g.word(esp + 4 + 4 * i) = arguments[i];
-    g.word(esp) = 0xdead0000;  // the return address
+/* One call to both drivers, and the two compared.  False when they differ or
+ * the game stopped. */
+bool runCall(const std::string& name, Session& s, CheckApp& r, CheckApp& n, Counts& counts)
+{
+    const Driver& d = kDrivers.at(name);
+    g_export = name.c_str();
+    static const bool trace = std::getenv("THRASH_CHECKS_TRACE") != nullptr;
+    if (trace)
+        std::printf("session %u call %u: %s\n", g_session, counts.calls, name.c_str());
+    ++counts.calls;
+    ++counts.byExport[name];
+
+    // Now and then the port's own features, alike in both.
+    if (chance(3))
+    {
+        const bool on = chance(50);
+        win32::glide2x::fitFourThree(on);
+        driver::fitFourThree(on);
+    }
+    if (chance(3))
+    {
+        const bool on = chance(50);
+        win32::glide2x::squeezeToLeft(on);
+        driver::squeezeToLeft(on);
+    }
+    if (chance(2))
+    {
+        s.tracing = !s.tracing;
+        win32::glide2x::traceTriangles(s.tracing ? &s.traceReference : nullptr);
+        driver::traceTriangles(s.tracing ? &s.traceMine : nullptr);
+    }
+
+    // The stack: the same in both, the arguments where the game pushes them.
+    const reg32 esp = kStackHigh - 0x800 - 4 * below(64);
+    for (reg32 at = kStackLow; at < kStackHigh; at += 4)
+        r.word(at) = random32();
+    reg32 arguments[8];
+    makeArguments(name, s, arguments);
+    for (reg32 i = 0; i < 8; ++i)
+        r.word(esp + 4 + 4 * i) = arguments[i];
+    r.word(esp) = 0xdead0000;
+    if (name == "is" && chance(70))
+    {
+        // What THRASH_is takes for Glide's version: what its frame holds.
+        static const char* const versions[] = {"Glide Version 2.43", "2.42", "2.41", "2.5", "2.53", "3.0", "",
+                                               "v2.4", "x", "Glide 2.42b", "2.4", "2.50"};
+        std::strcpy(&r.getMemory<char>(esp - 0x54), versions[below(sizeof versions / sizeof versions[0])]);
+    }
+    std::memcpy(bytes(n, kStackLow), bytes(r, kStackLow), kStackHigh - kStackLow);
 
     x86::CPU cpu{};
     cpu.eax = random32();
@@ -1095,185 +936,256 @@ bool runCase(const Export& e, CheckApp& g, CheckApp& n, Counts& counts)
     cpu.edi = random32();
     cpu.ebp = random32();
     cpu.esp = esp;
+    x86::CPU referenceCpu = cpu, mineCpu = cpu;
 
-    g_stopAt = chance(10) ? long(below(12)) : -1;
-    // THRASH_about and THRASH_is look before they call; THRASH_init calls.
-    g_lookupFails = e.address == 0xa83c60 || e.address == 0xa83df0;
-
-    copyWindows(n, g);
-    g.calls.clear();
+    r.calls.clear();
     n.calls.clear();
-    n.reachedGenerated = false;
+    r.events.clear();
+    n.events.clear();
+    s.traceReference.clear();
+    s.traceMine.clear();
+    const long callCount = r.callCount;
+    n.callCount = callCount;
+    const bool clearing = s.window && chance(2);
 
-    x86::CPU nativeCpu = cpu, generatedCpu = cpu;
-    x86::reg32 nativeResult = 0, generatedResult = 0;
-    if (e.kind == kHeapOps)
-    {
-        // A malloc or a free, Watcom's register convention: eax in and out.
-        const bool allocate = g_allocations.empty() || chance(55);
-        x86::reg32 argument;
-        if (allocate)
-        {
-            switch (below(8))
-            {
-            case 0: argument = below(0x20); break;
-            case 1: argument = below(0x30000); break;
-            case 2: argument = chance(50) ? 0 : 0xffffffd4 + below(3); break;
-            default: argument = 1 + below(0x400); break;
-            }
-        }
-        else
-        {
-            const x86::reg32 i = below(x86::reg32(g_allocations.size()));
-            argument = chance(90) ? g_allocations[i] : chance(50) ? 0 : kGame + 4 * below(100);
-            if (argument == g_allocations[i])
-                g_allocations.erase(g_allocations.begin() + i);
-        }
-        win32::g_running = &n;
-        nativeResult = allocate ? nfs3hp::thrashMalloc(&n, nativeCpu, argument)
-                                : (nfs3hp::thrashFree(&n, nativeCpu, argument), 0);
-        win32::g_running = &g;
-        generatedCpu.eax = argument;
-        generatedCpu.esp -= 4;  // the call
-        if (allocate)
-            voodoo2a::sub_a86cb0(&g, generatedCpu);
-        else
-            voodoo2a::sub_a86da0(&g, generatedCpu);
-        generatedResult = allocate ? generatedCpu.eax : 0;
-        if (allocate && generatedResult != 0 && !generatedCpu.terminate)
-            g_allocations.push_back(generatedResult);
-        nativeCpu.eax = allocate ? nativeResult : generatedCpu.eax;
-    }
-    else
-    {
-        win32::g_running = &n;
-        e.native(&n, nativeCpu);
-        win32::g_running = &g;
-        generatedAt(e.address)(&g, generatedCpu);
-        if (e.address == 0xa850f0 && !generatedCpu.terminate && generatedCpu.eax != 0)
-            g_locks.push_back(generatedCpu.eax);
-        if (e.address == 0xa851d0)
-            g_locks.erase(std::remove(g_locks.begin(), g_locks.end(), arguments[0]), g_locks.end());
-    }
+    g_running = &r;
+    if (clearing)
+        win32::glide2x::clearPicture(&r, referenceCpu);
+    d.reference(&r, referenceCpu);
+    if (trace)
+        std::printf("  the reference's done\n");
+    g_running = &n;
+    if (clearing)
+        driver::clearPicture(&n, mineCpu);
+    d.mine(&n, mineCpu);
+    g_running = nullptr;
 
-    char what[400];
-    if (n.reachedGenerated)
-        return report(counts, "the native called into voodoo2a's generated code");
-    const bool stopped = generatedCpu.terminate;
-    if (stopped)
-        ++counts.stopped;
-    if (nativeCpu.terminate != generatedCpu.terminate)
-        return report(counts, "stopped in one run only");
-    if (!(g.calls == n.calls))
+    char what[300];
+    if (n.reachedGlide)
+        return report(counts, "the new driver called a Glide function");
+    const bool stopped = referenceCpu.terminate;
+    if (referenceCpu.terminate != mineCpu.terminate)
+        return report(counts, "stopped in one only");
+    if (r.calls != n.calls)
+        return report(counts, describe(r.calls, n.calls, "calls out"));
+    if (r.events != n.events)
+        return report(counts, describeEvents(r.events, n.events));
+    if (s.traceReference.size() != s.traceMine.size()
+        || std::memcmp(s.traceReference.data(), s.traceMine.data(), s.traceReference.size() * sizeof(driver::GrVertex)) != 0)
     {
-        std::snprintf(what, sizeof what, "calls out: %zu generated, %zu native", g.calls.size(), n.calls.size());
-        for (size_t i = 0; i < g.calls.size() && i < n.calls.size(); ++i)
-            if (!(g.calls[i] == n.calls[i]))
-            {
-                const Call& a = g.calls[i];
-                const Call& b = n.calls[i];
-                int at = 0;
-                at += std::snprintf(what + at, sizeof what - at, "call %zu: %08x (", i, a.id);
-                for (size_t j = 0; j < a.words.size() && j < 8; ++j)
-                    at += std::snprintf(what + at, sizeof what - at, " %08x", a.words[j]);
-                at += std::snprintf(what + at, sizeof what - at, ") generated, %08x (", b.id);
-                for (size_t j = 0; j < b.words.size() && j < 8; ++j)
-                    at += std::snprintf(what + at, sizeof what - at, " %08x", b.words[j]);
-                std::snprintf(what + at, sizeof what - at, ") native");
-                break;
-            }
+        std::snprintf(what, sizeof what, "traced triangles: %zu vertices reference, %zu new", s.traceReference.size(),
+                      s.traceMine.size());
         return report(counts, what);
+    }
+    if ((r.renderer == nullptr) != (n.renderer == nullptr))
+        return report(counts, "a renderer in one only");
+    if (r.renderer)
+    {
+        Words a, b;
+        r.renderer->snapshot(a);
+        n.renderer->snapshot(b);
+        if (a != b)
+            return report(counts, describe(a, b, "the renderer's state"));
     }
     if (!stopped)
     {
-        const struct { const char* name; x86::reg32 g, n; bool compared; } registers[] = {
-            {"eax", generatedCpu.eax, nativeCpu.eax, e.result}, {"esp", generatedCpu.esp, nativeCpu.esp, true},
-            {"ebx", generatedCpu.ebx, nativeCpu.ebx, true}, {"esi", generatedCpu.esi, nativeCpu.esi, true},
-            {"edi", generatedCpu.edi, nativeCpu.edi, true}, {"ebp", generatedCpu.ebp, nativeCpu.ebp, true},
+        const struct { const char* name; reg32 r, n; bool compared; } registers[] = {
+            {"eax", referenceCpu.eax, mineCpu.eax, d.result}, {"esp", referenceCpu.esp, mineCpu.esp, true},
+            {"ebx", referenceCpu.ebx, mineCpu.ebx, true}, {"esi", referenceCpu.esi, mineCpu.esi, true},
+            {"edi", referenceCpu.edi, mineCpu.edi, true}, {"ebp", referenceCpu.ebp, mineCpu.ebp, true},
         };
-        for (const auto& r : registers)
-            if (r.compared && r.g != r.n)
+        for (const auto& reg : registers)
+            if (reg.compared && reg.r != reg.n)
             {
-                std::snprintf(what, sizeof what, "%s %08x generated, %08x native", r.name, r.g, r.n);
+                std::snprintf(what, sizeof what, "%s %08x reference, %08x new", reg.name, reg.r, reg.n);
                 return report(counts, what);
             }
-        if (generatedCpu.fpu.count != nativeCpu.fpu.count)
-            return report(counts, "the FPU's stack left otherwise");
-    }
-    for (const auto& w : kWindows)
-    {
-        const x86::reg32 from = w.first == kStackLow ? esp : w.first;
-        const x86::reg32 at = firstDifference(g, n, from, w.second);
-        if (at != w.second)
+        if (referenceCpu.esp != esp + 4 + d.argumentBytes)
         {
-            std::snprintf(what, sizeof what, "memory at %08x: %02x generated, %02x native", at, *bytes(g, at),
-                          *bytes(n, at));
+            std::snprintf(what, sizeof what, "esp %08x, not past the arguments", referenceCpu.esp);
             return report(counts, what);
         }
     }
+    if (const reg32 at = seenDifference(r, n, esp))
+    {
+        std::snprintf(what, sizeof what, "memory at %08x: %02x reference, %02x new", at, *bytes(r, at), *bytes(n, at));
+        return report(counts, what);
+    }
+    {
+        x86::reg32 rt = 0, rf = 0, rx = 0, nt = 0, nf = 0, nx = 0;
+        const bool ra = win32::glide2x::atlasFreeSpace(rt, rf, rx), na = driver::atlasFreeSpace(nt, nf, nx);
+        int a[6], b[6];
+        const bool rr = win32::glide2x::screenRect(a[0], a[1], a[2], a[3], a[4], a[5]);
+        const bool nr = driver::screenRect(b[0], b[1], b[2], b[3], b[4], b[5]);
+        if (ra != na || rt != nt || rf != nf || rx != nx || rr != nr || (rr && std::memcmp(a, b, sizeof a) != 0))
+            return report(counts, "atlasFreeSpace or screenRect");
+    }
+    if (stopped)
+    {
+        ++counts.stopped;
+        return false;
+    }
+
+    // What the session learns of the driver.
+    if (name == "init" && referenceCpu.eax != 0)
+        s.setUp = true;
+    if (name == "restore")
+        s.setUp = s.window = false;
+    if (name == "setvideomode")
+        s.window = (r.getMemory<x86::reg8>(0xa91ef4) & 2) != 0;
+    if (name == "talloc" && referenceCpu.eax != 0)
+        s.textures.push_back(referenceCpu.eax);
+    if (name == "treset" || name == "setvideomode")
+        s.textures.clear();
+    if (name == "lockwindow" && referenceCpu.eax != 0)
+        s.locks.push_back(referenceCpu.eax);
+    if (name == "unlockwindow")
+        s.locks.erase(std::remove(s.locks.begin(), s.locks.end(), arguments[0]), s.locks.end());
     return true;
 }
 
+/* Both memories as a session starts: voodoo2a as it loads, the game's area
+ * made up, the heap empty. */
+void startSession(CheckApp& r, CheckApp& n)
+{
+    std::memset(bytes(r, kGame), 0, kGameEnd - kGame);
+    std::memset(bytes(r, kHeap), 0, kHeapEnd - kHeap);
+    std::memcpy(bytes(r, kImage), g_image.data(), g_image.size());
+    for (reg32 slot = 0xa90350; slot < 0xa9044c; slot += 4)
+        r.word(slot) = 0xe1ff00;  // nothing there
+    for (const Import& import : kImports)
+        r.word(import.slot) = kImportStub + (import.slot & 0xfff);
+    if (chance(50))
+    {
+        // The game layer's widescreen modes (nfs3hp_main.cpp), and Dynamic Fullscreen.
+        static const struct { reg32 entry, width, height, resolution; } kWide[] = {
+            {12, 1280, 720, driver::kResolution1280x720}, {14, 1600, 900, driver::kResolution1600x900},
+            {15, 1920, 1080, driver::kResolution1920x1080}, {16, 1000, 450, driver::kResolutionDynamic},
+        };
+        for (const auto& wide : kWide)
+        {
+            const reg32 mode = 0xa92018 + wide.entry * 40;
+            r.word(mode) = wide.width;
+            r.word(mode + 4) = wide.height;
+            r.word(mode + 16) = 1;
+            r.word(0xa922e8 + wide.entry * 4) = wide.resolution;
+        }
+        const reg32 width = 800 + below(800), height = 360 + below(720);
+        win32::glide2x::setDynamicResolution(width, height);
+        driver::setDynamicResolution(width, height);
+    }
+    if (chance(10))
+        r.word(0xa922e8 + below(17) * 4) = below(0x90);  // a resolution Glide does not know, now and then
+    for (reg32 i = 0; i < kVertexCount; ++i)
+    {
+        const reg32 v = kVertices + i * 0x20;
+        const bool wild = chance(15);
+        r.word(v) = bitsOf(wild ? anyFloat() : screenFloat(640));
+        r.word(v + 4) = bitsOf(wild ? anyFloat() : screenFloat(480));
+        r.word(v + 8) = bitsOf(wild ? anyFloat() : screenFloat(1));
+        r.word(v + 0xc) = bitsOf(wild ? anyFloat() : screenFloat(1));
+        r.word(v + 0x10) = random32();
+        r.word(v + 0x14) = random32();
+        r.word(v + 0x18) = bitsOf(wild ? anyFloat() : screenFloat(4096));
+        r.word(v + 0x1c) = bitsOf(wild ? anyFloat() : screenFloat(4096));
+    }
+    for (reg32 i = 0; i < 4096; ++i)
+        r.word(kIndices + 4 * i) = below(kVertexCount);
+    r.word(kLambdaRecord + 4) = chance(50) ? kFindWindow : 0;
+    r.word(kLambdaRecord + 8) = 0;  // no window thread
+    r.word(kLambdaRecord + 0x14) = chance(50) ? kLockHook : 0;
+    r.word(kLambdaRecord + 0x18) = kLog;
+    for (reg32 j = 0; j < 64; j += 4)
+        r.word(kFogBytes + j) = random32();
+    for (reg32 at = kPixels; at < kPixelsEnd; at += 4)
+        r.word(at) = random32();
+    r.word(kDirectDrawObject) = kDirectDrawVtable;
+    r.word(kDirectDrawVtable + 8) = kRelease;
+    r.word(kDirectDrawVtable + 0x50) = kSetCooperativeLevel;
+    // The heap may not grow, now and then, or by other steps.
+    r.word(0xa92830) = chance(97) ? 1 : 0;
+    r.word(0xa9273c) = chance(97) ? 0 : 0xfffffffe;
+    r.word(0xa92834) = chance(90) ? 0x10000 : chance(50) ? 0x1000 : 0x20001;
+    std::memcpy(bytes(n, 0), bytes(r, 0), kMemory);
+}
+
+}  // namespace
+
+#include <dbghelp.h>
+
+/* A crash's stack, named, for whoever finds the checks dying. */
+static LONG WINAPI crashed(EXCEPTION_POINTERS* e)
+{
+    HANDLE process = GetCurrentProcess();
+    SymInitialize(process, nullptr, TRUE);
+    CONTEXT context = *e->ContextRecord;
+    STACKFRAME64 frame = {};
+    frame.AddrPC.Offset = context.Rip;
+    frame.AddrPC.Mode = AddrModeFlat;
+    frame.AddrStack.Offset = context.Rsp;
+    frame.AddrStack.Mode = AddrModeFlat;
+    frame.AddrFrame.Offset = context.Rbp;
+    frame.AddrFrame.Mode = AddrModeFlat;
+    std::printf("crashed: %08lx at %p\n", e->ExceptionRecord->ExceptionCode, e->ExceptionRecord->ExceptionAddress);
+    for (int i = 0; i < 24 && StackWalk64(IMAGE_FILE_MACHINE_AMD64, process, GetCurrentThread(), &frame, &context,
+                                          nullptr, SymFunctionTableAccess64, SymGetModuleBase64, nullptr); ++i)
+    {
+        char buffer[sizeof(SYMBOL_INFO) + 256] = {};
+        SYMBOL_INFO* symbol = reinterpret_cast<SYMBOL_INFO*>(buffer);
+        symbol->SizeOfStruct = sizeof(SYMBOL_INFO);
+        symbol->MaxNameLen = 255;
+        DWORD64 displacement = 0;
+        IMAGEHLP_LINE64 line = {};
+        line.SizeOfStruct = sizeof line;
+        DWORD lineDisplacement = 0;
+        const bool named = SymFromAddr(process, frame.AddrPC.Offset, &displacement, symbol);
+        const bool lined = SymGetLineFromAddr64(process, frame.AddrPC.Offset, &lineDisplacement, &line);
+        std::printf("  %s:%lu %s\n", lined ? line.FileName : "?", lined ? line.LineNumber : 0ul,
+                    named ? symbol->Name : "?");
+    }
+    std::exit(3);
 }
 
 int main(int argc, char** argv)
 {
-    const unsigned cases = argc > 1 ? unsigned(std::strtoul(argv[1], nullptr, 10)) : 20000;
-    // mutations.py's: stop at the first case that fails, and check one export.
-    const bool stopAtFirst = argc > 2 && std::strcmp(argv[2], "--first") == 0;
-    const char* only = argc > 3 ? argv[3] : nullptr;
-    CheckApp g(true), n(false);
-    for (CheckApp* app : {&g, &n})
+    SetUnhandledExceptionFilter(crashed);
+    std::setvbuf(stdout, nullptr, _IONBF, 0);
+    const unsigned sessions = argc > 1 ? unsigned(std::strtoul(argv[1], nullptr, 10)) : 2000;
+    const char* dll = argc > 2 ? argv[2] : "nfs3hp/voodoo2a.dll";
+    if (!loadImage(dll))
     {
-        std::memcpy(bytes(*app, 0xa83200), voodoo2a::s_AUTOSegment, 52224);
-        std::memcpy(bytes(*app, 0xa90200), voodoo2a::s__idataSegment, 2048);
-        std::memcpy(bytes(*app, 0xa91200), voodoo2a::s_DGROUPSegment, 7680);
-        std::memcpy(bytes(*app, 0xa95200), voodoo2a::s__edataSegment, 1536);
-        std::memcpy(bytes(*app, 0xa97200), voodoo2a::s__rsrcSegment, 1024);
+        std::printf("no %s\n", dll);
+        return 2;
     }
-    // The names voodoo2a looks Glide's functions up by, in its table's order.
-    for (unsigned i = 0, at = 0xa91210; i < kGlideCount; ++i)
+    CheckApp r(true), n(false);
+    win32::ThrashRenderer::watch(&g_watch);
+    win32::glide2x::setSwapObserver(observeSwap);
+    driver::setSwapObserver(observeSwap);
+    Counts counts;
+    for (g_session = 0; g_session < sessions; ++g_session)
     {
-        const std::string name = &g.getMemory<char>(at);
-        if (name != kGlide[i].name)
-        {
-            std::printf("voodoo2a's Glide name %u is %s, not %s\n", i, name.c_str(), kGlide[i].name);
-            return 2;
-        }
-        at = (at + x86::reg32(name.size()) + 4) & ~3u;
+        ++counts.sessions;
+        g_seed = mix(random32() | std::uint64_t(random32()) << 32);
+        g_stopAt = chance(20) ? long(below(6)) : -1;
+        r.callCount = n.callCount = 0;
+        startSession(r, n);
+        Session s;
+        bool going = true;
+        const unsigned length = 10 + below(300);
+        for (unsigned i = 0; i < length && going; ++i)
+            going = runCall(pickCall(s), s, r, n, counts);
+        // The game going on, or not: either way the driver let go, unstopped.
+        g_stopAt = -1;
+        if (!going)
+            std::memcpy(bytes(n, 0), bytes(r, 0), kMemory);
+        runCall("restore", s, r, n, counts);
+        win32::glide2x::traceTriangles(nullptr);
+        driver::traceTriangles(nullptr);
     }
-    for (const auto& m : kMethods)
-        if (m.address < kImage || m.address >= kCodeEnd)
-            return 2;
-
-    bool failed = false;
-    for (const Export& e : kExports)
-    {
-        if (only && std::strcmp(only, e.name) != 0)
-            continue;
-        Counts counts;
-        g_name = e.name;
-        for (g_case = 0; g_case < cases; ++g_case)
-        {
-            if (!runCase(e, g, n, counts) && stopAtFirst)
-                return 1;
-            // Both memories alike again, the dead stack included, for the next case.
-            copyWindows(n, g);
-            if (g_case % 2000 == 1999 || g_case + 1 == cases)
-            {
-                const x86::reg32 at = firstDifference(g, n, 0, kMemory);
-                if (at != kMemory)
-                {
-                    std::printf("  %s: memory at %08x written outside the windows\n", e.name, at);
-                    ++counts.failed;
-                    std::memcpy(bytes(n, 0), bytes(g, 0), kMemory);
-                }
-            }
-        }
-        std::printf("%-24s %7u cases, %5u stopped the game -- %u failed\n", e.name, counts.cases, counts.stopped,
-                    counts.failed);
-        failed = failed || counts.failed != 0;
-    }
-    std::printf(failed ? "FAILED\n" : "all alike\n");
-    return failed ? 1 : 0;
+    std::printf("%u sessions, %u calls, %u stopped the game -- %u failed\n", counts.sessions, counts.calls,
+                counts.stopped, counts.failed);
+    for (const auto& e : counts.byExport)
+        std::printf("  %-16s %7u\n", e.first.c_str(), e.second);
+    std::printf(counts.failed ? "FAILED\n" : "all alike\n");
+    return counts.failed ? 1 : 0;
 }

@@ -29252,7 +29252,7 @@ L_0x004c6e69:
     }
     // 004c6eb6  e8cd9e0100             -call 0x4e0d88
     cpu.esp -= 4;
-    nfs3hp::snd::eaRandom(app, cpu.sync());
+    nfs3hp::port::eaRandom(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004c6ebb  88c2                   -mov dl, al
@@ -29282,7 +29282,7 @@ L_0x004c6e69:
 L_0x004c6ecd:
     // 004c6ecd  e8b69e0100             -call 0x4e0d88
     cpu.esp -= 4;
-    nfs3hp::snd::eaRandom(app, cpu.sync());
+    nfs3hp::port::eaRandom(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004c6ed2  88c2                   -mov dl, al

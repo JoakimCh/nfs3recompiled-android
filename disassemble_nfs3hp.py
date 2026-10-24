@@ -980,87 +980,89 @@ MMX_NATIVES = {
 }
 GAME_NATIVES.update(MMX_NATIVES)
 
-# EA's SND library, native: each address is the function of that name in
-# src/nfs3hp/native_snd.cpp, in nfs3hp::snd -- the voices, their volume, pan
-# and pitch, the 100 Hz tick, the platform layer over the mixer.  EA's names
-# where the game's messages give them.  tools/game_checks compares them with
-# their generated code as well.
+# EA's SND library, rewritten as the port's own C++ (src/nfs3hp/port_snd.h):
+# each address is the game's entry of that name in nfs3hp::port, first those
+# of port_snd_voices.cpp -- the voices, their volume, pan and pitch, the 100
+# Hz tick, the platform layer over the mixer.  EA's names where the game's
+# messages give them.  tools/game_checks compares them with their generated
+# code as well; then the register-level natives of the rest of the sound
+# (nfs3hp::snd).
 SND_NATIVES = {
-    0x4e0d88: "snd::eaRandom",
-    0x4e257c: "snd::soundIdle",
-    0x4e25c0: "snd::iSNDstop",
-    0x4e8fd0: "snd::SNDstatus",
-    0x4e9010: "snd::SNDstopall",
-    0x4e9420: "snd::SNDautovol",
-    0x4e9540: "snd::setSoundVolume",
-    0x4e95fc: "snd::SNDvol",
-    0x4e9670: "snd::SNDstop",
-    0x4e9710: "snd::setSoundBend",
-    0x4e97e4: "snd::SNDpitchbend",
-    0x4e9850: "snd::SNDpos3d",
-    0x4e9950: "snd::SNDpan",
-    0x4e9b20: "snd::SNDplaysetdef",
-    0x4e9ba0: "snd::SNDplay",
-    0x4e9bf8: "snd::playOptions",
-    0x4ff840: "snd::voicePicked",
-    0x4ff86c: "snd::iSNDallocchan",
-    0x4ffb64: "snd::iSNDfreechan",
-    0x4ffc9c: "snd::voiceOf",
-    0x500604: "snd::iSNDmixstop",
-    0x500654: "snd::setSendVolume",
-    0x5006a4: "snd::setMixVolume",
-    0x500c80: "snd::soundTick",
-    0x500e20: "snd::iSNDenteraudio",
-    0x500e7c: "snd::iSNDleaveaudio",
-    0x500e94: "snd::iSNDserveradd100hzclient",
-    0x500ef0: "snd::iSNDserverremove100hzclient",
-    0x5014a0: "snd::updateVoiceVolume",
-    0x501540: "snd::iSNDvol",
-    0x501670: "snd::soundVolume",
-    0x501938: "snd::newGroup",
-    0x502cb0: "snd::updateVoicePitch",
-    0x502d30: "snd::iSNDplatformdetune",
-    0x502df0: "snd::iSNDplatform3dpos",
-    0x502ef0: "snd::iSNDpan",
-    0x5222f0: "snd::panSplit",
-    0x522320: "snd::panSurround",
-    0x5224b0: "snd::panLawPositive",
-    0x5224e0: "snd::randomOffset",
-    0x5229d0: "snd::nextTag",
-    0x522e90: "snd::pitchFactor",
-    0x522f10: "snd::mixStep",
-    0x522f50: "snd::setMixStep",
-    0x523310: "snd::setVoiceSend",
-    0x52b1c0: "snd::panLaw",
-    0x52b230: "snd::readBigEndian",
-    0x52b500: "snd::setSendLevel",
-    # native_snd_play.cpp: patches, banks, a sample started on a channel.
-    0x4e73d0: "snd::SNDmastervol",
-    0x4e8bd0: "snd::removeBankPatches",
-    0x4e8c1c: "snd::removeAllBanks",
-    0x4e8c28: "snd::SNDbankremove",
-    0x4e8d20: "snd::SNDbankadd",
-    0x4e8db0: "snd::SNDbankheadersize",
-    0x4e8e20: "snd::SNDbankheadercopy",
-    0x4fb1e0: "snd::SNDbankpatpresent",
-    0x5000b8: "snd::iSNDmixstart",
-    0x5017c0: "snd::timbreDefaults",
-    0x5017d8: "snd::resetTimbre",
-    0x5018dc: "snd::addTimbreDeltas",
-    0x501978: "snd::iSNDplaytaggedtimbre",
-    0x501de8: "snd::iSNDplaytaggedpatch",
-    0x5021ac: "snd::iSNDresolvetaggedpatch",
-    0x5022d0: "snd::unresolveTaggedPatch",
-    0x502330: "snd::iSNDextracthdrinfo",
-    0x5024a0: "snd::iSNDbankremovepat",
-    0x502570: "snd::bankUsable",
-    0x5025b0: "snd::iSNDbankalloc",
-    0x502620: "snd::iSNDdownloadbank",
-    0x522510: "snd::iSNDplatformplay",
-    0x522a80: "snd::iSNDplatformresolve",
-    0x522d08: "snd::platformUnresolve",
-    0x523d94: "snd::iSNDplatformpacketplay",
-    0x523f90: "snd::iSNDcheckplayopts",
+    0x4e0d88: "port::eaRandom",
+    0x4e257c: "port::soundIdle",
+    0x4e25c0: "port::iSNDstop",
+    0x4e8fd0: "port::SNDstatus",
+    0x4e9010: "port::SNDstopall",
+    0x4e9420: "port::SNDautovol",
+    0x4e9540: "port::setSoundVolume",
+    0x4e95fc: "port::SNDvol",
+    0x4e9670: "port::SNDstop",
+    0x4e9710: "port::setSoundBend",
+    0x4e97e4: "port::SNDpitchbend",
+    0x4e9850: "port::SNDpos3d",
+    0x4e9950: "port::SNDpan",
+    0x4e9b20: "port::SNDplaysetdef",
+    0x4e9ba0: "port::SNDplay",
+    0x4e9bf8: "port::playOptions",
+    0x4ff840: "port::voicePicked",
+    0x4ff86c: "port::iSNDallocchan",
+    0x4ffb64: "port::iSNDfreechan",
+    0x4ffc9c: "port::voiceOf",
+    0x500604: "port::iSNDmixstop",
+    0x500654: "port::setSendVolume",
+    0x5006a4: "port::setMixVolume",
+    0x500c80: "port::soundTick",
+    0x500e20: "port::iSNDenteraudio",
+    0x500e7c: "port::iSNDleaveaudio",
+    0x500e94: "port::iSNDserveradd100hzclient",
+    0x500ef0: "port::iSNDserverremove100hzclient",
+    0x5014a0: "port::updateVoiceVolume",
+    0x501540: "port::iSNDvol",
+    0x501670: "port::soundVolume",
+    0x501938: "port::newGroup",
+    0x502cb0: "port::updateVoicePitch",
+    0x502d30: "port::iSNDplatformdetune",
+    0x502df0: "port::iSNDplatform3dpos",
+    0x502ef0: "port::iSNDpan",
+    0x5222f0: "port::panSplit",
+    0x522320: "port::panSurround",
+    0x5224b0: "port::panLawPositive",
+    0x5224e0: "port::randomOffset",
+    0x5229d0: "port::nextTag",
+    0x522e90: "port::pitchFactor",
+    0x522f10: "port::mixStep",
+    0x522f50: "port::setMixStep",
+    0x523310: "port::setVoiceSend",
+    0x52b1c0: "port::panLaw",
+    0x52b230: "port::readBigEndian",
+    0x52b500: "port::setSendLevel",
+    # port_snd_play.cpp: patches, banks, a sample started on a channel.
+    0x4e73d0: "port::SNDmastervol",
+    0x4e8bd0: "port::removeBankPatches",
+    0x4e8c1c: "port::removeAllBanks",
+    0x4e8c28: "port::SNDbankremove",
+    0x4e8d20: "port::SNDbankadd",
+    0x4e8db0: "port::SNDbankheadersize",
+    0x4e8e20: "port::SNDbankheadercopy",
+    0x4fb1e0: "port::SNDbankpatpresent",
+    0x5000b8: "port::iSNDmixstart",
+    0x5017c0: "port::timbreDefaults",
+    0x5017d8: "port::resetTimbre",
+    0x5018dc: "port::addTimbreDeltas",
+    0x501978: "port::iSNDplaytaggedtimbre",
+    0x501de8: "port::iSNDplaytaggedpatch",
+    0x5021ac: "port::iSNDresolvetaggedpatch",
+    0x5022d0: "port::unresolveTaggedPatch",
+    0x502330: "port::iSNDextracthdrinfo",
+    0x5024a0: "port::iSNDbankremovepat",
+    0x502570: "port::bankUsable",
+    0x5025b0: "port::iSNDbankalloc",
+    0x502620: "port::iSNDdownloadbank",
+    0x522510: "port::iSNDplatformplay",
+    0x522a80: "port::iSNDplatformresolve",
+    0x522d08: "port::platformUnresolve",
+    0x523d94: "port::iSNDplatformpacketplay",
+    0x523f90: "port::iSNDcheckplayopts",
     # native_snd_stream.cpp: the system tasks, the top-up's coordination, the
     # SND streamer.
     0x4e7520: "snd::addSystemTask",
@@ -1547,15 +1549,16 @@ EACSND_NATIVES = {
 }
 
 # voodoo2a.dll, the Voodoo2 driver behind THRASH: data in its code, and two
-# functions that are a bare ret after another (THRASH_flushwindow, THRASH_idle).
-# tools/thrash_checks generates it with these.
+# functions that are a bare ret after another (THRASH_flushwindow, THRASH_idle),
+# for the disassembly to find its way through it.
 VOODOO2A_DATA_SEGMENTS = [(0xa83204, 0xa83210), (0xA86833, 0xA868A2)]
 VOODOO2A_KNOWN_SUBROUTINES = [0xA847D0, 0xA84810]
 
-# voodoo2a is native: each export is the port's function of that name in
-# src/nfs3hp/native_thrash.cpp, and none of its code is generated.  Of its own
-# functions only one is handed out to be called: sub_a84360, which
-# THRASH_setvideomode gives the game's window thread to run on message 0x465.
+# voodoo2a is the port's own: each export is the port's function of that name
+# in src/nfs3hp/port_thrash.cpp, and none of its code is generated.  Of its own
+# functions only one was handed out to be called: sub_a84360, which its
+# THRASH_setvideomode gave the game's window thread to run on message 0x465.
+# The port's driver hands it to nobody; the address stays bound all the same.
 VOODOO2A_NATIVES = {
     "_THRASH_about@0": "THRASH_about",
     "_THRASH_clearwindow@0": "THRASH_clearwindow",
@@ -1629,7 +1632,7 @@ if __name__ == '__main__':
     # Confirmed by bisection: reverting these two files alone brought the
     # picture back.  The tool is kept for whoever picks the work up again; its
     # half for voodoo2a, whose code is no longer generated, would now go into
-    # THRASH_about and measureModes in src/nfs3hp/native_thrash.cpp.
+    # THRASH_about and measureModes in src/nfs3hp/port_thrash.cpp.
 
     from tools.apply_menu_unlock import apply as apply_menu_unlock
     apply_menu_unlock(Path(__file__).resolve().parent)
@@ -1719,7 +1722,7 @@ if __name__ == '__main__':
     # (native_controls_race.cpp's forcePlayerCar).
 
     # Full colour: the Screen Size list shows the depth a race is drawn in (the
-    # Voodoo2 driver's taking the game's 32-bit textures is native_thrash.cpp's).
+    # Voodoo2 driver's taking the game's 32-bit textures is port_thrash.cpp's).
     from tools.apply_full_colour import apply as apply_full_colour
     apply_full_colour(Path(__file__).resolve().parent)
 

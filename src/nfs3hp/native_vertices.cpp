@@ -1,8 +1,7 @@
 #include <nfs3hp.h>
 #include "native_thrash.h"
-#include <lib/gliderenderer.h>
+#include "port_thrash.h"
 #include <lib/memmap.h>
-#include <winapi/glide2x.h>
 #include <SDL3/SDL.h>
 #include <algorithm>
 #include <cfenv>
@@ -5416,8 +5415,8 @@ void checkAgainstOriginal(win32::WinApplication* app, x86::CPU& cpu, const char*
 
 /* What differs between the triangles two paths handed to the renderer: their
  * number, or a field THRASH_drawtri sets; empty if nothing. */
-void describeTriangles(const std::vector<win32::GrVertex>& mineTraced,
-                       const std::vector<win32::GrVertex>& originalTraced, char* what, std::size_t size)
+void describeTriangles(const std::vector<port::driver::GrVertex>& mineTraced,
+                       const std::vector<port::driver::GrVertex>& originalTraced, char* what, std::size_t size)
 {
     if (mineTraced.size() != originalTraced.size())
     {
@@ -5428,17 +5427,17 @@ void describeTriangles(const std::vector<win32::GrVertex>& mineTraced,
     struct Field
     {
         const char* name;
-        float win32::GrVertex::*member;
+        float port::driver::GrVertex::*member;
     };
     static const Field fields[] = {
-        {"x", &win32::GrVertex::x}, {"y", &win32::GrVertex::y}, {"ooz", &win32::GrVertex::ooz},
-        {"r", &win32::GrVertex::r}, {"g", &win32::GrVertex::g}, {"b", &win32::GrVertex::b},
-        {"a", &win32::GrVertex::a}, {"oow", &win32::GrVertex::oow},
+        {"x", &port::driver::GrVertex::x}, {"y", &port::driver::GrVertex::y}, {"ooz", &port::driver::GrVertex::ooz},
+        {"r", &port::driver::GrVertex::r}, {"g", &port::driver::GrVertex::g}, {"b", &port::driver::GrVertex::b},
+        {"a", &port::driver::GrVertex::a}, {"oow", &port::driver::GrVertex::oow},
     };
     for (std::size_t i = 0; i < mineTraced.size() && !what[0]; ++i)
     {
-        const win32::GrVertex& m = mineTraced[i];
-        const win32::GrVertex& o = originalTraced[i];
+        const port::driver::GrVertex& m = mineTraced[i];
+        const port::driver::GrVertex& o = originalTraced[i];
         auto differ = [&](const char* field, float a, float b) {
             if (!what[0] && std::memcmp(&a, &b, sizeof a) != 0)
                 SDL_snprintf(what, size, "vertex %u %s: %.9g native, %.9g original", unsigned(i), field, double(a),
@@ -5476,8 +5475,8 @@ void checkClip(win32::WinApplication* app, x86::CPU& cpu, CheckCounts& counts, c
     kRanges.insert(kRanges.end(), extra.begin(), extra.end());
     static std::vector<x86::reg8> before;
     static std::vector<x86::reg8> written;
-    static std::vector<win32::GrVertex> mineTraced;
-    static std::vector<win32::GrVertex> originalTraced;
+    static std::vector<port::driver::GrVertex> mineTraced;
+    static std::vector<port::driver::GrVertex> originalTraced;
     auto copyOut = [app](std::vector<x86::reg8>& to) {
         to.clear();
         for (const auto& range : kRanges)
@@ -5491,9 +5490,9 @@ void checkClip(win32::WinApplication* app, x86::CPU& cpu, CheckCounts& counts, c
     copyOut(before);
     const x86::CPU entry = cpu;
     t_tracing = true;
-    win32::glide2x::traceTriangles(&mineTraced);
+    port::driver::traceTriangles(&mineTraced);
     native(app, cpu);
-    win32::glide2x::traceTriangles(nullptr);
+    port::driver::traceTriangles(nullptr);
     const x86::CPU mine = cpu;
     copyOut(written);
     std::size_t at = 0;
@@ -5505,11 +5504,11 @@ void checkClip(win32::WinApplication* app, x86::CPU& cpu, CheckCounts& counts, c
         std::memcpy(&app->getMemory<x86::reg8>(kRanges[i].first), &before[at], kRanges[i].second);
     }
     cpu = entry;
-    win32::glide2x::traceTriangles(&originalTraced);
+    port::driver::traceTriangles(&originalTraced);
     t_original = true;
     app->dynamic_call(address, cpu);
     t_original = false;
-    win32::glide2x::traceTriangles(nullptr);
+    port::driver::traceTriangles(nullptr);
     t_tracing = false;
 
     char what[200] = "";
@@ -5560,8 +5559,8 @@ void checkWholeMemory(win32::WinApplication* app, x86::CPU& cpu, const char* nam
                       x86::reg32 items, CheckCounts& counts, Uint64& last,
                       void (*native)(win32::WinApplication*, x86::CPU&), bool triangles = false)
 {
-    static std::vector<win32::GrVertex> mineTraced;
-    static std::vector<win32::GrVertex> originalTraced;
+    static std::vector<port::driver::GrVertex> mineTraced;
+    static std::vector<port::driver::GrVertex> originalTraced;
     mineTraced.clear();
     originalTraced.clear();
     const Uint64 now = SDL_GetTicks();
@@ -5601,9 +5600,9 @@ void checkWholeMemory(win32::WinApplication* app, x86::CPU& cpu, const char* nam
     t_tracing = triangles;
     t_wholeChecking = true;
     if (triangles)
-        win32::glide2x::traceTriangles(&mineTraced);
+        port::driver::traceTriangles(&mineTraced);
     native(app, cpu);
-    win32::glide2x::traceTriangles(nullptr);
+    port::driver::traceTriangles(nullptr);
     const x86::CPU mine = cpu;
     stamps[2] = SDL_GetTicksNS();
     copyOut(written);
@@ -5617,11 +5616,11 @@ void checkWholeMemory(win32::WinApplication* app, x86::CPU& cpu, const char* nam
     stamps[4] = SDL_GetTicksNS();
     cpu = entry;
     if (triangles)
-        win32::glide2x::traceTriangles(&originalTraced);
+        port::driver::traceTriangles(&originalTraced);
     t_original = true;
     app->dynamic_call(address, cpu);
     t_original = false;
-    win32::glide2x::traceTriangles(nullptr);
+    port::driver::traceTriangles(nullptr);
     t_tracing = false;
     t_wholeChecking = false;
     stamps[5] = SDL_GetTicksNS();
@@ -5980,7 +5979,7 @@ bool clipPolygon(win32::WinApplication* app, x86::CPU& cpu)
 {
     if (originalRunning() || !drawingPrecision(cpu) || !clipNativeOn())
         return false;
-    if (clipChecking() && !t_tracing && !win32::glide2x::tracingTriangles())
+    if (clipChecking() && !t_tracing && !port::driver::tracingTriangles())
     {
         static CheckCounts counts;
         checkClip(app, cpu, counts, "sub_4c2cd0", 0x4c2cd0, clipPolygonNative);
@@ -5994,7 +5993,7 @@ bool clipTriangle(win32::WinApplication* app, x86::CPU& cpu)
 {
     if (originalRunning() || !drawingPrecision(cpu) || !clipNativeOn())
         return false;
-    if (clipChecking() && !t_tracing && !win32::glide2x::tracingTriangles())
+    if (clipChecking() && !t_tracing && !port::driver::tracingTriangles())
     {
         static CheckCounts counts;
         checkClip(app, cpu, counts, "sub_4c11b0", 0x4c11b0, clipTriangleNative,
@@ -6009,7 +6008,7 @@ bool clipTriangleByZ(win32::WinApplication* app, x86::CPU& cpu)
 {
     if (originalRunning() || !drawingPrecision(cpu) || !clipNativeOn())
         return false;
-    if (clipChecking() && !t_tracing && !win32::glide2x::tracingTriangles())
+    if (clipChecking() && !t_tracing && !port::driver::tracingTriangles())
     {
         static CheckCounts counts;
         checkClip(app, cpu, counts, "sub_4c1aa0", 0x4c1aa0, clipTriangleByZNative,
@@ -6024,7 +6023,7 @@ bool quadMesh(win32::WinApplication* app, x86::CPU& cpu)
 {
     if (originalRunning() || !drawingPrecision(cpu) || !clipNativeOn())
         return false;
-    if (clipChecking() && !t_tracing && !win32::glide2x::tracingTriangles())
+    if (clipChecking() && !t_tracing && !port::driver::tracingTriangles())
     {
         static CheckCounts counts;
         Ranges ranges;
@@ -6044,7 +6043,7 @@ bool clipQuad(win32::WinApplication* app, x86::CPU& cpu)
 {
     if (originalRunning() || !drawingPrecision(cpu) || !clipNativeOn())
         return false;
-    if (clipChecking() && !t_tracing && !win32::glide2x::tracingTriangles())
+    if (clipChecking() && !t_tracing && !port::driver::tracingTriangles())
     {
         static CheckCounts counts;
         checkClip(app, cpu, counts, "sub_4c12e0", 0x4c12e0, clipQuadNative,
@@ -6148,7 +6147,7 @@ bool trackRecords(win32::WinApplication* app, x86::CPU& cpu)
 {
     if (originalRunning() || !drawingPrecision(cpu) || !polygonNativesOn())
         return false;
-    if (targetedCheck() && !win32::glide2x::tracingTriangles())
+    if (targetedCheck() && !port::driver::tracingTriangles())
     {
         static CheckCounts counts;
         /* What it can write: the allocator's pointers, the buffer past its
@@ -6192,7 +6191,7 @@ bool projectedTriangle(win32::WinApplication* app, x86::CPU& cpu)
 {
     if (originalRunning() || !drawingPrecision(cpu) || !polygonNativesOn())
         return false;
-    if (targetedCheck() && !win32::glide2x::tracingTriangles())
+    if (targetedCheck() && !port::driver::tracingTriangles())
     {
         static CheckCounts counts;
         const x86::reg32 slot = cpu.eax;
@@ -6250,7 +6249,7 @@ bool triangleList(win32::WinApplication* app, x86::CPU& cpu)
 {
     if (originalRunning() || !drawingPrecision(cpu) || !polygonNativesOn())
         return false;
-    if (targetedCheck() && !win32::glide2x::tracingTriangles())
+    if (targetedCheck() && !port::driver::tracingTriangles())
     {
         static CheckCounts counts;
         Ranges ranges = { { 0x554e54, 12 } };
@@ -6274,7 +6273,7 @@ bool quadList(win32::WinApplication* app, x86::CPU& cpu)
 {
     if (originalRunning() || !drawingPrecision(cpu) || !polygonNativesOn())
         return false;
-    if (targetedCheck() && !win32::glide2x::tracingTriangles())
+    if (targetedCheck() && !port::driver::tracingTriangles())
     {
         static CheckCounts counts;
         Ranges ranges = { { 0x554e54, 12 } };
@@ -6298,7 +6297,7 @@ bool sortedBuckets(win32::WinApplication* app, x86::CPU& cpu)
 {
     if (originalRunning() || !drawingPrecision(cpu) || !polygonNativesOn())
         return false;
-    if (targetedCheck() && !win32::glide2x::tracingTriangles())
+    if (targetedCheck() && !port::driver::tracingTriangles())
     {
         static CheckCounts counts;
         Ranges ranges = { { 0x7db6dc, 0x320 * 8 } };
@@ -6315,7 +6314,7 @@ bool depthBuckets(win32::WinApplication* app, x86::CPU& cpu)
 {
     if (originalRunning() || !drawingPrecision(cpu) || !polygonNativesOn())
         return false;
-    if (targetedCheck() && !win32::glide2x::tracingTriangles())
+    if (targetedCheck() && !port::driver::tracingTriangles())
     {
         static CheckCounts counts;
         Ranges ranges = { { 0x7d575c, (0x100 + 0x7d0) * 8 }, { 0x7db6dc, 0x320 * 8 } };
@@ -6369,7 +6368,7 @@ bool particles(win32::WinApplication* app, x86::CPU& cpu)
 {
     if (originalRunning() || !singlePrecision(cpu) || !polygonNativesOn())
         return false;
-    if (targetedCheck() && !win32::glide2x::tracingTriangles())
+    if (targetedCheck() && !port::driver::tracingTriangles())
     {
         static CheckCounts counts;
         Ranges ranges = particleRanges(app);
@@ -6385,7 +6384,7 @@ bool drops(win32::WinApplication* app, x86::CPU& cpu)
 {
     if (originalRunning() || !singlePrecision(cpu) || !polygonNativesOn())
         return false;
-    if (targetedCheck() && !win32::glide2x::tracingTriangles())
+    if (targetedCheck() && !port::driver::tracingTriangles())
     {
         static CheckCounts counts;
         Ranges ranges = particleRanges(app);
@@ -6401,7 +6400,7 @@ bool moveParticles(win32::WinApplication* app, x86::CPU& cpu)
 {
     if (originalRunning() || !singlePrecision(cpu) || !polygonNativesOn())
         return false;
-    if (targetedCheck() && !win32::glide2x::tracingTriangles())
+    if (targetedCheck() && !port::driver::tracingTriangles())
     {
         static CheckCounts counts;
         // sub_4cb220 and sub_4cab60 write their own; the RNG and the drops too
@@ -6418,7 +6417,7 @@ bool lightGlow(win32::WinApplication* app, x86::CPU& cpu)
 {
     if (originalRunning() || !drawingPrecision(cpu) || !polygonNativesOn())
         return false;
-    if (targetedCheck() && !win32::glide2x::tracingTriangles())
+    if (targetedCheck() && !port::driver::tracingTriangles())
     {
         static CheckCounts counts;
         Ranges ranges = { { 0x55fe34, 8 }, { app->getMemory<x86::reg32>(0x55fe38), 0xa0 + 0x40 },
@@ -6435,7 +6434,7 @@ bool headlightBeam(win32::WinApplication* app, x86::CPU& cpu)
 {
     if (originalRunning() || !drawingPrecision(cpu) || !polygonNativesOn())
         return false;
-    if (targetedCheck() && !win32::glide2x::tracingTriangles())
+    if (targetedCheck() && !port::driver::tracingTriangles())
     {
         static CheckCounts counts;
         Ranges ranges = { { 0x55fe34, 8 }, { app->getMemory<x86::reg32>(0x55fe38), 12 * 0xa0 + 0x40 },
@@ -6452,7 +6451,7 @@ bool carDetail(win32::WinApplication* app, x86::CPU& cpu)
 {
     if (originalRunning() || !drawingPrecision(cpu) || !polygonNativesOn())
         return false;
-    if (targetedCheck() && !win32::glide2x::tracingTriangles())
+    if (targetedCheck() && !port::driver::tracingTriangles())
     {
         static CheckCounts counts;
         checkClip(app, cpu, counts, "sub_4bb5d0", 0x4bb5d0, carDetailNative,
@@ -6475,7 +6474,7 @@ bool objectRecords(win32::WinApplication* app, x86::CPU& cpu)
 {
     if (originalRunning() || !drawingPrecision(cpu) || !polygonNativesOn())
         return false;
-    if (targetedCheck() && !win32::glide2x::tracingTriangles())
+    if (targetedCheck() && !port::driver::tracingTriangles())
     {
         static CheckCounts counts;
         const x86::reg32 count = checkItems(cpu.edx);
@@ -6571,7 +6570,7 @@ bool gatherSorted(win32::WinApplication* app, x86::CPU& cpu)
 {
     if (originalRunning() || !nativesOn())
         return false;
-    if (targetedCheck() && !win32::glide2x::tracingTriangles())
+    if (targetedCheck() && !port::driver::tracingTriangles())
     {
         static CheckCounts counts;
         Ranges ranges = { { cpu.esi, 8 } };

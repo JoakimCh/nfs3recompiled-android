@@ -52,6 +52,13 @@ PFNGLDRAWBUFFERSPROC             glDrawBuffers;
 PFNGLGENSAMPLERSPROC             glGenSamplers;
 PFNGLBINDSAMPLERPROC             glBindSampler;
 PFNGLSAMPLERPARAMETERIPROC       glSamplerParameteri;
+PFNGLDELETESAMPLERSPROC          glDeleteSamplers;
+PFNGLDELETEPROGRAMPROC           glDeleteProgram;
+PFNGLDELETEBUFFERSPROC           glDeleteBuffers;
+PFNGLDELETEVERTEXARRAYSPROC      glDeleteVertexArrays;
+PFNGLDELETESHADERPROC            glDeleteShader;
+PFNGLUNIFORM3IPROC               glUniform3i;
+PFNGLUNIFORM2FPROC               glUniform2f;
 
 namespace
 {
@@ -120,6 +127,13 @@ void loadGlFunctions()
     load(glGenSamplers,             "glGenSamplers");
     load(glBindSampler,             "glBindSampler");
     load(glSamplerParameteri,       "glSamplerParameteri");
+    load(glDeleteSamplers,          "glDeleteSamplers");
+    load(glDeleteProgram,           "glDeleteProgram");
+    load(glDeleteBuffers,           "glDeleteBuffers");
+    load(glDeleteVertexArrays,      "glDeleteVertexArrays");
+    load(glDeleteShader,            "glDeleteShader");
+    load(glUniform3i,               "glUniform3i");
+    load(glUniform2f,               "glUniform2f");
 
     s_loaded = true;
 }

@@ -1,8 +1,11 @@
-#ifndef glide2x_H_
-#define glide2x_H_
+#ifndef REFERENCE_GLIDE2X_H_
+#define REFERENCE_GLIDE2X_H_
 
+/* tools/thrash_checks' reference: include/winapi/glide2x.h as it was, frozen
+ * (driver.cpp says why).  GrVertex is port_thrash.h's, the same. */
 #include <x86.h>
 #include <winapi/types.h>
+#include "port_thrash.h"
 #include <vector>
 
 namespace win32
@@ -10,7 +13,7 @@ namespace win32
 
 class WinApplication;
 class Library;
-struct GrVertex;
+using GrVertex = nfs3hp::port::driver::GrVertex;
 class ThrashRenderer;
 
 }

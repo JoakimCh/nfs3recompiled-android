@@ -1922,9 +1922,9 @@ L_0x00523be6:
 
 /* sub_523d90: native, nfs3hp::snd::platformPacketSize */
 
-/* sub_523d94: native, nfs3hp::snd::iSNDplatformpacketplay */
+/* sub_523d94: native, nfs3hp::port::iSNDplatformpacketplay */
 
-/* sub_523f90: native, nfs3hp::snd::iSNDcheckplayopts */
+/* sub_523f90: native, nfs3hp::port::iSNDcheckplayopts */
 
 /* sub_524190: native, nfs3hp::watcom::EnterWVIDEO */
 

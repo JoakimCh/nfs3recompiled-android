@@ -1007,7 +1007,7 @@ L_0x004e6b10:
 
 /* sub_4e7388: native, nfs3hp::snd::SNDpathrestore */
 
-/* sub_4e73d0: native, nfs3hp::snd::SNDmastervol */
+/* sub_4e73d0: native, nfs3hp::port::SNDmastervol */
 
 /* sub_4e7470: native, nfs3hp::snd::SNDstreamautovol */
 
@@ -1067,23 +1067,23 @@ L_0x004e6b10:
 
 /* sub_4e8b60: native, nfs3hp::snd::SNDstreamvol */
 
-/* sub_4e8bd0: native, nfs3hp::snd::removeBankPatches */
+/* sub_4e8bd0: native, nfs3hp::port::removeBankPatches */
 
-/* sub_4e8c1c: native, nfs3hp::snd::removeAllBanks */
+/* sub_4e8c1c: native, nfs3hp::port::removeAllBanks */
 
-/* sub_4e8c28: native, nfs3hp::snd::SNDbankremove */
+/* sub_4e8c28: native, nfs3hp::port::SNDbankremove */
 
-/* sub_4e8d20: native, nfs3hp::snd::SNDbankadd */
+/* sub_4e8d20: native, nfs3hp::port::SNDbankadd */
 
-/* sub_4e8db0: native, nfs3hp::snd::SNDbankheadersize */
+/* sub_4e8db0: native, nfs3hp::port::SNDbankheadersize */
 
-/* sub_4e8e20: native, nfs3hp::snd::SNDbankheadercopy */
+/* sub_4e8e20: native, nfs3hp::port::SNDbankheadercopy */
 
 /* sub_4e8f28: native, nfs3hp::port::SNDangle */
 
-/* sub_4e8fd0: native, nfs3hp::snd::SNDstatus */
+/* sub_4e8fd0: native, nfs3hp::port::SNDstatus */
 
-/* sub_4e9010: native, nfs3hp::snd::SNDstopall */
+/* sub_4e9010: native, nfs3hp::port::SNDstopall */
 
 /* sub_4e9030: native, nfs3hp::watcom::update_buffer */
 
@@ -1093,20 +1093,20 @@ L_0x004e6b10:
 
 /* sub_4e9200: native, nfs3hp::watcom::fread */
 
-/* sub_4e9420: native, nfs3hp::snd::SNDautovol */
+/* sub_4e9420: native, nfs3hp::port::SNDautovol */
 
-/* sub_4e9540: native, nfs3hp::snd::setSoundVolume */
+/* sub_4e9540: native, nfs3hp::port::setSoundVolume */
 
-/* sub_4e95fc: native, nfs3hp::snd::SNDvol */
+/* sub_4e95fc: native, nfs3hp::port::SNDvol */
 
-/* sub_4e9670: native, nfs3hp::snd::SNDstop */
+/* sub_4e9670: native, nfs3hp::port::SNDstop */
 
-/* sub_4e9710: native, nfs3hp::snd::setSoundBend */
+/* sub_4e9710: native, nfs3hp::port::setSoundBend */
 
-/* sub_4e97e4: native, nfs3hp::snd::SNDpitchbend */
+/* sub_4e97e4: native, nfs3hp::port::SNDpitchbend */
 
-/* sub_4e9850: native, nfs3hp::snd::SNDpos3d */
+/* sub_4e9850: native, nfs3hp::port::SNDpos3d */
 
-/* sub_4e9950: native, nfs3hp::snd::SNDpan */
+/* sub_4e9950: native, nfs3hp::port::SNDpan */
 
 }

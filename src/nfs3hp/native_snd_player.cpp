@@ -1,6 +1,6 @@
 #include "native_snd.h"
 
-/* A player's own car's sound, native (native_snd.cpp says how): its engine
+/* A player's own car's sound, native (native_snd.h says how): its engine
  * (0x417390), its knocks and scrapes as its collision list has them, the
  * engine's warning (effect 5 of the car's bank) going downhill backwards
  * now and then, the cop's siren and radio for a cop's car, or the horn's

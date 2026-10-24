@@ -18,8 +18,8 @@ namespace win32
 
 static const char g_preamble[] = NFS_GLSL_PREAMBLE;
 
-/* GlideRenderer's vertex shader without the atlas: the fog factor from the
- * draw's table at the corner's w, worked out here (see gliderenderer.cpp). */
+/* The vertex shader: the fog factor from the draw's table at the corner's w,
+ * as the Voodoo2 looked its table up (fogW below). */
 static const char g_vertexShader[] = ""
 "in vec3 g_position;"
 "in vec4 g_color;"
@@ -61,8 +61,7 @@ static const char g_vertexShader[] = ""
  *
  * With a chroma key the texels of the key colour have to be dropped before
  * filtering, as the Voodoo2 did, or a halo of half-keyed colour rings every
- * cut-out edge; for those draws the four texels are fetched and weighed here,
- * as GlideRenderer does for everything. */
+ * cut-out edge; for those draws the four texels are fetched and weighed here. */
 static const char g_fragmentShader[] =
 "in vec3 v_texCoord;"
 "in vec4 v_color;"
@@ -78,10 +77,9 @@ static const char g_fragmentShader[] =
 "uniform float u_gamma;"
 "uniform vec2 u_wrap;"
 "uniform float u_levels;"
-/* Whether a texel is the key colour, compared as GlideRenderer compares it:
- * against the bytes its own conversion to RGBA8 gave the texel -- 565 widened
- * by a shift, 1555 scaled, 4444 and 8888 exact -- so a key matches the texels
- * it matched before the textures stayed in their own formats. */
+/* Whether a texel is the key colour, compared against the bytes a conversion
+ * to RGBA8 gives the texel -- 565 widened by a shift, 1555 scaled, 4444 and
+ * 8888 exact -- as the port's renderer before this one compared them. */
 "bool keyed(vec4 t)"
 "{"
 "    ivec3 bytes;"
@@ -137,13 +135,43 @@ static const char g_fragmentShader[] =
 "        color.rgb = pow(max(color.rgb, vec3(0.0)), vec3(1.0 / max(u_gamma, 0.001)));"
 "    o_color = color;"
 /* The Voodoo's 16-bit depth steps where the buffer has finer ones
- * (needsDepthSteps, gliderenderer.cpp). */
+ * (needsDepthSteps). */
 "\n#ifdef NFS_DEPTH16\n"
 "    gl_FragDepth = (floor(gl_FragCoord.z * 65536.0) + 0.5) / 65536.0;"
 "\n#endif\n"
 "}";
 
 static const x86::reg32 s_maxVertices = ThrashRenderer::s_maxVertices;
+
+DrawCounters ThrashRenderer::s_counters;
+ThrashRenderer::Watcher* ThrashRenderer::s_watcher = nullptr;
+
+DrawCounters ThrashRenderer::takeCounters()
+{
+    const DrawCounters counters = s_counters;
+    s_counters = DrawCounters();
+    return counters;
+}
+
+/* Whether the shader writes depth in the Voodoo's 16-bit steps: for a depth
+ * buffer finer than 16 bits, but not on an Adreno 5xx, whose finer depth is
+ * what the game's polygons need (the headlights' mosaic was a depth fight). */
+static bool needsDepthSteps(int depthBits, const char* renderer)
+{
+    if (renderer)
+    {
+        const char* adreno = SDL_strstr(renderer, "Adreno");
+        if (adreno)
+        {
+            const char* model = adreno;
+            while (*model && (*model < '0' || *model > '9'))
+                ++model;
+            if (model[0] == '5' && model[1] >= '0' && model[1] <= '9' && model[2] >= '0' && model[2] <= '9')
+                return false;
+        }
+    }
+    return depthBits > 16;
+}
 
 static std::mutex s_poolMutex;
 static std::vector<ThrashVertex*> s_pool;
@@ -168,21 +196,7 @@ static void giveVertices(ThrashVertex* vertices)
     s_pool.push_back(vertices);
 }
 
-/* What renderPending() hands the GL thread. */
-struct ThrashDraw
-{
-    ThrashVertex*                       vertices;
-    x86::reg32                          vertexCount;
-    std::vector<ThrashRenderer::Batch>  batches;
-    std::vector<std::array<float, 64>>  fogTables;
-    float                               fogColor[3];
-    float                               alphaTestRef;
-    x86::reg32                          chromaKeyColor;
-    x86::reg32                          width;
-    x86::reg32                          height;
-};
-
-/* Glide's fog table w(i), as gliderenderer.cpp has it. */
+/* Glide's fog table w(i): 2^(3 + i/4) / (8 - i%4). */
 static void fogW(float (&w)[64])
 {
     for (int i = 0; i < 64; ++i)
@@ -207,6 +221,7 @@ ThrashRenderer::ThrashRenderer(Renderer* renderer)
     ,   m_textureFormat(0)
     ,   m_renderStamp(1)
     ,   m_fogTableIndex(0)
+    ,   m_fogTableRaw{}
     ,   m_fogTableValid(false)
     ,   m_fogMode(0)
     ,   m_alphaTestRef(0.f)
@@ -366,6 +381,8 @@ void ThrashRenderer::compileShaders(int depthBits, const char* renderer)
 void ThrashRenderer::clear(x86::reg32 color)
 {
     const x86::reg32 clipMinX = m_clipMinX, clipMinY = m_clipMinY, clipMaxX = m_clipMaxX, clipMaxY = m_clipMaxY;
+    if (s_watcher)
+        s_watcher->cleared(color, clipMinX, clipMinY, clipMaxX, clipMaxY);
     glthread::post(m_renderer, [this, color, clipMinX, clipMinY, clipMaxX, clipMaxY]() {
         clearFrame(color, clipMinX, clipMinY, clipMaxX, clipMaxY);
     });
@@ -398,12 +415,14 @@ void ThrashRenderer::clearFrame(x86::reg32 color, x86::reg32 clipMinX, x86::reg3
 
 void ThrashRenderer::render(x86::reg32 buffer)
 {
+    if (s_watcher)
+        s_watcher->rendered(buffer);
     m_renderer->m_currentBuffer = buffer;
 }
 
 void ThrashRenderer::flush()
 {
-    GlideCounters& counters = GlideRenderer::counters();
+    DrawCounters& counters = s_counters;
     if (m_vertexCount == (m_batches.empty() ? 0 : m_batches.back().end))
     {
         ++counters.emptyCalls;
@@ -448,6 +467,8 @@ void ThrashRenderer::renderPending()
     draw->chromaKeyColor = m_chromaKeyColor;
     draw->width = m_renderer->m_width;
     draw->height = m_renderer->m_height;
+    if (s_watcher)
+        s_watcher->drawn(*draw);
     m_vertices = takeVertices();
     glthread::post(m_renderer, [this, draw]() {
         drawPending(*draw);
@@ -467,7 +488,7 @@ void ThrashRenderer::drawPending(const ThrashDraw& draw)
     glBindVertexArray(m_vertexArray);
     glViewport(0, 0, draw.width, draw.height);
     glUseProgram(m_program);
-    // glOrtho(0, w, 0, h, 0, -65536), as GlideRenderer builds it.
+    // glOrtho(0, w, 0, h, 0, -65536).
     const float w = float(draw.width), h = float(draw.height);
     const float matrix[16] = {
         2.0f / w, 0.0f,     0.0f,            0.0f,
@@ -581,7 +602,9 @@ void ThrashRenderer::swap()
 {
     m_renderer->ensureFramePacing();
     renderPending();
-    GlideCounters& counters = GlideRenderer::counters();
+    if (s_watcher)
+        s_watcher->swapped();
+    DrawCounters& counters = s_counters;
     ++counters.frames;
     counters.depth16Frames += m_depth16;
     m_renderer->paceFrame();
@@ -597,20 +620,65 @@ void ThrashRenderer::swap()
     m_vertexCount = 0;
 }
 
+void ThrashRenderer::snapshot(std::vector<x86::reg32>& out) const
+{
+    auto word = [&out](x86::reg32 w) { out.push_back(w); };
+    auto real = [&out](float f) {
+        x86::reg32 bits;
+        std::memcpy(&bits, &f, sizeof bits);
+        out.push_back(bits);
+    };
+    word(m_vertexCount);
+    for (x86::reg32 i = 0; i < m_vertexCount; ++i)
+    {
+        x86::reg32 words[sizeof(ThrashVertex) / 4];
+        std::memcpy(words, &m_vertices[i], sizeof words);
+        out.insert(out.end(), words, words + sizeof words / 4);
+    }
+    word(x86::reg32(m_batches.size()));
+    for (const Batch& b : m_batches)
+    {
+        for (const x86::reg32 w : {b.end, b.texture, b.levels, x86::reg32(b.format), x86::reg32(b.wrapS),
+                                   x86::reg32(b.wrapT), x86::reg32(b.zTest), x86::reg32(b.zTestAlways),
+                                   x86::reg32(b.zBuffer), x86::reg32(b.alphaBlend), x86::reg32(b.cull),
+                                   x86::reg32(b.chromaKey), b.cullMode, b.clipMinX, b.clipMinY, b.clipMaxX,
+                                   b.clipMaxY, x86::reg32(b.fogTable)})
+            word(w);
+        real(b.gamma);
+    }
+    std::vector<std::pair<x86::reg32, Texture>> textures(m_textures.begin(), m_textures.end());
+    std::sort(textures.begin(), textures.end(),
+              [](const std::pair<x86::reg32, Texture>& a, const std::pair<x86::reg32, Texture>& b) {
+                  return a.first < b.first;
+              });
+    word(x86::reg32(textures.size()));
+    for (const auto& texture : textures)
+        for (const x86::reg32 w : {texture.first, texture.second.index, texture.second.size, texture.second.levels,
+                                   texture.second.useStamp, x86::reg32(texture.second.format)})
+            word(w);
+    for (const x86::reg32 w : {m_nextTexture, m_texture, m_textureLevels, x86::reg32(m_textureFormat),
+                               m_renderStamp, x86::reg32(m_fogTables.size()), x86::reg32(m_fogTableIndex),
+                               x86::reg32(m_fogTableValid), m_fogMode, x86::reg32(m_zBuffer), x86::reg32(m_zTest),
+                               x86::reg32(m_depthAlways), x86::reg32(m_alphaBlend), x86::reg32(m_cull),
+                               x86::reg32(m_chromaKey), x86::reg32(m_wrapS), x86::reg32(m_wrapT), m_cullMode,
+                               m_chromaKeyColor, m_clipMinX, m_clipMinY, m_clipMaxX, m_clipMaxY})
+        word(w);
+    for (const auto& table : m_fogTables)
+        for (const float f : table)
+            real(f);
+    for (const x86::reg8 b : m_fogTableRaw)
+        word(b);
+    for (const float f : {m_fogColor[0], m_fogColor[1], m_fogColor[2], m_alphaTestRef, m_colorFactor,
+                          m_alphaFactor, m_gamma})
+        real(f);
+}
+
 /* No atlas to run out of: GL memory is the only limit. */
 void ThrashRenderer::atlasFreeSpace(x86::reg32& texels, x86::reg32& wholeTiles, x86::reg32& total) const
 {
     total = 4096 * 4096;
     texels = total;
     wholeTiles = 256;
-}
-
-/* What a texture takes of the Voodoo's texture memory: GlideRenderer's value,
- * so THRASH_talloc lays its addresses out as before -- each address is the
- * key of one texture here. */
-x86::reg32 ThrashRenderer::getTextureMemSize(x86::reg32, x86::reg32, TextureFormat)
-{
-    return sizeof(void*);
 }
 
 void ThrashRenderer::setZWrite(bool enable)
@@ -721,7 +789,8 @@ void ThrashRenderer::setAlphaFactor(float alphaFactor)
     m_alphaFactor = alphaFactor;
 }
 
-// Read as each triangle is taken (see GlideRenderer::setFogMode).
+// Read as each triangle is taken: the mode a triangle is fogged by is the one
+// it was drawn in.
 void ThrashRenderer::setFogMode(x86::reg32 mode)
 {
     m_fogMode = mode;
@@ -741,12 +810,13 @@ void ThrashRenderer::setFogColor(x86::reg32 color)
     }
 }
 
-// A repeat of the table in force changes nothing (see GlideRenderer::setFogTable).
+// A repeat of the table in force changes nothing: the game sets the same one
+// for every view of a race, and a flush each time cost a draw call each.
 void ThrashRenderer::setFogTable(const x86::reg8* table)
 {
     if (m_fogTableValid && std::memcmp(table, m_fogTableRaw, sizeof m_fogTableRaw) == 0)
         return;
-    ++GlideRenderer::counters().fogTables;
+    ++s_counters.fogTables;
     flush();
     std::memcpy(m_fogTableRaw, table, sizeof m_fogTableRaw);
     m_fogTableValid = true;
@@ -789,9 +859,8 @@ void ThrashRenderer::setTexture(x86::reg32, x86::reg32 address)
 /* The game's texels as they are, every level it supplies: 565 and 4444 in
  * formats of their own (4444 with its channels put right by the texture's
  * swizzle), 8888 as bytes swizzled from B, G, R, A, and only 1555 turned
- * round a bit into OpenGL's 5551.  GlideRenderer widened every one of them to
- * RGBA8 on the CPU first.  The GL thread gives the texture storage of that
- * size, levels and format, or keeps what it had when they are the same. */
+ * round a bit into OpenGL's 5551.  The GL thread gives the texture storage of
+ * that size, levels and format, or keeps what it had when they are the same. */
 void ThrashRenderer::setTextureData(x86::reg32, x86::reg32 address, const void* data, x86::reg32 largeMipmap,
                                     x86::reg32 smallMipmap, TextureFormat format)
 {
@@ -842,6 +911,8 @@ void ThrashRenderer::setTextureData(x86::reg32, x86::reg32 address, const void* 
         }
     }
     const x86::reg32 index = texture.index;
+    if (s_watcher)
+        s_watcher->uploaded(index, size, levels, format, fresh, copied);
     glthread::post(m_renderer, [this, index, size, levels, format, fresh, copied = std::move(copied)]() mutable {
         if (fresh && index < m_glTextures.size() && m_glTextures[index])
         {
@@ -929,6 +1000,8 @@ void ThrashRenderer::resetTextures()
         released.push_back(it->second.index);
         it = m_textures.erase(it);
     }
+    if (s_watcher)
+        s_watcher->released(released);
     glthread::post(m_renderer, [this, released]() {
         for (const x86::reg32 index : released)
             if (index < m_glTextures.size() && m_glTextures[index])
@@ -939,8 +1012,9 @@ void ThrashRenderer::resetTextures()
     });
 }
 
-/* Far wrapped texture coordinates brought back by whole repeats, as
- * GlideRenderer does (texCoordRebase there; NFS_TEXCOORD_REBASE=0 too). */
+/* Far wrapped texture coordinates brought back by whole repeats: the GPU
+ * interpolates them in floats, which lose the fraction far from the origin
+ * (NFS_TEXCOORD_REBASE=0 keeps them as they come). */
 static bool rebaseOn()
 {
     static const bool on = []() {
@@ -963,36 +1037,6 @@ static void rebase(float coord[3], const float oow[3])
     const double shift = std::floor(lowest / 256.0) * 256.0;
     for (int i = 0; i < 3; ++i)
         coord[i] = float(double(coord[i]) - shift * double(oow[i]));
-}
-
-void ThrashRenderer::drawTriangle(const GrVertex* a, const GrVertex* b, const GrVertex* c)
-{
-    auto corner = [](const GrVertex* in) {
-        return Corner{ in->x, in->y, in->ooz, in->oow, in->tmuvtx[0].sow, in->tmuvtx[0].tow,
-                       x86::reg32(x86::reg8(in->r)) | x86::reg32(x86::reg8(in->g)) << 8
-                       | x86::reg32(x86::reg8(in->b)) << 16 | x86::reg32(x86::reg8(in->a)) << 24 };
-    };
-    drawCorners(corner(a), corner(b), corner(c));
-}
-
-/* The native THRASH driver's triangles come here without a GrVertex between
- * the game's vertices and this buffer (glide2x::direct::thrashRenderer). */
-void ThrashRenderer::drawCorners(const Corner& a, const Corner& b, const Corner& c)
-{
-    ThrashVertex* out = reserveTriangle();
-    const Corner* const corners[3] = { &a, &b, &c };
-    for (int i = 0; i < 3; ++i)
-    {
-        const Corner* in = corners[i];
-        out[i].x = in->x;
-        out[i].y = in->y;
-        out[i].z = in->ooz;
-        out[i].color = in->color;
-        out[i].u = in->sow;
-        out[i].v = in->tow;
-        out[i].oow = in->oow;
-    }
-    finishTriangle(out);
 }
 
 void ThrashRenderer::finishTriangle(ThrashVertex* out)
@@ -1021,7 +1065,7 @@ void ThrashRenderer::finishTriangle(ThrashVertex* out)
     for (int i = 0; i < 3; ++i)
         std::memcpy(out[i].combine, combine, sizeof combine);
     m_vertexCount += 3;
-    GlideCounters& counters = GlideRenderer::counters();
+    DrawCounters& counters = s_counters;
     ++counters.triangles;
     if (fogged)
         ++counters.fogged;

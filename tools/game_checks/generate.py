@@ -169,9 +169,12 @@ def main():
             if entry in PORT_CHANGES:
                 text = PORT_CHANGES[entry](text)
             # The natives game_checks.cpp stands in for, from the others: by
-            # address too, as the natives call them.
+            # address too, as the natives call them -- but not a rewrite's
+            # (port::) from another rewrite, which calls it as C++: the game's
+            # code for it comes along there, on both sides.
+            rewrite = natives[entry].startswith("port::")
             for address in stood_in_natives:
-                if address != entry:
+                if address != entry and not (rewrite and natives[address].startswith("port::")):
                     text = text.replace("sub_%x(app, cpu.sync());" % address,
                                         "app->dynamic_call(0x%x, cpu.sync());" % address)
                     text = text.replace("return sub_%x(app, cpu.handOver());" % address,

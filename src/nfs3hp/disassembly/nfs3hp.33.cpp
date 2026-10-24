@@ -88,9 +88,9 @@ void Application::sub_4e2224(WinApplication* app, x86::CPU& cpu)
 
 /* sub_4e253c: native, nfs3hp::snd::iSNDrestore */
 
-/* sub_4e257c: native, nfs3hp::snd::soundIdle */
+/* sub_4e257c: native, nfs3hp::port::soundIdle */
 
-/* sub_4e25c0: native, nfs3hp::snd::iSNDstop */
+/* sub_4e25c0: native, nfs3hp::port::iSNDstop */
 
 /* sub_4e2630: native, nfs3hp::snd::SNDinit */
 

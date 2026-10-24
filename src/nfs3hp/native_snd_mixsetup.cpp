@@ -1,8 +1,8 @@
 #include "native_snd.h"
 
-/* EA's SND mixer's set-up, native (native_snd.cpp says how): what gives a
+/* EA's SND mixer's set-up, native (native_snd.h says how): what gives a
  * mixer channel the functions native_mixer.cpp mixes it with.  iSNDmixstart
- * (native_snd_play.cpp) calls, through the tables the mixer's start fills, a
+ * (port_snd_play.cpp) calls, through the tables the mixer's start fills, a
  * decoder's set-up for the sound's format and way of playing, its volume's
  * and its resampler's; setMixStep calls the resampler's step setter, which
  * picks the resampler by the step.

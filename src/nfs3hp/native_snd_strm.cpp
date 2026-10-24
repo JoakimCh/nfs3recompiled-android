@@ -1,7 +1,7 @@
 #include "native_snd.h"
 
 /* EA's SNDSTRM (cmn\sst.c, cmn\sstrstat.c) and the packet player under it
- * (cmn\spktplay.c), native (native_snd.cpp says how): what plays a movie's
+ * (cmn\spktplay.c), native (native_snd.h says how): what plays a movie's
  * sound.  The movie's reader hands its chunks -- headers, data, loops, ends --
  * to a stream as requests; the stream's system task parses them, a header
  * starting the packet player on a voice, each data chunk submitted to it as a

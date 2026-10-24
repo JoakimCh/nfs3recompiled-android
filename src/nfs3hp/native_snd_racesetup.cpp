@@ -1,6 +1,6 @@
 #include "native_snd.h"
 
-/* The race's sound set up and ended, native (native_snd.cpp says how): the
+/* The race's sound set up and ended, native (native_snd.h says how): the
  * slots emptied, the engines started, the race's banks and its music's
  * state reset as a race starts; the master volume faded out over the game's
  * own delay loop as it ends, everything stopped and the menus' volumes back;

@@ -1,8 +1,11 @@
-#include <winapi/glide2x.h>
+/* tools/thrash_checks' reference: src/lib/winapi/glide2x.cpp as it was,
+ * frozen (driver.cpp says why) -- with ThrashRenderer the one renderer, its
+ * GlideRenderer and GlideBackend gone, and ThrashRenderer's drawTriangle of a
+ * GrVertex, which went with them, here as drawGrVertices. */
+#include "glide2x.h"
 #include <winapi/wrapper.h>
 #include <lib/library.h>
 #include <lib/renderer.h>
-#include <lib/gliderenderer.h>
 #include <lib/thrashrenderer.h>
 #include <lib/window.h>
 #include <SDL3/SDL.h>
@@ -17,7 +20,28 @@ namespace win32 { namespace glide2x
 {
 
 static Renderer* s_renderer;
-static GlideBackend* s_glideRenderer;
+static ThrashRenderer* s_glideRenderer;
+
+/* ThrashRenderer::drawTriangle as it was: the corners' fields into the batch,
+ * the colour floats as bytes. */
+static void drawGrVertices(ThrashRenderer* renderer, const GrVertex* a, const GrVertex* b, const GrVertex* c)
+{
+    ThrashVertex* out = renderer->reserveTriangle();
+    const GrVertex* const corners[3] = { a, b, c };
+    for (int i = 0; i < 3; ++i)
+    {
+        const GrVertex* in = corners[i];
+        out[i].x = in->x;
+        out[i].y = in->y;
+        out[i].z = in->ooz;
+        out[i].color = x86::reg32(x86::reg8(in->r)) | x86::reg32(x86::reg8(in->g)) << 8
+                     | x86::reg32(x86::reg8(in->b)) << 16 | x86::reg32(x86::reg8(in->a)) << 24;
+        out[i].u = in->tmuvtx[0].sow;
+        out[i].v = in->tmuvtx[0].tow;
+        out[i].oow = in->oow;
+    }
+    renderer->finishTriangle(out);
+}
 /* The native THRASH driver draws through its own renderer (useThrashRenderer). */
 static bool s_thrashRenderer = false;
 static SwapObserver s_swapObserver;
@@ -151,7 +175,7 @@ bool atlasFreeSpace(x86::reg32& freeTexels, x86::reg32& freeTiles, x86::reg32& t
 
 static const x86::reg32 GR_FOG_TABLE_SIZE   = 64;
 static const x86::reg32 MAX_NUM_SST         = 4;
-static const x86::reg32 GLIDE_NUM_TMU       = RENDERER_NUM_TMU;
+static const x86::reg32 GLIDE_NUM_TMU       = 2;
 
 typedef x86::reg32 GrScreenResolution_t;
 static const GrScreenResolution_t GR_RESOLUTION_320x200 = 0x0;
@@ -631,10 +655,7 @@ static x86::reg32 grSstWinOpen(WinApplication* app, x86::CPU& cpu, HWND hWnd,
     s_renderer->setVideoMode(width, height, 16);
     app->allocateResource(s_renderer);
     s_directRenderer = nullptr;
-    if (s_thrashRenderer)
-        s_glideRenderer = s_directRenderer = new ThrashRenderer(s_renderer);
-    else
-        s_glideRenderer = new GlideRenderer(s_renderer, s_preferredAtlasSize);
+    s_glideRenderer = s_directRenderer = new ThrashRenderer(s_renderer);
     app->allocateResource(s_glideRenderer);
     x86::reg16 data = 0xff;
     s_glideRenderer->setTextureData(0, 0, &data, 8, 8, TF_ARGB_4444);
@@ -1075,7 +1096,7 @@ void drawTriangle(const GrVertex* a, const GrVertex* b, const GrVertex* c)
     GrVertex narrow[3];
     squeezed(a, b, c, narrow);
     GrVertex fitA, fitB, fitC;
-    s_glideRenderer->drawTriangle(fitted(a, fitA), fitted(b, fitB), fitted(c, fitC));
+    drawGrVertices(s_glideRenderer, fitted(a, fitA), fitted(b, fitB), fitted(c, fitC));
 }
 
 static void grDrawTriangle(WinApplication* app, x86::CPU& cpu, const GrVertex* a, const GrVertex* b, const GrVertex* c)
@@ -1121,10 +1142,10 @@ void drawLine(const GrVertex* a, const GrVertex* b)
     b3.a = 0;
     b3.x += orthX;
     b3.y += orthY;
-    s_glideRenderer->drawTriangle(&a1, &b1, &a2);
-    s_glideRenderer->drawTriangle(&b1, &b2, &a2);
-    s_glideRenderer->drawTriangle(&a2, &b2, &a3);
-    s_glideRenderer->drawTriangle(&b2, &b3, &a3);
+    drawGrVertices(s_glideRenderer, &a1, &b1, &a2);
+    drawGrVertices(s_glideRenderer, &b1, &b2, &a2);
+    drawGrVertices(s_glideRenderer, &a2, &b2, &a3);
+    drawGrVertices(s_glideRenderer, &b2, &b3, &a3);
 }
 
 static void grDrawLine(WinApplication* app, x86::CPU& cpu, const GrVertex *a, const GrVertex *b)

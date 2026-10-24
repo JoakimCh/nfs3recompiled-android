@@ -64,9 +64,8 @@ if (MSVC)
     # C4201 unnamed unions and C4458 shadowing are inherent to the x86::CPU
     # register layout in include/cpu.h; suppress rather than reshape the struct.
     #   C4127 constant conditional -- inherent to the NFS2_ASSERT macro.
-    #   C4702 unreachable code -- gliderenderer.cpp texture upload uses a
-    #     for-loop with an unconditional break where the mipmap chain was never
-    #     finished; that function is rewritten for GLES, so drop this then.
+    #   C4702 unreachable code -- for the Glide renderer's texture upload,
+    #     gone since; kept, as no desktop build says what else may need it.
     #   C4245 signed/unsigned in return -- the win32 layer returns -1 as the
     #     documented Win32 sentinel from functions with unsigned return types.
     set(NFS_STRICT_FLAGS /EHsc /WX /wd4201 /wd4458 /wd4127 /wd4702 /wd4245)
@@ -256,10 +255,4 @@ if(NFS_BUILD_MEMORY_TESTS AND NOT ANDROID)
     endif()
     target_include_directories(memmap_checks PRIVATE ${NFS_ROOT_DIR}/include)
     target_link_libraries(memmap_checks PRIVATE nfs_core ${SDL3_LIB_TARGET} ${NFS_GL_LIBS})
-    add_executable(glidetmu_checks tools/glidetmu_checks.cpp)
-    if(MSVC)
-        target_compile_options(glidetmu_checks PRIVATE /EHsc)
-    endif()
-    target_include_directories(glidetmu_checks PRIVATE ${NFS_ROOT_DIR}/include)
-    target_link_libraries(glidetmu_checks PRIVATE nfs_core ${SDL3_LIB_TARGET} ${NFS_GL_LIBS})
 endif()

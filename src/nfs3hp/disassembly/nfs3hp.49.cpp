@@ -156,21 +156,21 @@ namespace nfs3hp
 
 /* sub_522250: native, nfs3hp::snd::dead_0x522250 */
 
-/* sub_5222f0: native, nfs3hp::snd::panSplit */
+/* sub_5222f0: native, nfs3hp::port::panSplit */
 
-/* sub_522320: native, nfs3hp::snd::panSurround */
+/* sub_522320: native, nfs3hp::port::panSurround */
 
-/* sub_5224b0: native, nfs3hp::snd::panLawPositive */
+/* sub_5224b0: native, nfs3hp::port::panLawPositive */
 
-/* sub_5224e0: native, nfs3hp::snd::randomOffset */
+/* sub_5224e0: native, nfs3hp::port::randomOffset */
 
-/* sub_522510: native, nfs3hp::snd::iSNDplatformplay */
+/* sub_522510: native, nfs3hp::port::iSNDplatformplay */
 
-/* sub_5229d0: native, nfs3hp::snd::nextTag */
+/* sub_5229d0: native, nfs3hp::port::nextTag */
 
-/* sub_522a80: native, nfs3hp::snd::iSNDplatformresolve */
+/* sub_522a80: native, nfs3hp::port::iSNDplatformresolve */
 
-/* sub_522d08: native, nfs3hp::snd::platformUnresolve */
+/* sub_522d08: native, nfs3hp::port::platformUnresolve */
 
 /* sub_522d80: native, nfs3hp::watcom::fsync */
 
@@ -180,11 +180,11 @@ namespace nfs3hp
 
 /* sub_522e60: native, nfs3hp::watcom::getche */
 
-/* sub_522e90: native, nfs3hp::snd::pitchFactor */
+/* sub_522e90: native, nfs3hp::port::pitchFactor */
 
-/* sub_522f10: native, nfs3hp::snd::mixStep */
+/* sub_522f10: native, nfs3hp::port::mixStep */
 
-/* sub_522f50: native, nfs3hp::snd::setMixStep */
+/* sub_522f50: native, nfs3hp::port::setMixStep */
 
 /* sub_522f90: native, nfs3hp::snd::dead_0x522f90 */
 
@@ -200,7 +200,7 @@ namespace nfs3hp
 
 /* sub_52325c: native, nfs3hp::snd::reverbInit */
 
-/* sub_523310: native, nfs3hp::snd::setVoiceSend */
+/* sub_523310: native, nfs3hp::port::setVoiceSend */
 
 /* align: skip 0x00 */
 void Application::sub_523332(WinApplication* __restrict app, x86::CPU& cpu_)

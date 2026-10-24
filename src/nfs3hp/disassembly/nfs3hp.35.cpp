@@ -4,11 +4,11 @@
 namespace nfs3hp
 {
 
-/* sub_4e9b20: native, nfs3hp::snd::SNDplaysetdef */
+/* sub_4e9b20: native, nfs3hp::port::SNDplaysetdef */
 
-/* sub_4e9ba0: native, nfs3hp::snd::SNDplay */
+/* sub_4e9ba0: native, nfs3hp::port::SNDplay */
 
-/* sub_4e9bf8: native, nfs3hp::snd::playOptions */
+/* sub_4e9bf8: native, nfs3hp::port::playOptions */
 
 /* sub_4e9c70: native, nfs3hp::snd::SNDfxinitbus */
 

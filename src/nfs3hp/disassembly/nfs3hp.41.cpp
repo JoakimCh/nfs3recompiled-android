@@ -6492,12 +6492,12 @@ void Application::sub_4ff620(WinApplication* app, x86::CPU& cpu)
 
 /* sub_4ff830: native, nfs3hp::snd::loadFlags */
 
-/* sub_4ff840: native, nfs3hp::snd::voicePicked */
+/* sub_4ff840: native, nfs3hp::port::voicePicked */
 
-/* sub_4ff86c: native, nfs3hp::snd::iSNDallocchan */
+/* sub_4ff86c: native, nfs3hp::port::iSNDallocchan */
 
-/* sub_4ffb64: native, nfs3hp::snd::iSNDfreechan */
+/* sub_4ffb64: native, nfs3hp::port::iSNDfreechan */
 
-/* sub_4ffc9c: native, nfs3hp::snd::voiceOf */
+/* sub_4ffc9c: native, nfs3hp::port::voiceOf */
 
 }

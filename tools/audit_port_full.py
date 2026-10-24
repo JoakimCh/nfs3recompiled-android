@@ -121,7 +121,6 @@ def main():
       'Window::getMessage':'проверить маршрутизацию потока/окна в getMessageImpl',
       'grTexClampMode':'API не применяет отдельные режимы S/T; shader уже имеет собственный clamp/wrap',
       'grTexFilterMode':'режимы не передаются в renderer; shader уже делает четыре выборки',
-      'GlideRenderer::setTextureData':'TODO mipmaps; ограниченная поддержка форматов',
     }
     for path,name,line in all_functions:
         if name not in manual: continue

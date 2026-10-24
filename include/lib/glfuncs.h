@@ -2,7 +2,7 @@
 #define LIB_GLFUNCS_H_
 
 /* Everything past GL 1.1 has to be fetched through SDL_GL_GetProcAddress on the
- * desktop.  Both renderer.cpp and gliderenderer.cpp need the same entry points,
+ * desktop.  Both renderer.cpp and thrashrenderer.cpp need the same entry points,
  * so they live here instead of being duplicated as file statics.
  *
  * On GLES the whole indirection disappears: GLES 3.0 declares and exports these
@@ -64,6 +64,14 @@ extern PFNGLDRAWBUFFERSPROC             glDrawBuffers;
 extern PFNGLGENSAMPLERSPROC             glGenSamplers;
 extern PFNGLBINDSAMPLERPROC             glBindSampler;
 extern PFNGLSAMPLERPARAMETERIPROC       glSamplerParameteri;
+/* ThrashRenderer's besides. */
+extern PFNGLDELETESAMPLERSPROC          glDeleteSamplers;
+extern PFNGLDELETEPROGRAMPROC           glDeleteProgram;
+extern PFNGLDELETEBUFFERSPROC           glDeleteBuffers;
+extern PFNGLDELETEVERTEXARRAYSPROC      glDeleteVertexArrays;
+extern PFNGLDELETESHADERPROC            glDeleteShader;
+extern PFNGLUNIFORM3IPROC               glUniform3i;
+extern PFNGLUNIFORM2FPROC               glUniform2f;
 
 #endif /* NFS_GL_NEEDS_LOADER */
 

@@ -5,7 +5,7 @@
 
 /* Watcom's near heap (native_watcom_heap.cpp), for each runtime that has one
  * in guest memory: the game's (native_watcom.cpp binds its functions) and
- * voodoo2a's (native_thrash.cpp).  Each heap is where its runtime keeps it --
+ * voodoo2a's (port_thrash.cpp).  Each heap is where its runtime keeps it --
  * these say where -- and the same heap afterwards as the runtime's code would
  * have left it. */
 namespace nfs3hp

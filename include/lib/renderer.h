@@ -13,12 +13,11 @@ namespace win32
 {
 
 class Window;
-class GlideRenderer;
 class ThrashRenderer;
 
 class Renderer: public GenericResource
 {
-    friend class GlideRenderer;
+
     friend class ThrashRenderer;
 public:
     Renderer(WinApplication* application, Window* window);
@@ -73,7 +72,7 @@ public:
     void setCurrent();
     void clearCurrent();
 
-private: // friend class GlideRenderer
+private: // friend class ThrashRenderer
     void present();
     /* present()'s GL work: the letterboxed blit of the frame and the swap. */
     void presentFrame(x86::reg32 width, x86::reg32 height);

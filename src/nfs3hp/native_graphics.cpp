@@ -4,7 +4,7 @@
 #include <cstdint>
 
 /* The game's graphics that were still generated: what drives the THRASH
- * driver itself (voodoo2a, native whole in native_thrash.cpp) -- its states,
+ * driver itself (voodoo2a, the port's own in port_thrash.cpp) -- its states,
  * the frame and the window, the textures, the screen modes -- one function at
  * a time, each where its generated code was.  disassemble_nfs3hp.py binds the
  * addresses of decompiled.json named in "graphics" to the functions of those

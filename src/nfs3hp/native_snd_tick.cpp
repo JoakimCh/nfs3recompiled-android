@@ -1,6 +1,6 @@
 #include "native_snd.h"
 
-/* The race's sound tick, native (native_snd.cpp says how): the listener put
+/* The race's sound tick, native (native_snd.h says how): the listener put
  * where the player's camera is (0x4229c0) and its move worked out, then each
  * kind of the race's sounds updated in turn -- the cars about, the player's
  * own car, the cop cars' closeness, their sirens and engines -- for each

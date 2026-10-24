@@ -17900,7 +17900,7 @@ void Application::sub_494420(WinApplication* __restrict app, x86::CPU& cpu_)
     app->getMemory<x86::reg32>(cpu.eax + x86::reg32(4) /* 0x4 */) = 0 /*0x0*/;
     // 0049445d  e826c90400             -call 0x4e0d88
     cpu.esp -= 4;
-    nfs3hp::snd::eaRandom(app, cpu.sync());
+    nfs3hp::port::eaRandom(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00494462  f7f3                   -div ebx
@@ -18033,7 +18033,7 @@ void Application::sub_494420(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.edx ^= x86::reg32(x86::sreg32(cpu.edx));
     // 004944f3  e890c80400             -call 0x4e0d88
     cpu.esp -= 4;
-    nfs3hp::snd::eaRandom(app, cpu.sync());
+    nfs3hp::port::eaRandom(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004944f8  f7f1                   -div ecx
@@ -18492,7 +18492,7 @@ L_0x0049466c:
     cpu.edx ^= x86::reg32(x86::sreg32(cpu.edx));
     // 0049468c  e8f7c60400             -call 0x4e0d88
     cpu.esp -= 4;
-    nfs3hp::snd::eaRandom(app, cpu.sync());
+    nfs3hp::port::eaRandom(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00494691  f7f6                   -div esi
@@ -18508,7 +18508,7 @@ L_0x0049466c:
     cpu.edx ^= x86::reg32(x86::sreg32(cpu.edx));
     // 00494698  e8ebc60400             -call 0x4e0d88
     cpu.esp -= 4;
-    nfs3hp::snd::eaRandom(app, cpu.sync());
+    nfs3hp::port::eaRandom(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0049469d  f7f6                   -div esi
@@ -23221,7 +23221,7 @@ L_0x00495df9:
     cpu.edx = 30 /*0x1e*/;
     // 00495e01  e81a3d0500             -call 0x4e9b20
     cpu.esp -= 4;
-    nfs3hp::snd::SNDplaysetdef(app, cpu.sync());
+    nfs3hp::port::SNDplaysetdef(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00495e06  b801000000             -mov eax, 1

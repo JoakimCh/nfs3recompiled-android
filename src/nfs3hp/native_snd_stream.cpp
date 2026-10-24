@@ -1,6 +1,6 @@
 #include "native_snd.h"
 
-/* EA's streaming, native (native_snd.cpp says how): the system tasks the
+/* EA's streaming, native (native_snd.h says how): the system tasks the
  * game's loop and the streams run on, the coordination of the stream's top-up
  * with the game's file loads, the SND streamer that plays a stream (music, a
  * movie's sound) through a voice, and the CD stream under it, whose reader

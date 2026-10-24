@@ -1,19 +1,19 @@
-#include "port.h"
+#include "port_snd.h"
 
 #include <cstdint>
 #include <utility>
 
-/* The game's sound effects, rewritten (port.h says how) -- what
- * its first, register-level native did: an effect of a bank played at
- * the effects' (or engine's, or speech's) volume, panned or placed as the
- * sound mode says; the race's sounds kept in slots; the master and the
+/* The game's sound effects, rewritten (port.h says how): an effect of a bank
+ * played at the effects' (or engine's, or speech's) volume, panned or placed
+ * as the sound mode says; the race's sounds kept in slots; the master and the
  * music's volume; the effect bus; SND's angle of a vector.
  *
  * Each function's integer arithmetic is the game's to the bit (its
- * multiplications by 55 and 63, its shifts by 14, its divisions toward 0),
- * and it calls EA's SND library, which is not rewritten yet, with what the
- * game's code hands it -- from where on the stack the game's code has it,
- * for the records it points at. */
+ * multiplications by 55 and 63, its shifts by 14, its divisions toward 0).
+ * It calls EA's SND library (port_snd.h) and its fellow effects as C++, the
+ * game's music and the effect bus, which are not rewritten yet, as the game's
+ * code does.  The game's code keeps its frame pointer in ebp, where SND reads
+ * an angle and a sample's place it never set: so do the rewrites (HeldEbp). */
 namespace nfs3hp
 {
 namespace port
@@ -21,25 +21,6 @@ namespace port
 
 namespace
 {
-
-// SND's options of a sound to play (SNDplaysetdef fills them, SNDplay takes
-// them).
-#pragma pack(push, 1)
-struct PlayOptions
-{
-    int32_t effect;      // the sample in the bank
-    uint8_t bank;        // the bank's handle (its low byte)
-    uint8_t other5[2];
-    uint8_t pan;         // stereo: 0..127, 0x40 the middle
-    uint8_t volume;      // 0..127
-    uint8_t pitch;       // 0x40 as recorded
-    uint8_t otherA;
-    uint8_t placed;      // 1: by its angle (3D or surround)
-    uint16_t angle;      // 0..0xffff
-    uint8_t otherE[2];
-};
-#pragma pack(pop)
-static_assert(sizeof(PlayOptions) == 0x10, "SND's play options");
 
 // One of the race's sound slots: the sound playing (-1 none) and its effect.
 struct Slot
@@ -63,7 +44,7 @@ constexpr Var<int32_t> kMusicVolume{0x6fbbf0}, kTechVersion{0x6fbbe4}, kTechVers
 constexpr Var<int32_t> kPlayerCar{0x6fd4ac}, kGameMode{0x6fd3b8}, kCopRadioOn{0x6fd49c}, kSplitScreen{0x6fd3b0};
 constexpr Var<uint8_t> kMusicUnmuted{0x552908}, kBusUsed{0x552930};
 constexpr Table<int32_t> kCarMusicShare{0x5525d0};
-constexpr Table<Bank> kBanks{0x571124};
+constexpr Table<Bank> kGameBanks{0x571124};
 constexpr Table<Slot> kSlots{0x570de8};
 constexpr Table<uint8_t> kSlotBanks{0x552798, 4};
 
@@ -82,24 +63,23 @@ enum BankIndex : int32_t
     kSpeechBank10 = 10,  // 0x57119c
 };
 
-// EA's SND library, the game's own music and race sound, and the random.
-constexpr reg32 kPlaySetDefault = 0x4e9b20, kPlay = 0x4e9ba0, kStop = 0x4e9670, kStopAll = 0x4e9010;
-constexpr reg32 kMasterLevel = 0x4e73d0, kMusicLevel = 0x4e8b60, kFade = 0x4e9420, kVolume = 0x4e95fc;
-constexpr reg32 kPitch = 0x4e97e4, kPlace = 0x4e9850, kPan = 0x4e9950, kBusInit = 0x4e9c70, kBusLevel = 0x4e9dfc;
-constexpr reg32 kRandom = 0x4e0d88, kMusicStop = 0x4109d0, kRaceSoundInit = 0x4129c0;
-constexpr reg32 kPlayEffect = 0x4182b0, kSlotStop = 0x416f60, kSlotPlay = 0x417080, kBusDown = 0x418790;
+// What is not rewritten yet: the streamed music's volume, the effect bus,
+// the game's own music and race sound.
+constexpr reg32 kMusicLevel = 0x4e8b60, kBusInit = 0x4e9c70, kSetBusLevel = 0x4e9dfc;
+constexpr reg32 kMusicStop = 0x4109d0, kRaceSoundInit = 0x4129c0;
 
-int32_t bankHandle(App* app, int32_t i) { return kBanks(app, i).handle; }
+int32_t bankHandle(App* app, int32_t i) { return kGameBanks(app, i).handle; }
 
 /* A level of 0..127 scaled by a setting as the game's code does it: the
  * setting times `factor`, times the level, over 2^14. */
 int32_t scaled(int32_t setting, int32_t factor, int32_t level)
 {
-    const int32_t s = int32_t(uint32_t(setting) * uint32_t(factor));
-    return int32_t(uint32_t(s) * uint32_t(level)) >> 14;
+    const int32_t s = imul(setting, factor);
+    return imul(s, level) >> 14;
 }
 
-/* A pan (0..0xffff around) as stereo's (0..127), as the game's code makes it. */
+/* A pan (0..0xffff around) as stereo's (0..127, past it for a pan of none of
+ * those), as the game's code makes it. */
 uint8_t stereoPan(uint32_t pan)
 {
     const uint32_t a = int32_t(pan) > 0x3fff && int32_t(pan) < 0xc000 ? 0xbfff - pan : (pan + 0x4000) & 0xffff;
@@ -114,17 +94,17 @@ void place(App* app, PlayOptions& o, uint32_t pan)
     if (kSoundMode(app) == 2)
     {
         o.placed = 1;
-        o.angle = uint16_t(pan);
+        o.position = uint16_t(pan);
     }
     else if (kSurround(app) != 0)
     {
         o.placed = 1;
-        o.angle = kStereo(app) != 0 ? uint16_t(pan) : 0;
+        o.position = kStereo(app) != 0 ? uint16_t(pan) : 0;
     }
     else
     {
         o.placed = 0;
-        o.pan = kStereo(app) != 0 ? stereoPan(pan) : 0x40;
+        o.pan = int8_t(kStereo(app) != 0 ? stereoPan(pan) : 0x40);
     }
 }
 
@@ -154,20 +134,166 @@ bool isSpeech(App* app, int32_t bank, int32_t effect)
     return is(kBank9) && kCopRadioOn(app) != 0;
 }
 
-/* SNDplay of `o`, filled from SND's defaults by `fill`, on the game's stack
- * at `at` (esp there): its handle, the effects playing one more. */
+/* A sound played: options from SND's defaults, filled by `fill`, where the
+ * game's code has them on its stack at `at` (esp there).  Its handle, the
+ * effects playing one more. */
 template <class Fill>
-bool play(App* app, CPU& cpu, reg32 at, Fill fill, reg32& handle)
+Result play(App* app, CPU& cpu, reg32 at, Fill fill)
 {
-    if (!callGame(app, cpu, at, kPlaySetDefault, {at}))
-        return false;
-    PlayOptions o = load<PlayOptions>(app, at);
+    PlayOptions o;
+    playDefaults(o);
     fill(o);
-    store(app, at, o);
-    if (!callGame(app, cpu, at, kPlay, {at}, {}, handle))
-        return false;
-    kPlaying.set(app, kPlaying(app) + 1);
-    return true;
+    const Result handle = playSound(app, cpu, at - 4, o);
+    if (handle)
+        kPlaying.set(app, kPlaying(app) + 1);
+    return handle;
+}
+
+/* 0x4182b0's: effect `effect` of bank `bank` at `volume`, pan `pan`, pitch
+ * `pitch` -- the volume scaled by its kind's (the engine's for bank 0's
+ * effect 2, the speech's for the speech's banks, the effects' else).  -1 with
+ * the effects off. */
+Result bankEffect(App* app, CPU& cpu, reg32 esp, int32_t bank, int32_t effect, int32_t volume, uint32_t pan,
+                  uint8_t pitch)
+{
+    const HeldEbp ebp(cpu, esp - 0xc);
+    if (kEffectsOn(app) == 0)
+        return -1;
+    int32_t level;
+    if (bank == 0 && effect == 2)
+        level = int32_t(uint32_t(volume) * uint32_t(kEngineVolume(app))) / 0x7f;
+    else if (isSpeech(app, bank, effect))
+        level = scaled(kSpeechVolume(app), 0x7f, volume);
+    else if ((bank == bankHandle(app, kBank4) && (effect == 6 || effect == 7))
+             || (bank == bankHandle(app, kCarBank) && effect == 0xf))
+        level = int32_t(uint32_t(volume) * uint32_t(kEffectsVolume(app))) / 0x7f;
+    else
+        level = scaled(kEffectsVolume(app), 55, volume);
+    return play(app, cpu, esp - 0xc - 0x14, [&](PlayOptions& o) {
+        o.bank = int8_t(bank);
+        o.patch = effect;
+        o.volume = int8_t(level);
+        o.bend = int8_t(pitch);
+        place(app, o, pan);
+    });
+}
+
+/* 0x418790's: the effect bus's level down (0). */
+Result busLevelDown(App* app, CPU& cpu, reg32 esp)
+{
+    reg32 r;
+    if (!callGame(app, cpu, esp - 8, kSetBusLevel, {0, 0}, {}, r))
+        return {};
+    return int32_t(r);
+}
+
+/* Silence -- the music and every sound stopped -- then the master volume
+ * brought up a step at a time below `to`, the bus down when it is used. */
+Result silenceAndRaise(App* app, CPU& cpu, reg32 esp, int32_t to)
+{
+    reg32 stopped;
+    if (!setMasterVolume(app, cpu, esp - 4, 0) || !callGame(app, cpu, esp, kMusicStop, {}, {}, stopped))
+        return {};
+    Result r = stopAllSounds(app, cpu, esp - 4);
+    for (int32_t level = 0; r && level < to; ++level)
+        r = setMasterVolume(app, cpu, esp - 4, level);
+    if (r && kBusUsed(app) != 0)
+        r = busLevelDown(app, cpu, esp - 4);
+    return r;
+}
+
+/* 0x416f60's: slot `slot`'s sound faded out (5 ticks) and the slot empty; the
+ * effects playing, one less (that count back; else the slot as given). */
+Result slotStopped(App* app, CPU& cpu, reg32 esp, int32_t slot)
+{
+    if (kEffectsOn(app) == 0 || slot == -1 || kSlots(app, slot).sound == -1)
+        return slot;
+    if (!fadeSound(app, cpu, esp - 0x14 - 4, reg32(kSlots(app, slot).sound), 5, -1))
+        return {};
+    kSlots.set(app, slot, {-1, -1});
+    const int32_t playing = kPlaying(app) - 1;
+    kPlaying.set(app, playing);
+    return playing;
+}
+
+/* 0x417080's: slot `slot` plays `effect` at `volume`, `pitch` (each kept to
+ * 0..127), `pan`: started -- from the crashes' bank for the crash slots, by
+ * the effect for some, else from the slot's own bank -- the slot's old sound
+ * stopped; or, the slot playing that effect already, its volume, pitch and
+ * place changed.  The last call's answer. */
+Result slotPlayed(App* app, CPU& cpu, reg32 esp, int32_t slot, int32_t effect, int32_t volume, int32_t pitch,
+                  reg32 pan)
+{
+    const HeldEbp ebp(cpu, esp - 0xc);
+    const reg32 at = esp - 0xc - 8;
+    const auto clamp = [](int32_t v) { return v < 0 ? 0 : v > 0x7f ? 0x7f : v; };
+    pitch = clamp(pitch);
+    volume = clamp(volume);
+    int32_t bank;
+    bool crash = false;
+    for (const int32_t s : {0x12, 0x13, 0x1a, 0x20, 0x21, 0x24, 0x14, 0x15, 0x22, 0x23})
+        crash = crash || slot == s;
+    if (crash)
+        bank = bankHandle(app, kCrashBank);
+    else if (effect == 0)
+        bank = bankHandle(app, kSceneryBank);
+    else if (effect == 2)
+        bank = bankHandle(app, kMenuBank);
+    else if (effect == 0xa || effect == 0xb)
+        bank = bankHandle(app, kCarBank);
+    else if (effect == 0xc)
+    {
+        bank = bankHandle(app, kBank5);
+        effect = 1;
+    }
+    else
+        bank = bankHandle(app, kSlotBanks(app, slot));
+    const auto start = [&](int32_t level, uint8_t pitchOf) {
+        return bankEffect(app, cpu, at - 8, bank, effect, level, pan, pitchOf);
+    };
+    if (slot == 0x1f || slot == 0x13 || slot == 0x21)
+    {
+        const Result r = start(volume, 0x40);
+        if (!r)
+            return {};
+        kSlots.set(app, slot, {*r, effect});
+        kPlaying.set(app, kPlaying(app) - 1);
+        return r;
+    }
+    const bool engine = slot >= 8 && slot <= 0xb;
+    const Slot old = kSlots(app, slot);
+    if (effect != old.effect)
+    {
+        if (old.sound != -1 && slot > 3)
+        {
+            if (!stopSound(app, cpu, at - 4, reg32(old.sound)))
+                return {};
+            kPlaying.set(app, kPlaying(app) - 1);
+        }
+        const Result r = start(engine ? 0 : volume, uint8_t(pitch));
+        if (!r)
+            return {};
+        kSlots.set(app, slot, {*r, effect});
+        return r;
+    }
+    int32_t level;
+    if (engine)
+        level = scaled(kEngineVolume(app), 63, volume);
+    else if (slot == 0x10 || slot == 0x11)
+        level = scaled(kEffectsVolume(app), 80, volume);
+    else
+        level = scaled(kEffectsVolume(app), 55, volume);
+    const reg32 sound = reg32(old.sound);
+    Result r = setVolume(app, cpu, at - 4, sound, level);
+    if (r)
+        r = setBend(app, cpu, at - 4, sound, pitch);
+    if (r && kSoundMode(app) == 2)
+        r = placeSound(app, cpu, at - 4, sound, pan, 0);
+    if (r && kSurround(app) != 0)
+        return placeSound(app, cpu, at - 4, sound, kStereo(app) != 0 ? pan : 0, 0);
+    if (r)
+        r = panSound(app, cpu, at - 4, sound, kStereo(app) != 0 ? stereoPan(pan) : 0x40);
+    return r;
 }
 
 }  // namespace
@@ -180,89 +306,45 @@ bool play(App* app, CPU& cpu, reg32 at, Fill fill, reg32& handle)
 void playMenuEffect(App* app, CPU& cpu)
 {
     const Entry e(cpu);
+    const HeldEbp ebp(cpu, e.frame(4));
     const int32_t effect = int32_t(e.eax), volume = int32_t(e.edx);
-    reg32 handle = e.eax;
+    Result handle = effect;
     if (kMenuSoundsOff(app) == 0 && kEffectsOn(app) != 0)
-    {
-        const auto fill = [&](PlayOptions& o) {
-            o.bank = uint8_t(bankHandle(app, kMenuBank));
-            o.volume = uint8_t(scaled(kEffectsVolume(app), 55, volume));
-            o.effect = effect;
-            o.pitch = 0x40;
+        handle = play(app, cpu, e.frame(4) - 0x10, [&](PlayOptions& o) {
+            o.bank = int8_t(bankHandle(app, kMenuBank));
+            o.volume = int8_t(scaled(kEffectsVolume(app), 55, volume));
+            o.patch = effect;
+            o.bend = 0x40;
             if (kSoundMode(app) == 2 || kSurround(app) != 0)
             {
                 o.placed = 1;
-                o.angle = 0;
+                o.position = 0;
             }
             else
             {
                 o.placed = 0;
                 o.pan = 0x40;
             }
-        };
-        if (!play(app, cpu, e.frame(4) - 0x10, fill, handle))
-            return;
-    }
-    e.back(cpu, handle);
+        });
+    e.finish(cpu, handle);
 }
-
-namespace
-{
-
-/* 0x4182b0's: effect `effect` of bank `bank` at `volume`, pan `pan`, pitch
- * `pitch` -- the volume scaled by its kind's (the engine's for bank 0's effect
- * 2, the speech's for the speech's banks, the effects' else).  -1 with the
- * effects off. */
-bool playEffectOf(App* app, CPU& cpu, reg32 at, int32_t bank, int32_t effect, int32_t volume, uint32_t pan,
-                  uint8_t pitch, reg32& handle)
-{
-    if (kEffectsOn(app) == 0)
-    {
-        handle = 0xffffffff;
-        return true;
-    }
-    int32_t level;
-    if (bank == 0 && effect == 2)
-        level = int32_t(uint32_t(volume) * uint32_t(kEngineVolume(app))) / 0x7f;
-    else if (isSpeech(app, bank, effect))
-        level = scaled(kSpeechVolume(app), 0x7f, volume);
-    else if ((bank == bankHandle(app, kBank4) && (effect == 6 || effect == 7))
-             || (bank == bankHandle(app, kCarBank) && effect == 0xf))
-        level = int32_t(uint32_t(volume) * uint32_t(kEffectsVolume(app))) / 0x7f;
-    else
-        level = scaled(kEffectsVolume(app), 55, volume);
-    const auto fill = [&](PlayOptions& o) {
-        o.bank = uint8_t(bank);
-        o.effect = effect;
-        o.volume = uint8_t(level);
-        o.pitch = pitch;
-        place(app, o, pan);
-    };
-    return play(app, cpu, at, fill, handle);
-}
-
-}  // namespace
 
 /* 0x4182b0 (stdcall 4): effect edx of bank eax at volume ecx, pan ebx, pitch
  * the stack's word. */
 void playEffect(App* app, CPU& cpu)
 {
     const Entry e(cpu);
-    reg32 handle;
-    if (!playEffectOf(app, cpu, e.frame(3) - 0x14, int32_t(e.eax), int32_t(e.edx), int32_t(e.ecx), e.ebx,
-                      uint8_t(e.arg(app, 0)), handle))
-        return;
-    e.back(cpu, handle, 4);
+    e.finish(cpu,
+             bankEffect(app, cpu, e.esp, int32_t(e.eax), int32_t(e.edx), int32_t(e.ecx), e.ebx,
+                        uint8_t(e.arg(app, 0))),
+             4);
 }
 
 /* 0x418280: effect 5 of the car's bank at full volume, in the middle. */
 void playCarEffectFive(App* app, CPU& cpu)
 {
     const Entry e(cpu);
-    reg32 handle;
-    if (!callGame(app, cpu, e.frame(4), kPlayEffect, {reg32(bankHandle(app, kCarBank)), 5, 0, 0x7f}, {0x40}, handle))
-        return;
-    e.back(cpu, handle);
+    e.finish(cpu, bankEffect(app, cpu, e.frame(4) - 8, bankHandle(app, kCarBank), 5, 0x7f, 0, 0x40));
 }
 
 /* 0x4184f0 (stdcall 4): effect edx of bank eax at volume ecx scaled by the
@@ -270,20 +352,17 @@ void playCarEffectFive(App* app, CPU& cpu)
 void playSpeechEffect(App* app, CPU& cpu)
 {
     const Entry e(cpu);
-    reg32 handle = 0xffffffff;
+    const HeldEbp ebp(cpu, e.frame(2));
+    Result handle = -1;
     if (kEffectsOn(app) != 0)
-    {
-        const auto fill = [&](PlayOptions& o) {
-            o.bank = uint8_t(e.eax);
-            o.effect = int32_t(e.edx);
-            o.volume = uint8_t(scaled(kSpeechVolume(app), 0x7f, int32_t(e.ecx)));
-            o.pitch = uint8_t(e.arg(app, 0));
+        handle = play(app, cpu, e.frame(2) - 0x14, [&](PlayOptions& o) {
+            o.bank = int8_t(e.eax);
+            o.patch = int32_t(e.edx);
+            o.volume = int8_t(scaled(kSpeechVolume(app), 0x7f, int32_t(e.ecx)));
+            o.bend = int8_t(e.arg(app, 0));
             place(app, o, e.ebx);
-        };
-        if (!play(app, cpu, e.frame(2) - 0x14, fill, handle))
-            return;
-    }
-    e.back(cpu, handle, 4);
+        });
+    e.finish(cpu, handle, 4);
 }
 
 /* 0x4185e0: a side's angle eax (0..127; edx above 0 for the right) as a pan
@@ -304,10 +383,8 @@ void panFromSide(App*, CPU& cpu)
 void masterSilent(App* app, CPU& cpu)
 {
     const Entry e(cpu);
-    reg32 r;
-    if (!callGame(app, cpu, e.frame(1), kMasterLevel, {0}, {}, r))
-        return;
-    e.back(cpu, r);
+    const HeldEbp ebp(cpu, e.frame(1));
+    e.finish(cpu, setMasterVolume(app, cpu, e.frame(1) - 4, 0));
 }
 
 /* 0x418620: the master volume back (0x78), the music's too when it is not
@@ -315,40 +392,22 @@ void masterSilent(App* app, CPU& cpu)
 void masterBack(App* app, CPU& cpu)
 {
     const Entry e(cpu);
-    reg32 r;
-    if (!callGame(app, cpu, e.frame(2), kMasterLevel, {0x78}, {}, r))
+    const HeldEbp ebp(cpu, e.frame(2));
+    const Result r = setMasterVolume(app, cpu, e.frame(2) - 4, 0x78);
+    if (!r || kMusicUnmuted(app) == 0)
+        return e.finish(cpu, r);
+    reg32 music;
+    if (!callGame(app, cpu, e.frame(2), kMusicLevel, {reg32(musicVolume(app))}, {}, music))
         return;
-    if (kMusicUnmuted(app) != 0 && !callGame(app, cpu, e.frame(2), kMusicLevel, {reg32(musicVolume(app))}, {}, r))
-        return;
-    e.back(cpu, r);
+    e.back(cpu, music);
 }
-
-namespace
-{
-
-/* Silence -- the music and every sound stopped -- then the master volume
- * brought up a step at a time below `to`, the bus down when it is used. */
-bool silenceAndRaise(App* app, CPU& cpu, reg32 esp, int32_t to, reg32& r)
-{
-    if (!callGame(app, cpu, esp, kMasterLevel, {0}, {}, r) || !callGame(app, cpu, esp, kMusicStop, {}, {}, r)
-        || !callGame(app, cpu, esp, kStopAll, {}, {}, r))
-        return false;
-    for (int32_t level = 0; level < to; ++level)
-        if (!callGame(app, cpu, esp, kMasterLevel, {reg32(level)}, {}, r))
-            return false;
-    return kBusUsed(app) == 0 || callGame(app, cpu, esp, kBusDown, {}, {}, r);
-}
-
-}  // namespace
 
 /* 0x4186a0: silence, then the master volume back up to 127. */
 void silenceForMenus(App* app, CPU& cpu)
 {
     const Entry e(cpu);
-    reg32 r;
-    if (!silenceAndRaise(app, cpu, e.frame(2), 0x80, r))
-        return;
-    e.back(cpu, r);
+    const HeldEbp ebp(cpu, e.frame(2));
+    e.finish(cpu, silenceAndRaise(app, cpu, e.frame(2), 0x80));
 }
 
 /* 0x4186f0: silence, then the master volume back up to 0x77, and the race's
@@ -356,8 +415,9 @@ void silenceForMenus(App* app, CPU& cpu)
 void silenceForRace(App* app, CPU& cpu)
 {
     const Entry e(cpu);
+    const HeldEbp ebp(cpu, e.frame(2));
     reg32 r;
-    if (!silenceAndRaise(app, cpu, e.frame(2), 0x78, r) || !callGame(app, cpu, e.frame(2), kRaceSoundInit, {}, {}, r))
+    if (!silenceAndRaise(app, cpu, e.frame(2), 0x78) || !callGame(app, cpu, e.frame(2), kRaceSoundInit, {}, {}, r))
         return;
     e.back(cpu, r);
 }
@@ -368,7 +428,7 @@ void busInit(App* app, CPU& cpu)
     const Entry e(cpu);
     reg32 r;
     if (!callGame(app, cpu, e.frame(4), kBusInit, {0, 0x7f, 0x14, 0xffffffff}, {0xffffffff})
-        || !callGame(app, cpu, e.frame(4), kBusLevel, {0, 0}, {}, r))
+        || !callGame(app, cpu, e.frame(4), kSetBusLevel, {0, 0}, {}, r))
         return;
     e.back(cpu, r);
 }
@@ -378,7 +438,7 @@ void busUp(App* app, CPU& cpu)
 {
     const Entry e(cpu);
     reg32 r;
-    if (!callGame(app, cpu, e.frame(2), kBusLevel, {0, 0x7f}, {}, r))
+    if (!callGame(app, cpu, e.frame(2), kSetBusLevel, {0, 0x7f}, {}, r))
         return;
     e.back(cpu, r);
 }
@@ -386,24 +446,21 @@ void busUp(App* app, CPU& cpu)
 void busDown(App* app, CPU& cpu)
 {
     const Entry e(cpu);
-    reg32 r;
-    if (!callGame(app, cpu, e.frame(2), kBusLevel, {0, 0}, {}, r))
-        return;
-    e.back(cpu, r);
+    e.finish(cpu, busLevelDown(app, cpu, e.esp));
 }
 
 /* 0x4187a0: the race's slots stopped: 4..11 and 14..36. */
 void slotsStop(App* app, CPU& cpu)
 {
     const Entry e(cpu);
-    reg32 r = e.eax;
+    Result r;
     for (int32_t slot = 4; slot <= 0xb; ++slot)
-        if (!callGame(app, cpu, e.frame(2), kSlotStop, {reg32(slot)}, {}, r))
+        if (!(r = slotStopped(app, cpu, e.frame(2) - 4, slot)))
             return;
     for (int32_t slot = 0xe; slot < 0x25; ++slot)
-        if (!callGame(app, cpu, e.frame(2), kSlotStop, {reg32(slot)}, {}, r))
+        if (!(r = slotStopped(app, cpu, e.frame(2) - 4, slot)))
             return;
-    e.back(cpu, r);
+    e.finish(cpu, r);
 }
 
 /* 0x4187e0: the music muted, or back at its volume. */
@@ -419,20 +476,11 @@ void musicMuteToggle(App* app, CPU& cpu)
     e.back(cpu, r);
 }
 
-/* 0x416f60: slot eax's sound faded out (5 ticks) and the slot empty; the
- * effects playing, one less (that count back; else the slot as given). */
+/* 0x416f60: slot eax stopped. */
 void slotStop(App* app, CPU& cpu)
 {
     const Entry e(cpu);
-    const int32_t slot = int32_t(e.eax);
-    if (kEffectsOn(app) == 0 || slot == -1 || kSlots(app, slot).sound == -1)
-        return e.back(cpu, e.eax);
-    if (!callGame(app, cpu, e.frame(5), kFade, {reg32(kSlots(app, slot).sound), 5, 0xffffffff}))
-        return;
-    kSlots.set(app, slot, {-1, -1});
-    const int32_t playing = kPlaying(app) - 1;
-    kPlaying.set(app, playing);
-    e.back(cpu, reg32(playing));
+    e.finish(cpu, slotStopped(app, cpu, e.esp, int32_t(e.eax)));
 }
 
 /* 0x416fc0 (stdcall 12): slot eax plays effect edx, pitch ecx times ebx
@@ -453,105 +501,26 @@ void slotEffect(App* app, CPU& cpu)
         if (player != 0)
             slot += 0xe;
     }
-    const int32_t product = int32_t(uint32_t(e.ecx) * uint32_t(e.ebx));
+    const int32_t product = imul(int32_t(e.ecx), int32_t(e.ebx));
     const int32_t pitch = int32_t(uint32_t(product) + (product < 0 ? 0xffffu : 0u)) >> 16;
-    const reg32 esp = e.frame(3) - 4;
     if (kPlayerCar(app) == 0 && effect == 4)
     {
-        app->getMemory<reg32>(esp) = 0x64;
-        if (!callGame(app, cpu, esp, kRandom, {0, 0}))
-            return;
-        const uint64_t n = (uint64_t(cpu.edx) << 32) | cpu.eax;
+        const reg32 n = nextRandom(app);
         if (n % 0x64 > 0x32)
-            return e.back(cpu, reg32(n / 0x64), 0xc);
+            return e.back(cpu, n / 0x64, 0xc);
     }
-    reg32 r;
-    if (!callGame(app, cpu, esp, kSlotPlay, {reg32(slot), reg32(effect), reg32(pitch), volume}, {pan}, r))
-        return;
-    e.back(cpu, r, 0xc);
+    e.finish(cpu, slotPlayed(app, cpu, e.frame(3) - 4 - 8, slot, effect, int32_t(volume), pitch, pan), 0xc);
 }
 
-/* 0x417080 (stdcall 4): slot eax plays effect edx at volume ecx, pitch ebx
- * (each kept to 0..127), pan the stack's word: started -- from the crashes'
- * bank for the crash slots, by the effect for some, else from the slot's own
- * bank -- the slot's old sound stopped; or, the slot playing that effect
- * already, its volume, pitch and place changed.  The last SND call's eax. */
+/* 0x417080 (stdcall 4): slot eax plays effect edx at volume ecx, pitch ebx,
+ * pan the stack's word. */
 void slotPlay(App* app, CPU& cpu)
 {
     const Entry e(cpu);
-    const int32_t slot = int32_t(e.eax);
-    int32_t effect = int32_t(e.edx);
-    const auto clamp = [](int32_t v) { return v < 0 ? 0 : v > 0x7f ? 0x7f : v; };
-    const int32_t pitch = clamp(int32_t(e.ebx)), volume = clamp(int32_t(e.ecx));
-    const reg32 pan = e.arg(app, 0);
-    const reg32 esp = e.frame(3) - 8;
-    int32_t bank;
-    bool crash = false;
-    for (const int32_t s : {0x12, 0x13, 0x1a, 0x20, 0x21, 0x24, 0x14, 0x15, 0x22, 0x23})
-        crash = crash || slot == s;
-    if (crash)
-        bank = bankHandle(app, kCrashBank);
-    else if (effect == 0)
-        bank = bankHandle(app, kSceneryBank);
-    else if (effect == 2)
-        bank = bankHandle(app, kMenuBank);
-    else if (effect == 0xa || effect == 0xb)
-        bank = bankHandle(app, kCarBank);
-    else if (effect == 0xc)
-    {
-        bank = bankHandle(app, kBank5);
-        effect = 1;
-    }
-    else
-        bank = bankHandle(app, kSlotBanks(app, slot));
-    reg32 r;
-    const auto start = [&](int32_t level, uint8_t pitchOf) {
-        return callGame(app, cpu, esp, kPlayEffect, {reg32(bank), reg32(effect), pan, reg32(level)}, {pitchOf}, r);
-    };
-    if (slot == 0x1f || slot == 0x13 || slot == 0x21)
-    {
-        if (!start(volume, 0x40))
-            return;
-        kSlots.set(app, slot, {int32_t(r), effect});
-        kPlaying.set(app, kPlaying(app) - 1);
-        return e.back(cpu, r, 4);
-    }
-    const bool engine = slot >= 8 && slot <= 0xb;
-    const Slot old = kSlots(app, slot);
-    if (effect != old.effect)
-    {
-        if (old.sound != -1 && slot > 3)
-        {
-            if (!callGame(app, cpu, esp, kStop, {reg32(old.sound)}))
-                return;
-            kPlaying.set(app, kPlaying(app) - 1);
-        }
-        if (!start(engine ? 0 : volume, uint8_t(pitch)))
-            return;
-        kSlots.set(app, slot, {int32_t(r), effect});
-        return e.back(cpu, r, 4);
-    }
-    int32_t level;
-    if (engine)
-        level = scaled(kEngineVolume(app), 63, volume);
-    else if (slot == 0x10 || slot == 0x11)
-        level = scaled(kEffectsVolume(app), 80, volume);
-    else
-        level = scaled(kEffectsVolume(app), 55, volume);
-    const reg32 sound = reg32(old.sound);
-    if (!callGame(app, cpu, esp, kVolume, {sound, reg32(level)}) || !callGame(app, cpu, esp, kPitch, {sound, reg32(pitch)}, {}, r))
-        return;
-    if (kSoundMode(app) == 2 && !callGame(app, cpu, esp, kPlace, {sound, pan, 0}, {}, r))
-        return;
-    if (kSurround(app) != 0)
-    {
-        if (!callGame(app, cpu, esp, kPlace, {sound, kStereo(app) != 0 ? pan : 0, 0}, {}, r))
-            return;
-        return e.back(cpu, r, 4);
-    }
-    if (!callGame(app, cpu, esp, kPan, {sound, kStereo(app) != 0 ? reg32(stereoPan(pan)) : 0x40}, {}, r))
-        return;
-    e.back(cpu, r, 4);
+    e.finish(cpu,
+             slotPlayed(app, cpu, e.esp, int32_t(e.eax), int32_t(e.edx), int32_t(e.ecx), int32_t(e.ebx),
+                        e.arg(app, 0)),
+             4);
 }
 
 /* 0x4e8f28: the angle of the vector (eax, edx), 0x400 a turn: the smaller

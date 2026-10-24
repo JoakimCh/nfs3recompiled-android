@@ -9,7 +9,6 @@
 
 #include <winapi/dsetup.h>
 #include <winapi/ddraw.h>
-#include <winapi/glide2x.h>
 #include <algorithm>
 #include <set>
 
@@ -98,7 +97,6 @@ WinApplication::WinApplication(const char* appName, x86::reg32 baseAddress, cons
     m_methodList.emplace_back();
     dsetup::s_dSetupRegistry->registerSymbols(this);
     ddraw::s_dDrawRegistry->registerSymbols(this);
-    glide2x::s_glide2xRegistry->registerSymbols(this);
     Event::init();
     strcpy(&getMemory<char>(m_appName->getBlockStart()), appName);
     getMemory<char>(m_env->getBlockStart()) = 0;

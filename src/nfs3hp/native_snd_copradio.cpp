@@ -1,6 +1,6 @@
 #include "native_snd.h"
 
-/* The cops' radio by where they are, native (native_snd.cpp says how): a
+/* The cops' radio by where they are, native (native_snd.h says how): a
  * car's radio heard from its place -- loud as it is near, panned to it (the
  * player's side in the split screen) -- and the line the radio says for an
  * event, picked at random among the event's, now and then another. */

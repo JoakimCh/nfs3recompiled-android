@@ -1,6 +1,6 @@
 #include "native_snd.h"
 
-/* The race's sound sources, native (native_snd.cpp says how): the players'
+/* The race's sound sources, native (native_snd.h says how): the players'
  * listeners and the four cars the cops' sounds follow, reset as a race
  * starts; a cop car's siren and engine played from its place; how close the
  * cop cars are.

@@ -7637,7 +7637,7 @@ L_0x004fb1d3:
     return;
 }
 
-/* sub_4fb1e0: native, nfs3hp::snd::SNDbankpatpresent */
+/* sub_4fb1e0: native, nfs3hp::port::SNDbankpatpresent */
 
 /* sub_4fb300: native, nfs3hp::watcom::bsearch */
 

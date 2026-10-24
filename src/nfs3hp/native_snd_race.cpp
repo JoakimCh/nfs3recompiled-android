@@ -1,6 +1,6 @@
 #include "native_snd.h"
 
-/* The race's own sounds that play by themselves, native (native_snd.cpp says
+/* The race's own sounds that play by themselves, native (native_snd.h says
  * how): the engines' sounds started in their slots as the race begins (the
  * second player's too in the split screen); a far-off effect of the
  * crowd's bank aimed by where the car is and played after a while; an effect

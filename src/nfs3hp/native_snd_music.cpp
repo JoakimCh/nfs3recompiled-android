@@ -1,6 +1,6 @@
 #include "native_snd.h"
 
-/* The game's music, native (native_snd.cpp says how): the CD stream it plays
+/* The game's music, native (native_snd.h says how): the CD stream it plays
  * through, the tune for the menus ("show") and for a race (the track's rock or
  * tech version) started on Pathfinder with its map, faded in and out, and the
  * effects' banks loaded and freed.  The port's change to the race music

@@ -418,7 +418,7 @@ void Application::sub_417d50(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.ebx ^= x86::reg32(x86::sreg32(cpu.ebx));
     // 00417d7c  e8cf1a0d00             -call 0x4e9850
     cpu.esp -= 4;
-    nfs3hp::snd::SNDpos3d(app, cpu.sync());
+    nfs3hp::port::SNDpos3d(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00417d81  46                     -inc esi
@@ -450,7 +450,7 @@ L_0x00417d82:
     cpu.set_szp((cpu.ebx ^= x86::reg32(x86::sreg32(cpu.ebx))));
     // 00417d93  e8b81a0d00             -call 0x4e9850
     cpu.esp -= 4;
-    nfs3hp::snd::SNDpos3d(app, cpu.sync());
+    nfs3hp::port::SNDpos3d(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00417d98  46                     +inc esi
@@ -528,7 +528,7 @@ void Application::sub_418670(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.eax = 127 /*0x7f*/;
     // 00418679  e852ed0c00             -call 0x4e73d0
     cpu.esp -= 4;
-    nfs3hp::snd::SNDmastervol(app, cpu.sync());
+    nfs3hp::port::SNDmastervol(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0041867e  31c0                   -xor eax, eax

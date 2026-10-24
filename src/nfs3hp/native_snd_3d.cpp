@@ -1,6 +1,6 @@
 #include "native_snd.h"
 
-/* The race's sound in space, native (native_snd.cpp says how): where a
+/* The race's sound in space, native (native_snd.h says how): where a
  * sound's source is from the listener -- its distance (the code's cheap
  * one, the largest of three plus a quarter of the others) and its angle --
  * and how far the listener moved since the last frame.  The x87's

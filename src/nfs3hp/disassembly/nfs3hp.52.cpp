@@ -46,9 +46,9 @@ namespace nfs3hp
 
 /* sub_52b160: native, nfs3hp::snd::dead_0x52b160 */
 
-/* sub_52b1c0: native, nfs3hp::snd::panLaw */
+/* sub_52b1c0: native, nfs3hp::port::panLaw */
 
-/* sub_52b230: native, nfs3hp::snd::readBigEndian */
+/* sub_52b230: native, nfs3hp::port::readBigEndian */
 
 /* sub_52b290: native, nfs3hp::watcom::putch */
 
@@ -56,7 +56,7 @@ namespace nfs3hp
 
 /* sub_52b4d0: native, nfs3hp::snd::dead_0x52b4d0 */
 
-/* sub_52b500: native, nfs3hp::snd::setSendLevel */
+/* sub_52b500: native, nfs3hp::port::setSendLevel */
 
 /* align: skip  */
 void Application::sub_52b523(WinApplication* __restrict app, x86::CPU& cpu_)

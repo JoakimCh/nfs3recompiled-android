@@ -1,13 +1,45 @@
 #ifndef LIB_THRASHRENDERER_H_
 #define LIB_THRASHRENDERER_H_
 
-#include <lib/gliderenderer.h>
+#include <lib/winapp.h>
 #include <array>
 #include <unordered_map>
 #include <vector>
 
 namespace win32
 {
+
+class Renderer;
+
+/* The texture formats the game's textures come in. */
+enum TextureFormat
+{
+    TF_RGB_565,
+    TF_ARGB_1555,
+    TF_ARGB_4444,
+    TF_ARGB_8888,   // four bytes a texel; the rest are two
+};
+
+/* Where blending takes the destination by: one less the source's alpha, or
+ * whole. */
+enum AlphaBlend
+{
+    AB_1mSrcAlpha,
+    AB_1
+};
+
+/* What the renderer was handed since the last look (NFS_TICK_TRACE). */
+struct DrawCounters
+{
+    unsigned triangles = 0;
+    unsigned fogged = 0;
+    unsigned fogTables = 0;   // a table that differs from the one before
+    unsigned drawCalls = 0;   // batches with triangles in them
+    unsigned emptyCalls = 0;  // state changes with no triangle since the last
+    unsigned cut = 0;         // clamped far out, cut along the texture's edges
+    unsigned frames = 0;
+    unsigned depth16Frames = 0;  // drawn with the depth in the Voodoo's 16-bit steps
+};
 
 /* 32 bytes: position and Glide's depth, the colour, s/w, t/w and 1/w, and the
  * colour and alpha combine factors (0 or 1) and whether it is fogged. */
@@ -22,71 +54,63 @@ static_assert(sizeof(ThrashVertex) == 32, "the attribute offsets in thrashrender
 
 struct ThrashDraw;
 
-/* The native THRASH driver's renderer: what the game draws through voodoo2a,
- * straight to OpenGL ES, with nothing of the Voodoo2 emulated under it.
+/* The THRASH driver's renderer: what the game draws through it, straight to
+ * OpenGL ES, with nothing of the Voodoo2 emulated under it.
  *
- * GlideRenderer keeps every texture in one atlas, as the Voodoo2 kept them in
- * its texture memory, and its shader filters, wraps and clamps each texel by
- * hand, four fetches a pixel, so neighbouring tiles never bleed into each
- * other.  Here each of the game's textures is a texture of OpenGL's, with the
- * mipmap chain the game supplies, and the GPU does all of that in one fetch.
+ * Each of the game's textures is a texture of OpenGL's, with the mipmap chain
+ * the game supplies, and the GPU filters, wraps and clamps it in one fetch.
  * Only a texture drawn with a chroma key is still filtered by hand: the
- * Voodoo2 keyed texels out before filtering, which no GPU filter does.
- *
- * Everything else -- the batching, the GL thread, the fog table, the 16-bit
- * depth steps, the clip window, the far texture coordinates brought back -- is
- * GlideRenderer's, so the picture is the same up to how a GPU rounds its
- * bilinear weights.  NFS_THRASH_GL=0 draws through GlideRenderer instead. */
-class ThrashRenderer: public GlideBackend
+ * Voodoo2 keyed texels out before filtering, which no GPU filter does.  The
+ * triangles are batched by their state and drawn on the GL thread
+ * (lib/glthread.h), with the Voodoo's fog table, its 16-bit depth steps where
+ * the GPU's depth is finer, its clip window, and far texture coordinates
+ * brought back. */
+class ThrashRenderer: public GenericResource
 {
 public:
     explicit ThrashRenderer(Renderer* renderer);
     ~ThrashRenderer();
 
-    void clear(x86::reg32 color) override;
-    void swap() override;
-    void render(x86::reg32 buffer) override;
-    void atlasFreeSpace(x86::reg32& texels, x86::reg32& wholeTiles, x86::reg32& total) const override;
-    x86::reg32 getTextureMemSize(x86::reg32 tmu, x86::reg32 largeMipmapSize, TextureFormat format) override;
-    void setZWrite(bool enable) override;
-    void setZTest(bool enable) override;
-    void setDepthAlways(bool always) override;
-    void setAlphaBlendDst(AlphaBlend method) override;
-    void setDither(bool enable) override;
-    void setCullMode(x86::reg32 mode) override;
-    void setChromakeyMode(bool enable) override;
-    void setTexClampMode(bool wrapS, bool wrapT) override;
-    void setChromakeyValue(x86::reg32 color) override;
-    void setClipWindow(x86::reg32 minX, x86::reg32 minY, x86::reg32 maxX, x86::reg32 maxY) override;
-    void setGamma(float correction) override;
-    void setColorFactor(float colorFactor) override;
-    void setAlphaFactor(float alphaFactor) override;
-    void setFogMode(x86::reg32 mode) override;
-    void setFogColor(x86::reg32 color) override;
-    void setFogTable(const x86::reg8* table) override;
-    void setAlphaTestRef(x86::reg32 value) override;
-    void setTexture(x86::reg32 tmu, x86::reg32 address) override;
+    void clear(x86::reg32 color);
+    void swap();
+    void render(x86::reg32 buffer);
+    /* No atlas to run out of: what the game layer's car detail asks. */
+    void atlasFreeSpace(x86::reg32& texels, x86::reg32& wholeTiles, x86::reg32& total) const;
+    void setZWrite(bool enable);
+    void setZTest(bool enable);
+    /* The depth compared ALWAYS rather than LEQUAL while the test is on: it
+     * still writes, as the Voodoo did (the rear-view mirror resets its
+     * rectangle's depth so). */
+    void setDepthAlways(bool always);
+    void setAlphaBlendDst(AlphaBlend method);
+    void setDither(bool enable);
+    void setCullMode(x86::reg32 mode);
+    void setChromakeyMode(bool enable);
+    /* Each texture axis wrapped or clamped. */
+    void setTexClampMode(bool wrapS, bool wrapT);
+    void setChromakeyValue(x86::reg32 color);
+    void setClipWindow(x86::reg32 minX, x86::reg32 minY, x86::reg32 maxX, x86::reg32 maxY);
+    void setGamma(float correction);
+    void setColorFactor(float colorFactor);
+    void setAlphaFactor(float alphaFactor);
+    void setFogMode(x86::reg32 mode);
+    void setFogColor(x86::reg32 color);
+    void setFogTable(const x86::reg8* table);
+    /* The alpha the fragment must pass (the game compares GREATER). */
+    void setAlphaTestRef(x86::reg32 value);
+    /* The texture downloaded to `address`. */
+    void setTexture(x86::reg32 tmu, x86::reg32 address);
     void setTextureData(x86::reg32 tmu, x86::reg32 address, const void* data,
-                        x86::reg32 largeMipmap, x86::reg32 smallMimmap, TextureFormat format) override;
-    void drawTriangle(const GrVertex* a, const GrVertex* b, const GrVertex* c) override;
-    void resetTextures() override;
+                        x86::reg32 largeMipmap, x86::reg32 smallMimmap, TextureFormat format);
+    /* THRASH_treset: every texture given up. */
+    void resetTextures();
 
-    /* A triangle's corner as the native THRASH driver hands it over, worked
-     * out straight from the game's vertex (nfs3hp::thrashCorner): what
-     * drawTriangle keeps of a GrVertex, the colour already as bytes,
-     * r | g << 8 | b << 16 | a << 24. */
-    struct Corner
-    {
-        float x, y, ooz, oow, sow, tow;
-        x86::reg32 color;
-    };
-    void drawCorners(const Corner& a, const Corner& b, const Corner& c);
-
-    /* The native driver's way in, without a Corner between: room for one
-     * triangle in the batch, which the caller fills -- x, y, z (Glide's ooz),
-     * color, u and v (s/w, t/w) and oow -- and then hands to finishTriangle,
-     * which brings far texture coordinates back and marks the three as
-     * drawCorners does.  Nothing else may be drawn in between. */
+    /* A triangle: room for it in the batch, which the driver fills -- x, y, z
+     * (Glide's 1/z), the colour as bytes, r | g << 8 | b << 16 | a << 24, u
+     * and v (s/w, t/w) and 1/w -- and then hands to finishTriangle, which
+     * brings far texture coordinates back and marks the three with the
+     * combine and the fog they are drawn with.  Nothing else may be drawn in
+     * between. */
     ThrashVertex* reserveTriangle()
     {
         if (m_vertexCount + 3 > s_maxVertices)
@@ -97,7 +121,10 @@ public:
 
     static const x86::reg32 s_maxVertices = 128000;
 
-private:
+    /* The counters since the last look, and those counted into. */
+    static DrawCounters takeCounters();
+    static DrawCounters& counters() { return s_counters; }
+
     /* One batch: the state it is drawn with, and the triangles up to `end`. */
     struct Batch
     {
@@ -112,6 +139,29 @@ private:
         float gamma;
         int fogTable;
     };
+
+    /* What a check of the THRASH driver sees of the renderer
+     * (tools/thrash_checks): all it hands the GL thread, as it hands it.  None
+     * in the game. */
+    struct Watcher
+    {
+        virtual ~Watcher() = default;
+        virtual void drawn(const ThrashDraw& draw) = 0;
+        virtual void uploaded(x86::reg32 index, x86::reg32 size, x86::reg32 levels, TextureFormat format,
+                              bool fresh, const std::vector<x86::reg8>& texels) = 0;
+        virtual void cleared(x86::reg32 color, x86::reg32 clipMinX, x86::reg32 clipMinY, x86::reg32 clipMaxX,
+                             x86::reg32 clipMaxY) = 0;
+        virtual void swapped() = 0;
+        virtual void rendered(x86::reg32 buffer) = 0;
+        virtual void released(const std::vector<x86::reg32>& indices) = 0;
+    };
+    static void watch(Watcher* watcher) { s_watcher = watcher; }
+    /* The game thread's side of the renderer, every word of it: what is
+     * pending, the textures as it keeps them, the state it draws with -- for a
+     * check to compare after each call of the driver. */
+    void snapshot(std::vector<x86::reg32>& out) const;
+
+private:
     friend struct ThrashDraw;
 
     /* A texture of the game's, as the game thread knows it: the index of its
@@ -135,6 +185,9 @@ private:
     void drawPending(const ThrashDraw& draw);
     void upload(x86::reg32 index, x86::reg32 size, x86::reg32 levels, TextureFormat format,
                 std::vector<x86::reg8>& texels);
+
+    static DrawCounters s_counters;
+    static Watcher* s_watcher;
 
 private:
     Renderer*               m_renderer;
@@ -188,6 +241,21 @@ private:
     x86::reg32              m_clipMaxX;
     x86::reg32              m_clipMaxY;
     float                   m_gamma;
+};
+
+/* What renderPending() hands the GL thread: the vertices, the batches and the
+ * state the whole draw shares. */
+struct ThrashDraw
+{
+    ThrashVertex*                       vertices;
+    x86::reg32                          vertexCount;
+    std::vector<ThrashRenderer::Batch>  batches;
+    std::vector<std::array<float, 64>>  fogTables;
+    float                               fogColor[3];
+    float                               alphaTestRef;
+    x86::reg32                          chromaKeyColor;
+    x86::reg32                          width;
+    x86::reg32                          height;
 };
 
 }

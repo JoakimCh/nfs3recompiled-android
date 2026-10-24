@@ -1,6 +1,6 @@
 #include "native_snd.h"
 
-/* The race's banks from the game's archives, native (native_snd.cpp says
+/* The race's banks from the game's archives, native (native_snd.h says
  * how): a bank read out of a .viv archive (0x43b830 opens one, 0x43b9d0
  * finds a file in it, 0x43b9b0 closes it) into memory and added to SND --
  * its header copied out where SND asks -- or, missing from the archive, the

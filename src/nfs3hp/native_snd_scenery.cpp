@@ -1,6 +1,6 @@
 #include "native_snd.h"
 
-/* The tracks' own scenery sounds, native (native_snd.cpp says how): for the
+/* The tracks' own scenery sounds, native (native_snd.h says how): for the
  * player's car each tick, by the track (0x6fd4ac) and where on it the car
  * is (its cell, +0x1c) -- the rain and the tunnel's echo; a sound that
  * plays all along a stretch, swelling and fading at random (slot 0x1a, the

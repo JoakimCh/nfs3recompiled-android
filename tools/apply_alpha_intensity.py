@@ -11,8 +11,8 @@ byte at 0x7a3a58 has bit 0x40 set -- and that byte is not a capability mask but
 On this Glide driver every one of them skipped the scaling, which is why the
 slider moved and nothing on screen changed.
 
-The scaled colours reach the Glide layer as vertex colour and alpha, which the
-port's shader always applies, textured or not (gliderenderer.cpp), so the
+The scaled colours reach the renderer as vertex colour and alpha, which the
+port's shader always applies, textured or not (thrashrenderer.cpp), so the
 game's own scaling shows the way it did under Direct3D.  At the default of 1
 every site still skips the scaling, exactly as before.
 

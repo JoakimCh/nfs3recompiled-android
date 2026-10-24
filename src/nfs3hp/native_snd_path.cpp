@@ -1,6 +1,6 @@
 #include "native_snd.h"
 
-/* EA's Pathfinder (cmn\spathold.c), native (native_snd.cpp says how): music
+/* EA's Pathfinder (cmn\spathold.c), native (native_snd.h says how): music
  * as a map of nodes, each a stretch of the stream's file, that the game steers
  * by events and a controller's value.  The map: 'PFDx', its version (0), the
  * node to start at (+5), its nodes' count (+6), the events' count (+7), the

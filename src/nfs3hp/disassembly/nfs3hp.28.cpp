@@ -3064,7 +3064,7 @@ void Application::sub_4c9590(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.eax = app->getMemory<x86::reg32>(x86::reg32(8247364) /* 0x7dd844 */);
     // 004c95a9  e86ef60100             -call 0x4e8c1c
     cpu.esp -= 4;
-    nfs3hp::snd::removeAllBanks(app, cpu.sync());
+    nfs3hp::port::removeAllBanks(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004c95ae  8b0d4cd87d00           -mov ecx, dword ptr [0x7dd84c]
@@ -6828,7 +6828,7 @@ L_0x004ca720:
     app->getMemory<x86::reg32>(cpu.ebp + x86::reg32(-52) /* -0x34 */) = cpu.eax;
     // 004ca73b  e848660100             -call 0x4e0d88
     cpu.esp -= 4;
-    nfs3hp::snd::eaRandom(app, cpu.sync());
+    nfs3hp::port::eaRandom(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004ca740  f775cc                 -div dword ptr [ebp - 0x34]
@@ -8599,7 +8599,7 @@ L_0x004cad23:
     cpu.esi = x86::reg32(x86::sreg32(cpu.esi) >> (1 /*0x1*/ % 32));
     // 004cadce  e8b55f0100             -call 0x4e0d88
     cpu.esp -= 4;
-    nfs3hp::snd::eaRandom(app, cpu.sync());
+    nfs3hp::port::eaRandom(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004cadd3  f7f6                   -div esi
@@ -8621,7 +8621,7 @@ L_0x004cad23:
     cpu.esi = 3 /*0x3*/;
     // 004cade2  e8a15f0100             -call 0x4e0d88
     cpu.esp -= 4;
-    nfs3hp::snd::eaRandom(app, cpu.sync());
+    nfs3hp::port::eaRandom(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004cade7  f7f6                   +div esi
@@ -8696,7 +8696,7 @@ void Application::sub_4cae00(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.edx = cpu.eax;
     // 004cae0b  e8785f0100             -call 0x4e0d88
     cpu.esp -= 4;
-    nfs3hp::snd::eaRandom(app, cpu.sync());
+    nfs3hp::port::eaRandom(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004cae10  a801                   +test al, 1
@@ -9109,7 +9109,7 @@ void Application::sub_4caea0(WinApplication* __restrict app, x86::CPU& cpu_)
     }
     // 004caf45  e83e5e0100             -call 0x4e0d88
     cpu.esp -= 4;
-    nfs3hp::snd::eaRandom(app, cpu.sync());
+    nfs3hp::port::eaRandom(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004caf4a  a801                   +test al, 1
@@ -9148,7 +9148,7 @@ void Application::sub_4caea0(WinApplication* __restrict app, x86::CPU& cpu_)
 L_0x004caf66:
     // 004caf66  e81d5e0100             -call 0x4e0d88
     cpu.esp -= 4;
-    nfs3hp::snd::eaRandom(app, cpu.sync());
+    nfs3hp::port::eaRandom(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004caf6b  a807                   +test al, 7

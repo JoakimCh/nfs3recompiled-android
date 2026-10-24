@@ -1,6 +1,6 @@
 #include "native_snd.h"
 
-/* EA's CD stream (cmn\cdstream.c), native (native_snd.cpp says how): a ring
+/* EA's CD stream (cmn\cdstream.c), native (native_snd.h says how): a ring
  * of chunks a reader thread fills from a file, block by block, as commands
  * queued to it ask -- open a file, go on to the next, seek, stop -- and the
  * SND streamer (native_snd_stream.cpp) takes chunks from, giving each back

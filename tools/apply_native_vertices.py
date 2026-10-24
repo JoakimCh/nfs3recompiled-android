@@ -14,8 +14,8 @@ With those native, the next profile of the same race (2026-09-25) had the
 track's polygon loop (sub_41ae90) and a car's chrome, lighting and polygon
 culling (sub_49db70, sub_49da30, sub_49dbf0) at the top; they went native the
 same way, and so did the renderer DLL's triangle (voodoo2a's THRASH_drawtri),
-which hands each of the cars' triangles to Glide -- native_thrash.cpp's now,
-voodoo2a having no generated code.
+which hands each of the cars' triangles to Glide -- port_thrash.cpp's now,
+voodoo2a having no generated code, and straight to the renderer.
 """
 from pathlib import Path
 

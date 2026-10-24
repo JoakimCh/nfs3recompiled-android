@@ -8,9 +8,21 @@
 #include <cstdint>
 #include <initializer_list>
 
-/* What native_snd*.cpp share: EA's SND library's state where nfs3.exe keeps
- * it, and the helpers its functions are written with (native_snd.cpp says
- * how). */
+/* What native_snd_*.cpp share: EA's SND library's state where nfs3.exe keeps
+ * it, and the helpers their functions are written with.
+ *
+ * The game's sound code there is native at the register level: each function
+ * does what the game's code does -- the same memory written in the same
+ * order, the game's functions called with the same registers and stack, the
+ * stack where the code had it (a pointer into a frame is compared), the
+ * registers its callers count on as the code leaves them, eax its result, and
+ * the return address -- and what a stdcall ret takes -- popped.
+ * disassemble_nfs3hp.py binds each address to the function of that name
+ * (SND_NATIVES), and the generated code calls it by name; tools/game_checks
+ * holds each against the game's code.  The names are EA's where the game's
+ * messages give them.  The SND library itself -- voices, banks, playing -- is
+ * rewritten as the port's own C++ (port_snd.h), and these call it by its
+ * addresses, as the game's code does. */
 namespace nfs3hp
 {
 namespace snd

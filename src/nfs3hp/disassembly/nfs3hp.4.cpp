@@ -19325,7 +19325,7 @@ L_0x0041d256:
     if (cpu.terminate) return;
     // 0041d2c4  e8bf3a0c00             -call 0x4e0d88
     cpu.esp -= 4;
-    nfs3hp::snd::eaRandom(app, cpu.sync());
+    nfs3hp::port::eaRandom(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0041d2c9  83e007                 +and eax, 7

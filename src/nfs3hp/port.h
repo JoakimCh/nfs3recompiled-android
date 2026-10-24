@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <cstring>
 #include <initializer_list>
+#include <optional>
 
 /* The port proper: the game's code rewritten as C++ of its own -- functions
  * with arguments and results, the game's records as structs, its variables
@@ -66,6 +67,26 @@ struct Table
     }
 };
 
+/* A record of the game's where it is: a reference into the game's memory, its
+ * fields read and written one at a time, in the order the code has them (T
+ * packed, so a field may sit anywhere).  For records that the game's code
+ * and the rewrites share, and which the calls between them may change. */
+template <class T>
+T& record(App* app, reg32 at)
+{
+    return *&app->getMemory<T>(at);
+}
+
+/* A table of such records. */
+template <class T>
+struct Records
+{
+    reg32 at;
+    reg32 stride = sizeof(T);
+    reg32 address(int32_t i) const { return at + reg32(i) * stride; }
+    T& operator()(App* app, int32_t i) const { return record<T>(app, address(i)); }
+};
+
 /* A record of the game's at an address (on the game's stack, say), read and
  * written whole. */
 template <class T>
@@ -111,6 +132,50 @@ inline bool callGame(App* app, CPU& cpu, reg32 esp, reg32 target, Args a = {}, s
     return callGame(app, cpu, esp, target, a, stack, ignored);
 }
 
+/* What a rewritten function that calls the game's code gives back: its
+ * result -- what the game's code leaves in eax -- or nothing when the game
+ * stopped in a call (cpu.terminate), and then its callers stop as well, up to
+ * the adapter, which leaves the x86 as the stop left it. */
+using Result = std::optional<int32_t>;
+
+/* Where a rewritten function calls the game's code from: esp as the game's
+ * code has it there, so that what is passed on the stack -- and what the
+ * called code finds above it -- is where it was.  A rewrite takes the esp
+ * its game's code had on entry (at the return address), and its frame is
+ * Entry::frame's.
+ *
+ * Here and there EA's code reads a register no caller set for it -- an
+ * uninitialised variable the compiler kept in ebp, say -- and what it does
+ * then depends on what the caller had there.  A rewrite reads such a register
+ * from cpu, as the game's code finds it: rewritten code leaves esi, edi and
+ * ebp alone (the game's code it calls keeps them, Watcom's way), so they hold
+ * what the game's caller left -- but where the game's code on the way sets
+ * one, the rewrite sets it as well. */
+
+/* ebp as the game's code keeps it while it runs -- its frame pointer -- for
+ * what it calls that reads ebp unset; as it was again on the way out. */
+struct HeldEbp
+{
+    CPU& cpu;
+    reg32 saved;
+    HeldEbp(CPU& c, reg32 ebp) : cpu(c), saved(c.ebp) { c.ebp = ebp; }
+    ~HeldEbp() { cpu.ebp = saved; }
+    HeldEbp(const HeldEbp&) = delete;
+    HeldEbp& operator=(const HeldEbp&) = delete;
+};
+
+/* fistp after Watcom's __CHP: `value` towards 0 as an integer, the x87's way
+ * (its "integer indefinite" past the integer's range). */
+template <class Int>
+Int chopped(CPU& cpu, const x86::Float& value)
+{
+    const auto rc = cpu.fpu.control.rc;
+    cpu.fpu.control.rc = 3;
+    const Int n = cpu.fpu.toInteger<Int>(value);
+    cpu.fpu.control.rc = rc;
+    return n;
+}
+
 /* The adapter's two ends: the caller's registers and stack on the way in,
  * and on the way out its result in eax, every other register as it was, esp
  * past the return address and `popped` (a stdcall's words). */
@@ -136,6 +201,12 @@ struct Entry
         c.edi = edi;
         c.ebp = ebp;
         c.esp = esp + 4 + popped;
+    }
+    /* back() with the result, when the game did not stop. */
+    void finish(CPU& c, const Result& result, reg32 popped = 0) const
+    {
+        if (result)
+            back(c, reg32(*result), popped);
     }
 };
 

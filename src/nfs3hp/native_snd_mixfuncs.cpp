@@ -1,6 +1,6 @@
 #include "native_snd.h"
 
-/* EA SND's mixer's own functions, native (native_snd.cpp says how): what the
+/* EA SND's mixer's own functions, native (native_snd.h says how): what the
  * MMX set's tables and set-ups hand a channel, and what the mixer's start and
  * the sample conversion call.  native_mixer.cpp mixes with most of them
  * itself; these are the entries the game's code and the natives still call

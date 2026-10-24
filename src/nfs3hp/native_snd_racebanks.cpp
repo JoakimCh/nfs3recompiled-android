@@ -1,6 +1,6 @@
 #include "native_snd.h"
 
-/* The race's banks loaded, native (native_snd.cpp says how): the players'
+/* The race's banks loaded, native (native_snd.h says how): the players'
  * cars' (from the car's archive, or by its model the audio folder's file),
  * the race's own -- crashes, the cops' and their radio in the units'
  * folder, the track's ambience by its number (and the weather), the

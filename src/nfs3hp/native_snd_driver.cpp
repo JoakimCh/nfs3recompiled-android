@@ -1,7 +1,7 @@
 #include "native_snd.h"
 
 /* EA's SND library's start and end (cmn\sinit.c, win\sdriver.c) and the
- * sound thread under it, native (native_snd.cpp says how): SNDinit checks the
+ * sound thread under it, native (native_snd.h says how): SNDinit checks the
  * mode against eacsnd's, loads eacsnd and has the game's message thread start
  * the driver -- the mixer, eacsnd's own start, the sound thread that serves
  * the library 100 times a second, the audio focus handler -- and waits for it;

@@ -583,8 +583,8 @@ void Renderer::presentFrame(x86::reg32 width, x86::reg32 height)
             SDL_Log("[GFX] swap failed (%u): %s", s_failures, SDL_GetError());
     }
     /* The single point where a frame actually reaches the screen, for both the
-     * DirectDraw/2D menu path and the Glide path (GlideRenderer::swap() ends
-     * up here too).  Every message-trace line carries this count, which is how
+     * DirectDraw/2D menu path and the THRASH driver's (ThrashRenderer::swap()
+     * ends up here too).  Every message-trace line carries this count, which is how
      * "the game was told about the key" gets tied to "a new frame came out". */
     NFS_MSG_FRAME();
     /* Mostly waiting: the window's clear on the buffer coming back from the

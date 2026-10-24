@@ -5,10 +5,10 @@
 #include <lib/memmap.h>
 #include <lib/timer.h>
 #include <nfs3hp.h>
-#include <winapi/glide2x.h>
 #include <winapi/version.h>
-#include <lib/gliderenderer.h>
+#include <lib/thrashrenderer.h>
 #include "native_thrash.h"
+#include "port_thrash.h"
 #include "dynamic_fullscreen.h"
 #include <SDL3/SDL.h>
 #include <array>
@@ -115,7 +115,7 @@ void raceRunning(bool running)
      * without the end of the loading screen (loadingScreenFit). */
     if (!running)
     {
-        win32::glide2x::fitFourThree(false);
+        nfs3hp::port::driver::fitFourThree(false);
         s_loadingScreen = false;
     }
 }
@@ -127,8 +127,8 @@ void raceRunning(bool running)
 void loadingScreenFit(win32::WinApplication* app, x86::CPU& cpu, bool on)
 {
     if (on)
-        win32::glide2x::clearPicture(app, cpu);
-    win32::glide2x::fitFourThree(on);
+        nfs3hp::port::driver::clearPicture(app, cpu);
+    nfs3hp::port::driver::fitFourThree(on);
     s_loadingScreen = on;
 }
 
@@ -146,7 +146,7 @@ bool loadingScreenUp()
  * the box as the game stretches it, as the Modern Patch has it. */
 void dialogEmblem(bool drawing)
 {
-    win32::glide2x::squeezeToLeft(drawing);
+    nfs3hp::port::driver::squeezeToLeft(drawing);
 }
 
 bool raceIsRunning()
@@ -174,7 +174,7 @@ bool takingText()
  * with the game's 32-bit textures taken, in full colour throughout. */
 x86::reg32 shownDepth(x86::reg32 depth)
 {
-    return depth == 16 && win32::glide2x::fullColourTextures() ? 32 : depth;
+    return depth == 16 && nfs3hp::port::driver::fullColourTextures() ? 32 : depth;
 }
 
 /* View Distance at Full: the player's choice in the Graphics menu, [0x6fbc28],
@@ -292,7 +292,7 @@ x86::reg32 carWheelStamp(win32::WinApplication* app, x86::reg32 car, x86::reg32 
  * One mode of the Voodoo2 driver's table (kDynamicEntry, the last, so the
  * Graphics menu lists it last) is the port's: its size is worked out from the
  * screen, the height the screen's own up to 1080 and the width the screen's
- * proportion of it, and Glide opens it under kResolutionDynamic.  Nothing of
+ * proportion of it, and the driver opens it under kResolutionDynamic.  Nothing of
  * the game's art is redrawn for it: every camera already widens its view to
  * the screen's shape (widescreenHalfAngle) and the HUD keeps its proportions
  * (widescreenHudRect).
@@ -305,7 +305,7 @@ x86::reg32 carWheelStamp(win32::WinApplication* app, x86::reg32 car, x86::reg32 
  * in place of a width, which sub_4bee80 (tools/apply_widescreen.py) turns
  * back into the mode at start, on any screen. */
 constexpr x86::reg32 kModeTable = 0xa92018;       // voodoo2a's modes, 40 bytes each
-constexpr x86::reg32 kModeResolutions = 0xa922e8; // each mode's Glide resolution id
+constexpr x86::reg32 kModeResolutions = 0xa922e8; // each mode's resolution id
 constexpr x86::reg32 kDynamicEntry = 16;
 constexpr x86::reg32 kDynamicMaxHeight = 1080;
 static x86::reg32 s_dynamicWidth = 0;
@@ -358,7 +358,7 @@ bool dynamicFullscreenMode(x86::reg32 mode)
 }
 
 /* Dynamic Fullscreen's mode measured again and put in the driver's table and
- * Glide's.  True when its size changed. */
+ * its size for the id.  True when its size changed. */
 bool dynamicFullscreenRefresh(win32::WinApplication* app)
 {
     if (s_dynamicWidth == 0)
@@ -373,7 +373,7 @@ bool dynamicFullscreenRefresh(win32::WinApplication* app)
     s_dynamicHeight = height;
     app->getMemory<x86::reg32>(kModeTable + kDynamicEntry * 40) = width;
     app->getMemory<x86::reg32>(kModeTable + kDynamicEntry * 40 + 4) = height;
-    win32::glide2x::setDynamicResolution(width, height);
+    nfs3hp::port::driver::setDynamicResolution(width, height);
     return true;
 }
 
@@ -413,8 +413,8 @@ void dynamicFullscreenStart(win32::WinApplication* app)
     app->getMemory<x86::reg32>(mode) = width;
     app->getMemory<x86::reg32>(mode + 4) = height;
     app->getMemory<x86::reg32>(mode + 16) = 1;
-    app->getMemory<x86::reg32>(kModeResolutions + kDynamicEntry * 4) = win32::glide2x::kResolutionDynamic;
-    win32::glide2x::setDynamicResolution(width, height);
+    app->getMemory<x86::reg32>(kModeResolutions + kDynamicEntry * 4) = nfs3hp::port::driver::kResolutionDynamic;
+    nfs3hp::port::driver::setDynamicResolution(width, height);
     SDL_Log("[SCREEN] Dynamic Fullscreen %ux%u", unsigned(width), unsigned(height));
 }
 
@@ -713,7 +713,7 @@ static x86::reg32 s_swaps = 0;
  * against it, so an element blinked red over empty space.  What is drawn is
  * measured here instead, from every quad the element queues meanwhile
  * (hudQueueQuad): the game's 2D is queued, text glyph by glyph, and drawn
- * later in the frame, all of it together, so what reaches Glide during an
+ * later in the frame, all of it together, so what reaches the driver during an
  * element's turn is somebody else's.  Kept with the element's rectangle at the
  * time, so the same measurement still holds once the element has moved: an
  * element draws the same thing wherever it stands.  An element that queues
@@ -1218,7 +1218,7 @@ void traceCarDetail(win32::WinApplication* app)
     const x86::reg32 detail = app->getMemory<x86::reg32>(0x6fbc1c);
     const x86::sreg32 budget = detail < 3 ? x86::sreg32(app->getMemory<x86::reg32>(0x4b7a50 + detail * 4)) : 0;
     x86::reg32 freeTexels = 0, freeTiles = 0, totalTexels = 0;
-    win32::glide2x::atlasFreeSpace(freeTexels, freeTiles, totalTexels);
+    nfs3hp::port::driver::atlasFreeSpace(freeTexels, freeTiles, totalTexels);
     SDL_Log("[CARDETAIL] detail=%u cars=%u L0=%d L1=%d L2=%d L3=%d hidden=%d points=%d budget=%d"
             " buffer peak=%u/%u overflow=%u/%u frames atlas=%u free=%u%% tiles256=%u",
             unsigned(detail), unsigned(count), levels[0], levels[1], levels[2], levels[3], hidden,
@@ -1583,16 +1583,16 @@ void traceTicks(win32::WinApplication* app)
         return;
     const x86::reg32 ticks = clock - s_ticks.clock;
     const x86::reg32 frames = nfs3hp::s_swaps - s_ticks.swaps;
-    const win32::GlideCounters glide = win32::GlideRenderer::takeCounters();
+    const win32::DrawCounters drawn = win32::ThrashRenderer::takeCounters();
     SDL_Log("[TICKS] %u in %llu ms (%.1f/s), %u frames (%.1f/s), %.2f ticks a frame, clock %u, mode %u; "
             "%u triangles a frame, %u fogged, %u fog tables, %u batches (%u empty), %u cut",
             unsigned(ticks), (unsigned long long)span, double(ticks) * 1000.0 / double(span),
             unsigned(frames), double(frames) * 1000.0 / double(span),
             frames ? double(ticks) / double(frames) : 0.0, unsigned(clock),
             unsigned(app->getMemory<x86::reg32>(0x6fd3a0)),
-            frames ? glide.triangles / unsigned(frames) : 0u, frames ? glide.fogged / unsigned(frames) : 0u,
-            glide.fogTables, frames ? glide.drawCalls / unsigned(frames) : 0u,
-            frames ? glide.emptyCalls / unsigned(frames) : 0u, frames ? glide.cut / unsigned(frames) : 0u);
+            frames ? drawn.triangles / unsigned(frames) : 0u, frames ? drawn.fogged / unsigned(frames) : 0u,
+            drawn.fogTables, frames ? drawn.drawCalls / unsigned(frames) : 0u,
+            frames ? drawn.emptyCalls / unsigned(frames) : 0u, frames ? drawn.cut / unsigned(frames) : 0u);
     /* The GPU's side of the same second: its work is the busy share of its
      * clock, so M cycles a frame compares seconds the governor ran at
      * different clocks; the cap is the highest clock it may take just now.
@@ -1606,7 +1606,7 @@ void traceTicks(win32::WinApplication* app)
                 s_ticks.gpuLoad / s_ticks.gpuLooks, s_ticks.gpuClock / s_ticks.gpuLooks,
                 cap >= 10000 ? cap / 1000 : cap,
                 s_ticks.gpuBusy / s_ticks.gpuLooks / (double(frames) * 1000.0 / double(span)),
-                glide.depth16Frames, glide.frames,
+                drawn.depth16Frames, drawn.frames,
                 unsigned(app->getMemory<x86::reg32>(0x6fd4c8)), unsigned(app->getMemory<x86::reg32>(0x6fd3b0)));
     }
     /* And the x87's special cases this second, all threads together: compares
@@ -1813,7 +1813,7 @@ void pointerTick(win32::WinApplication* app)
         return;
 
     int rectX, rectY, rectW, rectH, pictureW, pictureH;
-    if (!win32::glide2x::screenRect(rectX, rectY, rectW, rectH, pictureW, pictureH))
+    if (!nfs3hp::port::driver::screenRect(rectX, rectY, rectW, rectH, pictureW, pictureH))
         return;
     (void)pictureW;
     (void)pictureH;
@@ -2097,7 +2097,7 @@ void scriptTick()
         return;
     }
     int rectX, rectY, rectW, rectH, pictureW, pictureH;
-    if (!win32::glide2x::screenRect(rectX, rectY, rectW, rectH, pictureW, pictureH))
+    if (!nfs3hp::port::driver::screenRect(rectX, rectY, rectW, rectH, pictureW, pictureH))
         return;
     s_scriptX = float(rectX) + step.x * float(rectW) / float(pictureW);
     s_scriptY = float(rectY) + step.y * float(rectH) / float(pictureH);
@@ -2555,7 +2555,7 @@ int main(int argc, char* argv[])
          * soon as they are further away than that.
          *
          * Holding the detailed model out to the cull distance makes every car
-         * match the player's.  It costs emulated CPU rather than GPU -- Glide
+         * match the player's.  It costs emulated CPU rather than GPU -- THRASH
          * takes screen-space vertices, so the game transforms all that geometry
          * itself -- so NFS_CAR_DETAIL_FULL=0 restores the original distances,
          * budget and texture sizes without a rebuild.  Only the High row is
@@ -2588,17 +2588,7 @@ int main(int argc, char* argv[])
              * call, so lifting High's budget here is enough. */
             const x86::reg32 budgetTable = 0x4b7a50;
             app.getMemory<x86::reg32>(budgetTable) = 0x7fffffff;
-            /* Every car loads the player's 256x256 texture as well (the patched
-             * sub_4b7d30), up to four times the atlas room each.  A 4096 atlas
-             * takes about 90 MB of graphics memory, so only where memory is to
-             * spare; elsewhere a texture that does not fit is kept a mip level
-             * smaller rather than dropped. */
-            if (SDL_GetSystemRAM() >= 3072)
-                win32::glide2x::setPreferredAtlasSize(4096);
         }
-        /* The native THRASH driver draws through a renderer of its own, with
-         * no Voodoo2 emulated under it (native_thrash.cpp). */
-        win32::glide2x::useThrashRenderer(nfs3hp::thrashRendererWanted());
         const char* detailTrace = SDL_getenv("NFS_CAR_DETAIL_TRACE");
         s_traceCarDetail = detailTrace && *detailTrace && *detailTrace != '0';
         const char* pointerTrace = SDL_getenv("NFS_POINTER_TRACE");
@@ -2633,7 +2623,7 @@ int main(int argc, char* argv[])
 #ifndef __ANDROID__
         loadTouchScript();
 #endif
-        win32::glide2x::setSwapObserver(onSwap);
+        nfs3hp::port::driver::setSwapObserver(onSwap);
         SDL_AddEventWatch(backgroundWatch, static_cast<win32::WinApplication*>(&app));
 
         /* The screen sizes the Graphics menu offers.  The Voodoo2 driver's mode
@@ -2643,7 +2633,7 @@ int main(int argc, char* argv[])
          * last three are sizes no card could open -- 1280x1200, 1600x1200,
          * 400x300 -- so they and the unused 512x256 before them carry the
          * widescreen modes instead, each under a resolution id of the port's
-         * own in the table THRASH_setvideomode hands grSstWinOpen (0xa922e8):
+         * own in the table THRASH_setvideomode opens the window by (0xa922e8):
          * 1280x720, 1600x900, 1920x1080, then Dynamic Fullscreen last, the
          * order the menu lists them in (dynamicFullscreenStart).  The Graphics menu lists them once
          * tools/apply_widescreen.py lets a 16:9 mode through sub_4bed90, which
@@ -2656,9 +2646,9 @@ int main(int argc, char* argv[])
         if (!widescreen || SDL_strcmp(widescreen, "0") != 0)
         {
             static const struct { x86::reg32 entry, width, height, resolution; } kWide[] = {
-                { 12, 1280, 720, win32::glide2x::kResolution1280x720 },
-                { 14, 1600, 900, win32::glide2x::kResolution1600x900 },
-                { 15, 1920, 1080, win32::glide2x::kResolution1920x1080 },
+                { 12, 1280, 720, nfs3hp::port::driver::kResolution1280x720 },
+                { 14, 1600, 900, nfs3hp::port::driver::kResolution1600x900 },
+                { 15, 1920, 1080, nfs3hp::port::driver::kResolution1920x1080 },
             };
             for (const auto& wide : kWide)
             {

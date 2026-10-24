@@ -22031,7 +22031,7 @@ L_0x0047ae62:
     }
     // 0047aefe  e8855e0600             -call 0x4e0d88
     cpu.esp -= 4;
-    nfs3hp::snd::eaRandom(app, cpu.sync());
+    nfs3hp::port::eaRandom(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0047af03  8b3d00d25500           -mov edi, dword ptr [0x55d200]
@@ -23857,7 +23857,7 @@ L_0x0047b5cb:
     cpu.ecx = 100 /*0x64*/;
     // 0047b60d  e876570600             -call 0x4e0d88
     cpu.esp -= 4;
-    nfs3hp::snd::eaRandom(app, cpu.sync());
+    nfs3hp::port::eaRandom(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0047b612  f7f1                   -div ecx
@@ -23889,7 +23889,7 @@ L_0x0047b5cb:
     cpu.edx ^= x86::reg32(x86::sreg32(cpu.edx));
     // 0047b627  e85c570600             -call 0x4e0d88
     cpu.esp -= 4;
-    nfs3hp::snd::eaRandom(app, cpu.sync());
+    nfs3hp::port::eaRandom(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0047b62c  f7f1                   -div ecx
@@ -23905,7 +23905,7 @@ L_0x0047b5cb:
     cpu.edx ^= x86::reg32(x86::sreg32(cpu.edx));
     // 0047b636  e84d570600             -call 0x4e0d88
     cpu.esp -= 4;
-    nfs3hp::snd::eaRandom(app, cpu.sync());
+    nfs3hp::port::eaRandom(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0047b63b  f7f1                   -div ecx

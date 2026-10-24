@@ -1,6 +1,6 @@
 #include "native_snd.h"
 
-/* The pursuit's sound, native (native_snd.cpp says how): the music's
+/* The pursuit's sound, native (native_snd.h says how): the music's
  * intensity following the chase's (Pathfinder's events and its control,
  * each change traced), the cops' warning beeps counted down, an effect of
  * the cops' bank.

@@ -1,6 +1,6 @@
 #include "native_snd.h"
 
-/* The race's knocks and scrapes, native (native_snd.cpp says how): what a car
+/* The race's knocks and scrapes, native (native_snd.h says how): what a car
  * hit sounds like -- by what it hit and how hard, now and then at random, not
  * the same twice running where the game says so -- and how loud and high it
  * plays, near or far.

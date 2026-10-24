@@ -10787,7 +10787,7 @@ L_0x00467d1b:
     cpu.edx ^= x86::reg32(x86::sreg32(cpu.edx));
     // 00467d32  e851900700             -call 0x4e0d88
     cpu.esp -= 4;
-    nfs3hp::snd::eaRandom(app, cpu.sync());
+    nfs3hp::port::eaRandom(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00467d37  f7f6                   -div esi
@@ -10821,7 +10821,7 @@ L_0x00467d40:
     cpu.edx ^= x86::reg32(x86::sreg32(cpu.edx));
     // 00467d42  e841900700             -call 0x4e0d88
     cpu.esp -= 4;
-    nfs3hp::snd::eaRandom(app, cpu.sync());
+    nfs3hp::port::eaRandom(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00467d47  f7f7                   -div edi
@@ -14697,7 +14697,7 @@ start:
     }
     // 00468e2b  e8587f0700             -call 0x4e0d88
     cpu.esp -= 4;
-    nfs3hp::snd::eaRandom(app, cpu.sync());
+    nfs3hp::port::eaRandom(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00468e30  8b9efc070000           -mov ebx, dword ptr [esi + 0x7fc]

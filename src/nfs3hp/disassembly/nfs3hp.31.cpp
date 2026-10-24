@@ -29232,7 +29232,7 @@ L_0x004dda3b:
     cpu.edx ^= x86::reg32(x86::sreg32(cpu.edx));
     // 004dda3d  e846330000             -call 0x4e0d88
     cpu.esp -= 4;
-    nfs3hp::snd::eaRandom(app, cpu.sync());
+    nfs3hp::port::eaRandom(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004dda42  f7f3                   -div ebx

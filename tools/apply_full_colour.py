@@ -20,12 +20,12 @@ The game shrank them on their way to the card:
   to 4444, 1555 or 565.  The conversion to format 6 is already in the game,
   for Direct3D.
 
-So the driver is made to take format 6 and hand it to Glide as ARGB 8888,
-numbered as Glide 3 numbers it for the Voodoo 4 and 5, which the port's Glide
-layer keeps as it comes (glide2x.cpp, kTexFmtArgb8888).  THRASH_tupdate and
+So the driver is made to take format 6 and hand it on as ARGB 8888,
+numbered as Glide 3 numbers it for the Voodoo 4 and 5, which the renderer
+keeps as it comes (port_thrash.h, kTexFmtArgb8888).  THRASH_tupdate and
 THRASH_settexture go through Glide's own texture record and care nothing for
-the format.  NFS_TEXTURES32=0 leaves the driver as it was.  The driver is
-native now, and that half is in its THRASH_about (src/nfs3hp/native_thrash.cpp);
+the format.  NFS_TEXTURES32=0 leaves the driver as it was.  The driver is the
+port's own now, and that half is in its THRASH_about (src/nfs3hp/port_thrash.cpp);
 this tool does the other.
 
 The Modern Patch's own Voodoo2 driver maps the formats with the same table, so

@@ -1,9 +1,15 @@
+/* tools/thrash_checks' reference: src/nfs3hp/native_thrash.cpp as it was
+ * before the driver became the port's own (port_thrash.cpp), frozen -- the
+ * native voodoo2a, every export the port had, drawing through the port's
+ * Glide (glide2x.cpp beside this).  Changed only where it has to be to build
+ * beside the new driver: its namespace, the GrVertex it takes from
+ * port_thrash.h, its unused ThrashRenderer::Corner, its NFS_THRASH_GL. */
 #include <lib/winapp.h>
 #include "native_thrash.h"
+#include "port_thrash.h"
 #include "thrash.h"
-#include <lib/gliderenderer.h>
 #include <lib/thrashrenderer.h>
-#include <winapi/glide2x.h>
+#include "glide2x.h"
 #include <SDL3/SDL.h>
 #include <cmath>
 #include <cstring>
@@ -32,10 +38,14 @@
  * and what tools/thrash_checks compares, with every call they make; the scratch
  * registers and flags voodoo2a happened to leave are nobody's business. */
 
-namespace nfs3hp
+namespace reference
 {
 
-win32::ThrashRenderer::Corner thrashCorner(win32::WinApplication* app, x86::reg32 in, float zScale, float wScale);
+namespace thrash = nfs3hp::thrash;
+using nfs3hp::thrashMalloc;
+using nfs3hp::thrashFree;
+
+void thrashVertex(win32::WinApplication* app, x86::reg32 in, float zScale, float wScale, win32::GrVertex& out);
 void thrashBatchVertex(win32::WinApplication* app, x86::reg32 in, float zScale, float wScale, win32::ThrashVertex& out);
 
 namespace
@@ -185,8 +195,6 @@ bool lineThrough(win32::WinApplication* app, x86::CPU& cpu, x86::reg32 target, c
     return guestDraw(app, cpu, target, { &a, &b });
 }
 
-typedef win32::ThrashRenderer::Corner Corner;
-
 /* The game's vertices as Glide's, with the two scales read once per call --
  * or, while ThrashRenderer may take them as they are (`direct`) and the
  * triangles go to Glide's own grDrawTriangle, straight into its batch, with no
@@ -211,11 +219,6 @@ struct Vertices
         win32::GrVertex out = {};
         thrashVertex(app, in, zScale, wScale, out);
         return out;
-    }
-
-    Corner corner(x86::reg32 in) const
-    {
-        return thrashCorner(app, in, zScale, wScale);
     }
 
     /* Whether triangles drawn through `slot` may go into the batch. */
@@ -1891,33 +1894,6 @@ void thrashBatchVertex(win32::WinApplication* app, x86::reg32 in, float zScale, 
     out.color = x86::reg32(x86::reg8(colourAt(app, in, 0x12))) | x86::reg32(x86::reg8(colourAt(app, in, 0x11))) << 8
               | x86::reg32(x86::reg8(colourAt(app, in, 0x10))) << 16
               | x86::reg32(x86::reg8(colourAt(app, in, 0x13))) << 24;
-}
-
-/* The same vertex as ThrashRenderer's corner: what its drawTriangle keeps of
- * the GrVertex above, the colour floats turned to bytes the way it turns them. */
-win32::ThrashRenderer::Corner thrashCorner(win32::WinApplication* app, x86::reg32 in, float zScale, float wScale)
-{
-    const VertexFloats v = vertexFloats(app, in, zScale, wScale);
-    win32::ThrashRenderer::Corner out;
-    out.x = v.x;
-    out.y = v.y;
-    out.ooz = v.ooz;
-    const x86::reg32 w = app->getMemory<x86::reg32>(in + 0xc);
-    std::memcpy(&out.oow, &w, sizeof w);
-    out.sow = v.sow;
-    out.tow = v.tow;
-    out.color = x86::reg32(x86::reg8(colourAt(app, in, 0x12))) | x86::reg32(x86::reg8(colourAt(app, in, 0x11))) << 8
-              | x86::reg32(x86::reg8(colourAt(app, in, 0x10))) << 16
-              | x86::reg32(x86::reg8(colourAt(app, in, 0x13))) << 24;
-    return out;
-}
-
-/* The driver reaches the renderer through the functions of glide2x.cpp, so
- * either renderer serves it. */
-bool thrashRendererWanted()
-{
-    const char* gl = SDL_getenv("NFS_THRASH_GL");
-    return !(gl && SDL_strcmp(gl, "0") == 0);
 }
 
 /* voodoo2a's exports as the port has them: each a stdcall the game makes

@@ -1,6 +1,6 @@
 #include "native_snd.h"
 
-/* The race's sirens and noises by distance, native (native_snd.cpp says
+/* The race's sirens and noises by distance, native (native_snd.h says
  * how): a siren of 5 (the cops' four, the fourth the player's own) that
  * warbles -- its two tones taking turns for so many ticks, picked at random
  * -- its volume, pitch and place set as it goes; the noises of a car near by

@@ -1,6 +1,6 @@
 #include "native_snd.h"
 
-/* The race's announcer and its music, native (native_snd.cpp says how): per
+/* The race's announcer and its music, native (native_snd.h says how): per
  * car of a player each tick -- the keys that ask for a gap, a position or a
  * lap time spoken; the lap's lines (a new lap, the best one, the last lap,
  * the lap number, the position at the end) queued on the race voice

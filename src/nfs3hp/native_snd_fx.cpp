@@ -1,7 +1,7 @@
 #include "native_snd.h"
 
 /* EA's SND effects (cmn\seffect.c, cmn\sfxlevel.c, win\sdfxinit.c, the
- * reverb's start) and the mixer's start (mix\smixer.c), native (native_snd.cpp
+ * reverb's start) and the mixer's start (mix\smixer.c), native (native_snd.h
  * says how).  One effect bus: its type, its two parameters and its master
  * level at 0xa0a25c (0x10 a bus); a voice sends to it at its own level (+0x39)
  * scaled by the bus's.  The reverb: 4 delay lines in 0xa0d2b4.. of prime

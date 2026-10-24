@@ -14,15 +14,15 @@ namespace nfs3hp
 
 /* sub_500008: native, nfs3hp::snd::iSNDmixreinit */
 
-/* sub_5000b8: native, nfs3hp::snd::iSNDmixstart */
+/* sub_5000b8: native, nfs3hp::port::iSNDmixstart */
 
 /* sub_5004c8: native, nfs3hp::snd::mixerRamp */
 
-/* sub_500604: native, nfs3hp::snd::iSNDmixstop */
+/* sub_500604: native, nfs3hp::port::iSNDmixstop */
 
-/* sub_500654: native, nfs3hp::snd::setSendVolume */
+/* sub_500654: native, nfs3hp::port::setSendVolume */
 
-/* sub_5006a4: native, nfs3hp::snd::setMixVolume */
+/* sub_5006a4: native, nfs3hp::port::setMixVolume */
 
 /* sub_5006f8: native, nfs3hp::snd::dead_0x5006f8 */
 
@@ -38,15 +38,15 @@ namespace nfs3hp
 
 /* sub_500b90: native, nfs3hp::snd::convertXaMono */
 
-/* sub_500c80: native, nfs3hp::snd::soundTick */
+/* sub_500c80: native, nfs3hp::port::soundTick */
 
-/* sub_500e20: native, nfs3hp::snd::iSNDenteraudio */
+/* sub_500e20: native, nfs3hp::port::iSNDenteraudio */
 
-/* sub_500e7c: native, nfs3hp::snd::iSNDleaveaudio */
+/* sub_500e7c: native, nfs3hp::port::iSNDleaveaudio */
 
-/* sub_500e94: native, nfs3hp::snd::iSNDserveradd100hzclient */
+/* sub_500e94: native, nfs3hp::port::iSNDserveradd100hzclient */
 
-/* sub_500ef0: native, nfs3hp::snd::iSNDserverremove100hzclient */
+/* sub_500ef0: native, nfs3hp::port::iSNDserverremove100hzclient */
 
 /* sub_500f80: native, nfs3hp::snd::dead_0x500f80 */
 
@@ -74,41 +74,41 @@ namespace nfs3hp
 
 /* sub_501450: native, nfs3hp::ea::seekBlockHandle */
 
-/* sub_5014a0: native, nfs3hp::snd::updateVoiceVolume */
+/* sub_5014a0: native, nfs3hp::port::updateVoiceVolume */
 
-/* sub_501540: native, nfs3hp::snd::iSNDvol */
+/* sub_501540: native, nfs3hp::port::iSNDvol */
 
-/* sub_501670: native, nfs3hp::snd::soundVolume */
+/* sub_501670: native, nfs3hp::port::soundVolume */
 
 /* sub_5016c0: native, nfs3hp::snd::iSNDclearchunk */
 
 /* sub_5017b4: native, nfs3hp::snd::platformChunks */
 
-/* sub_5017c0: native, nfs3hp::snd::timbreDefaults */
+/* sub_5017c0: native, nfs3hp::port::timbreDefaults */
 
-/* sub_5017d8: native, nfs3hp::snd::resetTimbre */
+/* sub_5017d8: native, nfs3hp::port::resetTimbre */
 
-/* sub_5018dc: native, nfs3hp::snd::addTimbreDeltas */
+/* sub_5018dc: native, nfs3hp::port::addTimbreDeltas */
 
-/* sub_501938: native, nfs3hp::snd::newGroup */
+/* sub_501938: native, nfs3hp::port::newGroup */
 
-/* sub_501978: native, nfs3hp::snd::iSNDplaytaggedtimbre */
+/* sub_501978: native, nfs3hp::port::iSNDplaytaggedtimbre */
 
-/* sub_501de8: native, nfs3hp::snd::iSNDplaytaggedpatch */
+/* sub_501de8: native, nfs3hp::port::iSNDplaytaggedpatch */
 
-/* sub_5021ac: native, nfs3hp::snd::iSNDresolvetaggedpatch */
+/* sub_5021ac: native, nfs3hp::port::iSNDresolvetaggedpatch */
 
-/* sub_5022d0: native, nfs3hp::snd::unresolveTaggedPatch */
+/* sub_5022d0: native, nfs3hp::port::unresolveTaggedPatch */
 
-/* sub_502330: native, nfs3hp::snd::iSNDextracthdrinfo */
+/* sub_502330: native, nfs3hp::port::iSNDextracthdrinfo */
 
-/* sub_5024a0: native, nfs3hp::snd::iSNDbankremovepat */
+/* sub_5024a0: native, nfs3hp::port::iSNDbankremovepat */
 
-/* sub_502570: native, nfs3hp::snd::bankUsable */
+/* sub_502570: native, nfs3hp::port::bankUsable */
 
-/* sub_5025b0: native, nfs3hp::snd::iSNDbankalloc */
+/* sub_5025b0: native, nfs3hp::port::iSNDbankalloc */
 
-/* sub_502620: native, nfs3hp::snd::iSNDdownloadbank */
+/* sub_502620: native, nfs3hp::port::iSNDdownloadbank */
 
 /* sub_502760: native, nfs3hp::watcom::flush */
 
@@ -153,13 +153,13 @@ void Application::sub_5028b8(WinApplication* app, x86::CPU& cpu)
 
 /* sub_502be8: native, nfs3hp::watcom::fill_buffer */
 
-/* sub_502cb0: native, nfs3hp::snd::updateVoicePitch */
+/* sub_502cb0: native, nfs3hp::port::updateVoicePitch */
 
-/* sub_502d30: native, nfs3hp::snd::iSNDplatformdetune */
+/* sub_502d30: native, nfs3hp::port::iSNDplatformdetune */
 
-/* sub_502df0: native, nfs3hp::snd::iSNDplatform3dpos */
+/* sub_502df0: native, nfs3hp::port::iSNDplatform3dpos */
 
-/* sub_502ef0: native, nfs3hp::snd::iSNDpan */
+/* sub_502ef0: native, nfs3hp::port::iSNDpan */
 
 /* sub_502ff0: native, nfs3hp::snd::iSNDwinsetfx */
 

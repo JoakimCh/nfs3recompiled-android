@@ -2,7 +2,7 @@
 
 #include <cstdint>
 
-/* The track's own sounds, native (native_snd.cpp says how): of the sound
+/* The track's own sounds, native (native_snd.h says how): of the sound
  * objects the track's sections hold near the listener (0x552600's lists,
  * 0x570dd0's sound table, 18 bytes an object), the two nearest -- kept in
  * the order they had (0x570dd4, 0x570dd8) -- each played in its slot (0x14

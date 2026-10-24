@@ -4,7 +4,7 @@
 /* THRASH: the interface between nfs3.exe and its renderer DLLs -- voodoo2a,
  * softtria and the Direct3D one -- 34 stdcall exports the game finds with
  * GetProcAddress (THRASH_opendll, native_game.cpp).  The port's driver is
- * voodoo2a, every export of it native, in native_thrash.cpp.
+ * voodoo2a, every export of it the port's own, in port_thrash.cpp.
  *
  * Each name is checked against what voodoo2a's generated code does with the
  * number; only the numbers voodoo2a knows are here, and where a number means
