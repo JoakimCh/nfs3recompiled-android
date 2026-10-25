@@ -10541,7 +10541,7 @@ L_0x004cef23:
 L_0x004cef48:
     // 004cef48  e8c305f8ff             -call 0x44f510
     cpu.esp -= 4;
-    sub_44f510(app, cpu.sync());
+    nfs3hp::load::loadRecords(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004cef4d  0fbfc2                 -movsx eax, dx
@@ -10568,7 +10568,7 @@ L_0x004cef48:
     cpu.edx = cpu.eax;
     // 004cef67  e88406f8ff             -call 0x44f5f0
     cpu.esp -= 4;
-    sub_44f5f0(app, cpu.sync());
+    nfs3hp::load::saveRecords(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
 L_0x004cef6c:

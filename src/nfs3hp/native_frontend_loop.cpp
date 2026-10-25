@@ -1729,13 +1729,6 @@ bool menuDrawItems(win32::WinApplication* app, x86::CPU& cpu)
     return fe::run(app, cpu, site, [&](Guest& guest) { return drawItems(guest, menu); });
 }
 
-bool menuShownNow(win32::WinApplication* app, x86::CPU& cpu)
-{
-    static fe::Site site{ "sub_44a660", 0, 4, nullptr, 0, kRestoreNone };
-    const x86::reg32 item = cpu.eax;
-    return fe::run(app, cpu, site, [&](Guest& guest) { return shownNow(guest, item); });
-}
-
 bool menuReleaseMouse(win32::WinApplication* app, x86::CPU& cpu)
 {
     static fe::Site site{ "sub_44a690", 0, 4, nullptr, 0, kRestoreNone };
@@ -1870,7 +1863,8 @@ bool menuFitRaceSettings(win32::WinApplication* app, x86::CPU& cpu)
 }
 
 /* Native whole, no generated code behind them (disassemble_nfs3hp.py's
- * MENU_NATIVES): a screen's items shown, the shown screen's name. */
+ * MENU_NATIVES): a screen's items shown, whether an item is, the shown
+ * screen's name. */
 namespace frontend
 {
 
@@ -1879,6 +1873,13 @@ void menuShowItems(win32::WinApplication* app, x86::CPU& cpu)
     static fe::Site site{ "sub_44a960", 0, 12, nullptr, 0, kRestoreEbx | kRestoreEdx };
     const x86::reg32 menu = cpu.eax;
     fe::runWhole(app, cpu, site, [&](Guest& guest) { return showItems(guest, menu); });
+}
+
+void menuShownNow(win32::WinApplication* app, x86::CPU& cpu)
+{
+    static fe::Site site{ "sub_44a660", 0, 4, nullptr, 0, kRestoreNone };
+    const x86::reg32 item = cpu.eax;
+    fe::runWhole(app, cpu, site, [&](Guest& guest) { return shownNow(guest, item); });
 }
 
 void menuCurrentName(win32::WinApplication* app, x86::CPU& cpu)

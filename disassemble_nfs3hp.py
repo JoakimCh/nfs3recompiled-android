@@ -730,8 +730,306 @@ EA_SUPPORT_NATIVES = {
     0x4e0ec0: "ea::loadFile",
     0x4e0fe0: "ea::loadFileQuietly",
 }
-EA_GROUPS = (EA_THREADS_NATIVES, EA_MEMORY_NATIVES, EA_FILES_NATIVES, EA_SUPPORT_NATIVES)
+EA_NET_NATIVES = {
+    0x49ecb0: "ea::dropMachine",
+    0x49ecf0: "ea::announceMachineLeft",
+    0x49eed0: "ea::endNetworkGame",
+    0x49f1c0: "ea::sessionIndex",
+    0x49f550: "ea::forgetPendingPlayer",
+    0x4a5d10: "ea::sendOverLink",
+    0x4a60e0: "ea::sendPacket",
+    0x4a6390: "ea::resetNetwork",
+    0x4a65e0: "ea::closeNetwork",
+    0x4a6650: "ea::machineNumber",
+    0x4a6690: "ea::playerMachine",
+    0x4f4c50: "ea::netTrace",
+    0x4f4f50: "ea::netShutGame",
+    0x4f4f90: "ea::netEndGame",
+    0x4f4ff0: "ea::netKillPlayer",
+    0x4f5040: "ea::netCheckPlayer",
+    0x4f5280: "ea::connRestore",
+    0x4f5310: "ea::connSend",
+    0x4f5330: "ea::connClose",
+    0x50dc00: "ea::qnth",
+    0x50dc20: "ea::qunlink",
+    0x50dde0: "ea::qfree",
+    0x50e150: "ea::qremove",
+    0x50e1d0: "ea::qlength",
+    0x50e220: "ea::qposition",
+    0x50e470: "ea::qfindindex",
+    0x50ed50: "ea::huffUnpack",
+    0x510110: "ea::runUnpack",
+    0x510420: "ea::dxtBlock",
+    0x510760: "ea::dxtUnpack",
+    0x510820: "ea::pairExpand",
+    0x510870: "ea::pairUnpack",
+    0x5123b0: "ea::layerSend",
+    0x512530: "ea::layerCallPacker",
+    0x512630: "ea::layerPackFromTop",
+    0x5126c0: "ea::layerFree",
+    0x512770: "ea::layerSendPacket",
+}
+EA_FORMATS_NATIVES = {
+    0x4ef270: "ea::locateShape",
+    0x4f0010: "ea::keyCharacter",
+    0x4f0100: "ea::keyFromHook",
+    0x4f0120: "ea::inkey",
+    0x4f0240: "ea::flushKeys",
+    0x4f2560: "ea::unpackQuietly",
+    0x4f2620: "ea::unpack",
+    0x4f26a0: "ea::unpackSizeQuietly",
+    0x4f2710: "ea::unpacksize",
+    0x4f2830: "ea::stopLowTimer",
+    0x4f29b0: "ea::removeLowTimer",
+    0x4f2e20: "ea::loadpackadr",
+}
+EA_GROUPS = (EA_THREADS_NATIVES, EA_MEMORY_NATIVES, EA_FILES_NATIVES, EA_SUPPORT_NATIVES,
+             EA_NET_NATIVES, EA_FORMATS_NATIVES)
 for group in EA_GROUPS:
+    GAME_NATIVES.update(group)
+
+# The game's data loaded and saved, native whole, in nfs3hp::load:
+# native_load_track.cpp's race data files (the track's file cache, paths,
+# textures, horizon, sky and weather, the opponents' speeds, the cameras, the
+# ghost); native_load_cardb.cpp's cars' database (fedata, car.viv, .FEC,
+# carp.txt); native_load_carmodels.cpp's cars' models and specs (.fce, .art,
+# carspecs); native_load_saves.cpp's replays, records and config.dat, and
+# EA's BIG archives, savefile and shape comments under them.
+# tools/game_checks compares them with their generated code.
+LOAD_TRACK_NATIVES = {
+    0x40e000: "load::loadOpponentSpeeds",
+    0x40f230: "load::clearTrackCameras",
+    0x40f280: "load::loadTrackCameras",
+    0x418d00: "load::swapBigEndian",
+    0x418d40: "load::newFileNode",
+    0x418d70: "load::freeFileNode",
+    0x418dd0: "load::findFileNode",
+    0x418e90: "load::insertFileNode",
+    0x418f00: "load::newEmptyFileNode",
+    0x418f40: "load::freeFileNodes",
+    0x418f70: "load::countFileNodes",
+    0x418fe0: "load::findCachedFile",
+    0x419000: "load::addCachedFile",
+    0x419080: "load::newFileCache",
+    0x4190e0: "load::freeFileCache",
+    0x419120: "load::bigHeaderSize",
+    0x4191b0: "load::cachedDataSize",
+    0x4191e0: "load::writeBigFile",
+    0x419460: "load::packFileCache",
+    0x419510: "load::readBigFile",
+    0x4195f0: "load::openFileCache",
+    0x41d8a0: "load::trackFilePath",
+    0x41d8d0: "load::trackFolderPath",
+    0x41dbc0: "load::loadTrackTextures",
+    0x477a90: "load::saveGhost",
+    0x477ac0: "load::writeGhost",
+    0x477b00: "load::readGhost",
+    0x478340: "load::loadHorizon",
+    0x47ac30: "load::loadSky",
+    0x4dcd20: "load::loadWeatherShapes",
+}
+LOAD_CARDB_NATIVES = {
+    0x438340: "load::endWithSlash",
+    0x438350: "load::folderWritable",
+    0x4383f0: "load::firstFreeHexFolder",
+    0x4384f0: "load::firstFreePlayerFolder",
+    0x4385a0: "load::freePlayerCarFolder",
+    0x4386b0: "load::firstSubfolder",
+    0x4387e0: "load::nextSubfolder",
+    0x438870: "load::firstFile",
+    0x438970: "load::nextFile",
+    0x4389d0: "load::removeFolder",
+    0x438a80: "load::firstCar",
+    0x438aa0: "load::nextCar",
+    0x438ad0: "load::makeCarId",
+    0x438af0: "load::firstCarGlobal",
+    0x438b10: "load::nextCarGlobal",
+    0x438b90: "load::appendCar",
+    0x438bd0: "load::carCount",
+    0x438be0: "load::countCars",
+    0x438c10: "load::unlinkCar",
+    0x438c50: "load::insertCarByName",
+    0x438cc0: "load::joinCarLists",
+    0x438d20: "load::carListOf",
+    0x438d60: "load::takePoliceCars",
+    0x438dc0: "load::takeClasslessCars",
+    0x438e30: "load::takeOrdinaryCars",
+    0x438eb0: "load::sortCars",
+    0x439250: "load::carName",
+    0x4392b0: "load::carFolder",
+    0x439300: "load::carFilePrefix",
+    0x439520: "load::carId",
+    0x439570: "load::carFlag40",
+    0x4395c0: "load::carFlag4",
+    0x439610: "load::carHasNumericId",
+    0x439620: "load::idIsNumeric",
+    0x439660: "load::numericId",
+    0x439680: "load::carIsBonus",
+    0x4396b0: "load::carIsPolice",
+    0x4396e0: "load::carIsFerrariOrMercedes",
+    0x439730: "load::carClass",
+    0x439990: "load::findCarById",
+    0x4399f0: "load::clearCarCache",
+    0x439a50: "load::carRecord",
+    0x439af0: "load::fecText",
+    0x439b20: "load::findCarByName",
+    0x439bd0: "load::attachFecTexts",
+    0x439c10: "load::bonusCarLocked",
+    0x439d20: "load::checkDuplicateCars",
+    0x439d90: "load::loadCarList",
+    0x43a4f0: "load::carSelectable",
+    0x43a580: "load::buildCarClassLists",
+    0x43ae60: "load::copyCarAsNew",
+    0x43b3f0: "load::loadCarSpecs",
+    0x43b4f0: "load::writeCarFec",
+    0x43b570: "load::readCarFecBody",
+    0x43b630: "load::readCarFec",
+    0x43b680: "load::carFecPath",
+    0x43b740: "load::loadCarFec",
+    0x43ba20: "load::placeCarVivPath",
+    0x43ba30: "load::swapBytes",
+    0x43ba70: "load::writeBigEndian",
+    0x43baa0: "load::appendCarpToViv",
+    0x43bbf0: "load::lastCarLoaded",
+    0x43bc00: "load::setLastCarId",
+    0x43bc40: "load::setLastCarName",
+    0x43bc70: "load::setLastCarFlags",
+    0x43bc90: "load::markLastCarFlag8",
+}
+LOAD_CARMODELS_NATIVES = {
+    0x49b540: "load::beginCarpReceive",
+    0x49b5f0: "load::receiveCarpChunk",
+    0x49b800: "load::beginCarpSend",
+    0x49c700: "load::readCarColors",
+    0x49c880: "load::rgbToHsv",
+    0x49ca50: "load::hsvToRgb",
+    0x49cc50: "load::tintPixel",
+    0x49cd00: "load::scaleTexture",
+    0x49cea0: "load::fitTexture",
+    0x49d130: "load::loadArtTextures",
+    0x49d240: "load::nearestModelColor",
+    0x49d320: "load::loadTgaTexture",
+    0x49d450: "load::loadCarModel",
+    0x4b7a60: "load::loadVivCarModel",
+    0x4b7ba0: "load::copyVivCarModel",
+    0x4dc3a0: "load::setSpecUsed",
+    0x4dc3f0: "load::specUsed",
+    0x4dc440: "load::specCarName",
+    0x4dc490: "load::findSpec",
+    0x4dc500: "load::freeSpecSlot",
+    0x4dc5a0: "load::setSpec",
+    0x4dc670: "load::defaultSpecs",
+    0x4dc710: "load::refreshSpecs",
+    0x4dc800: "load::specPath",
+    0x4dc8b0: "load::readSpecs",
+    0x4dc940: "load::loadPlayerSpecs",
+    0x4dca50: "load::savePlayerSpecs",
+}
+LOAD_SAVES_NATIVES = {
+    0x446060: "load::readReplayInfo",
+    0x446780: "load::saveGhostAs",
+    0x446990: "load::loadKeptReplay",
+    0x446a10: "load::saveReplayAs",
+    0x4475a0: "load::listReplays",
+    0x44f510: "load::loadRecords",
+    0x44f5f0: "load::saveRecords",
+    0x472230: "load::languageStub",
+    0x472250: "load::setLanguage",
+    0x472300: "load::setCameraViews",
+    0x4723f0: "load::defaultConfig",
+    0x472820: "load::saveConfig",
+    0x4728e0: "load::fileWriteTime",
+    0x472940: "load::fileOlder",
+    0x472980: "load::loadConfig",
+    0x4bd1e0: "load::saveRaceReplay",
+    0x4bd2e0: "load::readRaceReplay",
+    0x4e9f00: "load::typeOfBigFile",
+    0x4e9fe0: "load::bigHeaderLength",
+    0x4ea040: "load::findBigEntry",
+    0x4ea290: "load::locateBigEntry",
+    0x4eeae0: "load::savefileadr",
+    0x4eebb0: "load::savefileadrQuietly",
+    0x4f2380: "load::fixedSine",
+    0x4f23f0: "load::fixedCosine",
+}
+LOAD_GROUPS = (LOAD_TRACK_NATIVES, LOAD_CARDB_NATIVES, LOAD_CARMODELS_NATIVES, LOAD_SAVES_NATIVES)
+for group in LOAD_GROUPS:
+    GAME_NATIVES.update(group)
+
+# What the main menu calls of the game's own, native whole, in nfs3hp::frontend:
+# native_frontend_glue.cpp's -- a race started or the game left, the HUD's art,
+# the attract mode's movies, the lists' keys -- and native_frontend_draw.cpp's
+# -- the menus' 3D and 2D drawing, text and shapes.  tools/game_checks
+# compares them with their generated code.
+FRONTEND_GLUE_NATIVES = {
+    0x43c000: "frontend::bindingIsDigital",
+    0x43c040: "frontend::noteDigitalControls",
+    0x442bf0: "frontend::listAllowed",
+    0x442c50: "frontend::listLength",
+    0x442c80: "frontend::findList",
+    0x44ac90: "frontend::loadShapes",
+    0x4513c0: "frontend::setTextColour",
+    0x451480: "frontend::screenToMenuX",
+    0x4514c0: "frontend::screenToMenuY",
+    0x451500: "frontend::readMenuMouse",
+    0x451530: "frontend::dimBackground",
+    0x451590: "frontend::drawTextAt",
+    0x452190: "frontend::drawMenuText",
+    0x461270: "frontend::buttonKey",
+    0x463ff0: "frontend::listKey",
+    0x464560: "frontend::layoutList",
+    0x46c950: "frontend::sliderSetValue",
+    0x46c9b0: "frontend::sliderValue",
+    0x46cac0: "frontend::sliderSetOnMove",
+    0x46cae0: "frontend::sliderDraw",
+    0x46cca0: "frontend::sliderSetColour",
+    0x4960e0: "frontend::playMovie",
+    0x4961e0: "frontend::resetAttractTimer",
+    0x496200: "frontend::attractMode",
+    0x49a4d0: "frontend::freeNetworkLocks",
+    0x49ab60: "frontend::allPlayersReady",
+    0x49be40: "frontend::flushQuads",
+    0x49c080: "frontend::mouseKey",
+    0x49c1f0: "frontend::pointerInBox",
+    0x4cc970: "frontend::nextKey",
+}
+FRONTEND_DRAW_NATIVES = {
+    0x4613e0: "frontend::layoutMenuItem",
+    0x4692c0: "frontend::sliderPartUnderPointer",
+    0x469340: "frontend::sliderThumbPlace",
+    0x4693c0: "frontend::snapToStep",
+    0x469480: "frontend::setSliderValue",
+    0x469520: "frontend::sliderStoredValue",
+    0x469590: "frontend::dragSliderTo",
+    0x469680: "frontend::drawSlider",
+    0x46a5f0: "frontend::trackSlider",
+    0x46ac40: "frontend::twoAxisThumbPlace",
+    0x46add0: "frontend::setTwoAxisValue",
+    0x46afd0: "frontend::twoAxisValue",
+    0x46b040: "frontend::dragTwoAxisTo",
+    0x46b3a0: "frontend::drawTwoAxis",
+    0x46c320: "frontend::trackTwoAxis",
+    0x4956f0: "frontend::loadQfs",
+    0x4d1340: "frontend::flushFonts",
+    0x4d1390: "frontend::setTextScale",
+    0x4d1400: "frontend::keepTextScale",
+    0x4d1410: "frontend::restoreTextScale",
+    0x4d1540: "frontend::characterWidth",
+    0x4d1590: "frontend::characterOverhang",
+    0x4d5840: "frontend::quadOutcodes",
+    0x4d5db0: "frontend::shapeByName",
+    0x4d7990: "frontend::drawShape",
+    0x4d8550: "frontend::gradientRectangle",
+    0x4d8910: "frontend::filledRectangle",
+    0x4d8930: "frontend::frame",
+    0x4d9320: "frontend::accentedCharacter",
+    0x4d95c0: "frontend::drawScreenCharacter",
+    0x4da4a0: "frontend::drawScreenText",
+    0x4db000: "frontend::drawTexturedQuad",
+    0x4db380: "frontend::drawShadedQuad",
+}
+FRONTEND_GROUPS = (FRONTEND_GLUE_NATIVES, FRONTEND_DRAW_NATIVES)
+for group in FRONTEND_GROUPS:
     GAME_NATIVES.update(group)
 
 # A car's race state, native whole, in nfs3hp::racestart (native_racestart.cpp):
@@ -879,6 +1177,70 @@ TRACKDATA_NATIVES = {
 }
 GAME_NATIVES.update(TRACKDATA_NATIVES)
 
+# A car's physics step and its direct leaves, native whole, in nfs3hp::physics
+# (native_physics.cpp): the step each frame, the full step, the speed in the
+# car's axes, the steering's angle, the spin's torque, the dampings.  The
+# engine's, the inputs' and the wheels' functions under it are other files'.
+# tools/game_checks compares them with their generated code.
+PHYSICS_NATIVES = {
+    0x4ad250: "physics::clearWheelForces",
+    0x4ad2e1: "physics::steerAngle",
+    0x4ad672: "physics::sideSlip",
+    0x4ad6eb: "physics::groundSpeed",
+    0x4ad7a3: "physics::physicsStep",
+    0x4ae4c1: "physics::carPhysics",
+    0x4ae5c2: "physics::settleLoadShift",
+    0x4ae68e: "physics::driveForce",
+    0x4ae79b: "physics::holdStill",
+    0x4ae85b: "physics::sideGrip",
+    0x4ae98b: "physics::handbrakeDrag",
+    0x4aea88: "physics::yawDamping",
+    0x4aeffc: "physics::idleDamping",
+    0x4af140: "physics::coastDamping",
+    0x4af254: "physics::spinTorque",
+}
+GAME_NATIVES.update(PHYSICS_NATIVES)
+
+# A car's handling, native whole, in nfs3hp::handling (native_handling.cpp):
+# the physics' entries from outside -- the handling made from the player's
+# setup, the automatic gear, the revs matched to the speed, the drive reset,
+# a car at rest settled -- and an axle's tyres' forces with what they call.
+# tools/game_checks compares them with their generated code.
+HANDLING_NATIVES = {
+    0x4a78d6: "handling::applyTuning",
+    0x4a8bb9: "handling::automaticGear",
+    0x4aa4f4: "handling::matchRevsToSpeed",
+    0x4aa79f: "handling::resetDriveState",
+    0x4aa8e7: "handling::settleAtRest",
+    0x4abd9c: "handling::setupGripLoss",
+    0x4ac027: "handling::setupSlipLimit",
+    0x4ac094: "handling::tyreGrip",
+    0x4ac3af: "handling::tyreSlide",
+    0x4ac994: "handling::logisticCurve",
+    0x4ac9dd: "handling::steeringGrip",
+    0x4aca4f: "handling::axleForces",
+}
+GAME_NATIVES.update(HANDLING_NATIVES)
+
+# A car's engine, gears and driver's inputs, native whole, in
+# nfs3hp::drivetrain (native_drivetrain.cpp): the pedals and steering eased
+# (or the computer's), the gears changed by hand or by the automatic box,
+# the engine's revs and its force at the wheels, the wheels' grip.
+# tools/game_checks compares them with their generated code.
+DRIVETRAIN_NATIVES = {
+    0x4a83d3: "drivetrain::computerDriver",
+    0x4a8a99: "drivetrain::engineTorque",
+    0x4a90a0: "drivetrain::automaticGears",
+    0x4a9769: "drivetrain::gearLimit",
+    0x4a97cb: "drivetrain::autoReverse",
+    0x4a9bc4: "drivetrain::driverInputs",
+    0x4aab41: "drivetrain::wheelGrip",
+    0x4aaed1: "drivetrain::engineForce",
+}
+GAME_NATIVES.update(DRIVETRAIN_NATIVES)
+
+
+
 # The menus' screens that are native whole, no generated code behind them:
 # each address is a handler of native_frontend_main.cpp, in nfs3hp::frontend,
 # that the screens' table at 0x555c48 or a button hands to the menu loop.
@@ -950,6 +1312,9 @@ MENU_NATIVES = {
     0x447ca0: "frontend::forceEngineMoved",
     0x447cd0: "frontend::forceBodyRollMoved",
     0x447d50: "frontend::forceRoadGripMoved",
+    0x442a40: "frontend::menuFindItem",
+    0x44a660: "frontend::menuShownNow",
+    0x4446c0: "frontend::dialogFocusedButton",
 }
 GAME_NATIVES.update(MENU_NATIVES)
 

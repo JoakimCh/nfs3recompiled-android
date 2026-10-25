@@ -20044,7 +20044,7 @@ L_0x004c40d7:
     app->getMemory<x86::reg16>(x86::reg32(8004318) /* 0x7a22de */) = cpu.ax;
     // 004c4104  e877110300             -call 0x4f5280
     cpu.esp -= 4;
-    sub_4f5280(app, cpu.sync());
+    nfs3hp::ea::connRestore(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004c4109  eb11                   -jmp 0x4c411c
@@ -20068,7 +20068,7 @@ L_0x004c410b:
     }
     // 004c4115  e866110300             -call 0x4f5280
     cpu.esp -= 4;
-    sub_4f5280(app, cpu.sync());
+    nfs3hp::ea::connRestore(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004c411a  31f6                   +xor esi, esi
@@ -20101,7 +20101,7 @@ L_0x004c4135:
     app->getMemory<x86::reg16>(x86::reg32(8004318) /* 0x7a22de */) = cpu.cx;
     // 004c4148  e833110300             -call 0x4f5280
     cpu.esp -= 4;
-    sub_4f5280(app, cpu.sync());
+    nfs3hp::ea::connRestore(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004c414d  8b35b4ec5500           -mov esi, dword ptr [0x55ecb4]
@@ -20164,7 +20164,7 @@ L_0x004c4172:
     if (cpu.terminate) return;
     // 004c417c  e85f24feff             -call 0x4a65e0
     cpu.esp -= 4;
-    sub_4a65e0(app, cpu.sync());
+    nfs3hp::ea::closeNetwork(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
 L_0x004c4181:
@@ -20756,7 +20756,7 @@ L_0x004c4351:
     cpu.eax ^= x86::reg32(x86::sreg32(cpu.eax));
     // 004c4354  e8871dfeff             -call 0x4a60e0
     cpu.esp -= 4;
-    sub_4a60e0(app, cpu.sync());
+    nfs3hp::ea::sendPacket(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
 L_0x004c4359:
@@ -21614,7 +21614,7 @@ void Application::sub_4c4820(WinApplication* app, x86::CPU& cpu)
     cpu.ebp = cpu.esp;
     // 004c4823  e8f8dffaff             -call 0x472820
     cpu.esp -= 4;
-    sub_472820(app, cpu.sync());
+    nfs3hp::load::saveConfig(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004c4828  5d                     -pop ebp
@@ -21679,7 +21679,7 @@ void Application::sub_4c4830(WinApplication* __restrict app, x86::CPU& cpu_)
 L_0x004c485b:
     // 004c485b  e83032fbff             -call 0x477a90
     cpu.esp -= 4;
-    sub_477a90(app, cpu.sync());
+    nfs3hp::load::saveGhost(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004c4860  e80bc8faff             -call 0x471070
@@ -25256,7 +25256,7 @@ void Application::sub_4c5560(WinApplication* __restrict app, x86::CPU& cpu_)
 L_0x004c5598:
     // 004c5598  e8e3fc0200             -call 0x4f5280
     cpu.esp -= 4;
-    sub_4f5280(app, cpu.sync());
+    nfs3hp::ea::connRestore(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
 L_0x004c559d:
@@ -25430,7 +25430,7 @@ void Application::sub_4c55a0(WinApplication* __restrict app, x86::CPU& cpu_)
     app->getMemory<x86::reg32>(x86::reg32(8206016) /* 0x7d36c0 */) = cpu.ecx;
     // 004c5637  e8a40afeff             -call 0x4a60e0
     cpu.esp -= 4;
-    sub_4a60e0(app, cpu.sync());
+    nfs3hp::ea::sendPacket(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004c563c  eb41                   -jmp 0x4c567f
@@ -25468,7 +25468,7 @@ L_0x004c563e:
     app->getMemory<x86::reg32>(x86::reg32(8206016) /* 0x7d36c0 */) = cpu.esi;
     // 004c566d  e86e0afeff             -call 0x4a60e0
     cpu.esp -= 4;
-    sub_4a60e0(app, cpu.sync());
+    nfs3hp::ea::sendPacket(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004c5672  8b3dd8367d00           -mov edi, dword ptr [0x7d36d8]
@@ -25570,7 +25570,7 @@ L_0x004c56dd:
     if (app->contextWanted()) app->yieldContext(cpu); /* safepoint */
     // 004c56dd  e81eaa0200             -call 0x4f0100
     cpu.esp -= 4;
-    sub_4f0100(app, cpu.sync());
+    nfs3hp::ea::keyFromHook(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004c56e2  85c0                   +test eax, eax
@@ -25714,7 +25714,7 @@ L_0x004c574c:
     cpu.ebx = cpu.eax;
     // 004c5753  e818720000             -call 0x4cc970
     cpu.esp -= 4;
-    sub_4cc970(app, cpu.sync());
+    nfs3hp::frontend::nextKey(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004c5758  25ffff0000             -and eax, 0xffff
@@ -25937,7 +25937,7 @@ L_0x004c57db:
     cpu.eax = cpu.ebx;
     // 004c57fd  e8ee94fdff             -call 0x49ecf0
     cpu.esp -= 4;
-    sub_49ecf0(app, cpu.sync());
+    nfs3hp::ea::announceMachineLeft(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004c5802  eb05                   -jmp 0x4c5809
@@ -26646,7 +26646,7 @@ L_0x004c5a63:
     app->getMemory<x86::reg32>(cpu.ebp + x86::reg32(-20) /* -0x14 */) = cpu.esi;
     // 004c5a7a  e86106feff             -call 0x4a60e0
     cpu.esp -= 4;
-    sub_4a60e0(app, cpu.sync());
+    nfs3hp::ea::sendPacket(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004c5a7f  eb58                   -jmp 0x4c5ad9
@@ -26717,7 +26717,7 @@ L_0x004c5a90:
     cpu.eax ^= x86::reg32(x86::sreg32(cpu.eax));
     // 004c5aa7  e83406feff             -call 0x4a60e0
     cpu.esp -= 4;
-    sub_4a60e0(app, cpu.sync());
+    nfs3hp::ea::sendPacket(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004c5aac  8b15e4227a00           -mov edx, dword ptr [0x7a22e4]
@@ -26921,7 +26921,7 @@ start:
     cpu.set_szp((cpu.eax ^= x86::reg32(x86::sreg32(cpu.eax))));
     // 004c5b53  e88805feff             -call 0x4a60e0
     cpu.esp -= 4;
-    sub_4a60e0(app, cpu.sync());
+    nfs3hp::ea::sendPacket(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
 L_0x004c5b58:
@@ -27063,7 +27063,7 @@ L_0x004c5b97:
     cpu.eax = cpu.edi;
     // 004c5bcb  e8800afeff             -call 0x4a6650
     cpu.esp -= 4;
-    sub_4a6650(app, cpu.sync());
+    nfs3hp::ea::machineNumber(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004c5bd0  98                     -cwde 
@@ -27417,7 +27417,7 @@ L_0x004c5f4e:
     cpu.eax ^= x86::reg32(x86::sreg32(cpu.eax));
     // 004c5f73  e86801feff             -call 0x4a60e0
     cpu.esp -= 4;
-    sub_4a60e0(app, cpu.sync());
+    nfs3hp::ea::sendPacket(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004c5f78  8b4576                 -mov eax, dword ptr [ebp + 0x76]

@@ -353,7 +353,14 @@ go through it:
   afresh from nfs3.exe, on random states, to the byte; on Windows,
   `tools/game_checks/windows/run.py [cases] [name]` does the same, built with
   the NDK's clang-cl and Visual Studio Build Tools (its double-precision build
-  only).
+  only; `GAME_CHECKS_DEBUG=1` adds debug information for the NDK's lldb).
+  What a function calls is a stand-in where the native calls it by address --
+  the address named in the code of the native's file -- and the callee's own
+  code, run on both sides, where the native calls it by name or does what it
+  does; a promise's `unread` lists the scratch registers no caller of the
+  game's reads after the call (by liveness on the original code), which are
+  left uncompared. `tools/frontend_checks/windows/run.py [rounds]` builds and
+  runs `tools/frontend_checks` the same way.
 - The C runtime the game was linked with, Watcom's, goes native family by
   family (`src/nfs3hp/native_watcom.cpp`, in `nfs3hp::watcom`, bound as the
   game's own are, `WATCOM_NATIVES`). `src/nfs3hp/watcom.md` maps all of it in
@@ -482,6 +489,47 @@ go through it:
   laps, speeds and places counted each frame, the race's messages, the
   race-controls thread and its tick, and the cars against walls and each
   other. 122 functions.
+- The main menu closed: everything it reaches is native whole. What it calls
+  of the game's own (`FRONTEND_GLUE_NATIVES`, `native_frontend_glue.cpp`) --
+  a button's keys, which start a race, leave the game or, over a network,
+  say a machine is ready; the lists' and sliders' keys and layout; the
+  attract mode's movies; the HUD's art in the language's version; the
+  pointer and keys read -- and the menus' drawing (`FRONTEND_DRAW_NATIVES`,
+  `native_frontend_draw.cpp`): the sliders, one and two axes, drawn and
+  dragged, an item's layout, text at a scale, a 2D screen's text, shapes,
+  rectangles and quads; under them EA's network layer (`EA_NET_NATIVES`,
+  `native_ea_net.cpp`: the game's packets, NET, CONN, the queues, LAYER) and
+  EA's unpackers, keys and the low timer (`EA_FORMATS_NATIVES`,
+  `native_ea_formats.cpp`, `native_ea_net.cpp`'s decompressors with them).
+  112 functions, held against their generated code by `tools/game_checks`;
+  and the menu engine's item lookup, an item shown and the dialog's button
+  highlighted, hooked before, are native whole in `MENU_NATIVES`, held by
+  `tools/frontend_checks` against the game's code made afresh.
+- The game's data loaded and saved, native whole, in `nfs3hp::load`
+  (`LOAD_TRACK_NATIVES`, `LOAD_CARDB_NATIVES`, `LOAD_CARMODELS_NATIVES`,
+  `LOAD_SAVES_NATIVES`): a race's files -- the opponents' speed tables, the
+  track's cameras, paths and textures, its horizon, sky and weather, the
+  ghost -- and the files kept in memory as a BIGF archive
+  (`src/nfs3hp/native_load_track.cpp`); the cars' database read from
+  `fedata` -- the cars' list and records, their folders, `car.viv`, the
+  `.FEC` texts, `carp.txt` (`native_load_cardb.cpp`); the cars' models, their
+  textures and colours, the players' `carspecs` and a car's `carp.txt` sent
+  and received in a network race (`native_load_carmodels.cpp`); replays,
+  records and `config.dat` -- with the port's change of
+  `tools/apply_track_detail.py` in its defaults: View Distance starts Full --
+  and under them EA's BIG archives, `savefileadr` and a fixed-point sine
+  (`native_load_saves.cpp`). 148 functions, each the x86 code instruction for
+  instruction and held against the generated code by `tools/game_checks`.
+- The cars' physics, native whole: the module at 0x4a78d6..0x4af3a1, compiled
+  without optimisation, in three parts -- the step a frame and its forces,
+  dampings and loads (`nfs3hp::physics`, `PHYSICS_NATIVES`,
+  `src/nfs3hp/native_physics.cpp`), the engine, the gears and the driver's
+  inputs (`nfs3hp::drivetrain`, `native_drivetrain.cpp`), the tyres' grip and
+  slide, the handling made from the player's setup, the automatic gear and the
+  entries the race's other code calls (`nfs3hp::handling`,
+  `native_handling.cpp`). 35 functions, the x86 code instruction for
+  instruction, the x87 through `cpu.fpu` under the race's control word, each
+  held against the generated code by `tools/game_checks`.
 - The game's sound, native whole but for the game's clock (`sub_48ed30`):
   EA's SND library -- its voices, banks and playing rewritten as the port's
   own C++ (below), the mixer (`src/nfs3hp/native_mixer.cpp`), the

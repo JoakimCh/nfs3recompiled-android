@@ -10,9 +10,10 @@ records the call (see frontend_checks.cpp).  A screen that is native whole
 has no generated code in the tree: its function comes from the file
 --native names, which generate.py writes, and the tree's nfs3hp.h, which
 declares no Application::sub_ for it, is copied next to <out.cpp> with the
-declarations it lacks.  The menus' own natives -- nfs3hp::frontend's -- the
-controls' and the game's fill's entries they call by address instead of by
-name, so that each goes to its stand-in as the decompiled code's calls do.
+declarations it lacks.  The game's natives -- the menus' own, the controls',
+the sound's, the graphics', EA's, any of nfs3hp's -- they call by address
+instead of by name, so that each goes to its stand-in as the decompiled
+code's calls do.
 """
 import re
 import sys
@@ -25,7 +26,11 @@ CALL = re.compile(r"\bsub_([0-9a-f]{6})\(app")
 # What the generated code calls by address that frontend_checks.cpp runs as
 # it is: __CHP, the truncation before a fistp.
 REAL = {"sub_4dfd56": "watcom::CHP"}
-NATIVE = re.compile(r"^/\* sub_([0-9a-f]+): native, nfs3hp::(frontend::\w+|controls::\w+|fill\w+) \*/$", re.M)
+# The menus' functions native whole that are tested here and that the other
+# functions tested call: those call them by address, to their stand-ins in
+# frontend_checks.cpp, as before they were whole (kStandInElsewhere there).
+STAND_IN_ELSEWHERE = ("sub_442a40", "sub_44a660", "sub_4446c0")
+NATIVE = re.compile(r"^/\* sub_([0-9a-f]+): native, nfs3hp::((?:\w+::)*\w+) \*/$", re.M)
 
 
 def main():
@@ -58,6 +63,11 @@ def main():
         for native, address in natives.items():
             found[name] = found[name].replace("nfs3hp::%s(app, cpu.sync());" % native,
                                               "app->dynamic_call(0x%x, cpu.sync());" % address)
+    for name in found:
+        for other in STAND_IN_ELSEWHERE:
+            if other != name:
+                found[name] = found[name].replace("%s(app, cpu.sync());" % other,
+                                                  "app->dynamic_call(0x%s, cpu.sync());" % other[4:])
     missing = wanted - set(found)
     if missing:
         raise SystemExit("not found: " + " ".join(sorted(missing)))

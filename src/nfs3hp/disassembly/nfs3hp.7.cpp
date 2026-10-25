@@ -6178,7 +6178,7 @@ L_0x00430c4f:
     }
     // 00430c5b  e894980700             -call 0x4aa4f4
     cpu.esp -= 4;
-    sub_4aa4f4(app, cpu.sync());
+    nfs3hp::handling::matchRevsToSpeed(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
 L_0x00430c60:

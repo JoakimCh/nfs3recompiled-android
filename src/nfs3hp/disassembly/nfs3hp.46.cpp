@@ -65,7 +65,7 @@ L_0x00514672:
     cpu.eax = cpu.ebp;
     // 0051467d  e80e09feff             -call 0x4f4f90
     cpu.esp -= 4;
-    sub_4f4f90(app, cpu.sync());
+    nfs3hp::ea::netEndGame(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00514682  c785a400000000000000   -mov dword ptr [ebp + 0xa4], 0
@@ -1368,7 +1368,7 @@ L_0x00514b24:
     cpu.eax = cpu.ebp;
     // 00514b37  e80405feff             -call 0x4f5040
     cpu.esp -= 4;
-    sub_4f5040(app, cpu.sync());
+    nfs3hp::ea::netCheckPlayer(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00514b3c  85c0                   +test eax, eax
@@ -2087,7 +2087,7 @@ void Application::sub_514dc0(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.eax = cpu.esi;
     // 00514ded  e84e02feff             -call 0x4f5040
     cpu.esp -= 4;
-    sub_4f5040(app, cpu.sync());
+    nfs3hp::ea::netCheckPlayer(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00514df2  85c0                   +test eax, eax

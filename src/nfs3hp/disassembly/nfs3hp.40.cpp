@@ -11506,7 +11506,7 @@ L_0x004fb7d0:
     cpu.eax = app->getMemory<x86::reg32>(cpu.edi + x86::reg32(16) /* 0x10 */);
     // 004fb7df  e85ce8feff             -call 0x4ea040
     cpu.esp -= 4;
-    sub_4ea040(app, cpu.sync());
+    nfs3hp::load::findBigEntry(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004fb7e4  85c0                   +test eax, eax
@@ -13890,7 +13890,7 @@ L_0x004fc0c7:
     cpu.edx = app->getMemory<x86::reg32>(cpu.esi + x86::reg32(44) /* 0x2c */);
     // 004fc0e0  e86b200100             -call 0x50e150
     cpu.esp -= 4;
-    sub_50e150(app, cpu.sync());
+    nfs3hp::ea::qremove(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004fc0e5  e9dffdffff             -jmp 0x4fbec9
@@ -14151,14 +14151,14 @@ L_0x004fc1c7:
     cpu.eax = x86::reg32(cpu.edx + x86::reg32(56) /* 0x38 */);
     // 004fc1da  e8011c0100             -call 0x50dde0
     cpu.esp -= 4;
-    sub_50dde0(app, cpu.sync());
+    nfs3hp::ea::qfree(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004fc1df  8d421c                 -lea eax, [edx + 0x1c]
     cpu.eax = x86::reg32(cpu.edx + x86::reg32(28) /* 0x1c */);
     // 004fc1e2  e8f91b0100             -call 0x50dde0
     cpu.esp -= 4;
-    sub_50dde0(app, cpu.sync());
+    nfs3hp::ea::qfree(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
 L_0x004fc1e7:
@@ -14198,14 +14198,14 @@ L_0x004fc1e7:
     cpu.eax = 10440564 /*0x9f4f74*/;
     // 004fc20b  e8d01b0100             -call 0x50dde0
     cpu.esp -= 4;
-    sub_50dde0(app, cpu.sync());
+    nfs3hp::ea::qfree(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004fc210  b8904f9f00             -mov eax, 0x9f4f90
     cpu.eax = 10440592 /*0x9f4f90*/;
     // 004fc215  e8c61b0100             -call 0x50dde0
     cpu.esp -= 4;
-    sub_50dde0(app, cpu.sync());
+    nfs3hp::ea::qfree(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004fc21a  a16c4f9f00             -mov eax, dword ptr [0x9f4f6c]

@@ -23,6 +23,7 @@
  * values on both sides of every comparison the screens make.
  *
  * See run.sh. */
+#include <algorithm>
 #include <nfs3hp.h>
 #include <native_frontend.h>
 #include <cstdio>
@@ -384,6 +385,10 @@ namespace nfs3hp
  * nothing here. */
 void dialogEmblem(bool) {}
 
+/* Whether the Graphics menu's mode is Dynamic Fullscreen (nfs3hp_main.cpp's,
+ * by the driver's table): none of the modes the cases make up is. */
+bool dynamicFullscreenMode(x86::reg32) { return false; }
+
 /* The port's keyboard, told the game takes typing: recorded. */
 void textEntry(bool taking)
 {
@@ -589,6 +594,11 @@ void mkdir(win32::WinApplication* app, x86::CPU& cpu)
 
 }
 
+/* The menus' functions native whole that the other functions tested call
+ * (extract.py's STAND_IN_ELSEWHERE): stood in for but in their own cases. */
+const x86::reg32 kStandInElsewhere[] = { 0x442a40, 0x44a660, 0x4446c0 };
+x86::reg32 g_testing = 0;
+
 namespace win32
 {
 
@@ -611,7 +621,9 @@ void WinApplication::yieldContext(const x86::CPU&) {}
 void WinApplication::dynamicCallElsewhere(x86::reg32 address, x86::CPU& cpu)
 {
     auto method = g_methods.find(address);
-    if (method == g_methods.end())
+    const bool elsewhere = address != g_testing
+        && std::find(std::begin(kStandInElsewhere), std::end(kStandInElsewhere), address) != std::end(kStandInElsewhere);
+    if (method == g_methods.end() || elsewhere)
     {
         nfs3hp::mock(this, cpu, address);
         return;
@@ -923,6 +935,7 @@ void compare(nfs3hp::Application& app, const char* name, x86::reg32 address, Nat
     g_before.assign(g_memory, g_memory + kMemory);
     const unsigned seed = random(0);
 
+    g_testing = address;
     x86::CPU original = entry;
     g_script.seed(seed);
     g_log.clear();
@@ -1075,6 +1088,7 @@ enum class Entry
     Message,       // a message's lines, its time and keys, its callback
     MessageById,   // eax a line of the language's
     Edit,          // a line to type in: its lines, buttons, focus, source, most, mode and callback
+    FindItem,      // eax the screen, edx a name to look its items' codelinks up by
 };
 
 /* A dialog's texts: an array of `count` at `array`, each a text or now and
@@ -1173,6 +1187,17 @@ x86::CPU caseEntry(Entry entry, x86::reg32 address)
         break;
     case Entry::None:
         break;
+    case Entry::FindItem:
+    {
+        // The screen's items end where an item's type is 0: somewhere in the
+        // pool, or past it.
+        cpu.eax = g_menu;
+        const std::uint32_t end = random(3) == 0 ? kPoolItems + random(10) : random(kPoolItems + 10);
+        setWord32(kItems + kItemSize * (kPoolFirst + end), 0);
+        makeTexts(kDialogLines, 1, kDialogStrings, false);
+        cpu.edx = random(8) == 0 ? 0 : word32(kDialogLines);
+        break;
+    }
     case Entry::Answer:
         cpu.eax = random(5);
         cpu.edx = random(6) == 0 ? 0 : 0x5f3e00 + random(16);
@@ -1425,6 +1450,9 @@ int main(int argc, char** argv)
         WHOLE(multiMenuLeaveAnswer, 43fcb0, Answer),
         // What the main menu calls of the menu loop and the dialogs, native whole.
         WHOLE(menuShowItems, 44a960, ShowItems),
+        WHOLE(menuShownNow, 44a660, Item),
+        WHOLE(menuFindItem, 442a40, FindItem),
+        WHOLE(dialogFocusedButton, 4446c0, None),
         WHOLE(menuCurrentName, 44ae00, CurrentName),
         WHOLE(dialogLinesBox, 443a90, LinesBox),
         WHOLE(dialogButtonRowBox, 443c00, ButtonRowBox),

@@ -16,10 +16,15 @@ SDKV = os.environ.get("WINSDK_VERSION", "10.0.26100.0")
 # run.sh's natives.
 NATIVES = ["native_game", "native_watcom", "native_watcom_heap", "native_mmx", "native_frontend_text",
            "native_frontend_screen", "native_controls_input", "native_controls_devices", "native_controls_race",
-           "native_controls_pipeline", "native_controls_queue", "native_ea_threads", "native_ea_memory", "native_ea_files", "native_ea_support", "native_racestart", "native_raceload", "native_trackdata", "native_decompiled", "native_graphics", "port_snd_voices", "port_snd_play", "native_snd_stream", "native_snd_cdstream", "native_snd_path", "native_snd_strm", "native_snd_driver", "native_snd_fx", "native_snd_mixsetup", "native_snd_music", "port_sound_effects", "native_snd_mixfuncs", "native_snd_scenery", "native_snd_racebanks", "native_snd_announcer", "native_snd_ambient", "native_snd_player", "native_snd_tick", "native_snd_banks", "native_snd_copradio", "native_snd_racesetup", "native_snd_cops", "native_snd_3d", "native_snd_pursuit", "native_snd_speech", "native_snd_race", "native_snd_crash", "native_snd_siren", "native_snd_dead", "native_mixer"]
+           "native_controls_pipeline", "native_controls_queue", "native_ea_threads", "native_ea_memory", "native_ea_files", "native_ea_support", "native_load_track", "native_load_cardb", "native_load_carmodels", "native_load_saves", "native_ea_net", "native_ea_formats", "native_frontend_glue", "native_frontend_draw", "native_racestart", "native_raceload", "native_trackdata", "native_physics", "native_handling", "native_drivetrain", "native_decompiled", "native_graphics", "port_snd_voices", "port_snd_play", "native_snd_stream", "native_snd_cdstream", "native_snd_path", "native_snd_strm", "native_snd_driver", "native_snd_fx", "native_snd_mixsetup", "native_snd_music", "port_sound_effects", "native_snd_mixfuncs", "native_snd_scenery", "native_snd_racebanks", "native_snd_announcer", "native_snd_ambient", "native_snd_player", "native_snd_tick", "native_snd_banks", "native_snd_copradio", "native_snd_racesetup", "native_snd_cops", "native_snd_3d", "native_snd_pursuit", "native_snd_speech", "native_snd_race", "native_snd_crash", "native_snd_siren", "native_snd_dead", "native_mixer"]
 
 FLAGS = ["/std:c++17", "/O1", "/EHsc", "-fno-strict-aliasing", "/DWITH_MMX", "/w", "/MT", "/bigobj",
          "/D_CRT_SECURE_NO_WARNINGS", "/DNOMINMAX"]
+# GAME_CHECKS_DEBUG=1: debug information in the objects and a .pdb by the exe,
+# for lldb (the NDK's) to say where a case crashed.
+DEBUG = os.environ.get("GAME_CHECKS_DEBUG") == "1"
+if DEBUG:
+    FLAGS = FLAGS + ["/Z7"]
 
 
 def env():
@@ -51,7 +56,7 @@ def compile_all(sources, out, generated):
 
 
 def link(objects, exe):
-    r = subprocess.run([str(MSVC / "bin/Hostx64/x64/link.exe"), "/nologo", "/OUT:" + str(exe), "/STACK:16777216"]
+    r = subprocess.run([str(MSVC / "bin/Hostx64/x64/link.exe"), "/nologo", "/OUT:" + str(exe), "/STACK:16777216"] + (["/DEBUG"] if DEBUG else [])
                        + [str(o) for o in objects], capture_output=True, text=True, env=env())
     return None if r.returncode == 0 else (r.stdout + r.stderr)[-3000:]
 

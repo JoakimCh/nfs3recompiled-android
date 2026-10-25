@@ -204,7 +204,19 @@ const std::pair<x86::reg32, x86::reg32> kWindows[] = {
 #include "ea_memory.inc"
 #include "ea_files.inc"
 #include "ea_support.inc"
+#include "ea_net.inc"
+#include "ea_formats.inc"
 #undef EA_WINDOWS
+#define LOAD_WINDOWS
+#include "load_track.inc"
+#include "load_cardb.inc"
+#include "load_carmodels.inc"
+#include "load_saves.inc"
+#undef LOAD_WINDOWS
+#define FE_WINDOWS
+#include "frontend_glue.inc"
+#include "frontend_draw.inc"
+#undef FE_WINDOWS
 #define RACESTART_WINDOWS
 #include "racestart.inc"
 #undef RACESTART_WINDOWS
@@ -214,6 +226,15 @@ const std::pair<x86::reg32, x86::reg32> kWindows[] = {
 #define TRACKDATA_WINDOWS
 #include "trackdata.inc"
 #undef TRACKDATA_WINDOWS
+#define PHYSICS_WINDOWS
+#include "physics.inc"
+#undef PHYSICS_WINDOWS
+#define HANDLING_WINDOWS
+#include "handling.inc"
+#undef HANDLING_WINDOWS
+#define DRIVETRAIN_WINDOWS
+#include "drivetrain.inc"
+#undef DRIVETRAIN_WINDOWS
 #include "decompiled_windows.inc"
 #define GRAPHICS_WINDOWS
 #include "graphics_world.inc"
@@ -319,7 +340,19 @@ enum Effect
 #include "ea_memory.inc"
 #include "ea_files.inc"
 #include "ea_support.inc"
+#include "ea_net.inc"
+#include "ea_formats.inc"
 #undef EA_EFFECTS
+#define LOAD_EFFECTS
+#include "load_track.inc"
+#include "load_cardb.inc"
+#include "load_carmodels.inc"
+#include "load_saves.inc"
+#undef LOAD_EFFECTS
+#define FE_EFFECTS
+#include "frontend_glue.inc"
+#include "frontend_draw.inc"
+#undef FE_EFFECTS
 #define RACESTART_EFFECTS
 #include "racestart.inc"
 #undef RACESTART_EFFECTS
@@ -329,6 +362,15 @@ enum Effect
 #define TRACKDATA_EFFECTS
 #include "trackdata.inc"
 #undef TRACKDATA_EFFECTS
+#define PHYSICS_EFFECTS
+#include "physics.inc"
+#undef PHYSICS_EFFECTS
+#define HANDLING_EFFECTS
+#include "handling.inc"
+#undef HANDLING_EFFECTS
+#define DRIVETRAIN_EFFECTS
+#include "drivetrain.inc"
+#undef DRIVETRAIN_EFFECTS
 };
 
 struct StandIn
@@ -409,21 +451,49 @@ const StandIn kGameFunctions[] = {
 #define TRACKDATA_GAME_FUNCTIONS
 #include "trackdata.inc"
 #undef TRACKDATA_GAME_FUNCTIONS
+#define PHYSICS_GAME_FUNCTIONS
+#include "physics.inc"
+#undef PHYSICS_GAME_FUNCTIONS
 #define EA_GAME_FUNCTIONS
 #include "ea_threads.inc"
 #include "ea_memory.inc"
 #include "ea_files.inc"
 #include "ea_support.inc"
+#include "ea_net.inc"
+#include "ea_formats.inc"
 #undef EA_GAME_FUNCTIONS
+#define LOAD_GAME_FUNCTIONS
+#include "load_track.inc"
+#include "load_cardb.inc"
+#include "load_carmodels.inc"
+#include "load_saves.inc"
+#undef LOAD_GAME_FUNCTIONS
+#define FE_GAME_FUNCTIONS
+#include "frontend_glue.inc"
+#include "frontend_draw.inc"
+#undef FE_GAME_FUNCTIONS
+// Before racestart's: its row for 0x4e06a0 is kept to by every other caller.
+#define DRIVETRAIN_GAME_FUNCTIONS
+#include "drivetrain.inc"
+#undef DRIVETRAIN_GAME_FUNCTIONS
 #define RACESTART_GAME_FUNCTIONS
 #include "racestart.inc"
 #undef RACESTART_GAME_FUNCTIONS
 #define RACELOAD_GAME_FUNCTIONS
 #include "raceload.inc"
 #undef RACELOAD_GAME_FUNCTIONS
+#define HANDLING_GAME_FUNCTIONS
+#include "handling.inc"
+#undef HANDLING_GAME_FUNCTIONS
 {0x4c9860, "the wait for the clock", kWatcom, 4, 0, kEax, -1, 0, kTickWait},
-{0x4d1390, "the text's scale", kWatcom, 0, 1, 0, -1, 0, kFloatBack},
 {0x4beb20, "a rectangle copied out", kWatcom, 4, 1, kEdx, -1, 0, kRectangle},
+// A text drawn, its width onto the x87's stack; a text's width, onto it too;
+// a font's height in eax (frontend::drawText, textWidthWithOverhang,
+// characterWidth, native whole), as the graphics' natives call them: by
+// address, their arguments logged -- each held against its code on its own.
+{0x4d1000, "a text drawn", kWatcom, 3, 0, kEax, -1, 0, kFloatBack},
+{0x4d1480, "a text's width", kWatcom, 1, 0, kEax, -1, 0, kFloatBack},
+{0x4d1540, "a font's height", kWatcom, 1, 0, kEax, -1, 0, kNothing},
 #define SOUND_GAME_FUNCTIONS
 #include "sound_lib.inc"
 #undef SOUND_GAME_FUNCTIONS
@@ -550,7 +620,19 @@ const StandIn kPointers[] = {
 #include "ea_memory.inc"
 #include "ea_files.inc"
 #include "ea_support.inc"
+#include "ea_net.inc"
+#include "ea_formats.inc"
 #undef EA_POINTERS
+#define LOAD_POINTERS
+#include "load_track.inc"
+#include "load_cardb.inc"
+#include "load_carmodels.inc"
+#include "load_saves.inc"
+#undef LOAD_POINTERS
+#define FE_POINTERS
+#include "frontend_glue.inc"
+#include "frontend_draw.inc"
+#undef FE_POINTERS
 #define RACESTART_POINTERS
 #include "racestart.inc"
 #undef RACESTART_POINTERS
@@ -560,6 +642,15 @@ const StandIn kPointers[] = {
 #define TRACKDATA_POINTERS
 #include "trackdata.inc"
 #undef TRACKDATA_POINTERS
+#define PHYSICS_POINTERS
+#include "physics.inc"
+#undef PHYSICS_POINTERS
+#define HANDLING_POINTERS
+#include "handling.inc"
+#undef HANDLING_POINTERS
+#define DRIVETRAIN_POINTERS
+#include "drivetrain.inc"
+#undef DRIVETRAIN_POINTERS
 #define SOUND_POINTERS
 #include "sound_lib.inc"
 #undef SOUND_POINTERS
@@ -655,6 +746,12 @@ struct Promise
      * where it calls out, the native pushes and pops each value as the x87
      * does -- what is left in a free register no code reads. */
     bool liveOnly = false;
+    /* Registers of ebx, ecx, edx no caller of the game's reads after it (by
+     * liveness on the original x86, the values the function passes up
+     * followed to the callers' callers), not compared: what a callee the port
+     * rewrote (port::, eax and nothing else changed) leaves otherwise there
+     * is never seen.  A space-separated list. */
+    const char* unread = "";
 };
 
 const Promise kPromises[] = {
@@ -719,7 +816,19 @@ const Promise kPromises[] = {
 #include "ea_memory.inc"
 #include "ea_files.inc"
 #include "ea_support.inc"
+#include "ea_net.inc"
+#include "ea_formats.inc"
 #undef EA_PROMISES
+#define LOAD_PROMISES
+#include "load_track.inc"
+#include "load_cardb.inc"
+#include "load_carmodels.inc"
+#include "load_saves.inc"
+#undef LOAD_PROMISES
+#define FE_PROMISES
+#include "frontend_glue.inc"
+#include "frontend_draw.inc"
+#undef FE_PROMISES
 #define RACESTART_PROMISES
 #include "racestart.inc"
 #undef RACESTART_PROMISES
@@ -729,6 +838,15 @@ const Promise kPromises[] = {
 #define TRACKDATA_PROMISES
 #include "trackdata.inc"
 #undef TRACKDATA_PROMISES
+#define PHYSICS_PROMISES
+#include "physics.inc"
+#undef PHYSICS_PROMISES
+#define HANDLING_PROMISES
+#include "handling.inc"
+#undef HANDLING_PROMISES
+#define DRIVETRAIN_PROMISES
+#include "drivetrain.inc"
+#undef DRIVETRAIN_PROMISES
 #define SOUND_PROMISES
 #include "sound_lib.inc"
 #undef SOUND_PROMISES
@@ -1517,7 +1635,19 @@ public:
 #include "ea_memory.inc"
 #include "ea_files.inc"
 #include "ea_support.inc"
+#include "ea_net.inc"
+#include "ea_formats.inc"
 #undef EA_EFFECT_CASES
+#define LOAD_EFFECT_CASES
+#include "load_track.inc"
+#include "load_cardb.inc"
+#include "load_carmodels.inc"
+#include "load_saves.inc"
+#undef LOAD_EFFECT_CASES
+#define FE_EFFECT_CASES
+#include "frontend_glue.inc"
+#include "frontend_draw.inc"
+#undef FE_EFFECT_CASES
 #define RACESTART_EFFECT_CASES
 #include "racestart.inc"
 #undef RACESTART_EFFECT_CASES
@@ -1527,6 +1657,15 @@ public:
 #define TRACKDATA_EFFECT_CASES
 #include "trackdata.inc"
 #undef TRACKDATA_EFFECT_CASES
+#define PHYSICS_EFFECT_CASES
+#include "physics.inc"
+#undef PHYSICS_EFFECT_CASES
+#define HANDLING_EFFECT_CASES
+#include "handling.inc"
+#undef HANDLING_EFFECT_CASES
+#define DRIVETRAIN_EFFECT_CASES
+#include "drivetrain.inc"
+#undef DRIVETRAIN_EFFECT_CASES
         case kRectangle:
             // A screen's, mostly: 640 by 480 to 1600 by 1200, or any size.
             word(cpu.edx) = r % 64;
@@ -4725,7 +4864,19 @@ void makeMmxArguments(CheckApp& g, const std::string& name, x86::CPU& cpu, x86::
 #include "ea_memory.inc"
 #include "ea_files.inc"
 #include "ea_support.inc"
+#include "ea_net.inc"
+#include "ea_formats.inc"
 #undef EA_ARGUMENTS
+#define LOAD_ARGUMENTS
+#include "load_track.inc"
+#include "load_cardb.inc"
+#include "load_carmodels.inc"
+#include "load_saves.inc"
+#undef LOAD_ARGUMENTS
+#define FE_ARGUMENTS
+#include "frontend_glue.inc"
+#include "frontend_draw.inc"
+#undef FE_ARGUMENTS
 #define RACESTART_ARGUMENTS
 #include "racestart.inc"
 #undef RACESTART_ARGUMENTS
@@ -4735,6 +4886,15 @@ void makeMmxArguments(CheckApp& g, const std::string& name, x86::CPU& cpu, x86::
 #define TRACKDATA_ARGUMENTS
 #include "trackdata.inc"
 #undef TRACKDATA_ARGUMENTS
+#define PHYSICS_ARGUMENTS
+#include "physics.inc"
+#undef PHYSICS_ARGUMENTS
+#define HANDLING_ARGUMENTS
+#include "handling.inc"
+#undef HANDLING_ARGUMENTS
+#define DRIVETRAIN_ARGUMENTS
+#include "drivetrain.inc"
+#undef DRIVETRAIN_ARGUMENTS
 #define SOUND_ARGUMENTS
 #include "sound_lib.inc"
 #undef SOUND_ARGUMENTS
@@ -4868,7 +5028,8 @@ void makeArguments(CheckApp& g, const Tested& t, x86::reg32 esp, x86::CPU& cpu)
     makeFillArguments(g, name, cpu);
     if (name.compare(0, 8, "watcom::") == 0)
         makeWatcomArguments(g, name.substr(8), cpu, a);
-    if (name.compare(0, 10, "frontend::") == 0)
+    if (name.compare(0, 10, "frontend::") == 0 && !makeFeGlueArguments(g, name.substr(10), cpu, a)
+        && !makeFeDrawArguments(g, name.substr(10), cpu, a))
         makeFrontendArguments(g, name.substr(10), cpu, a);
     if (name.compare(0, 10, "controls::") == 0)
     {
@@ -4877,12 +5038,20 @@ void makeArguments(CheckApp& g, const Tested& t, x86::reg32 esp, x86::CPU& cpu)
             && !makeRaceArguments(g, own, cpu, a) && !makePipelineArguments(g, own, cpu, a))
             makeQueueArguments(g, own, cpu, a);
     }
+    if (name.compare(0, 6, "load::") == 0)
+    {
+        const std::string own = name.substr(6);
+        if (!makeLoadTrackArguments(g, own, cpu, a) && !makeLoadCardbArguments(g, own, cpu, a)
+            && !makeLoadCarmodelsArguments(g, own, cpu, a))
+            makeLoadSavesArguments(g, own, cpu, a);
+    }
     if (name.compare(0, 4, "ea::") == 0)
     {
         const std::string own = name.substr(4);
         if (!makeEaThreadsArguments(g, own, cpu, a) && !makeEaMemoryArguments(g, own, cpu, a)
-            && !makeEaFilesArguments(g, own, cpu, a))
-            makeEaSupportArguments(g, own, cpu, a);
+            && !makeEaFilesArguments(g, own, cpu, a) && !makeEaSupportArguments(g, own, cpu, a)
+            && !makeEaNetArguments(g, own, cpu, a))
+            makeEaFormatsArguments(g, own, cpu, a);
     }
     if (name.compare(0, 11, "racestart::") == 0)
         makeRaceStartArguments(g, name.substr(11), cpu, a);
@@ -4890,6 +5059,12 @@ void makeArguments(CheckApp& g, const Tested& t, x86::reg32 esp, x86::CPU& cpu)
         makeRaceloadArguments(g, name.substr(10), cpu, a);
     if (name.compare(0, 11, "trackdata::") == 0)
         makeTrackdataArguments(g, name.substr(11), cpu, a);
+    if (name.compare(0, 9, "physics::") == 0)
+        makePhysicsArguments(g, name.substr(9), cpu, a);
+    if (name.compare(0, 10, "handling::") == 0)
+        makeHandlingArguments(g, name.substr(10), cpu, a);
+    if (name.compare(0, 12, "drivetrain::") == 0)
+        makeDrivetrainArguments(g, name.substr(12), cpu, a);
     if (name.compare(0, 5, "mmx::") == 0)
         makeMmxArguments(g, name.substr(5), cpu, a);
     if (name.compare(0, 5, "snd::") == 0)
@@ -5013,6 +5188,20 @@ bool compareRuns(const Tested& t, CheckApp& g, CheckApp& n, const x86::CPU& gene
                 std::snprintf(what + at, sizeof what - at, ") native");
                 break;
             }
+        // One run's calls the other's and more: the first of the more.
+        const size_t common = std::min(g.calls.size(), n.calls.size());
+        bool prefix = true;
+        for (size_t i = 0; i < common && prefix; ++i)
+            prefix = g.calls[i] == n.calls[i];
+        if (prefix && g.calls.size() != n.calls.size())
+        {
+            const Call& c = g.calls.size() > common ? g.calls[common] : n.calls[common];
+            at += std::snprintf(what + at, sizeof what - at, "; call %zu, %s only: %08x (", common,
+                                g.calls.size() > common ? "generated" : "native", c.id);
+            for (size_t j = 0; j < c.words.size() && j < 8; ++j)
+                at += std::snprintf(what + at, sizeof what - at, " %08x", c.words[j]);
+            std::snprintf(what + at, sizeof what - at, ")");
+        }
         return report(counts, what);
     }
     if (!stopped)
@@ -5032,7 +5221,7 @@ bool compareRuns(const Tested& t, CheckApp& g, CheckApp& n, const x86::CPU& gene
             {"ebp", generatedCpu.ebp, nativeCpu.ebp, true}, {"esp", generatedCpu.esp, nativeCpu.esp, true},
         };
         for (const auto& r : registers)
-            if (r.compared && r.g != r.n)
+            if (r.compared && r.g != r.n && !std::strstr(p.unread, r.name))
             {
                 std::snprintf(what, sizeof what, "%s %08x generated, %08x native", r.name, r.g, r.n);
                 return report(counts, what);

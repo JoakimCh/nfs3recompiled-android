@@ -33,7 +33,7 @@ python3 "$here/extract.py" "$disassembly" "$build/generated.cpp" "$build/mocks.i
     \
     sub_45d050 sub_45d2f0 sub_45cff0 sub_45cef0 sub_45cdd0 sub_45d360 sub_45d620 sub_45d300 sub_45cf70 \
     sub_45ce60 sub_440470 sub_4405b0 sub_4403f0 sub_440160 sub_440390 sub_4400d0 sub_43fcb0 \
-    sub_44a960 sub_44ae00 sub_443a90 sub_443c00 sub_443d20 sub_444570 sub_4446d0 sub_444a80 sub_444be0 \
+    sub_44a960 sub_44ae00 sub_44a660 sub_442a40 sub_4446c0 sub_443a90 sub_443c00 sub_443d20 sub_444570 sub_4446d0 sub_444a80 sub_444be0 \
     sub_444c10 sub_444c20 sub_445f00
 ${CXX:-c++} -std=c++17 -O2 -fno-strict-aliasing -DWITH_MMX -w \
     -I"$build" -I"$here" -I"$root/tools/loading_checks/stub" -I"$root/third_party" -I"$root/include" \
@@ -41,6 +41,6 @@ ${CXX:-c++} -std=c++17 -O2 -fno-strict-aliasing -DWITH_MMX -w \
     "$build/generated.cpp" "$root/src/nfs3hp/native_frontend.cpp" "$root/src/nfs3hp/native_frontend_options.cpp" \
     "$root/src/nfs3hp/native_frontend_cars.cpp" "$root/src/nfs3hp/native_frontend_tracks.cpp" \
     "$root/src/nfs3hp/native_frontend_main.cpp" "$root/src/nfs3hp/native_frontend_dialogs.cpp" \
-    "$root/src/nfs3hp/native_frontend_loop.cpp" \
+    "$root/src/nfs3hp/native_frontend_loop.cpp" "$root/src/nfs3hp/native_frontend_menus.cpp" \
     "$here/frontend_checks.cpp" -o "$build/frontend_checks"
 "$build/frontend_checks" "$root/nfs3hp/nfs3.exe" "${2:-1000}"

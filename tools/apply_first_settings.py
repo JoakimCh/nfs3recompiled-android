@@ -23,7 +23,7 @@ Right after that the phone's settings go over the game's
 (nfs3hp::firstSettings, NFS3Activity.onFirstSettings), and the game takes them
 up as it would a loaded file: sub_43c040 reads from the new bindings whether
 each player steers and works the pedals digitally -- sub_472b60 did so from the
-game's own bindings when the settings were made -- and sub_472820 saves the
+game's own bindings when the settings were made -- and sub_472820 (load::saveConfig) saves the
 file, as the game does each time it leaves the front end.  So config.dat is
 there from the first minute, and every later start loads it like any other.
 """
@@ -48,11 +48,11 @@ SITES = [
      "    {\n"
      "        const x86::reg32 kept = cpu.eax;\n"
      "        cpu.esp -= 4;\n"
-     "        sub_43c040(app, cpu.sync()); /* the game takes up the new bindings */\n"
+     "        nfs3hp::frontend::noteDigitalControls(app, cpu.sync()); /* the game takes up the new bindings */\n"
      "        cpu.reload();\n"
      "        if (cpu.terminate) return;\n"
      "        cpu.esp -= 4;\n"
-     "        sub_472820(app, cpu.sync()); /* and saves them, as it does leaving the front end */\n"
+     "        nfs3hp::load::saveConfig(app, cpu.sync()); /* and saves them, as it does leaving the front end */\n"
      "        cpu.reload();\n"
      "        if (cpu.terminate) return;\n"
      "        cpu.eax = kept;\n"

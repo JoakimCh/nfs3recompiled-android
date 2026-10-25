@@ -306,7 +306,7 @@ void Application::sub_4f6030(WinApplication* __restrict app, x86::CPU& cpu_)
     (cpu.eax) += x86::reg32(x86::sreg32(140 /*0x8c*/));
     // 004f603d  e88e810100             -call 0x50e1d0
     cpu.esp -= 4;
-    sub_50e1d0(app, cpu.sync());
+    nfs3hp::ea::qlength(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004f6042  85c0                   +test eax, eax
@@ -2873,7 +2873,7 @@ void Application::sub_4f6870(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.edx = cpu.ebx;
     // 004f688c  e8bf780100             -call 0x50e150
     cpu.esp -= 4;
-    sub_50e150(app, cpu.sync());
+    nfs3hp::ea::qremove(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004f6891  85c0                   +test eax, eax
@@ -4227,7 +4227,7 @@ L_0x004f6e19:
     cpu.eax = app->getMemory<x86::reg32>(cpu.ebp + x86::reg32(76) /* 0x4c */);
     // 004f6e22  e819e2ffff             -call 0x4f5040
     cpu.esp -= 4;
-    sub_4f5040(app, cpu.sync());
+    nfs3hp::ea::netCheckPlayer(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004f6e27  85c0                   +test eax, eax
@@ -5341,7 +5341,7 @@ void Application::sub_4f71a0(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.eax = 10429992 /*0x9f2628*/;
     // 004f71ae  e89d6f0100             -call 0x50e150
     cpu.esp -= 4;
-    sub_50e150(app, cpu.sync());
+    nfs3hp::ea::qremove(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004f71b3  85c0                   +test eax, eax
@@ -5408,7 +5408,7 @@ L_0x004f71f1:
     cpu.edx = cpu.esi;
     // 004f71f8  e8536f0100             -call 0x50e150
     cpu.esp -= 4;
-    sub_50e150(app, cpu.sync());
+    nfs3hp::ea::qremove(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004f71fd  85c0                   +test eax, eax
@@ -5853,7 +5853,7 @@ void Application::sub_4f7320(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.eax = cpu.edx;
     // 004f733b  e850dcffff             -call 0x4f4f90
     cpu.esp -= 4;
-    sub_4f4f90(app, cpu.sync());
+    nfs3hp::ea::netEndGame(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
 L_0x004f7340:

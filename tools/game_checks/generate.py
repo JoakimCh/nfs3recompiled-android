@@ -126,9 +126,17 @@ def race_precision(text):
     return text
 
 
+def track_detail(text):
+    """tools/apply_track_detail.py's change that load::defaultConfig has:
+    View Distance Full where the settings start over."""
+    from tools.apply_track_detail import NATIVE_SITES
+    return port_sites(NATIVE_SITES)(text)
+
+
 PORT_CHANGES = {0x4710f0: force_feedback_car, 0x410030: music_stream, 0x4107c0: music_stream,
                 0x4bed90: widescreen, 0x4bee80: widescreen,
-                0x494fa0: race_precision, 0x495230: race_precision, 0x4a39f0: race_precision}
+                0x494fa0: race_precision, 0x495230: race_precision, 0x4a39f0: race_precision,
+                0x4723f0: track_detail}
 
 
 def stand_ins():
@@ -140,6 +148,38 @@ def stand_ins():
         found |= {int(a, 16) for a in re.findall(r'^\s*\{(0x[0-9a-f]+), "[^"]*", k(?:Watcom|Cdecl|Stdcall)',
                                                    path.read_text(encoding="utf-8"), re.M)}
     return found
+
+
+_SOURCES = {}
+
+
+def named_addresses(native):
+    """The addresses the source file of `native` ("ns::name") names in its code
+    (comments left out): those it can call by address.  None when no file
+    under src/nfs3hp defines it."""
+    if not _SOURCES:
+        def code_of(path):
+            text = path.read_text(encoding="utf-8", errors="replace")
+            return re.sub(r"/\*.*?\*/|//[^\n]*", "", text, flags=re.S)
+
+        def addresses_of(code):
+            return {int(a, 16) for a in re.findall(r"\b0x([0-9a-f]{6})\b", code)}
+
+        # The headers' addresses count for the files that include them
+        # (native_snd.h's, port_snd.h's).
+        headers = {path.name: addresses_of(code_of(path)) for path in (ROOT / "src/nfs3hp").glob("*.h")}
+        for path in sorted((ROOT / "src/nfs3hp").glob("*.cpp")):
+            code = code_of(path)
+            addresses = addresses_of(code)
+            for header in re.findall(r'#include "([\w.]+\.h)"', code):
+                addresses |= headers.get(header, set())
+            _SOURCES[path] = (code, addresses)
+    space, _, name = native.rpartition("::")
+    for code, addresses in _SOURCES.values():
+        if re.search(r"\bvoid %s\(" % re.escape(name), code) and (
+                not space or re.search(r"\bnamespace %s\b" % re.escape(space.split("::")[-1]), code)):
+            return addresses
+    return None
 
 
 def main():
@@ -171,10 +211,19 @@ def main():
             # The natives game_checks.cpp stands in for, from the others: by
             # address too, as the natives call them -- but not a rewrite's
             # (port::) from another rewrite, which calls it as C++: the game's
-            # code for it comes along there, on both sides.
+            # code for it comes along there, on both sides.  Nor one STOOD_IN
+            # lets this entry call as it does (sprintf its vsprintf), nor one
+            # the entry's file never names in its code: that one the native
+            # calls by name or does as the callee's code does (watcom's fopen
+            # its fseek, frontend's text its languageText), and the stand-ins
+            # other parts put on it (sound_lib's fseek) are for their calls by
+            # address.  One controls file's from another's: below.
             rewrite = natives[entry].startswith("port::")
+            named = named_addresses(natives[entry])
             for address in stood_in_natives:
-                if address != entry and not (rewrite and natives[address].startswith("port::")):
+                if address != entry and not (rewrite and natives[address].startswith("port::")) \
+                        and entry not in STOOD_IN.get(address, ()) \
+                        and (named is None or address in named):
                     text = text.replace("sub_%x(app, cpu.sync());" % address,
                                         "app->dynamic_call(0x%x, cpu.sync());" % address)
                     text = text.replace("return sub_%x(app, cpu.handOver());" % address,

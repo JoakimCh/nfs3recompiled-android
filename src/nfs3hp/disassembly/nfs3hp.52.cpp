@@ -1379,7 +1379,7 @@ L_0x0052bacb:
     if (app->contextWanted()) app->yieldContext(cpu); /* safepoint */
     // 0052bacb  e85046fcff             -call 0x4f0120
     cpu.esp -= 4;
-    sub_4f0120(app, cpu.sync());
+    nfs3hp::ea::inkey(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0052bad0  89c2                   -mov edx, eax
@@ -1897,7 +1897,7 @@ L_0x0052bd2b:
     if (app->contextWanted()) app->yieldContext(cpu); /* safepoint */
     // 0052bd2b  e8f043fcff             -call 0x4f0120
     cpu.esp -= 4;
-    sub_4f0120(app, cpu.sync());
+    nfs3hp::ea::inkey(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0052bd30  89c2                   -mov edx, eax

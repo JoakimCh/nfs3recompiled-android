@@ -395,7 +395,6 @@ void runWhole(win32::WinApplication* app, x86::CPU& cpu, Site& site, Body body)
 
 /* The menu files and the screens they make (native_frontend_menus.cpp). */
 bool menuCodelinkMatches(win32::WinApplication* app, x86::CPU& cpu);
-bool menuFindItem(win32::WinApplication* app, x86::CPU& cpu);
 bool menuAssignHandlers(win32::WinApplication* app, x86::CPU& cpu);
 bool menuKeywordIndex(win32::WinApplication* app, x86::CPU& cpu);
 bool menuStoreString(win32::WinApplication* app, x86::CPU& cpu);
@@ -427,7 +426,6 @@ bool menuHandleKey(win32::WinApplication* app, x86::CPU& cpu);
 bool menuSelectedIndex(win32::WinApplication* app, x86::CPU& cpu);
 bool menuSelectItem(win32::WinApplication* app, x86::CPU& cpu);
 bool menuDrawItems(win32::WinApplication* app, x86::CPU& cpu);
-bool menuShownNow(win32::WinApplication* app, x86::CPU& cpu);
 bool menuReleaseMouse(win32::WinApplication* app, x86::CPU& cpu);
 bool menuItemUnderMouse(win32::WinApplication* app, x86::CPU& cpu);
 bool menuItemsShown(win32::WinApplication* app, x86::CPU& cpu);
@@ -451,7 +449,6 @@ bool menuFitRaceSettings(win32::WinApplication* app, x86::CPU& cpu);
 /* The dialogs over the screens (native_frontend_dialogs.cpp): what is up, */
 bool dialogShownStandIn(win32::WinApplication* app, x86::CPU& cpu);
 bool dialogKindStandIn(win32::WinApplication* app, x86::CPU& cpu);
-bool dialogFocusStandIn(win32::WinApplication* app, x86::CPU& cpu);
 bool dialogListFocus(win32::WinApplication* app, x86::CPU& cpu);
 bool dialogClose(win32::WinApplication* app, x86::CPU& cpu);
 /* the layout, */

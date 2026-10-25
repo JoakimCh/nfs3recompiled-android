@@ -1552,12 +1552,6 @@ bool dialogButtonUnderMouse(win32::WinApplication* app, x86::CPU& cpu)
     });
 }
 
-bool dialogFocusStandIn(win32::WinApplication* app, x86::CPU& cpu)
-{
-    static fe::Site site{ "sub_4446c0", 0, 4, nullptr, 0, kRestoreNone };
-    return fe::run(app, cpu, site, [&](Guest& guest) { return focusedButton(guest); });
-}
-
 bool dialogQuestionKey(win32::WinApplication* app, x86::CPU& cpu)
 {
     static fe::Site site{ "sub_444910", 0, 12, nullptr, 0, kRestoreEcx | kRestoreEdx };
@@ -1703,6 +1697,13 @@ bool dialogPassStandIn(win32::WinApplication* app, x86::CPU& cpu)
  * opens them, and what they open with. */
 namespace frontend
 {
+
+/* The button highlighted, native whole: the main menu's question asks it. */
+void dialogFocusedButton(win32::WinApplication* app, x86::CPU& cpu)
+{
+    static fe::Site site{ "sub_4446c0", 0, 4, nullptr, 0, kRestoreNone };
+    fe::runWhole(app, cpu, site, [&](Guest& guest) { return focusedButton(guest); });
+}
 
 void dialogLinesBox(win32::WinApplication* app, x86::CPU& cpu)
 {

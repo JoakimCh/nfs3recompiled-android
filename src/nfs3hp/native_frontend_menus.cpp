@@ -584,12 +584,19 @@ bool menuCodelinkMatches(win32::WinApplication* app, x86::CPU& cpu)
     return fe::run(app, cpu, site, [&](Guest& guest) { return codelinkMatches(guest, codelink, name); });
 }
 
-bool menuFindItem(win32::WinApplication* app, x86::CPU& cpu)
+/* Native whole, no generated code behind it (disassemble_nfs3hp.py's
+ * MENU_NATIVES): the main menu looks its items up with it. */
+namespace frontend
+{
+
+void menuFindItem(win32::WinApplication* app, x86::CPU& cpu)
 {
     static fe::Site site{ "sub_442a40", 0, 20, nullptr, 0, kRestoreEbx | kRestoreEcx | kRestoreEsi | kRestoreEdi };
     const x86::reg32 menu = cpu.eax, name = cpu.edx;
-    return fe::run(app, cpu, site, [&](Guest& guest) { return findItem(guest, menu, name); });
+    fe::runWhole(app, cpu, site, [&](Guest& guest) { return findItem(guest, menu, name); });
 }
+
+}  // namespace frontend
 
 bool menuAssignHandlers(win32::WinApplication* app, x86::CPU& cpu)
 {

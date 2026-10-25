@@ -37,9 +37,11 @@ case kRaceloadFits:
 {0x441900, "a message's text fits", kWatcom, 1, 0, kEax, 0, 4, kRaceloadFits},
 // Natives of other files the cars' loading and the controls' thread call by
 // address (graphics::drawLoadingProgress, stdcall's 4 bytes;
-// controls::readRaceControls): each held against its code on its own.
+// controls::readRaceControls; racestart::placeOnGrid, the car eax): each held
+// against its code on its own.
 {0x495230, "the loading bar drawn", kStdcall, 0, 1, 0, -1, 0, kNothing},
 {0x48f550, "the race's controls read", kWatcom, 0, 0, kEax, -1, 0, kNothing},
+{0x42bcb0, "a car placed on the grid", kWatcom, 1, 0, kEax, -1, 0, kNothing},
 #elif defined(RACELOAD_POINTERS)
 // {slot, "name", convention, registers, words, clobbers, through, deref, effect},
 #elif defined(RACELOAD_PROMISES)

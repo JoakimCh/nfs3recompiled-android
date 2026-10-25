@@ -11017,7 +11017,7 @@ void Application::sub_408600(WinApplication* __restrict app, x86::CPU& cpu_)
     }
     // 00408626  e8bc220a00             -call 0x4aa8e7
     cpu.esp -= 4;
-    sub_4aa8e7(app, cpu.sync());
+    nfs3hp::handling::settleAtRest(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0040862b  e92e020000             -jmp 0x40885e
@@ -11855,7 +11855,7 @@ L_0x004089ae:
     cpu.eax = cpu.ecx;
     // 004089b0  e8321f0a00             -call 0x4aa8e7
     cpu.esp -= 4;
-    sub_4aa8e7(app, cpu.sync());
+    nfs3hp::handling::settleAtRest(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004089b5  e909010000             -jmp 0x408ac3
@@ -18382,7 +18382,7 @@ L_0x0040a049:
     app->getMemory<x86::reg32>(cpu.ecx + x86::reg32(-104) /* -0x68 */ + cpu.ebp * 1) = cpu.eax;
     // 0040a085  e8c6f10200             -call 0x439250
     cpu.esp -= 4;
-    sub_439250(app, cpu.sync());
+    nfs3hp::load::carName(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0040a08a  89c6                   -mov esi, eax
@@ -18507,7 +18507,7 @@ L_0x0040a0a8:
     cpu.eax = app->getMemory<x86::reg32>(cpu.edx + x86::reg32(-104) /* -0x68 */ + cpu.ebp * 1);
     // 0040a0fe  e8adf50200             -call 0x4396b0
     cpu.esp -= 4;
-    sub_4396b0(app, cpu.sync());
+    nfs3hp::load::carIsPolice(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0040a103  85c0                   +test eax, eax
@@ -18588,7 +18588,7 @@ L_0x0040a12f:
     cpu.edi = x86::reg32(cpu.ebp + x86::reg32(-424) /* -0x1a8 */);
     // 0040a145  e866f10200             -call 0x4392b0
     cpu.esp -= 4;
-    sub_4392b0(app, cpu.sync());
+    nfs3hp::load::carFolder(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0040a14a  89c6                   -mov esi, eax
@@ -19253,7 +19253,7 @@ L_0x0040a2c7:
     cpu.edx = 5465388 /*0x53652c*/;
     // 0040a2d0  e87bef0200             -call 0x439250
     cpu.esp -= 4;
-    sub_439250(app, cpu.sync());
+    nfs3hp::load::carName(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0040a2d5  e846650d00             -call 0x4e0820

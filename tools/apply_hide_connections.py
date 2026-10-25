@@ -29,14 +29,14 @@ HIDE_RACENET = """\
         cpu.edx = 5470464 /*0x537900 "ipx"*/;
         cpu.eax = cpu.ecx;
         cpu.esp -= 4;
-        sub_442a40(app, cpu.sync());
+        nfs3hp::frontend::menuFindItem(app, cpu.sync());
         cpu.reload();
         if (cpu.terminate) return;
         const x86::reg32 ipx = cpu.eax;
         cpu.edx = 5470468 /*0x537904 "tcp"*/;
         cpu.eax = cpu.ecx;
         cpu.esp -= 4;
-        sub_442a40(app, cpu.sync());
+        nfs3hp::frontend::menuFindItem(app, cpu.sync());
         cpu.reload();
         if (cpu.terminate) return;
         const x86::reg32 tcp = cpu.eax;

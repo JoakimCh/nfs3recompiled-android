@@ -43,7 +43,6 @@ MENUS_SITES = [
     # The item lookup: a codelink's names, a screen's item by one of them,
     # and a screen's handlers from the table by its name.
     ("nfs3hp", "sub_4429c0", "menuCodelinkMatches"),
-    ("nfs3hp", "sub_442a40", "menuFindItem"),
     ("nfs3hp", "sub_442b10", "menuAssignHandlers"),
     # A key's row in the keyword table, the string pool, the widget types.
     ("nfs3hp", "sub_448f00", "menuKeywordIndex"),
@@ -90,7 +89,6 @@ LOOP_SITES = [
     ("nfs3hp", "sub_449ea0", "menuPointAtSelected"),
     ("nfs3hp", "sub_44a6b0", "menuItemUnderMouse"),
     ("nfs3hp", "sub_44a690", "menuReleaseMouse"),
-    ("nfs3hp", "sub_44a660", "menuShownNow"),
     ("nfs3hp", "sub_44a440", "menuSelectedIndex"),
     ("nfs3hp", "sub_44a470", "menuSelectItem"),
     ("nfs3hp", "sub_44a240", "menuEscapeButton"),
@@ -117,7 +115,6 @@ DIALOG_SITES = [
     ("nfs3hp", "sub_445f10", "dialogClose"),
     ("nfs3hp", "sub_4438b0", "dialogShownStandIn"),
     ("nfs3hp", "sub_4438c0", "dialogKindStandIn"),
-    ("nfs3hp", "sub_4446c0", "dialogFocusStandIn"),
     # A question: opened, its keys, its pass.
     ("nfs3hp", "sub_444910", "dialogQuestionKey"),
     ("nfs3hp", "sub_4449d0", "dialogQuestionPass"),

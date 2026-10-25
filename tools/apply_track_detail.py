@@ -73,13 +73,19 @@ SITES = [
      "    app->getMemory<x86::reg32>(cpu.eax + x86::reg32(36) /* 0x24 */) = fullFarDistance(app, 32768000 /*0x1f40000*/);"
      " /* port: split screen culls as a single view does */",
      ""),
-    ("nfs3hp.18.cpp", "0047266c  893d28bc6f00",
-     "    app->getMemory<x86::reg32>(x86::reg32(7322664) /* 0x6fbc28 */) = cpu.edi;",
-     "    app->getMemory<x86::reg32>(x86::reg32(7322664) /* 0x6fbc28 */) = 0; /* port: View Distance Full, was Far */",
-     ""),
     ("nfs3hp.18.cpp", "00472e01  891528bc6f00",
      "    app->getMemory<x86::reg32>(x86::reg32(7322664) /* 0x6fbc28 */) = cpu.edx;",
      "    app->getMemory<x86::reg32>(x86::reg32(7322664) /* 0x6fbc28 */) = 0; /* port: View Distance Full at any CPU speed */",
+     ""),
+]
+
+# The same change in code that is native now: load::defaultConfig (0x4723f0,
+# native_load_saves.cpp) has it, and tools/game_checks/generate.py makes it
+# in the game's code it holds that native against.
+NATIVE_SITES = [
+    ("nfs3hp.18.cpp", "0047266c  893d28bc6f00",
+     "    app->getMemory<x86::reg32>(x86::reg32(7322664) /* 0x6fbc28 */) = cpu.edi;",
+     "    app->getMemory<x86::reg32>(x86::reg32(7322664) /* 0x6fbc28 */) = 0; /* port: View Distance Full, was Far */",
      ""),
 ]
 

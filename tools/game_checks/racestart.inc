@@ -41,6 +41,10 @@ case kRsWheelCell:
 {0x420650, "a wheel's cell on the track", kWatcom, 3, 0, kEax | kEdx | kEbx, 0, 3, kRsWheelCell},
 // The object the car is against, if any (its handle to [edx]): 1 or 0.
 {0x4ca160, "an object the car is against", kWatcom, 2, 0, kEax, -1, 0, kMainThread},
+// The kind of polygon a wheel's place is on (trackdata::positionSurface,
+// native too since trackdata's natives came in): by address, to a stand-in
+// as any callee, its place (eax) and whether on a strip (edx) logged.
+{0x4207e0, "the kind of polygon a place is on", kWatcom, 2, 0, kEax, -1, 0, kNothing},
 #elif defined(RACESTART_POINTERS)
 // {slot, "name", convention, registers, words, clobbers, through, deref, effect},
 #elif defined(RACESTART_PROMISES)
