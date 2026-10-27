@@ -48,6 +48,17 @@ REGISTER_TEST = "    cpu.set_szp(static_cast<x86::reg8>(cpu.%s & 64 /*0x40*/));"
 FORCED = ("    // Port: alpha intensity applies on this driver too (tools/apply_alpha_intensity.py).\n"
           "    cpu.set_szp(static_cast<x86::reg8>(64 /*0x40, port: was %s*/));")
 
+# Sites in functions that are native now, the change made in the native
+# (src/nfs3hp/native_track.cpp: track::projectedTriangle, sub_41a120);
+# tools/game_checks/generate.py makes it to the game's code the native is
+# held against.
+NATIVE_SITES = {0x41a1c6}
+# And native_render.cpp's (render::viewPass, skyDome, glow, roadLight,
+# glareColours, sparks, smoke, streaks).
+NATIVE_SITES |= {0x41b9cd, 0x47b8f4, 0x491223, 0x492202, 0x49d80e, 0x4ddd57, 0x4de0bc, 0x4de76a}
+# And native_vertices.cpp's (vertices::lightGlow, headlightBeam, drops,
+# particles).
+NATIVE_SITES |= {0x49259c, 0x492c0f, 0x4cb86e, 0x4cbf2f}
 
 def apply(root):
     for name, address, code, register in SITES:
@@ -60,6 +71,8 @@ def apply(root):
 
         anchor = "    // %s  %s" % (address, code)
         start = text.find(anchor)
+        if start < 0 and int(address, 16) in NATIVE_SITES:
+            continue  # its function is native and carries the change itself
         if start < 0:
             raise RuntimeError("%s: no driver probe at %s" % (name, address))
         # Everything this one instruction generated: from its own address

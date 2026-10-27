@@ -162,7 +162,7 @@ void Application::sub_4262a0(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.eax = app->getMemory<x86::reg32>(cpu.eax + x86::reg32(12) /* 0xc */);
     // 004262cc  e8dfd5ffff             -call 0x4238b0
     cpu.esp -= 4;
-    sub_4238b0(app, cpu.sync());
+    nfs3hp::carstate::setCameraMode(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004262d1  8b510c                 -mov edx, dword ptr [ecx + 0xc]
@@ -288,7 +288,7 @@ void Application::sub_426310(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.eax = cpu.ebx;
     // 0042633f  e86cd5ffff             -call 0x4238b0
     cpu.esp -= 4;
-    sub_4238b0(app, cpu.sync());
+    nfs3hp::carstate::setCameraMode(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00426344  8bb1b0105e00           -mov esi, dword ptr [ecx + 0x5e10b0]
@@ -558,7 +558,7 @@ start:
     cpu.eax = cpu.ecx;
     // 00426484  e837dcffff             -call 0x4240c0
     cpu.esp -= 4;
-    sub_4240c0(app, cpu.sync());
+    nfs3hp::carstate::chaseOffset(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00426489  5d                     -pop ebp
@@ -581,7 +581,7 @@ start:
     cpu.eax = cpu.ecx;
     // 00426490  e8cbddffff             -call 0x424260
     cpu.esp -= 4;
-    sub_424260(app, cpu.sync());
+    nfs3hp::carstate::chaseOffsetLevel(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00426495  5d                     -pop ebp
@@ -1222,7 +1222,7 @@ L_0x00426639:
     cpu.eax = cpu.ecx;
     // 0042663d  e81ed3ffff             -call 0x423960
     cpu.esp -= 4;
-    sub_423960(app, cpu.sync());
+    nfs3hp::carstate::setOverrideMode(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00426642  83fe18                 +cmp esi, 0x18
@@ -1270,7 +1270,7 @@ L_0x0042665e:
     cpu.eax = cpu.ecx;
     // 00426665  e846d2ffff             -call 0x4238b0
     cpu.esp -= 4;
-    sub_4238b0(app, cpu.sync());
+    nfs3hp::carstate::setCameraMode(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0042666a  89ca                   -mov edx, ecx
@@ -1279,7 +1279,7 @@ L_0x0042665e:
     cpu.eax = cpu.ebx;
     // 0042666e  e89dbfffff             -call 0x422610
     cpu.esp -= 4;
-    sub_422610(app, cpu.sync());
+    nfs3hp::carstate::switchCamera(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
 L_0x00426673:
@@ -1457,7 +1457,7 @@ L_0x004266bf:
     cpu.edx = cpu.ecx;
     // 004266e4  e827bfffff             -call 0x422610
     cpu.esp -= 4;
-    sub_422610(app, cpu.sync());
+    nfs3hp::carstate::switchCamera(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004266e9  8b148db0105e00         -mov edx, dword ptr [ecx*4 + 0x5e10b0]
@@ -1486,7 +1486,7 @@ L_0x004266bf:
     cpu.eax = cpu.esi;
     // 00426707  e8548dfeff             -call 0x40f460
     cpu.esp -= 4;
-    sub_40f460(app, cpu.sync());
+    nfs3hp::aiplan::stopAnimation(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0042670c  c78218010000ffffffff   -mov dword ptr [edx + 0x118], 0xffffffff
@@ -1522,7 +1522,7 @@ L_0x00426730:
 L_0x0042673f:
     // 0042673f  e86c8cfeff             -call 0x40f3b0
     cpu.esp -= 4;
-    sub_40f3b0(app, cpu.sync());
+    nfs3hp::aiplan::startAnimation(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00426744  898218010000           -mov dword ptr [edx + 0x118], eax
@@ -10678,7 +10678,7 @@ void Application::sub_428970(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.edx = 32 /*0x20*/;
     // 004289e9  e8c258feff             -call 0x40e2b0
     cpu.esp -= 4;
-    sub_40e2b0(app, cpu.sync());
+    nfs3hp::aiplan::roadSliceIndex(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004289ee  898138060000           -mov dword ptr [ecx + 0x638], eax
@@ -10741,7 +10741,7 @@ void Application::sub_428970(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.eax = cpu.ecx;
     // 00428ab4  e8f78afdff             -call 0x4015b0
     cpu.esp -= 4;
-    sub_4015b0(app, cpu.sync());
+    nfs3hp::airace::stopIfCopNear(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00428ab9  89c8                   -mov eax, ecx
@@ -10810,7 +10810,7 @@ void Application::sub_428ad0(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.esp -= 4;
     // 00428aed  e8be57feff             -call 0x40e2b0
     cpu.esp -= 4;
-    sub_40e2b0(app, cpu.sync());
+    nfs3hp::aiplan::roadSliceIndex(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00428af2  89c7                   -mov edi, eax
@@ -10821,7 +10821,7 @@ void Application::sub_428ad0(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.eax = cpu.ebx;
     // 00428af8  e82357feff             -call 0x40e220
     cpu.esp -= 4;
-    sub_40e220(app, cpu.sync());
+    nfs3hp::aiplan::nodeHasLane(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00428afd  85c0                   +test eax, eax
@@ -11220,7 +11220,7 @@ L_0x00428b95:
     }
     // 00428c60  e8eb730b00             -call 0x4e0050
     cpu.esp -= 4;
-    sub_4e0050(app, cpu.sync());
+    nfs3hp::vertices::scaleVectors(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00428c65  8d4562                 -lea eax, [ebp + 0x62]
@@ -11239,7 +11239,7 @@ L_0x00428b95:
     cpu.esi = x86::reg32(cpu.ebp + x86::reg32(-58) /* -0x3a */);
     // 00428c7a  e8d1730b00             -call 0x4e0050
     cpu.esp -= 4;
-    sub_4e0050(app, cpu.sync());
+    nfs3hp::vertices::scaleVectors(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00428c7f  d9454a                 -fld dword ptr [ebp + 0x4a]

@@ -14121,7 +14121,7 @@ L_0x0043e77e:
     cpu.eax = x86::reg32(cpu.ebp + x86::reg32(-14) /* -0xe */);
     // 0043e78c  e84f2b0800             -call 0x4c12e0
     cpu.esp -= 4;
-    sub_4c12e0(app, cpu.sync());
+    nfs3hp::vertices::clipQuad(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0043e791  8da582000000           -lea esp, [ebp + 0x82]

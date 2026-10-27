@@ -30,6 +30,9 @@ def body(name):
         start = m.end()
         end = text.index("\n}\n", start)
         code = HOOK.sub("", text[start:end + 1])
+        # The heading's way to go is native (aidrive::wayToGo): the checks' own
+        # stand-in for sub_406e50 is called instead, as before.
+        code = code.replace("nfs3hp::aidrive::wayToGo(app, cpu.sync());", "sub_406e50(app, cpu.sync());")
         params = m.group(1).replace("WinApplication*", "MockApp*")
         return "static void %s(%s)\n{\n%s}\n" % (name, params, code)
     raise SystemExit("no generated " + name)

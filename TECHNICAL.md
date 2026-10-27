@@ -295,11 +295,16 @@ go through it:
   (`src/nfs3hp/native_vertices.cpp`): turning and projecting vertices,
   clipping, the track's and objects' polygons and their depth sorting,
   particles, the cars' lights and detail, and the small vector helpers called
-  from everywhere. `tools/apply_native_vertices.py` hooks each at the top of its
-  generated function, which stays behind it as the fallback.
-- The rest of the drawing goes native function by function
-  (`src/nfs3hp/native_render.cpp`, hooked by `tools/apply_native_render.py`):
-  so far the clipping of a triangle whose corners carry z (`sub_4bf790`), a
+  from everywhere. They are native whole: `disassemble_nfs3hp.py` writes no
+  code for them (`VERTICES_NATIVES`) and the generated code calls them by
+  name. (`tools/apply_native_vertices.py` keeps only hooks that watch: the
+  `[VIEW]` arena peak, the opponents' lane votes, the `[COMM]` traces.)
+- The rest of the drawing is native whole (`src/nfs3hp/native_render.cpp`,
+  `nfs3hp::render`, bound by `disassemble_nfs3hp.py`'s `RENDER_NATIVES`, no
+  generated code behind it; the port's changes inside these functions are the
+  natives' own, and the `tools/apply_*.py` scripts leave them out;
+  `tools/game_checks/render/run.py` holds each against its code made afresh
+  on the desktop): the clipping of a triangle whose corners carry z (`sub_4bf790`), a
   quad of them (`sub_4c20e0`), the triangles and quads of a polygon list
   (`sub_434120`, `sub_4332b0`, `sub_433e30`), a triangle of one past the near
   plane (`sub_4c3ad0`), the subdivision of a large quad (`sub_433060`,
@@ -569,10 +574,17 @@ go through it:
   `NFS_NATIVE_AI=0` runs the generated code instead.
 
 Each was compared with the generated code bit for bit before it was switched
-on — memory, registers, flags, the FPU and the triangles drawn
-(`NFS_NATIVE_CHECK`) — and keeps the x87's single-precision rounding. In a race
-this is about three quarters of the game thread's time. `NFS_NATIVES=0` goes
-back to the generated code.
+on — memory, registers, flags, the FPU and the triangles drawn. The vertex,
+polygon and drawing natives (`native_vertices.cpp`, `native_render.cpp`) round
+each step through the emulated FPU, as the control word asks at the time, so
+they are exact in every precision; in a race they are about three quarters of
+the game thread's time. They are native whole, with no generated code behind
+them in the game: their checks are on the desktop, against the game's code
+made afresh with the port's changes they carry, in every x87 control word
+(`python tools/game_checks/vertices/run.py`, and `render/run.py` beside it).
+In the experiments' builds (`WITH_PEDANTIC_FPU`, `WITH_WIDE_FPU`) they run
+too, in double, so not to the bit there. The loading natives keep their check
+in the game (`NFS_NATIVE_CHECK`).
 
 ### The port's own C++
 
@@ -614,7 +626,7 @@ Glide's triangles, its lines as four triangles, nothing of the antialiased
 ones or of points, trilinear mipmapping's two passes. The port's own features
 moved in with it -- the 4:3 fit of the loading screen, the dialog emblem's
 narrowing, the widescreen and Dynamic Fullscreen resolutions, full-colour
-textures, the triangle trace of `NFS_NATIVE_CHECK`. `tools/thrash_checks`
+textures, the triangle trace. `tools/thrash_checks`
 (`windows/run.py`) holds it against the driver and Glide as they were, frozen
 in `tools/thrash_checks/reference/`, both under the same renderer: random
 sessions of the game's calls, and after each call what the renderer was
@@ -825,8 +837,7 @@ from the phone; the rest matter for a desktop run.
 | `NFS_TEXTURES32` | on | `0` has the Voodoo2 driver refuse 32-bit textures again, so the game shrinks them to 16 bits as it used to. |
 | `NFS_TEXCOORD_REBASE` | on | `0` leaves far-out texture coordinates as the game sends them (see Projected headlights), to compare. |
 | `NFS_DEPTH16` | auto | On where the depth buffer has more than 16 bits and the GPU is not an Adreno 5xx. `0` keeps the GPU's own depth precision, `1` forces the Voodoo's 16-bit steps (see Projected headlights); the `[GPU]` lines count the frames drawn in them. |
-| `NFS_NATIVES` | on | `0` runs the generated code instead of every native stand-in for the hot vertex and polygon loops; `vertices` keeps only the three vertex loops; `no-clip` all but the clipping of off-screen polygons (`sub_4c2cd0` and its callers `sub_4c11b0`, `sub_4c12e0`); `no-render` all but the ones in `src/nfs3hp/native_render.cpp`. For comparing speeds. |
-| `NFS_RENDER_OFF` | unset | Addresses of functions in `src/nfs3hp/native_render.cpp` to leave to their generated code, e.g. `4bf790,47a880`. |
+| `NFS_NATIVES` | on | `0` runs the generated code instead of the loading, movie and car-specs natives (`NFS_NATIVE_LOAD`, `NFS_MAD`), to compare speeds. The vertex, polygon and drawing natives always run. |
 | `NFS_NATIVE_LOAD` | on | `0` leaves the loading of the game's data to the generated code: RefPack, the FSH textures' alpha scans, FCE models and FRD tracks (`src/nfs3hp/native_loading.cpp`). `NFS_NATIVE_CHECK=load` checks only these, every call. |
 | `NFS_MAD` | on | `0` plays the movies with the generated MAD player, decoder and display instead of `src/nfs3hp/native_movie.cpp`; `NFS_MAD_PLAYER=0` and `NFS_MAD_GL=0` leave just the player or the full-colour output generated. `NFS_MAD_CHECK=1` (debug) runs the generated player and checks the native decoder against the generated one ([MAD]). |
 | *(release)* | | A release build writes nothing to the log and takes none of these flags: the native code is built with `NFS_RELEASE` (log priority critical, SDL's direct Android logging compiled out through `android/app/jni/sdl_quiet.h`), the Java side logs through `AppLog`/`SDLLog` only when `BuildConfig.DEBUG`. Use the debug build (`-Pandroid10`) for diagnostics. |
@@ -837,7 +848,7 @@ from the phone; the rest matter for a desktop run.
 | `NFS_NET_TRACE` | off | `1` (extra `net_trace`) writes a network race into the log: EA's comm library events and packet sends (`[COMM]`), up to 400 datagrams per socket instead of 16 (`[NET]`), and each new indirect call target once per thread after the IPX transport opens (`[CALL]`). For finding where two machines stop on the way into a race. |
 | `NFS_FE_NATIVE` | on | `0` leaves every hooked decompiled menu function, the screens' and the engine's, to the generated code (see Decompiled menus); the main menu, what it calls of the menu loop and the dialogs, and the controls' screens are native whole and stay native. |
 | `NFS_FE_NATIVE_OFF` | unset | A list of generated functions, `sub_437e00,sub_438260`, left to the generated code while the other decompiled ones run. |
-| `NFS_NATIVE_CHECK` | off | `1` runs each native stand-in against the generated code and logs any difference (`[NATIVE]`). The polygon and car loops are compared over all of guest memory once a second. Slow, and draws some triangles twice. `clip` checks only the stand-ins of the clipping (both ways to the screen, the car's quad mesh included), the track, the effects, the car lights and detail, the objects and the vector math, every call; the small helpers called from hundreds of places are checked on every 64th call. |
+| `NFS_NATIVE_CHECK` | off | `1` (or `load`) runs each call of the loading natives (`src/nfs3hp/native_loading.cpp`: RefPack, the FSH textures' alpha scans, FCE models, FRD tracks) both ways -- the native, everything it wrote put back, then the generated code -- and logs any difference in memory, registers or flags (`[NATIVE]`), holding the guest context meanwhile (`WinApplication::KeepContext`). The vertex, polygon and drawing natives have no generated code left in the game to be held against: their checks are on the desktop (`tools/game_checks/vertices`, `tools/game_checks/render`). Launch extras: `--ez native_check true`, `--ez load_check true`. |
 | `NFS_AUDIO_RATE` | unset | The output's own sample rate. The game mixes at 22050 Hz and SDL converts to this; a device opened at any other rate is resampled by Android, off its low-latency path. Unset, the device opens at SDL's default. |
 | `NFS_TOUCH_STEER_LEFT` etc. | unset | Keys the touch overlay sends for steering and the pedals, so that endpoint can report them as axes. |
 | `NFS_GAMEPAD1_SOUTH` etc. | built-in defaults | What a pad button sends, as `NFS_GAMEPAD<n>_<BUTTON>`: an SDL key name (`Space`, `Return`), `axis:steer_left`, `axis:steer_right`, `axis:accelerate`, `axis:brake`, or empty for nothing. `_UI` after it is the same button in the menus. `LEFT_TRIGGER` and `RIGHT_TRIGGER` are the triggers read as buttons, empty by default; the launcher gives them the pedals' keys for a pad set to Digital. |

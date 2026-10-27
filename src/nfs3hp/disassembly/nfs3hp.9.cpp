@@ -2433,7 +2433,7 @@ L_0x004382ab:
     cpu.edx = 1 /*0x1*/;
     // 004382ce  e81d7afdff             -call 0x40fcf0
     cpu.esp -= 4;
-    sub_40fcf0(app, cpu.sync());
+    nfs3hp::aiplan::restartSound(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004382d3  e808b4fdff             -call 0x4136e0

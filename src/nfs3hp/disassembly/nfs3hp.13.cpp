@@ -3414,7 +3414,7 @@ L_0x0044b1be:
     app->getMemory<x86::reg32>(x86::reg32(5635776) /* 0x55fec0 */) = cpu.esi;
     // 0044b1e5  e8663d0700             -call 0x4bef50
     cpu.esp -= 4;
-    sub_4bef50(app, cpu.sync());
+    nfs3hp::render::screenMode(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0044b1ea  837b0c00               +cmp dword ptr [ebx + 0xc], 0
@@ -6559,7 +6559,7 @@ L_0x0044bdfe:
     if (cpu.terminate) return;
     // 0044be03  e8588dfeff             -call 0x434b60
     cpu.esp -= 4;
-    sub_434b60(app, cpu.sync());
+    nfs3hp::collide::drawPointer(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0044be08  a130925500             -mov eax, dword ptr [0x559230]
@@ -12744,7 +12744,7 @@ void Application::sub_44d270(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.eax ^= x86::reg32(x86::sreg32(cpu.eax));
     // 0044d275  e85659fdff             -call 0x422bd0
     cpu.esp -= 4;
-    sub_422bd0(app, cpu.sync());
+    nfs3hp::carstate::cameraTarget(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0044d27a  f6800002000020         +test byte ptr [eax + 0x200], 0x20
@@ -13428,7 +13428,7 @@ L_0x0044d476:
     cpu.eax ^= x86::reg32(x86::sreg32(cpu.eax));
     // 0044d49b  e83057fdff             -call 0x422bd0
     cpu.esp -= 4;
-    sub_422bd0(app, cpu.sync());
+    nfs3hp::carstate::cameraTarget(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0044d4a0  f6800002000020         +test byte ptr [eax + 0x200], 0x20
@@ -13569,7 +13569,7 @@ void Application::sub_44d4c0(WinApplication* __restrict app, x86::CPU& cpu_)
     app->getMemory<x86::reg32>(x86::reg32(7936796) /* 0x791b1c */) = cpu.edx;
     // 0044d4f6  e8d556fdff             -call 0x422bd0
     cpu.esp -= 4;
-    sub_422bd0(app, cpu.sync());
+    nfs3hp::carstate::cameraTarget(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0044d4fb  f6800002000020         +test byte ptr [eax + 0x200], 0x20
@@ -13906,7 +13906,7 @@ void Application::sub_44d670(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.eax ^= x86::reg32(x86::sreg32(cpu.eax));
     // 0044d67c  e84f55fdff             -call 0x422bd0
     cpu.esp -= 4;
-    sub_422bd0(app, cpu.sync());
+    nfs3hp::carstate::cameraTarget(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0044d681  f6800002000020         +test byte ptr [eax + 0x200], 0x20
@@ -14295,7 +14295,7 @@ void Application::sub_44d7a0(WinApplication* __restrict app, x86::CPU& cpu_)
     app->getMemory<x86::reg32>(x86::reg32(7936796) /* 0x791b1c */) = cpu.edx;
     // 0044d7d6  e8f553fdff             -call 0x422bd0
     cpu.esp -= 4;
-    sub_422bd0(app, cpu.sync());
+    nfs3hp::carstate::cameraTarget(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0044d7db  f6800002000020         +test byte ptr [eax + 0x200], 0x20
@@ -14318,7 +14318,7 @@ L_0x0044d7ed:
     cpu.eax = 1 /*0x1*/;
     // 0044d7f2  e8d953fdff             -call 0x422bd0
     cpu.esp -= 4;
-    sub_422bd0(app, cpu.sync());
+    nfs3hp::carstate::cameraTarget(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0044d7f7  f6800002000020         +test byte ptr [eax + 0x200], 0x20
@@ -14697,7 +14697,7 @@ void Application::sub_44d9a0(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.eax ^= x86::reg32(x86::sreg32(cpu.eax));
     // 0044d9ac  e81f52fdff             -call 0x422bd0
     cpu.esp -= 4;
-    sub_422bd0(app, cpu.sync());
+    nfs3hp::carstate::cameraTarget(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0044d9b1  f6800002000020         +test byte ptr [eax + 0x200], 0x20
@@ -15086,7 +15086,7 @@ void Application::sub_44dad0(WinApplication* __restrict app, x86::CPU& cpu_)
     app->getMemory<x86::reg32>(x86::reg32(7936796) /* 0x791b1c */) = cpu.edx;
     // 0044db06  e8c550fdff             -call 0x422bd0
     cpu.esp -= 4;
-    sub_422bd0(app, cpu.sync());
+    nfs3hp::carstate::cameraTarget(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0044db0b  f6800002000020         +test byte ptr [eax + 0x200], 0x20
@@ -15109,7 +15109,7 @@ L_0x0044db1d:
     cpu.eax = 1 /*0x1*/;
     // 0044db22  e8a950fdff             -call 0x422bd0
     cpu.esp -= 4;
-    sub_422bd0(app, cpu.sync());
+    nfs3hp::carstate::cameraTarget(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0044db27  89d7                   -mov edi, edx
@@ -15506,7 +15506,7 @@ void Application::sub_44dcd0(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.eax = 1 /*0x1*/;
     // 0044dcdf  e8ec4efdff             -call 0x422bd0
     cpu.esp -= 4;
-    sub_422bd0(app, cpu.sync());
+    nfs3hp::carstate::cameraTarget(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0044dce4  f6800002000020         +test byte ptr [eax + 0x200], 0x20
@@ -16032,7 +16032,7 @@ void Application::sub_44de80(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.eax ^= x86::reg32(x86::sreg32(cpu.eax));
     // 0044de8f  e83c4dfdff             -call 0x422bd0
     cpu.esp -= 4;
-    sub_422bd0(app, cpu.sync());
+    nfs3hp::carstate::cameraTarget(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0044de94  f6800002000020         +test byte ptr [eax + 0x200], 0x20
@@ -16057,7 +16057,7 @@ L_0x0044dea6:
     cpu.eax = 1 /*0x1*/;
     // 0044dead  e81e4dfdff             -call 0x422bd0
     cpu.esp -= 4;
-    sub_422bd0(app, cpu.sync());
+    nfs3hp::carstate::cameraTarget(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0044deb2  f6800002000020         +test byte ptr [eax + 0x200], 0x20
@@ -16100,7 +16100,7 @@ L_0x0044dec4:
     app->getMemory<x86::reg32>(x86::reg32(6702092) /* 0x66440c */) = cpu.ecx;
     // 0044deeb  e8705afdff             -call 0x423960
     cpu.esp -= 4;
-    sub_423960(app, cpu.sync());
+    nfs3hp::carstate::setOverrideMode(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0044def0  8b3db0d36f00           -mov edi, dword ptr [0x6fd3b0]
@@ -16127,7 +16127,7 @@ L_0x0044dec4:
     cpu.eax = cpu.edi;
     // 0044df02  e8595afdff             -call 0x423960
     cpu.esp -= 4;
-    sub_423960(app, cpu.sync());
+    nfs3hp::carstate::setOverrideMode(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
 L_0x0044df07:
@@ -16333,7 +16333,7 @@ L_0x0044dfa7:
     cpu.eax ^= x86::reg32(x86::sreg32(cpu.eax));
     // 0044dfa9  e8f2200300             -call 0x4800a0
     cpu.esp -= 4;
-    sub_4800a0(app, cpu.sync());
+    nfs3hp::render::hudBand(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0044dfae  8b0db0d36f00           -mov ecx, dword ptr [0x6fd3b0]
@@ -16358,7 +16358,7 @@ L_0x0044dfa7:
     cpu.eax = cpu.ecx;
     // 0044dfbb  e8e0200300             -call 0x4800a0
     cpu.esp -= 4;
-    sub_4800a0(app, cpu.sync());
+    nfs3hp::render::hudBand(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
 L_0x0044dfc0:
@@ -16419,7 +16419,7 @@ void Application::sub_44dfd0(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.eax ^= x86::reg32(x86::sreg32(cpu.eax));
     // 0044dfda  e8f14bfdff             -call 0x422bd0
     cpu.esp -= 4;
-    sub_422bd0(app, cpu.sync());
+    nfs3hp::carstate::cameraTarget(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0044dfdf  f6800002000020         +test byte ptr [eax + 0x200], 0x20
@@ -16444,7 +16444,7 @@ L_0x0044dff1:
     cpu.eax = 1 /*0x1*/;
     // 0044dff8  e8d34bfdff             -call 0x422bd0
     cpu.esp -= 4;
-    sub_422bd0(app, cpu.sync());
+    nfs3hp::carstate::cameraTarget(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0044dffd  f6800002000020         +test byte ptr [eax + 0x200], 0x20
@@ -16729,7 +16729,7 @@ L_0x0044e0ba:
     cpu.eax = cpu.ecx;
     // 0044e0bc  e8df1f0300             -call 0x4800a0
     cpu.esp -= 4;
-    sub_4800a0(app, cpu.sync());
+    nfs3hp::render::hudBand(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0044e0c1  41                     +inc ecx
@@ -16773,7 +16773,7 @@ L_0x0044e0c4:
     app->getMemory<x86::reg32>(x86::reg32(5608036) /* 0x559264 */) = cpu.eax;
     // 0044e0ef  e86c58fdff             -call 0x423960
     cpu.esp -= 4;
-    sub_423960(app, cpu.sync());
+    nfs3hp::carstate::setOverrideMode(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0044e0f4  833db0d36f0001         +cmp dword ptr [0x6fd3b0], 1
@@ -16798,7 +16798,7 @@ L_0x0044e0c4:
     cpu.eax = 1 /*0x1*/;
     // 0044e107  e85458fdff             -call 0x423960
     cpu.esp -= 4;
-    sub_423960(app, cpu.sync());
+    nfs3hp::carstate::setOverrideMode(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
 L_0x0044e10c:

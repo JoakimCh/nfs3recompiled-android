@@ -928,6 +928,12 @@ void checkLoad(win32::WinApplication* app, x86::CPU& cpu, const char* name, x86:
                std::vector<std::pair<x86::reg32, x86::reg32>> ranges,
                void (*native)(win32::WinApplication*, x86::CPU&), LoadCheckCounts& counts)
 {
+    if (nativeWholeChecking())
+    {
+        native(app, cpu);
+        return;
+    }
+    const win32::WinApplication::KeepContext keep;
     const bool whole = ranges.empty();
     if (whole)
         win32::MemMap::usedRanges(ranges);

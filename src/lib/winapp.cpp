@@ -322,8 +322,28 @@ int WinApplication::runOn(x86::CPU& cpu, const MemMap& threadStorage, const MemM
     return int(cpu.eax);
 }
 
+/* KeepContext's count: while it is above zero, this thread neither hands the
+ * context over at a safepoint nor lets it go in an API call that waits (Sleep,
+ * a frame's flip...).  A wait for another guest thread inside a check would
+ * hang; the natives checked draw and compute, and do not. */
+static thread_local unsigned t_keepContext = 0;
+
+WinApplication::KeepContext::KeepContext()
+{
+    ++t_keepContext;
+}
+
+WinApplication::KeepContext::~KeepContext()
+{
+    --t_keepContext;
+}
+
 void WinApplication::lockContext(const x86::CPU& cpu)
 {
+    if (t_keepContext)
+    {
+        return;
+    }
     Mutex* executionContext = getMemory<Mutex*>(cpu.efs + 8);
     NFS2_ASSERT(executionContext);
     if (executionContext)
@@ -365,7 +385,7 @@ void WinApplication::acquireContext(Mutex* executionContext, x86::reg32 depth)
 void WinApplication::yieldContext(const x86::CPU& cpu)
 {
     static constexpr std::uint64_t kSliceNs = 2000000;
-    if ((++m_yieldPolls & 63) != 0)
+    if ((++m_yieldPolls & 63) != 0 || t_keepContext)
     {
         return;
     }
@@ -403,6 +423,10 @@ void WinApplication::yieldContext(const x86::CPU& cpu)
 
 void WinApplication::unlockContext(const x86::CPU& cpu)
 {
+    if (t_keepContext)
+    {
+        return;
+    }
     Mutex* executionContext = getMemory<Mutex*>(cpu.efs + 8);
     NFS2_ASSERT(executionContext);
     if (executionContext)

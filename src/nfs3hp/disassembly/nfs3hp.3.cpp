@@ -584,71 +584,7 @@ void Application::sub_418670(WinApplication* __restrict app, x86::CPU& cpu_)
 
 /* sub_418c60: native, nfs3hp::snd::musicEventResume */
 
-/* align: skip 0x00 0x00 0x00 0x00 0x00 */
-void Application::sub_418cc0(WinApplication* __restrict app, x86::CPU& cpu_)
-{
-  x86::Local cpu(cpu_);
-  NFS2_USE(cpu);
-  NFS2_USE(app);
-    // 00418cc0  51                     -push ecx
-    app->getMemory<x86::reg32>(cpu.esp-4) = cpu.ecx;
-    cpu.esp -= 4;
-    // 00418cc1  52                     -push edx
-    app->getMemory<x86::reg32>(cpu.esp-4) = cpu.edx;
-    cpu.esp -= 4;
-    // 00418cc2  55                     -push ebp
-    app->getMemory<x86::reg32>(cpu.esp-4) = cpu.ebp;
-    cpu.esp -= 4;
-    // 00418cc3  89e5                   -mov ebp, esp
-    cpu.ebp = cpu.esp;
-    // 00418cc5  6a01                   -push 1
-    app->getMemory<x86::reg32>(cpu.esp-4) = 1 /*0x1*/;
-    cpu.esp -= 4;
-    // 00418cc7  6a00                   -push 0
-    app->getMemory<x86::reg32>(cpu.esp-4) = 0 /*0x0*/;
-    cpu.esp -= 4;
-    // 00418cc9  6a00                   -push 0
-    app->getMemory<x86::reg32>(cpu.esp-4) = 0 /*0x0*/;
-    cpu.esp -= 4;
-    // 00418ccb  50                     -push eax
-    app->getMemory<x86::reg32>(cpu.esp-4) = cpu.eax;
-    cpu.esp -= 4;
-    // 00418ccc  68306c5300             -push 0x536c30
-    app->getMemory<x86::reg32>(cpu.esp-4) = 5467184 /*0x536c30*/;
-    cpu.esp -= 4;
-    // 00418cd1  6a00                   -push 0
-    app->getMemory<x86::reg32>(cpu.esp-4) = 0 /*0x0*/;
-    cpu.esp -= 4;
-    // 00418cd3  2eff154c455300         -call dword ptr cs:[0x53454c]
-    cpu.ip = app->getMemory<x86::reg32>(cpu.ecs + x86::reg32(5457228) /* 0x53454c */);
-    cpu.esp -= 4;
-    app->dynamic_call(cpu.ip, cpu.sync());
-    cpu.reload();
-    if (cpu.terminate) return;
-    // 00418cda  50                     -push eax
-    app->getMemory<x86::reg32>(cpu.esp-4) = cpu.eax;
-    cpu.esp -= 4;
-    // 00418cdb  2eff1580445300         -call dword ptr cs:[0x534480]
-    cpu.ip = app->getMemory<x86::reg32>(cpu.ecs + x86::reg32(5457024) /* 0x534480 */);
-    cpu.esp -= 4;
-    app->dynamic_call(cpu.ip, cpu.sync());
-    cpu.reload();
-    if (cpu.terminate) return;
-    // 00418ce2  b801000000             -mov eax, 1
-    cpu.eax = 1 /*0x1*/;
-    // 00418ce7  5d                     -pop ebp
-    cpu.ebp = app->getMemory<x86::reg32>(cpu.esp);
-    cpu.esp += 4;
-    // 00418ce8  5a                     -pop edx
-    cpu.edx = app->getMemory<x86::reg32>(cpu.esp);
-    cpu.esp += 4;
-    // 00418ce9  59                     -pop ecx
-    cpu.ecx = app->getMemory<x86::reg32>(cpu.esp);
-    cpu.esp += 4;
-    // 00418cea  c3                     -ret 
-    cpu.esp += 4;
-    return;
-}
+/* sub_418cc0: native, nfs3hp::track::shellOpen */
 
 /* align: skip 0x8d 0x40 0x00 0x8b 0xc9 */
 void Application::sub_418cf0(WinApplication* app, x86::CPU& cpu)

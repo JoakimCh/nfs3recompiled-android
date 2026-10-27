@@ -198,6 +198,18 @@ public:
         return m_contextWaiters.load(std::memory_order_relaxed) != 0;
     }
     void yieldContext(const x86::CPU& cpu);
+    /* While one is alive, this thread keeps the context, at its safepoints and
+     * in the API calls that would let it go while they wait: a native
+     * checked against the generated code (NFS_NATIVE_CHECK) runs a call twice
+     * and puts guest memory back in between, which no other guest thread -- the
+     * sound's timer and mixer -- may see or write half done. */
+    struct KeepContext
+    {
+        KeepContext();
+        ~KeepContext();
+        KeepContext(const KeepContext&) = delete;
+        KeepContext& operator=(const KeepContext&) = delete;
+    };
 
     void terminate();
 

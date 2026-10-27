@@ -135,9 +135,27 @@ def file_of(address):
     return "nfs3hp.19.cpp" if int(address, 16) < 0x480000 else "nfs3hp.20.cpp"
 
 
+# Reads in functions that are native now, the change made in the native
+# (src/nfs3hp/native_render.cpp: render::hudFrame, hudBand, hudPicture,
+# hudDial, hudPanel, hudTable and hudInset -- sub_47f650, sub_4800a0,
+# sub_480fc0, sub_4812e0, sub_481aa0, sub_481c50, sub_487210);
+# tools/game_checks/generate.py makes it to the game's code the natives are
+# held against.
+NATIVE_SITES = {0x47f65a, 0x47f673, 0x47f6a8, 0x47f7dd, 0x47f80e, 0x47f848, 0x47f934, 0x47f97e, 0x47f9b8,
+                0x47fa6b, 0x47fa84, 0x47faef,
+                0x480187,
+                0x480fcd, 0x480ffb, 0x48101a, 0x481038, 0x481072, 0x481098, 0x4810c0, 0x4810ea,
+                0x481322, 0x481349, 0x48136e, 0x48138f, 0x4813d0, 0x481406, 0x481434, 0x481476,
+                0x481ae5, 0x481afe, 0x481b1d, 0x481b3b, 0x481b72, 0x481b97, 0x481bbf, 0x481be9,
+                0x481cbe, 0x481d0c, 0x481d44, 0x481d7d, 0x481de6, 0x481e1e, 0x481e90, 0x481eb5, 0x481ef3,
+                0x481f3b,
+                0x487238, 0x487251, 0x487284, 0x4872b3}
+
+
 def apply(root):
-    for name in dict.fromkeys(file_of(address) for address, _ in READS):
-        apply_file(root, name, [read for read in READS if file_of(read[0]) == name])
+    reads = [read for read in READS if int(read[0], 16) not in NATIVE_SITES]
+    for name in dict.fromkeys(file_of(address) for address, _ in reads):
+        apply_file(root, name, [read for read in reads if file_of(read[0]) == name])
 
 
 def apply_file(root, name, reads):

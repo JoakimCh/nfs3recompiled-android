@@ -127,16 +127,137 @@ def race_precision(text):
 
 
 def track_detail(text):
-    """tools/apply_track_detail.py's change that load::defaultConfig has:
-    View Distance Full where the settings start over."""
+    """tools/apply_track_detail.py's changes, which load::defaultConfig has --
+    View Distance Full where the settings start over -- and render::
+    viewDistances, viewRecord and detailSettings: Full's whole distance."""
     from tools.apply_track_detail import NATIVE_SITES
     return port_sites(NATIVE_SITES)(text)
+
+
+def alpha_intensity(text):
+    """tools/apply_alpha_intensity.py's change, which track::projectedTriangle
+    has: the scaling's driver probe taken as Direct3D's."""
+    from tools.apply_alpha_intensity import SITES, MEMORY_TEST, REGISTER_TEST, FORCED
+    for _, address, code, register in SITES:
+        anchor = "    // %s  %s" % (address, code)
+        if anchor not in text:
+            continue
+        test = MEMORY_TEST if register is None else REGISTER_TEST % register
+        was = "the 0x7a3a58 probe" if register is None else "%s & 0x40, %s read from 0x7a3a58" % (register, register)
+        start = text.index(anchor)
+        stop = text.index("\n    // 00", start + 1)
+        block = text[start:stop]
+        assert block.count(test) == 1, address
+        text = text[:start] + block.replace(test, FORCED % was, 1) + text[stop:]
+    return text
+
+
+def mirror_detail(text):
+    """tools/apply_mirror_detail.py's changes, which track::modelByDistance,
+    drawTrack and headlightsOnObjects have: the mirror's pass asked through
+    nfs3hp::mirrorAsMain."""
+    from tools.apply_mirror_detail import SITES
+    return port_sites(SITES)(text)
+
+
+def car_detail(text):
+    """tools/apply_car_detail.py's changes, which render::carTextures and
+    transformBuffer have: every car's texture at the player's size, four times
+    the transform buffer."""
+    from tools.apply_car_detail import SITES
+    return port_sites(SITES)(text)
+
+
+def hud_scale(text):
+    """tools/apply_hud_scale.py's changes, which render's HUD frame and the
+    layouts inside it have: the HUD's sizes from a 4:3 screen."""
+    from tools.apply_hud_scale import READS
+    return port_sites([(None, address + "  ", old, new) for address, (old, new) in READS])(text)
+
+
+def cabin_fit(text):
+    """tools/apply_cabin_fit.py's changes, which render::needles, barGauges
+    and cockpit have: the cabin's rectangle fitted to 4:3."""
+    from tools.apply_cabin_fit import READS, FIELDS
+    sites = []
+    for instruction, field in READS:
+        decimal, index = FIELDS[field]
+        sites.append((None, instruction, "app->getMemory<x86::reg32>(x86::reg32(%d) /* %s */)" % (decimal, field),
+                      "cabinRect(app, %d) /* port: the cabin fitted to 4:3, was [%s] */" % (index, field)))
+    return port_sites(sites)(text)
+
+
+def hud_editor(text):
+    """tools/apply_hud_editor.py's change, which render::hudTable has: the
+    table's rectangle is its panel."""
+    from tools.apply_hud_editor import SITES
+    return port_sites(SITES)(text)
+
+
+def loading_screen(text):
+    """tools/apply_loading_screen.py's change, which render::loadingScreen
+    has: the loading screen at 4:3."""
+    from tools.apply_loading_screen import SITES
+    return port_sites(SITES)(text)
+
+
+def dynamic_fullscreen_mode(text):
+    """Dynamic Fullscreen's change to sub_4bef50, which only its native
+    (render::screenMode) has, no tools/apply_*.py: as a race opens the mode
+    the screen is measured again, and a size that changed opens the mode
+    afresh -- the mode kept at 0x55fec0 forgotten."""
+    return port_sites([(None, "004bef5b  89c3", "    cpu.ebx = cpu.eax;",
+                        "    if (dynamicFullscreenMode(cpu.eax) && dynamicFullscreenRefresh(app)"
+                        " && app->getMemory<x86::reg32>(x86::reg32(5635776) /* 0x55fec0 */) == cpu.eax)"
+                        " /* port: Dynamic Fullscreen measured again */\n"
+                        "        app->getMemory<x86::reg32>(x86::reg32(5635776) /* 0x55fec0 */) = 0;\n"
+                        "    cpu.ebx = cpu.eax;")])(text)
+
+
+def dynamic_fullscreen_memory(text):
+    """Dynamic Fullscreen's change to sub_4b59c0, which only its native
+    (render::startDriver) has: the driver started, the memory sub_4bed90
+    lists a mode by at least 32 MB -- at each way out but the one for a
+    driver past 10."""
+    clamp = ("    if (app->getMemory<x86::reg32>(x86::reg32(5635792) /* 0x55fed0 */) < 0x2000000u)"
+             " /* port: Dynamic Fullscreen's listing memory */\n"
+             "        app->getMemory<x86::reg32>(x86::reg32(5635792) /* 0x55fed0 */) = 0x2000000u;\n"
+             "    cpu.esp = cpu.ebp;")
+    return port_sites([(None, address + "  89ec", "    cpu.esp = cpu.ebp;", clamp)
+                       for address in ("004b5a20", "004b5ab0", "004b5be7", "004b5c6e", "004b5d5d", "004b5e02",
+                                       "004b5e2e")])(text)
+
+
+def coll_file_strncmp(text):
+    """collide::openCollFile's strncmp of the COLL header as the port runs it,
+    native (watcom::strncmp): the game's own leaves edx otherwise (an argument
+    register, the caller's no longer), and the file's close after it is
+    handed edx as the strncmp left it."""
+    return text.replace("sub_4eb390(app, cpu.sync());", "nfs3hp::watcom::strncmp(app, cpu.sync());")
 
 
 PORT_CHANGES = {0x4710f0: force_feedback_car, 0x410030: music_stream, 0x4107c0: music_stream,
                 0x4bed90: widescreen, 0x4bee80: widescreen,
                 0x494fa0: race_precision, 0x495230: race_precision, 0x4a39f0: race_precision,
-                0x4723f0: track_detail}
+                0x4723f0: track_detail,
+                0x41a120: alpha_intensity, 0x41aa60: mirror_detail, 0x41c310: mirror_detail,
+                0x41cdc0: mirror_detail, 0x431320: coll_file_strncmp}
+# native_render.cpp's, for tools/game_checks/render (gen_render.py).
+PORT_CHANGES.update({
+    0x41b9b0: alpha_intensity, 0x41d620: lambda text: mirror_detail(track_detail(text)),
+    0x41df10: track_detail, 0x472d10: track_detail,
+    0x47a190: mirror_detail, 0x47a880: mirror_detail, 0x47b850: alpha_intensity,
+    0x47f650: hud_scale, 0x4800a0: hud_scale, 0x480910: widescreen, 0x480fc0: hud_scale,
+    0x4812e0: hud_scale, 0x481aa0: hud_scale, 0x481c50: lambda text: hud_editor(hud_scale(text)),
+    0x487210: hud_scale, 0x4880b0: cabin_fit, 0x488470: cabin_fit, 0x489240: cabin_fit,
+    0x491190: alpha_intensity, 0x491bc0: alpha_intensity, 0x494cb0: loading_screen,
+    0x49d800: alpha_intensity, 0x4b56e0: car_detail, 0x4b59c0: dynamic_fullscreen_memory,
+    0x4b7d30: car_detail, 0x4bef50: dynamic_fullscreen_mode,
+    0x4b9bc0: mirror_detail, 0x4bae00: mirror_detail, 0x4bb200: mirror_detail,
+    0x4ddb40: alpha_intensity, 0x4de070: alpha_intensity, 0x4de700: alpha_intensity})
+# native_vertices.cpp's, for tools/game_checks/vertices (gen_vertices.py).
+PORT_CHANGES.update({0x492370: alpha_intensity, 0x492980: alpha_intensity, 0x4cb750: alpha_intensity,
+                     0x4cbc90: alpha_intensity, 0x41ae90: mirror_detail, 0x4bb5d0: mirror_detail})
 
 
 def stand_ins():
@@ -196,6 +317,12 @@ def main():
     natives = {address: name for address, name in nfs3hp.GAME_NATIVES.items()
                if address not in nfs3hp.MENU_NATIVES and not name.startswith(("snd::dead_", "graphics::dead_"))
                and name not in ("snd::mixerServe", "snd::mixerRamp")}
+    # native_render.cpp's are tools/game_checks/render's: here, as before they
+    # were native whole, stand-ins for the natives that call them.
+    natives = {address: name for address, name in natives.items() if address not in nfs3hp.RENDER_NATIVES}
+    # native_vertices.cpp's are tools/game_checks/vertices': here, as before
+    # they were native whole, stand-ins for the natives that call them.
+    natives = {address: name for address, name in natives.items() if address not in nfs3hp.VERTICES_NATIVES}
     stood_in_natives = stand_ins() & set(natives)
     code = io.StringIO()
     tested = []
@@ -287,7 +414,9 @@ def main():
                 "bool widescreenMode(x86::reg32 width, x86::reg32 height);\n"
                 "x86::reg32 dynamicSavedMode(x86::reg32 found, x86::reg32 width);\n"
                 "/* The races' x87 word (race precision). */\n"
-                "x86::reg16 raceControl(x86::reg16 word);\n")
+                "x86::reg16 raceControl(x86::reg16 word);\n"
+                "/* The mirror's pass as the main view's (mirror detail). */\n"
+                "x86::reg32 mirrorAsMain(x86::reg32 kind);\n")
         h.write("\nclass Application : public win32::WinApplication\n{\npublic:\n"
                 "    /* The game's code for the natives (game_functions.cpp). */\n")
         for address in sorted(natives):

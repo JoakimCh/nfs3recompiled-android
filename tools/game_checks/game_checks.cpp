@@ -85,6 +85,9 @@ x86::reg32 dynamicSavedMode(x86::reg32 found, x86::reg32 width) { return width =
 /* nfs3hp_main.cpp's race precision (tools/apply_race_precision.py), on both
  * sides: extended, as NFS_FPU_EXTENDED has it by default. */
 x86::reg16 raceControl(x86::reg16 word) { return x86::reg16(word | 0x0300); }
+/* nfs3hp_main.cpp's mirror drawn in full (tools/apply_mirror_detail.py), on
+ * both sides: the mirror's pass (1) answered as the main view's 0. */
+x86::reg32 mirrorAsMain(x86::reg32 kind) { return kind == 1 ? 0 : kind; }
 }
 
 namespace
@@ -235,6 +238,27 @@ const std::pair<x86::reg32, x86::reg32> kWindows[] = {
 #define DRIVETRAIN_WINDOWS
 #include "drivetrain.inc"
 #undef DRIVETRAIN_WINDOWS
+#define CARSTATE_WINDOWS
+#include "carstate.inc"
+#undef CARSTATE_WINDOWS
+#define TRACK_WINDOWS
+#include "track.inc"
+#undef TRACK_WINDOWS
+#define COLLIDE_WINDOWS
+#include "collide.inc"
+#undef COLLIDE_WINDOWS
+#define AIDRIVE_WINDOWS
+#include "aidrive.inc"
+#undef AIDRIVE_WINDOWS
+#define AI_WINDOWS
+#include "ai_race.inc"
+#undef AI_WINDOWS
+#define PURSUIT_WINDOWS
+#include "pursuit.inc"
+#undef PURSUIT_WINDOWS
+#define AIPLAN_WINDOWS
+#include "aiplan.inc"
+#undef AIPLAN_WINDOWS
 #include "decompiled_windows.inc"
 #define GRAPHICS_WINDOWS
 #include "graphics_world.inc"
@@ -371,6 +395,27 @@ enum Effect
 #define DRIVETRAIN_EFFECTS
 #include "drivetrain.inc"
 #undef DRIVETRAIN_EFFECTS
+#define CARSTATE_EFFECTS
+#include "carstate.inc"
+#undef CARSTATE_EFFECTS
+#define TRACK_EFFECTS
+#include "track.inc"
+#undef TRACK_EFFECTS
+#define COLLIDE_EFFECTS
+#include "collide.inc"
+#undef COLLIDE_EFFECTS
+#define AIDRIVE_EFFECTS
+#include "aidrive.inc"
+#undef AIDRIVE_EFFECTS
+#define AI_EFFECTS
+#include "ai_race.inc"
+#undef AI_EFFECTS
+#define PURSUIT_EFFECTS
+#include "pursuit.inc"
+#undef PURSUIT_EFFECTS
+#define AIPLAN_EFFECTS
+#include "aiplan.inc"
+#undef AIPLAN_EFFECTS
 };
 
 struct StandIn
@@ -485,6 +530,27 @@ const StandIn kGameFunctions[] = {
 #define HANDLING_GAME_FUNCTIONS
 #include "handling.inc"
 #undef HANDLING_GAME_FUNCTIONS
+#define CARSTATE_GAME_FUNCTIONS
+#include "carstate.inc"
+#undef CARSTATE_GAME_FUNCTIONS
+#define TRACK_GAME_FUNCTIONS
+#include "track.inc"
+#undef TRACK_GAME_FUNCTIONS
+#define COLLIDE_GAME_FUNCTIONS
+#include "collide.inc"
+#undef COLLIDE_GAME_FUNCTIONS
+#define AIDRIVE_GAME_FUNCTIONS
+#include "aidrive.inc"
+#undef AIDRIVE_GAME_FUNCTIONS
+#define AI_GAME_FUNCTIONS
+#include "ai_race.inc"
+#undef AI_GAME_FUNCTIONS
+#define PURSUIT_GAME_FUNCTIONS
+#include "pursuit.inc"
+#undef PURSUIT_GAME_FUNCTIONS
+#define AIPLAN_GAME_FUNCTIONS
+#include "aiplan.inc"
+#undef AIPLAN_GAME_FUNCTIONS
 {0x4c9860, "the wait for the clock", kWatcom, 4, 0, kEax, -1, 0, kTickWait},
 {0x4beb20, "a rectangle copied out", kWatcom, 4, 1, kEdx, -1, 0, kRectangle},
 // A text drawn, its width onto the x87's stack; a text's width, onto it too;
@@ -651,6 +717,27 @@ const StandIn kPointers[] = {
 #define DRIVETRAIN_POINTERS
 #include "drivetrain.inc"
 #undef DRIVETRAIN_POINTERS
+#define CARSTATE_POINTERS
+#include "carstate.inc"
+#undef CARSTATE_POINTERS
+#define TRACK_POINTERS
+#include "track.inc"
+#undef TRACK_POINTERS
+#define COLLIDE_POINTERS
+#include "collide.inc"
+#undef COLLIDE_POINTERS
+#define AIDRIVE_POINTERS
+#include "aidrive.inc"
+#undef AIDRIVE_POINTERS
+#define AI_POINTERS
+#include "ai_race.inc"
+#undef AI_POINTERS
+#define PURSUIT_POINTERS
+#include "pursuit.inc"
+#undef PURSUIT_POINTERS
+#define AIPLAN_POINTERS
+#include "aiplan.inc"
+#undef AIPLAN_POINTERS
 #define SOUND_POINTERS
 #include "sound_lib.inc"
 #undef SOUND_POINTERS
@@ -847,6 +934,27 @@ const Promise kPromises[] = {
 #define DRIVETRAIN_PROMISES
 #include "drivetrain.inc"
 #undef DRIVETRAIN_PROMISES
+#define CARSTATE_PROMISES
+#include "carstate.inc"
+#undef CARSTATE_PROMISES
+#define TRACK_PROMISES
+#include "track.inc"
+#undef TRACK_PROMISES
+#define COLLIDE_PROMISES
+#include "collide.inc"
+#undef COLLIDE_PROMISES
+#define AIDRIVE_PROMISES
+#include "aidrive.inc"
+#undef AIDRIVE_PROMISES
+#define AI_PROMISES
+#include "ai_race.inc"
+#undef AI_PROMISES
+#define PURSUIT_PROMISES
+#include "pursuit.inc"
+#undef PURSUIT_PROMISES
+#define AIPLAN_PROMISES
+#include "aiplan.inc"
+#undef AIPLAN_PROMISES
 #define SOUND_PROMISES
 #include "sound_lib.inc"
 #undef SOUND_PROMISES
@@ -1666,6 +1774,27 @@ public:
 #define DRIVETRAIN_EFFECT_CASES
 #include "drivetrain.inc"
 #undef DRIVETRAIN_EFFECT_CASES
+#define CARSTATE_EFFECT_CASES
+#include "carstate.inc"
+#undef CARSTATE_EFFECT_CASES
+#define TRACK_EFFECT_CASES
+#include "track.inc"
+#undef TRACK_EFFECT_CASES
+#define COLLIDE_EFFECT_CASES
+#include "collide.inc"
+#undef COLLIDE_EFFECT_CASES
+#define AIDRIVE_EFFECT_CASES
+#include "aidrive.inc"
+#undef AIDRIVE_EFFECT_CASES
+#define AI_EFFECT_CASES
+#include "ai_race.inc"
+#undef AI_EFFECT_CASES
+#define PURSUIT_EFFECT_CASES
+#include "pursuit.inc"
+#undef PURSUIT_EFFECT_CASES
+#define AIPLAN_EFFECT_CASES
+#include "aiplan.inc"
+#undef AIPLAN_EFFECT_CASES
         case kRectangle:
             // A screen's, mostly: 640 by 480 to 1600 by 1200, or any size.
             word(cpu.edx) = r % 64;
@@ -4895,6 +5024,27 @@ void makeMmxArguments(CheckApp& g, const std::string& name, x86::CPU& cpu, x86::
 #define DRIVETRAIN_ARGUMENTS
 #include "drivetrain.inc"
 #undef DRIVETRAIN_ARGUMENTS
+#define CARSTATE_ARGUMENTS
+#include "carstate.inc"
+#undef CARSTATE_ARGUMENTS
+#define TRACK_ARGUMENTS
+#include "track.inc"
+#undef TRACK_ARGUMENTS
+#define COLLIDE_ARGUMENTS
+#include "collide.inc"
+#undef COLLIDE_ARGUMENTS
+#define AIDRIVE_ARGUMENTS
+#include "aidrive.inc"
+#undef AIDRIVE_ARGUMENTS
+#define AI_ARGUMENTS
+#include "ai_race.inc"
+#undef AI_ARGUMENTS
+#define PURSUIT_ARGUMENTS
+#include "pursuit.inc"
+#undef PURSUIT_ARGUMENTS
+#define AIPLAN_ARGUMENTS
+#include "aiplan.inc"
+#undef AIPLAN_ARGUMENTS
 #define SOUND_ARGUMENTS
 #include "sound_lib.inc"
 #undef SOUND_ARGUMENTS
@@ -5065,6 +5215,20 @@ void makeArguments(CheckApp& g, const Tested& t, x86::reg32 esp, x86::CPU& cpu)
         makeHandlingArguments(g, name.substr(10), cpu, a);
     if (name.compare(0, 12, "drivetrain::") == 0)
         makeDrivetrainArguments(g, name.substr(12), cpu, a);
+    if (name.compare(0, 10, "carstate::") == 0)
+        makeCarstateArguments(g, name.substr(10), cpu, a);
+    if (name.compare(0, 7, "track::") == 0)
+        makeTrackArguments(g, name.substr(7), cpu, a);
+    if (name.compare(0, 9, "collide::") == 0)
+        makeCollideArguments(g, name.substr(9), cpu, a);
+    if (name.compare(0, 9, "aidrive::") == 0)
+        makeAidriveArguments(g, name.substr(9), cpu, a);
+    if (name.compare(0, 8, "airace::") == 0)
+        makeAiRaceArguments(g, name.substr(8), cpu, a);
+    if (name.compare(0, 9, "pursuit::") == 0)
+        makePursuitArguments(g, name.substr(9), cpu, a);
+    if (name.compare(0, 8, "aiplan::") == 0)
+        makeAiplanArguments(g, name.substr(8), cpu, a);
     if (name.compare(0, 5, "mmx::") == 0)
         makeMmxArguments(g, name.substr(5), cpu, a);
     if (name.compare(0, 5, "snd::") == 0)

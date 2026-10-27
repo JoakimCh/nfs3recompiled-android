@@ -1,7 +1,5 @@
 #include <nfs3hp.h>
-#include "native_thrash.h"
 #include "dynamic_fullscreen.h"
-#include <SDL3/SDL.h>
 #include <cmath>
 #include <cstring>
 
@@ -12,24 +10,37 @@
 #pragma fp_contract(off)
 #endif
 
-/* Native stand-ins for the rest of the drawing: the functions native_vertices.cpp
+/* The rest of the drawing, native whole: the functions native_vertices.cpp
  * left generated -- the clipping of a triangle whose corners carry z, the
  * polygon lists, the sky, the lights, the effects' colours, the views, the HUD,
- * the textures and the 2D screens -- entered from the top of the generated
- * functions (tools/apply_native_render.py) the same way.  Each does the
- * original's arithmetic in the original's order, rounded as the emulated FPU
- * rounds at single precision to nearest (NearestMath), and steps aside -- the
- * generated code runs -- in any other FPU mode, under NFS_NATIVES=0 or
- * =vertices, under NFS_NATIVES=no-render, and for the functions listed in
- * NFS_RENDER_OFF (their addresses, e.g. NFS_RENDER_OFF=4bf790,47a880).
+ * the textures and the 2D screens -- in nfs3hp::render, each bound to its
+ * function's address by disassemble_nfs3hp.py (RENDER_NATIVES), which writes
+ * no code for it: the game's callers call it by name, dynamic_call by address.
+ * Since phase 2 there is no hook and no generated code behind them to fall
+ * back on.  Each does the original's arithmetic in the original's order
+ * through the emulated FPU's own operations (FpuMath, on the FPU of the CPU it
+ * was handed: ExactFpu), so it rounds as the generated code does in every mode
+ * the game runs in -- a race at single precision, the menus and the races at
+ * extended precision (the default, extendedRaces), NFS_FPU_FLOAT -- and
+ * converts to integers by the control word's rounding (FPU::toInteger), as
+ * fistp does.  The experiments' builds (WITH_PEDANTIC_FPU, WITH_WIDE_FPU) run
+ * them too, in doubles: not to the bit there.  Where the original copies with
+ * movs they copy forwards: the game never leaves the direction flag set (its
+ * one std, in memmove at 0x518640, is undone by the cld before it returns).
+ * An integer divide by zero (lightning, sparks) gives what the generated
+ * code's idiv gives on arm64: quotient 0, the dividend's low word the
+ * remainder.  The port's changes to these functions (the mirror, View
+ * Distance, alpha intensity, the HUD's and the cabin's 4:3 sizes, wide-screen
+ * HUD pictures, car detail, the loading screen at 4:3) are made here; the
+ * tools/apply_*.py scripts leave these functions out (NATIVE_SITES).
  *
  * Memory, the registers, the flags the generated code leaves (CF, ZF, SF, OF,
  * and PF and AF as its last sahf left them) and the FPU status word come out as
  * the generated code leaves them; only the stack below the returned esp is not
  * written.  The functions they call -- THRASH's, and the game's own -- are
  * called with the registers and the stack the generated code has at the call.
- * NFS_NATIVE_CHECK=1 runs each against the generated code over all of guest
- * memory once a second (nativeCheckWhole in native_vertices.cpp). */
+ * tools/game_checks/render holds each against its code made afresh (with the
+ * port's changes) on the desktop, in five x87 control words. */
 namespace nfs3hp
 {
 
@@ -51,8 +62,6 @@ x86::reg32 cabinRect(win32::WinApplication* app, x86::reg32 field);
 // nfs3hp_main.cpp: NFS_CAR_DETAIL_FULL, and the loading screen at 4:3 (ports).
 bool fullCarDetail();
 void loadingScreenFit(win32::WinApplication* app, x86::CPU& cpu, bool on);
-// nfs3hp_main.cpp: a tap asking to skip the movie playing (a port).
-bool movieSkipRequested();
 
 namespace
 {
@@ -71,40 +80,51 @@ inline x86::reg32 asBits(float value)
     return bits;
 }
 
-/* The emulated FPU's own rounding (FPU::toSingle) for the one mode the natives
- * run in, single precision to nearest, as native_vertices.cpp has it: exact
- * whatever the operands, with the x87's range.  The operands go in the order
- * the generated code hands them to the FPU, which decides a NaN's payload. */
-struct NearestMath
+/* The FPU the natives' arithmetic rounds by: the one of the CPU a native was
+ * handed, set as it starts (ExactFpu) and given back as it ends, so that a
+ * native another one calls through the game's code leaves its caller's.  A
+ * pointer per thread, as the game's threads each have their CPU. */
+thread_local x86::FPU* t_fpu = nullptr;
+
+/* At the top of every native: the arithmetic below follows `cpu`'s FPU. */
+struct ExactFpu
+{
+    x86::FPU* const outer;
+    explicit ExactFpu(x86::CPU& cpu) : outer(t_fpu) { t_fpu = &cpu.fpu; }
+    ~ExactFpu() { t_fpu = outer; }
+    ExactFpu(const ExactFpu&) = delete;
+    ExactFpu& operator=(const ExactFpu&) = delete;
+};
+
+/* The arithmetic as the generated code does it: the emulated FPU's own
+ * operations (FPU::add .. sqrt), which round as the control word the game has
+ * at that moment asks -- to a float's significand in a race at single
+ * precision, in the direction its rounding control says, or not at all at 53
+ * or 64 bits (the menus, and the races at extended precision) -- and as
+ * NFS_FPU_FLOAT asks.  The mode is read at each operation, so a callee's fldcw
+ * counts from its return on, as it does for the generated code.  The operands
+ * go in the order the generated code hands them to the FPU, which decides a
+ * NaN's payload.  WITH_PEDANTIC_FPU's 80 bits and WITH_WIDE_FPU's long double
+ * are not a double's: there the natives do their arithmetic in doubles, close
+ * to the generated code's but not to the bit. */
+struct FpuMath
 {
     typedef double Value;
-#ifdef WITH_PEDANTIC_FPU
+#if defined(WITH_PEDANTIC_FPU) || defined(WITH_WIDE_FPU)
     static Value add(Value a, Value b) { return a + b; }
     static Value sub(Value a, Value b) { return a - b; }
     static Value mul(Value a, Value b) { return a * b; }
     static Value div(Value a, Value b) { return a / b; }
     static Value sqrt(Value a) { return std::sqrt(a); }
 #else
-    typedef x86::FPU::Rounded Rounded;
-    static Value round(double value, Rounded op, double a, double b)
-    {
-        std::uint64_t bits;
-        std::memcpy(&bits, &value, sizeof bits);
-        const std::uint64_t exponent = (bits >> 52) & 0x7ff;
-        if ((bits & x86::FPU::kSingleDropped) != x86::FPU::kSingleHalf && exponent - 0x381 < 0x47e - 0x381)
-            return double(float(value));
-        if ((bits << 1) == 0)
-            return value;
-        return x86::FPU::roundSingleSlow(value, op, a, b, 0);
-    }
-    static Value add(Value a, Value b) { return round(a + b, Rounded::Add, a, b); }
-    static Value sub(Value a, Value b) { return round(a - b, Rounded::Sub, a, b); }
-    static Value mul(Value a, Value b) { return round(a * b, Rounded::Mul, a, b); }
-    static Value div(Value a, Value b) { return round(a / b, Rounded::Div, a, b); }
-    static Value sqrt(Value a) { return round(std::sqrt(a), Rounded::Sqrt, a, 0.0); }
+    static Value add(Value a, Value b) { return t_fpu->add(a, b); }
+    static Value sub(Value a, Value b) { return t_fpu->sub(a, b); }
+    static Value mul(Value a, Value b) { return t_fpu->mul(a, b); }
+    static Value div(Value a, Value b) { return t_fpu->div(a, b); }
+    static Value sqrt(Value a) { return t_fpu->sqrt(a); }
 #endif
 };
-typedef NearestMath M;
+typedef FpuMath M;
 
 /* fcomp leaves only its condition bits, and sahf turns them into the flags:
  * only the last comparison matters, replayed on the FPU where the generated
@@ -130,6 +150,25 @@ struct LastCompare
     // A call in between: what the callee leaves stands instead.
     void forget() { any = false; }
 };
+
+/* cdq; idiv r32 as the generated code does it: edx:eax, eax sign-extended,
+ * divided in 64 bits, the quotient's low word to eax (2^31 for the lowest
+ * integer over -1) and the remainder to edx.  A divisor of 0, which faults on
+ * the x86, gives what that division gives on arm64, where sdiv by zero is 0
+ * and the remainder (msub) the dividend less nothing: eax 0, edx the
+ * dividend's low word. */
+struct Division
+{
+    x86::reg32 quotient, remainder;
+};
+inline Division idiv(x86::reg32 low, x86::reg32 divisor)
+{
+    const x86::sreg64 dividend = x86::sreg32(low);
+    const x86::sreg64 by = x86::sreg32(divisor);
+    if (!by)
+        return {0, low};
+    return {x86::reg32(dividend / by), x86::reg32(dividend % by)};
+}
 
 /* A byte of a register as mov r8 writes it: k 0 the low byte, 1 the next. */
 inline void setByte(x86::reg32& r, unsigned k, x86::reg32 value)
@@ -302,46 +341,6 @@ struct Memory
 inline double fild32(const Memory& m, x86::reg32 address)
 {
     return double(x86::sreg32(m.word(address)));
-}
-
-inline bool singlePrecision(const x86::CPU& cpu)
-{
-#if defined(WITH_PEDANTIC_FPU)
-    NFS2_USE(cpu);
-    return false;
-#elif defined(WITH_WIDE_FPU)
-    return cpu.fpu.control.rc == 0 && nativesEnabled();
-#else
-    return cpu.fpu.control.pc == x86::FPU::s_singlePrecision && cpu.fpu.control.rc == 0 && nativesEnabled();
-#endif
-}
-
-/* NFS_NATIVES=0 or =vertices: none of these; =no-render: none of these but
- * the others; NFS_RENDER_OFF: the functions at the addresses it lists. */
-bool renderNativeOn(x86::reg32 address)
-{
-    static const bool on = []() {
-        const char* value = SDL_getenv("NFS_NATIVES");
-        return !value
-               || (SDL_strcmp(value, "0") != 0 && SDL_strcmp(value, "vertices") != 0
-                   && SDL_strcmp(value, "no-render") != 0);
-    }();
-    if (!on)
-        return false;
-    static const char* off = SDL_getenv("NFS_RENDER_OFF");
-    if (!off || !*off)
-        return true;
-    char name[16];
-    SDL_snprintf(name, sizeof name, "%x", unsigned(address));
-    const std::size_t length = SDL_strlen(name);
-    for (const char* at = SDL_strstr(off, name); at; at = SDL_strstr(at + 1, name))
-    {
-        const bool starts = at == off || at[-1] == ',' || at[-1] == ' ' || at[-1] == 'x' || at[-1] == '_';
-        const bool ends = at[length] == 0 || at[length] == ',' || at[length] == ' ';
-        if (starts && ends)
-            return false;
-    }
-    return true;
 }
 
 /* The registers the generated code works the screen with: they come out of
@@ -562,8 +561,9 @@ namespace render
  * first, a triangle with an indefinite in a corner's x, y, depth, 1/w, s or t
  * skipped.  Returns the triangles tried in eax and ebx, the list in edx; -1
  * in eax and ebx when a pass leaves fewer than three corners. */
-void clipByZNative(win32::WinApplication* app, x86::CPU& cpu)
+void clipByZ(win32::WinApplication* app, x86::CPU& cpu)
 {
+    const ExactFpu exact(cpu);
     const Memory m{app};
     const x86::reg32 entry = cpu.esp;
     const x86::reg32 saved[] = { cpu.ecx, cpu.esi, cpu.edi, cpu.ebp };
@@ -887,8 +887,9 @@ void clipByZNative(win32::WinApplication* app, x86::CPU& cpu)
  * Every corner is written out inline in the original, each copy with its own
  * scratch registers; eax, ebx, ecx and edx come out as each path leaves them,
  * the callees' included, and so do the flags and the FPU status. */
-void quadByZNative(win32::WinApplication* app, x86::CPU& cpu)
+void quadByZ(win32::WinApplication* app, x86::CPU& cpu)
 {
+    const ExactFpu exact(cpu);
     const Memory m{app};
     const x86::reg32 entry = cpu.esp;
     const x86::reg32 saved[] = { cpu.esi, cpu.edi, cpu.ebp };
@@ -1211,8 +1212,9 @@ void quadByZNative(win32::WinApplication* app, x86::CPU& cpu)
  *
  * No x87 here: the registers go through as the original moves them, since
  * sub_4c3ad0 gets them. */
-void triangleRecordsNative(win32::WinApplication* app, x86::CPU& cpu)
+void triangleRecords(win32::WinApplication* app, x86::CPU& cpu)
 {
+    const ExactFpu exact(cpu);
     const Memory m{app};
     const x86::reg32 entry = cpu.esp;
     const x86::reg32 saved[] = { cpu.ebx, cpu.ecx, cpu.edx, cpu.esi, cpu.edi, cpu.ebp };
@@ -1468,8 +1470,9 @@ void triangleRecordsNative(win32::WinApplication* app, x86::CPU& cpu)
  * else again the same.  Returns -1 in eax when fewer than three corners are
  * left, 0 otherwise (also when the first corner is an indefinite and nothing
  * is drawn). */
-void nearTriangleNative(win32::WinApplication* app, x86::CPU& cpu)
+void nearTriangle(win32::WinApplication* app, x86::CPU& cpu)
 {
+    const ExactFpu exact(cpu);
     const Memory m{app};
     const x86::reg32 entry = cpu.esp;
     const x86::reg32 saved[] = { cpu.ebx, cpu.ecx, cpu.esi, cpu.edi, cpu.ebp };
@@ -1736,8 +1739,9 @@ void nearTriangleNative(win32::WinApplication* app, x86::CPU& cpu)
  * (a corner past the near plane), or to THRASH_drawquad -- state 0x2c2 on
  * around it when a corner is off the left.  Those take the corners in eax,
  * edx, ebx, ecx.  Returns the record it stopped at (0 at the end) in eax. */
-void quadRecordsNative(win32::WinApplication* app, x86::CPU& cpu)
+void quadRecords(win32::WinApplication* app, x86::CPU& cpu)
 {
+    const ExactFpu exact(cpu);
     const Memory m{app};
     const x86::reg32 entry = cpu.esp;
     const x86::reg32 saved[] = { cpu.ebx, cpu.ecx, cpu.edx, cpu.esi, cpu.edi, cpu.ebp };
@@ -1984,8 +1988,9 @@ void quadRecordsNative(win32::WinApplication* app, x86::CPU& cpu)
  * stack with their s, t and colour the corners' averages and a clip code of
  * their own -- and the four quads around the middle go to this function
  * again, each unless its corners share a clip bit.  stdcall: ret 0x14. */
-void subdivideQuadNative(win32::WinApplication* app, x86::CPU& cpu)
+void subdivideQuad(win32::WinApplication* app, x86::CPU& cpu)
 {
+    const ExactFpu exact(cpu);
     const Memory m{app};
     const x86::reg32 entry = cpu.esp;
     const x86::reg32 saved[] = { cpu.esi, cpu.edi, cpu.ebp };
@@ -2242,8 +2247,9 @@ void subdivideQuadNative(win32::WinApplication* app, x86::CPU& cpu)
  * sub_432720 at depth 0; otherwise to sub_4c19e0 when a corner is past the
  * near plane, else to THRASH_drawquad (state 0x2c2 around it when a corner
  * is off the left).  eax, ebx, ecx and edx come out as the path leaves them. */
-void quadSubdividedNative(win32::WinApplication* app, x86::CPU& cpu)
+void quadSubdivided(win32::WinApplication* app, x86::CPU& cpu)
 {
+    const ExactFpu exact(cpu);
     const Memory m{app};
     const x86::reg32 entry = cpu.esp;
     const x86::reg32 saved[] = { cpu.esi, cpu.edi, cpu.ebp };
@@ -2403,8 +2409,9 @@ void quadSubdividedNative(win32::WinApplication* app, x86::CPU& cpu)
  * no clip code goes to THRASH_drawtri -- in the first pass with each
  * corner's depth worked out from its 1/w as sub_4c11b0 does it -- the rest
  * to sub_4c11b0.  Returns the record it stopped at (0 at the end) in eax. */
-void colouredTrianglesNative(win32::WinApplication* app, x86::CPU& cpu)
+void colouredTriangles(win32::WinApplication* app, x86::CPU& cpu)
 {
+    const ExactFpu exact(cpu);
     const Memory m{app};
     const x86::reg32 entry = cpu.esp;
     const x86::reg32 saved[] = { cpu.ebx, cpu.ecx, cpu.edx, cpu.esi, cpu.edi, cpu.ebp };
@@ -2678,8 +2685,9 @@ void colouredTrianglesNative(win32::WinApplication* app, x86::CPU& cpu)
  * [0x55d154] gets [0x7d3684] -- the sky by sub_47b850 and, with [0x55d260],
  * sub_4946e0; with [0x55d2a4], sub_479ed0 after.  eax and the registers the
  * callees leave come out as the generated code leaves them. */
-void skyNative(win32::WinApplication* app, x86::CPU& cpu)
+void sky(win32::WinApplication* app, x86::CPU& cpu)
 {
+    const ExactFpu exact(cpu);
     const Memory m{app};
     const x86::reg32 entry = cpu.esp;
     const x86::reg32 saved[] = { cpu.edx, cpu.ebp };
@@ -2752,8 +2760,9 @@ void skyNative(win32::WinApplication* app, x86::CPU& cpu)
  * (sub_47a190), sub_4799d0, sub_479b90 with [0x55d160], sub_4790d0,
  * sub_470ad0.  Everything goes through those calls; the registers as the
  * generated code moves them. */
-void viewSkyNative(win32::WinApplication* app, x86::CPU& cpu)
+void viewSky(win32::WinApplication* app, x86::CPU& cpu)
 {
+    const ExactFpu exact(cpu);
     const Memory m{app};
     const x86::reg32 entry = cpu.esp;
     const x86::reg32 saved[] = { cpu.ebx, cpu.ecx, cpu.edx, cpu.edi, cpu.ebp };
@@ -2877,8 +2886,9 @@ void viewSkyNative(win32::WinApplication* app, x86::CPU& cpu)
  * codes, and go to sub_478cb0 by value with the texture four times.
  * Returns the record allocation's second word ([ebp+0x7a]: 0 unless the
  * allocator wrote it). */
-void flatSkyNative(win32::WinApplication* app, x86::CPU& cpu)
+void flatSky(win32::WinApplication* app, x86::CPU& cpu)
 {
+    const ExactFpu exact(cpu);
     const Memory m{app};
     const x86::reg32 entry = cpu.esp;
     const x86::reg32 saved[] = { cpu.ebx, cpu.ecx, cpu.edx, cpu.esi, cpu.edi, cpu.ebp };
@@ -2963,8 +2973,9 @@ void flatSkyNative(win32::WinApplication* app, x86::CPU& cpu)
  * quad records (allocated by sub_4bbe40, 0x20 each) for the cells whose four
  * corners share no clip bit, flags 2 or 3 (4 more without [0x55d204]), the
  * texture record 0x55d21c, closed by sub_4bbde0 and drawn by sub_4bbf40. */
-void skyDomeNative(win32::WinApplication* app, x86::CPU& cpu)
+void skyDome(win32::WinApplication* app, x86::CPU& cpu)
 {
+    const ExactFpu exact(cpu);
     const Memory m{app};
     const x86::reg32 entry = cpu.esp;
     const x86::reg32 saved[] = { cpu.ebx, cpu.ecx, cpu.edx, cpu.esi, cpu.edi, cpu.ebp };
@@ -3154,8 +3165,9 @@ void skyDomeNative(win32::WinApplication* app, x86::CPU& cpu)
  * ends share no clip bit becomes a quad record (sub_4bbf80, 0xa0 bytes,
  * flags 5) of the start twice and the point twice, the second of each moved
  * a pixel right and down. */
-void lightningNative(win32::WinApplication* app, x86::CPU& cpu)
+void lightning(win32::WinApplication* app, x86::CPU& cpu)
 {
+    const ExactFpu exact(cpu);
     const Memory m{app};
     const x86::reg32 entry = cpu.esp;
     const x86::reg32 saved[] = { cpu.ebx, cpu.ecx, cpu.edx, cpu.esi, cpu.edi, cpu.ebp };
@@ -3202,9 +3214,9 @@ void lightningNative(win32::WinApplication* app, x86::CPU& cpu)
         r.eax = r.ebx * 510;
         r.esi = m.word(0x55e4ac);
         {
-            const x86::sreg64 dividend = x86::sreg32(r.eax);
-            r.edx = x86::reg32(x86::sreg32(dividend % x86::sreg32(r.esi)));
-            r.eax = x86::reg32(x86::sreg32(dividend / x86::sreg32(r.esi)));
+            const Division d = idiv(r.eax, r.esi);
+            r.eax = d.quotient;
+            r.edx = d.remainder;
         }
         flags.compare(r.eax, 0xff);
         if (x86::sreg32(r.eax) >= 0xff)
@@ -3314,8 +3326,9 @@ void lightningNative(win32::WinApplication* app, x86::CPU& cpu)
  * quarter of a turn per 64 ticks, or 0.05) and sized by the ticks
  * ([0x53b5dc], [0x53b5e0] once more on [0x6fd3b0] 1, [0x53b5e4] for the
  * word), its height from the screen's height ([0x53b5d8], 40 or 80). */
-void countdownNative(win32::WinApplication* app, x86::CPU& cpu)
+void countdown(win32::WinApplication* app, x86::CPU& cpu)
 {
+    const ExactFpu exact(cpu);
     const Memory m{app};
     const x86::reg32 entry = cpu.esp;
     const x86::reg32 saved[] = { cpu.ebx, cpu.ecx, cpu.edx, cpu.esi, cpu.edi, cpu.ebp };
@@ -3500,8 +3513,9 @@ void countdownNative(win32::WinApplication* app, x86::CPU& cpu)
  * [view+0x34] the headlights' beam on the road (sub_492370) when the car
  * faces the camera (sub_4e01f0 below 0), its strength the dot times
  * [0x5400f8]. */
-void carLightsNative(win32::WinApplication* app, x86::CPU& cpu)
+void carLights(win32::WinApplication* app, x86::CPU& cpu)
 {
+    const ExactFpu exact(cpu);
     const Memory m{app};
     const x86::reg32 entry = cpu.esp;
     const x86::reg32 saved[] = { cpu.ebx, cpu.ecx, cpu.esi, cpu.edi, cpu.ebp };
@@ -3740,8 +3754,9 @@ void carLightsNative(win32::WinApplication* app, x86::CPU& cpu)
  * sub_4b9140, sub_4b90e0, sub_4b9280 -- the four brake and indicator lights
  * (+0x108, +0x114, +0x120, +0x12c, raised by [car+0x93c] or [car+0x940])
  * not masked in [car+0x99c]; sub_4e0280, sub_4b8740 and sub_4b81a0 last. */
-void detailedCarLightsNative(win32::WinApplication* app, x86::CPU& cpu)
+void detailedCarLights(win32::WinApplication* app, x86::CPU& cpu)
 {
+    const ExactFpu exact(cpu);
     const Memory m{app};
     const x86::reg32 entry = cpu.esp;
     const x86::reg32 saved[] = { cpu.ebx, cpu.ecx, cpu.esi, cpu.edi, cpu.ebp };
@@ -3994,8 +4009,9 @@ void detailedCarLightsNative(win32::WinApplication* app, x86::CPU& cpu)
  * [0x7d3684] has passed is dropped).  The pen moves on by the letter's
  * advance (20 for a byte no letter has) times the size.  Without a scale the
  * letters are drawn flat, depth 1. */
-void solidTextNative(win32::WinApplication* app, x86::CPU& cpu)
+void solidText(win32::WinApplication* app, x86::CPU& cpu)
 {
+    const ExactFpu exact(cpu);
     const Memory m{app};
     const x86::reg32 entry = cpu.esp;
     const x86::reg32 saved[] = { cpu.ecx, cpu.esi, cpu.edi, cpu.ebp };
@@ -5359,8 +5375,9 @@ flat:
  * sub_4b9140, sub_4b90e0, sub_4b9280 the four lights at +0x108, +0x114,
  * +0x120, +0x12c raised by [car+0x93c] or [car+0x940]; sub_4e0280,
  * sub_4b8740 and sub_4b81a0 last. */
-void mediumCarLightsNative(win32::WinApplication* app, x86::CPU& cpu)
+void mediumCarLights(win32::WinApplication* app, x86::CPU& cpu)
 {
+    const ExactFpu exact(cpu);
     const Memory m{app};
     const x86::reg32 entry = cpu.esp;
     const x86::reg32 saved[] = { cpu.ebx, cpu.ecx, cpu.esi, cpu.edi, cpu.ebp };
@@ -5635,8 +5652,9 @@ void mediumCarLightsNative(win32::WinApplication* app, x86::CPU& cpu)
  * their colours (+0x70, +0x74 when behind) weighted by nearness (and by
  * nearness to the beam's axis for the lights); the average is added to the
  * colour's channels, each held to 0..255, alpha opaque. */
-void nightColourNative(win32::WinApplication* app, x86::CPU& cpu)
+void nightColour(win32::WinApplication* app, x86::CPU& cpu)
 {
+    const ExactFpu exact(cpu);
     const Memory m{app};
     const x86::reg32 entry = cpu.esp;
     const x86::reg32 saved[] = { cpu.ebx, cpu.ecx, cpu.esi, cpu.edi, cpu.ebp };
@@ -5895,8 +5913,9 @@ void nightColourNative(win32::WinApplication* app, x86::CPU& cpu)
  * every driver, a port) -- then sub_41aaf0 for the view, the cars' sub_42d160
  * for the main view, sub_41cdc0 with the track's record, the four
  * sub_4c7790s, sub_41b8c0, the two sub_4c7940s, sub_4217e0 and sub_494170. */
-void viewPassNative(win32::WinApplication* app, x86::CPU& cpu)
+void viewPass(win32::WinApplication* app, x86::CPU& cpu)
 {
+    const ExactFpu exact(cpu);
     const Memory m{app};
     const x86::reg32 entry = cpu.esp;
     const x86::reg32 saved[] = { cpu.ebx, cpu.ecx, cpu.edx, cpu.esi, cpu.ebp };
@@ -6051,8 +6070,9 @@ cars:
 
 /* sub_434870: the polygon lists' drawers for the driver's abilities
  * ([0x7a3a58]): the five pointers at 0x5f0780.. and 0x5f0788. */
-void polygonDrawersNative(win32::WinApplication* app, x86::CPU& cpu)
+void polygonDrawers(win32::WinApplication* app, x86::CPU& cpu)
 {
+    const ExactFpu exact(cpu);
     const Memory m{app};
     IntegerFlags flags;
     m.word(0x5f0788, 0x433d40);
@@ -6097,8 +6117,9 @@ void polygonDrawersNative(win32::WinApplication* app, x86::CPU& cpu)
 /* sub_49d800: the two colours in eax and edx to 0x55e6dc and 0x55e6e0,
  * darkened by the sun's glare [0x6fbc38] times [0x53c698] when that is below
  * 1 (on every driver, a port). */
-void glareColoursNative(win32::WinApplication* app, x86::CPU& cpu)
+void glareColours(win32::WinApplication* app, x86::CPU& cpu)
 {
+    const ExactFpu exact(cpu);
     const Memory m{app};
     const x86::reg32 entry = cpu.esp;
     const x86::reg32 saved[] = { cpu.ebx, cpu.ecx, cpu.esi, cpu.edi, cpu.ebp };
@@ -6145,8 +6166,9 @@ void glareColoursNative(win32::WinApplication* app, x86::CPU& cpu)
  * 0x6fbc30, 0x6fbc20, 0x6fbc24, 0x6fbc3c and 0x791b28; the glare at 1 (0.5
  * when sub_4ee310 finds the driver's name at 0x53b01c), the screen width
  * for sub_4bee80, and sub_4483a0, sub_448330's choice of 0x6fbc34. */
-void detailSettingsNative(win32::WinApplication* app, x86::CPU& cpu)
+void detailSettings(win32::WinApplication* app, x86::CPU& cpu)
 {
+    const ExactFpu exact(cpu);
     const Memory m{app};
     const x86::reg32 entry = cpu.esp;
     const x86::reg32 saved[] = { cpu.ebx, cpu.ecx, cpu.edx, cpu.esi, cpu.edi, cpu.ebp };
@@ -6297,8 +6319,9 @@ void detailSettingsNative(win32::WinApplication* app, x86::CPU& cpu)
  * when [0x8ca22c] is 1, its grey [0x8ca284] * count / [0x8ca27c] darkened by
  * the sun's glare times [0x5497dc] when that is below 1 (on every driver, a
  * port), depth 0.1, 1/w 0.9, with the corners' clip codes. */
-void sparksNative(win32::WinApplication* app, x86::CPU& cpu)
+void sparks(win32::WinApplication* app, x86::CPU& cpu)
 {
+    const ExactFpu exact(cpu);
     const Memory m{app};
     const x86::reg32 entry = cpu.esp;
     const x86::reg32 saved[] = { cpu.ebx, cpu.ecx, cpu.edx, cpu.esi, cpu.edi, cpu.ebp };
@@ -6359,9 +6382,10 @@ void sparksNative(win32::WinApplication* app, x86::CPU& cpu)
         r.edx = m.word(0x8ca284) * r.eax;
         r.esi = m.word(0x8ca27c);
         {
-            const x86::sreg32 dividend = x86::sreg32(r.edx);
-            r.eax = x86::reg32(dividend / x86::sreg32(r.esi));
-            r.edx = x86::reg32(dividend % x86::sreg32(r.esi));
+            // mov eax, edx; sar edx, 31; idiv esi
+            const Division d = idiv(r.edx, r.esi);
+            r.eax = d.quotient;
+            r.edx = d.remainder;
         }
         r.edi = m.word(0x8ca22c);
         r.ebx = r.eax;
@@ -6474,8 +6498,9 @@ void sparksNative(win32::WinApplication* app, x86::CPU& cpu)
  * one also by the depth, each a square of the kind's size turned by an angle
  * from x / z (sub_4ea930, sub_4ea950), textures 0x8b47bc and 0x8b4840; the
  * second linked to the first and handed to sub_4c7610. */
-void glowNative(win32::WinApplication* app, x86::CPU& cpu)
+void glow(win32::WinApplication* app, x86::CPU& cpu)
 {
+    const ExactFpu exact(cpu);
     const Memory m{app};
     const x86::reg32 entry = cpu.esp;
     const x86::reg32 saved[] = { cpu.ebx, cpu.ecx, cpu.edx, cpu.esi, cpu.edi, cpu.ebp };
@@ -6786,8 +6811,9 @@ void glowNative(win32::WinApplication* app, x86::CPU& cpu)
 
 /* sub_47b7d0: the colours (+0x10) of eax vertices from edx (0x20 bytes
  * each) darkened by the sun's glare [0x6fbc38] times [0x53b418]. */
-void glareVerticesNative(win32::WinApplication* app, x86::CPU& cpu)
+void glareVertices(win32::WinApplication* app, x86::CPU& cpu)
 {
+    const ExactFpu exact(cpu);
     const Memory m{app};
     const x86::reg32 entry = cpu.esp;
     const x86::reg32 saved[] = { cpu.ebx, cpu.ecx, cpu.esi, cpu.edi, cpu.ebp };
@@ -6827,8 +6853,9 @@ void glareVerticesNative(win32::WinApplication* app, x86::CPU& cpu)
 /* sub_4cb670: sub_4e070c on 0x12c00 bytes at 0x7ddfd0 and 0x6400 at
  * 0x7f0bd0, the eight bytes at 0x560f30 for a driver with bit 0x40 of
  * [0x7a3a58], 0x7f6fd0 and 0x7f6fd4 cleared. */
-void clearBuffersNative(win32::WinApplication* app, x86::CPU& cpu)
+void clearBuffers(win32::WinApplication* app, x86::CPU& cpu)
 {
+    const ExactFpu exact(cpu);
     const Memory m{app};
     const x86::reg32 entry = cpu.esp;
     const x86::reg32 saved[] = { cpu.ecx, cpu.edx, cpu.ebp };
@@ -6877,8 +6904,9 @@ void clearBuffersNative(win32::WinApplication* app, x86::CPU& cpu)
  * 150..640 x 0..450, drawn by sub_4d7d90 with eleven fading copies trailing
  * behind it (the last picture as a shadow, its y from 225), centred by its
  * scaled width. */
-void bouncersNative(win32::WinApplication* app, x86::CPU& cpu)
+void bouncers(win32::WinApplication* app, x86::CPU& cpu)
 {
+    const ExactFpu exact(cpu);
     const Memory m{app};
     const x86::reg32 entry = cpu.esp;
     const x86::reg32 saved[] = { cpu.ebx, cpu.ecx, cpu.edx, cpu.esi, cpu.edi, cpu.ebp };
@@ -7153,8 +7181,9 @@ void bouncersNative(win32::WinApplication* app, x86::CPU& cpu)
  * way for [0x554e4c], a quad record (sub_4bbde0, 0xa0 bytes, flags 1,
  * texture 0x8b486c) of the colour, darkened by the sun's glare (on every
  * driver, a port).  Returns the record, or 0. */
-void roadLightNative(win32::WinApplication* app, x86::CPU& cpu)
+void roadLight(win32::WinApplication* app, x86::CPU& cpu)
 {
+    const ExactFpu exact(cpu);
     const Memory m{app};
     const x86::reg32 entry = cpu.esp;
     const x86::reg32 saved[] = { cpu.ebx, cpu.ecx, cpu.edx, cpu.esi, cpu.edi, cpu.ebp };
@@ -7578,8 +7607,9 @@ void roadLightNative(win32::WinApplication* app, x86::CPU& cpu)
  * cull distances and fog by the kind -- the main view, a split screen (its
  * cull at 500 as a single view's, a port), the mirror -- each also times
  * [0x536d6c] as floats.  Returns the record's number. */
-void viewRecordNative(win32::WinApplication* app, x86::CPU& cpu)
+void viewRecord(win32::WinApplication* app, x86::CPU& cpu)
 {
+    const ExactFpu exact(cpu);
     const Memory m{app};
     IntegerFlags flags;
     const x86::reg32 kind = cpu.eax, screen = cpu.edx;
@@ -7650,8 +7680,9 @@ void viewRecordNative(win32::WinApplication* app, x86::CPU& cpu)
  * the view records (sub_41df10: the main view and the mirror, or the two
  * halves of a split screen with [0x6fd3b0] 1), then sub_41d310 ..
  * sub_41d900. */
-void raceViewsNative(win32::WinApplication* app, x86::CPU& cpu)
+void raceViews(win32::WinApplication* app, x86::CPU& cpu)
 {
+    const ExactFpu exact(cpu);
     const Memory m{app};
     const x86::reg32 entry = cpu.esp;
     const x86::reg32 saved[] = { cpu.ebx, cpu.edx, cpu.esi, cpu.ebp };
@@ -7728,8 +7759,9 @@ void raceViewsNative(win32::WinApplication* app, x86::CPU& cpu)
  * every driver, a port), their size [0x8ca230] less depth times [0x8ca250]
  * times [0x549804], at most 1, closed by sub_4bbde0 (or sub_4bbe70 for
  * none). */
-void smokeNative(win32::WinApplication* app, x86::CPU& cpu)
+void smoke(win32::WinApplication* app, x86::CPU& cpu)
 {
+    const ExactFpu exact(cpu);
     const Memory m{app};
     const x86::reg32 entry = cpu.esp;
     const x86::reg32 saved[] = { cpu.ebx, cpu.ecx, cpu.edi, cpu.ebp };
@@ -8023,8 +8055,9 @@ done:
  * [0x54982c]; quads of 0x80 bytes (flags 1 at +4 and +6), a respawned
  * particle also handed to sub_414f90, [0x54981c] the scatter and the
  * streak's width. */
-void streaksNative(win32::WinApplication* app, x86::CPU& cpu)
+void streaks(win32::WinApplication* app, x86::CPU& cpu)
 {
+    const ExactFpu exact(cpu);
     const Memory m{app};
     const x86::reg32 entry = cpu.esp;
     const x86::reg32 saved[] = { cpu.ecx, cpu.edi, cpu.ebp };
@@ -8329,8 +8362,9 @@ done:
  * Ports: at Full the far distance stays whole and a split view's reaches
  * 500, and the mirror takes the main view's distances.  Then every view's
  * distances as floats times [0x536ce4]. */
-void viewDistancesNative(win32::WinApplication* app, x86::CPU& cpu)
+void viewDistances(win32::WinApplication* app, x86::CPU& cpu)
 {
+    const ExactFpu exact(cpu);
     const Memory m{app};
     const x86::reg32 entry = cpu.esp;
     // push ebx, ecx, edx, esi, edi, ebp; mov ebp, esp; sub esp, 0x18
@@ -8431,8 +8465,9 @@ void viewDistancesNative(win32::WinApplication* app, x86::CPU& cpu)
 
 /* sub_4b56e0: the transform buffer's size (four times the original's, a
  * port) to [eax] and edx, sub_4e1620 for 0x53ec28. */
-void transformBufferNative(win32::WinApplication* app, x86::CPU& cpu)
+void transformBuffer(win32::WinApplication* app, x86::CPU& cpu)
 {
+    const ExactFpu exact(cpu);
     const Memory m{app};
     const x86::reg32 entry = cpu.esp;
     const x86::reg32 saved[] = { cpu.ebx, cpu.edx, cpu.ebp };
@@ -8463,8 +8498,9 @@ void transformBufferNative(win32::WinApplication* app, x86::CPU& cpu)
  * list is set by THRASH_setvideomode (16 bits at most, triple buffered when
  * the entry allows) between clears and flips, then the same refresh, the
  * window and [0x7a3a68] by the buffering. */
-void screenModeNative(win32::WinApplication* app, x86::CPU& cpu)
+void screenMode(win32::WinApplication* app, x86::CPU& cpu)
 {
+    const ExactFpu exact(cpu);
     const Memory m{app};
     const x86::reg32 entry = cpu.esp;
     const x86::reg32 saved[] = { cpu.ebx, cpu.ecx, cpu.edx, cpu.esi, cpu.edi, cpu.ebp };
@@ -8636,8 +8672,9 @@ constexpr x86::reg32 kListingMemory = 0x2000000;
  * states set as each driver wants, [0x55fed0], [0x7a3a60], [0x7a3a64],
  * [0x7a3a68], [0x7a3a6c], [0x7a3a70]; the 2D one only on a screen of 8 bits
  * or more, those not built in with a message and sub_4f2a7d. */
-void startDriverNative(win32::WinApplication* app, x86::CPU& cpu)
+void startDriver(win32::WinApplication* app, x86::CPU& cpu)
 {
+    const ExactFpu exact(cpu);
     const Memory m{app};
     const x86::reg32 entry = cpu.esp;
     const x86::reg32 saved[] = { cpu.ebx, cpu.ecx, cpu.esi, cpu.edi, cpu.ebp };
@@ -8882,8 +8919,9 @@ void startDriverNative(win32::WinApplication* app, x86::CPU& cpu)
  * +0x1c) -- the corners and the edges of a 9-slice, the middle left out --
  * from the element's inside, x ebx to [esp+4], y edx to ecx, and a border
  * of hudBorder outside it.  ret 4. */
-void hudFrameNative(win32::WinApplication* app, x86::CPU& cpu)
+void hudFrame(win32::WinApplication* app, x86::CPU& cpu)
 {
+    const ExactFpu exact(cpu);
     const Memory m{app};
     const x86::reg32 entry = cpu.esp;
     const x86::reg32 quads = cpu.eax;
@@ -8934,8 +8972,9 @@ void hudFrameNative(win32::WinApplication* app, x86::CPU& cpu)
  * of its +0x200) times the width ebx and the height ecx, each truncated by
  * sub_4dfd56 and stored by fistp; then widescreenHudRect (a port,
  * tools/apply_widescreen.py). */
-void hudRectNative(win32::WinApplication* app, x86::CPU& cpu)
+void hudRect(win32::WinApplication* app, x86::CPU& cpu)
 {
+    const ExactFpu exact(cpu);
     const Memory m{app};
     const x86::reg32 entry = cpu.esp;
     const x86::reg32 saved[] = { cpu.esi, cpu.edi, cpu.ebp };
@@ -9016,8 +9055,9 @@ void hudRectNative(win32::WinApplication* app, x86::CPU& cpu)
  * its frame (sub_47f650 into 0x791a8c's 0x400 bytes a player) a border inside
  * the rectangle, and the picture in it at 0x791b38 (0x100 bytes a player):
  * the corners of its quad, the same inset, and its centre at +0xc0. */
-void hudPictureNative(win32::WinApplication* app, x86::CPU& cpu)
+void hudPicture(win32::WinApplication* app, x86::CPU& cpu)
 {
+    const ExactFpu exact(cpu);
     const Memory m{app};
     const x86::reg32 entry = cpu.esp;
     const x86::reg32 saved[] = { cpu.ebx, cpu.ecx, cpu.edx, cpu.esi, cpu.edi, cpu.ebp };
@@ -9078,8 +9118,9 @@ void hudPictureNative(win32::WinApplication* app, x86::CPU& cpu)
  * inside corners; its height times [0x53b528] to 0x724760, and, where the
  * layout's kind ([0x6fbc6c], by split screen and bit 0x20 of the player's
  * view, sub_422bd0) is 3, its centre times [0x53b52c] to 0x724768. */
-void hudDialNative(win32::WinApplication* app, x86::CPU& cpu)
+void hudDial(win32::WinApplication* app, x86::CPU& cpu)
 {
+    const ExactFpu exact(cpu);
     const Memory m{app};
     const x86::reg32 entry = cpu.esp;
     const x86::reg32 saved[] = { cpu.ebx, cpu.ecx, cpu.edx, cpu.esi, cpu.edi, cpu.ebp };
@@ -9152,8 +9193,9 @@ void hudDialNative(win32::WinApplication* app, x86::CPU& cpu)
  * player's view, sub_422bd0, is set): its frame (sub_47f650 into 0x791b40's
  * 0x400 bytes a player) a border inside its rectangle, the quad at 0x791b58
  * (0x80 bytes a player) the same inset, and 0x700230..3c cleared. */
-void hudPanelNative(win32::WinApplication* app, x86::CPU& cpu)
+void hudPanel(win32::WinApplication* app, x86::CPU& cpu)
 {
+    const ExactFpu exact(cpu);
     const Memory m{app};
     const x86::reg32 entry = cpu.esp;
     const x86::reg32 saved[] = { cpu.ebx, cpu.ecx, cpu.edx, cpu.esi, cpu.edi, cpu.ebp };
@@ -9222,8 +9264,9 @@ void hudPanelNative(win32::WinApplication* app, x86::CPU& cpu)
  * its top by bit 0x10 of the player's flags, to 0x724780 and 0x724788.  Then
  * its frame (sub_47f650 into 0x791b18) as wide as [0x7925c8] ([0x7925cc] for
  * the cop's), the quad at 0x791ad4 inside it, and hudTablePanel (a port). */
-void hudTableNative(win32::WinApplication* app, x86::CPU& cpu)
+void hudTable(win32::WinApplication* app, x86::CPU& cpu)
 {
+    const ExactFpu exact(cpu);
     const Memory m{app};
     const x86::reg32 entry = cpu.esp;
     const x86::reg32 saved[] = { cpu.ebx, cpu.ecx, cpu.edx, cpu.esi, cpu.edi, cpu.ebp };
@@ -9420,8 +9463,9 @@ void hudTableNative(win32::WinApplication* app, x86::CPU& cpu)
  * round it, moved in by a border (4:3, a port) at each side; then a right or
  * bottom edge on the screen's last column or row ([0x7cdac8], [0x7cdacc], not
  * ported: these are the screen's) is moved in by one. */
-void hudInsetNative(win32::WinApplication* app, x86::CPU& cpu)
+void hudInset(win32::WinApplication* app, x86::CPU& cpu)
 {
+    const ExactFpu exact(cpu);
     const Memory m{app};
     const x86::reg32 entry = cpu.esp;
     const x86::reg32 saved[] = { cpu.ebx, cpu.ecx, cpu.ebp };
@@ -9491,8 +9535,9 @@ void hudInsetNative(win32::WinApplication* app, x86::CPU& cpu)
  * 0xff797c93) when [esp+4] is 0, the quads eax and edx (0x80 bytes each from
  * 0x724790) when it is 0 and 2, the lamp at 0x724c90, ebx and ecx when it is
  * 1, 1 and 3.  ret 4. */
-void startLightsNative(win32::WinApplication* app, x86::CPU& cpu)
+void startLights(win32::WinApplication* app, x86::CPU& cpu)
 {
+    const ExactFpu exact(cpu);
     const Memory m{app};
     const x86::reg32 entry = cpu.esp;
     const x86::reg32 saved[] = { cpu.esi, cpu.edi, cpu.ebp };
@@ -9607,8 +9652,9 @@ void startLightsNative(win32::WinApplication* app, x86::CPU& cpu)
  * from the dial's centre ([0x792040], [0x792044] or [0x792068], [0x79206c],
  * scaled to the cabin, a port: cabinRect) along the angle (sub_4ea970), drawn
  * by THRASH_drawquad under the texture state [0x7922e4] (sub_431900). */
-void needlesNative(win32::WinApplication* app, x86::CPU& cpu)
+void needles(win32::WinApplication* app, x86::CPU& cpu)
 {
+    const ExactFpu exact(cpu);
     const Memory m{app};
     const x86::reg32 entry = cpu.esp;
     const x86::reg32 saved[] = { cpu.ebx, cpu.ecx, cpu.edx, cpu.esi, cpu.edi, cpu.ebp };
@@ -9752,8 +9798,9 @@ void needlesNative(win32::WinApplication* app, x86::CPU& cpu)
  * of four vertices (colour sub_4206f0's) bent by sub_496bf0, scaled to the
  * cabin and placed in it (a port: cabinRect), clip-coded and drawn by
  * sub_4c12e0 between sub_4bed70's clip rectangles 0x7cdb88 and 0x7cdac0. */
-void barGaugesNative(win32::WinApplication* app, x86::CPU& cpu)
+void barGauges(win32::WinApplication* app, x86::CPU& cpu)
 {
+    const ExactFpu exact(cpu);
     const Memory m{app};
     const x86::reg32 entry = cpu.esp;
     const x86::reg32 saved[] = { cpu.ebx, cpu.ecx, cpu.edx, cpu.esi, cpu.edi, cpu.ebp };
@@ -10009,8 +10056,9 @@ void barGaugesNative(win32::WinApplication* app, x86::CPU& cpu)
  * [0x7a3a58]; then the needles (sub_4880b0), the gear (when [0x55d6a4]: the
  * view's +0x50b picks 0x791c10's 44-byte entry, a size and the texture) at
  * [0x55d69c], [0x55d6a0] of the cabin, and the bar gauges (sub_488470). */
-void cockpitNative(win32::WinApplication* app, x86::CPU& cpu)
+void cockpit(win32::WinApplication* app, x86::CPU& cpu)
 {
+    const ExactFpu exact(cpu);
     const Memory m{app};
     const x86::reg32 entry = cpu.esp;
     const x86::reg32 saved[] = { cpu.ebx, cpu.ecx, cpu.edx, cpu.esi, cpu.edi, cpu.ebp };
@@ -10264,8 +10312,9 @@ void cockpitNative(win32::WinApplication* app, x86::CPU& cpu)
  * them, each cut where it leaves the view by every plane its code has (near
  * [0x7d34f0] on 1/w, then x [0x7d34f4], [0x7d34ec], then y [0x7d34e0],
  * [0x7d34dc]) against the other's original, codes cleared, depths as above. */
-void lineNative(win32::WinApplication* app, x86::CPU& cpu)
+void line(win32::WinApplication* app, x86::CPU& cpu)
 {
+    const ExactFpu exact(cpu);
     const Memory m{app};
     const x86::reg32 entry = cpu.esp;
     const x86::reg32 saved[] = { cpu.ebx, cpu.ecx, cpu.esi, cpu.edi, cpu.ebp };
@@ -10436,8 +10485,9 @@ void lineNative(win32::WinApplication* app, x86::CPU& cpu)
  * sub_432390, by the list at 0x55e214); [esp+0xc] the colour of two corners.
  * The x87 work follows the generated code's order (sym/ssa2native.py).
  * ret 0xc. */
-void segmentMeterNative(win32::WinApplication* app, x86::CPU& cpu)
+void segmentMeter(win32::WinApplication* app, x86::CPU& cpu)
 {
+    const ExactFpu exact(cpu);
     const Memory m{app};
     const x86::reg32 entry = cpu.esp;
     const x86::reg32 saved[] = { cpu.esi, cpu.edi, cpu.ebp };
@@ -10806,8 +10856,9 @@ void segmentMeterNative(win32::WinApplication* app, x86::CPU& cpu)
  * them overlap.  A new count of rectangles at 0x700240 rebuilds them
  * (sub_4808b0, sub_49bd30 from [0x791a88]); each is a quad at [0x791ac0]
  * (0x380 bytes a player) shaded down the band by [0x53b508], [0x53b50c]. */
-void hudBandNative(win32::WinApplication* app, x86::CPU& cpu)
+void hudBand(win32::WinApplication* app, x86::CPU& cpu)
 {
+    const ExactFpu exact(cpu);
     const Memory m{app};
     const x86::reg32 entry = cpu.esp;
     const x86::reg32 saved[] = { cpu.ebx, cpu.ecx, cpu.edx, cpu.esi, cpu.edi, cpu.ebp };
@@ -11638,8 +11689,9 @@ void hudBandNative(win32::WinApplication* app, x86::CPU& cpu)
  * nothing at all while the player's car is in the pit (+0x9a4) or before
  * frame 0x140 or for a driver of kind 0x10.  The registers every call is
  * handed are the ones the generated code leaves, stale ones too. */
-void hudNative(win32::WinApplication* app, x86::CPU& cpu)
+void hud(win32::WinApplication* app, x86::CPU& cpu)
 {
+    const ExactFpu exact(cpu);
     const Memory m{app};
     const x86::reg32 entry = cpu.esp;
     const x86::reg32 saved[] = { cpu.ebx, cpu.ecx, cpu.edx, cpu.esi, cpu.edi, cpu.ebp };
@@ -13336,8 +13388,9 @@ void hudNative(win32::WinApplication* app, x86::CPU& cpu)
  * for the player's car and 128 for the rest (256 for all with
  * NFS_CAR_DETAIL_FULL, a port); the player's shared to [0x55fe24] as well
  * when [0x55d000] is 1. */
-void carTexturesNative(win32::WinApplication* app, x86::CPU& cpu)
+void carTextures(win32::WinApplication* app, x86::CPU& cpu)
 {
+    const ExactFpu exact(cpu);
     const Memory m{app};
     const x86::reg32 entry = cpu.esp;
     const x86::reg32 saved[] = { cpu.ebx, cpu.ecx, cpu.esi, cpu.edi, cpu.ebp };
@@ -13497,8 +13550,9 @@ void carTexturesNative(win32::WinApplication* app, x86::CPU& cpu)
  * then the "loading" text (string 0x18c) at its place and [0x79f280],
  * [0x79f284] set from its width (sub_4d1000) for the progress bar.  The
  * whole picture is fitted to 4:3 first (a port: loadingScreenFit). */
-void loadingScreenNative(win32::WinApplication* app, x86::CPU& cpu)
+void loadingScreen(win32::WinApplication* app, x86::CPU& cpu)
 {
+    const ExactFpu exact(cpu);
     // port (apply_loading_screen): the loading screen at 4:3
     loadingScreenFit(app, cpu, true);
     const Memory m{app};
@@ -13755,536 +13809,15 @@ void loadingScreenNative(win32::WinApplication* app, x86::CPU& cpu)
     cpu.esp = entry + 4;
 }
 
-/* sub_495bc0: a movie (the file named at eax) played: its MAD chunks
- * (sub_495b60 the next of them, "MADk" a key frame and "MADe" one to skip
- * when late) decoded by 16x16 blocks (sub_4f3560, sub_4f3600) into the
- * buffers sub_495890 hands out, shown by sub_4958c0 at their time ([0x79f310]
- * a frame in 16.16) against the clock (sub_495a50), centred on the screen or,
- * with ecx, at ebx, ecx; the sound streamed (sub_4f3a10..sub_4f3a80,
- * sub_495a10, sub_4f2f50 to its end) and [edx] set when the player presses
- * to skip (sub_4df340 2).  ret 4. */
-void moviePlayerNative(win32::WinApplication* app, x86::CPU& cpu)
-{
-    const Memory m{app};
-    const x86::reg32 entry = cpu.esp;
-    const x86::reg32 saved[] = { cpu.esi, cpu.edi, cpu.ebp };
-    // push esi, edi, ebp; mov ebp, esp; sub esp, 0x68
-    const x86::reg32 ebp = entry - 12;
-    x86::reg32 esp = ebp - 0x68;
-    IntegerFlags flags;
-    Registers r{ cpu.eax, cpu.ebx, cpu.ecx, cpu.edx, cpu.esi, cpu.eax };
-    auto callTo = [&](x86::reg32 target) {
-        if (!callWithRegisters(app, cpu, flags, r, ebp, esp, target))
-            return false;
-        esp = cpu.esp;
-        return true;
-    };
-    auto push = [&](x86::reg32 value) {
-        esp -= 4;
-        m.word(esp, value);
-    };
-    const x86::reg32 madk = 0x6b44414d, made = 0x6544414d;
-    // the generated code's safepoints, at each of its loops' heads
-    auto safepoint = [&]() {
-        if (app->contextWanted())
-            app->yieldContext(cpu);
-    };
-    auto half = [](x86::reg32 v) {  // (v - (v >> 31)) >> 1, as sar, sub, sar does it
-        return x86::reg32(x86::sreg32(v - x86::reg32(x86::sreg32(v) >> 31)) >> 1);
-    };
-    m.word(ebp - 0x2c, r.edx);
-    m.word(ebp - 0x3c, r.ebx);
-    m.word(ebp - 0x30, r.ecx);
-    // the file's buffer and stream
-    r.edx = 0x100000;
-    r.eax = 0x53be88;
-    r.ebx = m.word(0x5643f4);
-    if (!callTo(0x4e1620))
-        return;
-    push(0x100000);
-    r.ebx = 2;
-    m.word(ebp - 0x40, r.eax);
-    r.ecx = r.eax;
-    r.edx = r.ebx;
-    r.eax = r.ebx;
-    if (!callTo(0x4cfa80))
-        return;
-    r.edx = 2;
-    r.ecx = 0x4353;
-    r.ebx = 0xffff;
-    r.esi = r.eax;
-    m.word(ebp - 8, r.eax);
-    if (!callTo(0x4cfe70))
-        return;
-    push(2);
-    r.edx = 1;
-    m.word(ebp - 0x24, r.eax);
-    r.eax = r.esi;
-    if (!callTo(0x4cfca0))
-        return;
-    r.edx = r.edi;
-    r.eax = r.esi;
-    r.ecx = 0;
-    r.ebx = 0;
-    if (!callTo(0x4cfef0))
-        return;
-    m.word(ebp - 0x34, r.eax);
-    r.eax = r.esi;
-    if (!callTo(0x495b60))
-        return;
-    r.esi = r.eax;
-    flags.logic(r.eax);
-    if (!r.eax)
-    {
-        push(0x53be8c);
-        if (!callTo(0x401010))
-            return;
-        esp += 4;
-    }
-    // the first chunk's header: frame time, width, height
-    r.edx = 1;
-    r.eax = m.word(r.esi + 0xc);
-    r.edi = m.word(ebp - 0x30);
-    m.word(0x79f310, r.eax);
-    r.eax = x86::reg32(x86::sreg32(m.word(r.esi + 0xe)) >> 16);
-    r.ecx = 0;
-    m.word(0x79f32c, r.edx);
-    m.word(0x79f324, r.eax);
-    r.eax = x86::reg32(x86::sreg32(m.word(r.esi + 0x10)) >> 16);
-    m.word(0x79f314, r.ecx);
-    m.word(0x79f334, r.ecx);
-    m.word(0x79f31c, r.eax);
-    flags.logic(r.edi);
-    if (!r.edi)
-    {
-        // centred
-        r.eax = m.word(0x79f324);
-        r.edx = m.word(0x564384) - r.eax;
-        r.eax = r.edx;
-        r.edx = x86::reg32(x86::sreg32(r.edx) >> 31);
-        r.eax = half(r.eax);
-        r.ecx = m.word(0x79f31c);
-        r.edx = m.word(0x564388) - r.ecx;
-        r.edi = r.eax;
-        r.eax = r.edx;
-        r.edx = x86::reg32(x86::sreg32(r.edx) >> 31);
-        r.eax -= r.edx;
-        flags.sar(r.eax, 1);
-        flags.of = false;
-        r.eax = x86::reg32(x86::sreg32(r.eax) >> 1);
-    }
-    else
-    {
-        r.eax = m.word(0x564384);
-        r.edx = x86::reg32(x86::sreg32(r.eax) >> 31);
-        r.eax = half(r.eax);
-        r.edi = r.eax;
-        r.eax = m.word(0x564388);
-        r.edx = x86::reg32(x86::sreg32(r.eax) >> 31);
-        r.eax = half(r.eax);
-        r.ebx = m.word(0x79f324);
-        r.edx = m.word(0x79f31c);
-        r.edi -= r.ebx;
-        r.eax -= r.edx;
-    }
-    r.ecx = m.word(ebp + 0x10);
-    push(r.ecx);
-    r.ebx = m.word(ebp - 0x30);
-    push(r.ebx);
-    r.edx = m.word(ebp - 0x3c);
-    push(r.edx);
-    r.ecx = m.word(0x79f31c);
-    r.ebx = m.word(0x79f324);
-    push(6);
-    r.edx = r.eax;
-    r.eax = r.edi;
-    if (!callTo(0x4957a0) || !callTo(0x495890))
-        return;
-    r.ecx = 0;
-    r.edi = 0;
-    m.word(ebp - 4, r.ecx);
-    r.ecx = r.eax;
-    // a chunk decoded into the buffer at `buffer`, by 16x16 blocks
-    auto decode = [&](x86::reg32 row, x86::reg32 column, bool second) {
-        r.edx = m.word(r.esi);
-        r.eax = r.esi + 0x18;
-        flags.compare(second ? r.edx : r.ebx, madk);
-        const bool key = (second ? r.edx : r.ebx) == madk;
-        r.ebx = 0;
-        if (key)
-        {
-            r.edx = 0;
-            flags.logic(0);
-        }
-        else
-            r.edx = 1;
-        setByte(r.ebx, 0, m.byte(r.esi + 0x15));
-        if (!callTo(0x4f3560))
-            return false;
-        if (second)
-            r.ebx = 0;
-        else
-            r.eax = 0;
-        m.word(ebp + row, 0);
-        if (second)
-            m.word(ebp - 0x28, 0);
-        for (;;)
-        {
-            safepoint();
-            r.eax = m.word(ebp + row);
-            flags.compare(r.eax, m.word(0x79f31c));
-            if (x86::sreg32(r.eax) >= x86::sreg32(m.word(0x79f31c)))
-                break;
-            r.ebx = 0;
-            m.word(ebp + column, 0);
-            for (;;)
-            {
-                safepoint();
-                r.eax = m.word(ebp + column);
-                flags.compare(r.eax, m.word(0x79f324));
-                if (x86::sreg32(r.eax) >= x86::sreg32(m.word(0x79f324)))
-                    break;
-                r.ebx = m.word(0x79f324);
-                r.edx = m.word(ebp + row) * r.ebx + r.eax;
-                r.eax = half(r.edx);
-                r.edx = x86::reg32(x86::sreg32(r.edx) >> 31);
-                r.eax <<= 2;
-                r.edx = (second ? m.word(ebp - 0x1c) : r.ecx) + r.eax;
-                m.word(ebp - 0x48, r.edx);
-                r.eax += m.word(ebp - 0x20);
-                r.edx = m.word(ebp - 0x48);
-                if (!callTo(0x4f3600))
-                    return false;
-                flags.add(m.word(ebp + column), 0x10);
-                m.word(ebp + column, m.word(ebp + column) + 0x10);
-            }
-            if (second)
-            {
-                // the clock kept running once a row
-                flags.compare(m.word(ebp - 0x28), 0);
-                if (!m.word(ebp - 0x28))
-                {
-                    if (!callTo(0x495a50) || !callTo(0x495920))
-                        return false;
-                    m.word(ebp - 0x28, r.eax);
-                }
-            }
-            flags.add(m.word(ebp + row), 0x10);
-            m.word(ebp + row, m.word(ebp + row) + 0x10);
-        }
-        return true;
-    };
-    // the frames up front, as fast as they come
-    for (;;)
-    {
-        safepoint();
-        flags.logic(r.esi);
-        if (!r.esi)
-            break;
-        flags.logic(r.ecx);
-        if (!r.ecx)
-            break;
-        r.ebx = m.word(r.esi);
-        if (!decode(0xffffffec, 0xfffffff0, false))
-            return;
-        flags.compare(m.word(r.esi), made);
-        if (m.word(r.esi) != made)
-            m.word(ebp - 0x20, r.ecx);
-        r.eax = m.word(ebp - 8);
-        r.edx = r.esi;
-        if (!callTo(0x4d03c0))
-            return;
-        r.eax = m.word(ebp - 4);
-        if (!callTo(0x4958c0))
-            return;
-        r.ecx = m.word(0x79f310);
-        r.edi += r.ecx;
-        r.eax = x86::reg32(x86::sreg32(r.edi) >> 16);
-        r.ebx = m.word(ebp - 4);
-        r.edi &= 0xffff;
-        flags.add(r.ebx, r.eax);
-        r.ebx += r.eax;
-        if (!callTo(0x495890))
-            return;
-        r.ecx = r.eax;
-        r.eax = m.word(ebp - 8);
-        m.word(ebp - 4, r.ebx);
-        if (!callTo(0x495b60))
-            return;
-        r.esi = r.eax;
-    }
-    // the sound
-    r.eax = ebp - 0x68;
-    r.edx = 0x1e;
-    if (!callTo(0x4e9b20))
-        return;
-    r.eax = 1;
-    if (!callTo(0x4f3a10))
-        return;
-    r.ebx = m.word(0x5643f4);
-    r.ecx = r.eax;
-    r.edx = r.eax;
-    r.eax = 0x53be88;
-    if (!callTo(0x4e1620))
-        return;
-    r.ebx = 1;
-    push(r.ecx);
-    r.edx = ebp - 0x68;
-    m.word(ebp - 0x38, r.eax);
-    push(r.eax);
-    r.ecx = 0x1e;
-    r.eax = m.word(ebp - 0x24);
-    if (!callTo(0x4f3a60))
-        return;
-    r.ecx = r.eax;
-    m.word(ebp - 0x44, r.eax);
-    r.eax = m.word(ebp - 0x24);
-    if (!callTo(0x4d0460))
-        return;
-    flags.logic(r.eax);
-    if (!r.eax)
-        r.ecx = 0xffffffff;
-    else
-    {
-        r.ebx = m.word(ebp - 0x34);
-        r.eax = r.ecx;
-        r.edx = 0;
-        if (!callTo(0x4f3a80))
-            return;
-        r.ecx = r.eax;
-    }
-    r.eax = r.ecx;
-    if (!callTo(0x495a10))
-        return;
-    r.eax = 0;
-    m.word(0x79f330, 0);
-    // the movie in time
-    for (;;)
-    {
-        if (movieSkipRequested())
-        {
-            // the player's own abort (event type 2, Escape), and out
-            m.word(m.word(ebp - 0x2c), 1);
-            goto cleanup;
-        }
-        safepoint();
-        flags.logic(r.esi);
-        if (!r.esi)
-            break;
-        flags.compare(m.word(0x79f330), 0);
-        if (m.word(0x79f330))
-            break;
-        r.eax = 0;
-        if (!callTo(0x4e7630) || !callTo(0x4df340))
-            return;
-        flags.compare(r.eax, 2);
-        if (r.eax == 2)
-        {
-            r.eax = m.word(ebp - 0x2c);
-            m.word(r.eax, 1);
-        }
-        if (!callTo(0x495a50))
-            return;
-        r.edx = m.word(r.esi);
-        r.ebx = r.eax;
-        flags.compare(r.edx, made);
-        if (r.edx == made)
-        {
-            r.edx = m.word(ebp - 0x2c);
-            flags.compare(m.word(r.edx), 0);
-            bool skip = true;
-            if (!m.word(r.edx))
-            {
-                r.edx = m.word(ebp - 4) - r.eax;
-                flags.compare(r.edx, 0x85);
-                skip = x86::sreg32(r.edx) < 0x85;
-            }
-            if (skip)
-            {
-                // a skippable frame not decoded: its time on
-                r.eax = m.word(0x79f334) + 1;
-                r.edx = m.word(0x79f310);
-                r.edi += r.edx;
-                m.word(0x79f334, r.eax);
-                r.eax = r.edi;
-                r.edx = m.word(ebp - 4);
-                r.eax = x86::reg32(x86::sreg32(r.eax) >> 16);
-                r.edx += r.eax;
-                r.eax = m.word(ebp - 8);
-                m.word(ebp - 4, r.edx);
-                r.edx = r.esi;
-                if (!callTo(0x4d03c0))
-                    return;
-                r.eax = m.word(ebp - 8);
-                r.edi &= 0xffff;
-                if (!callTo(0x495b60))
-                    return;
-                r.esi = r.eax;
-                flags.logic(r.eax);
-                if (!r.eax)
-                    break;
-            }
-        }
-        r.eax = m.word(ebp - 4) - r.ebx;
-        flags.compare(r.eax, 0x43);
-        if (x86::sreg32(r.eax) < 0x43)
-        {
-            // behind: chunks dropped up to the next key frame
-            for (;;)
-            {
-                safepoint();
-                flags.compare(m.word(r.esi), made);
-                if (m.word(r.esi) != made)
-                {
-                    flags.inc(m.word(0x79f314));
-                    m.word(0x79f314, m.word(0x79f314) + 1);
-                }
-                else
-                    m.word(0x79f334, m.word(0x79f334) + 1);
-                r.ebx = m.word(0x79f310);
-                r.edi += r.ebx;
-                r.eax = r.edi;
-                r.edx = m.word(ebp - 4);
-                r.eax = x86::reg32(x86::sreg32(r.eax) >> 16);
-                r.edx += r.eax;
-                r.eax = m.word(ebp - 8);
-                m.word(ebp - 4, r.edx);
-                r.edx = r.esi;
-                if (!callTo(0x4d03c0))
-                    return;
-                r.eax = m.word(ebp - 8);
-                r.edi &= 0xffff;
-                if (!callTo(0x495b60))
-                    return;
-                r.esi = r.eax;
-                flags.logic(r.eax);
-                if (!r.eax)
-                    break;
-                flags.compare(m.word(r.eax), madk);
-                if (m.word(r.eax) == madk)
-                    break;
-            }
-            flags.logic(r.esi);
-            if (!r.esi)
-                break;
-        }
-        // a buffer to decode into, the clock kept running meanwhile
-        for (;;)
-        {
-            safepoint();
-            if (!callTo(0x495890))
-                return;
-            m.word(ebp - 0x1c, r.eax);
-            flags.compare(m.word(ebp - 0x1c), 0);
-            if (m.word(ebp - 0x1c))
-                break;
-            if (!callTo(0x495a50) || !callTo(0x495920))
-                return;
-        }
-        if (!decode(0xfffffff4, 0xffffffe8, true))
-            return;
-        flags.compare(m.word(r.esi), made);
-        if (m.word(r.esi) != made)
-            m.word(ebp - 0x20, m.word(ebp - 0x1c));
-        r.eax = m.word(ebp - 8);
-        r.edx = r.esi;
-        if (!callTo(0x4d03c0))
-            return;
-        r.eax = m.word(ebp - 4);
-        if (!callTo(0x4958c0))
-            return;
-        flags.logic(r.ecx);
-        if (x86::sreg32(r.ecx) < 0)
-        {
-            r.eax = m.word(ebp - 0x24);
-            if (!callTo(0x495b30))
-                return;
-        }
-        r.esi = m.word(0x79f310);
-        r.edi += r.esi;
-        r.eax = r.edi;
-        r.edx = m.word(ebp - 4);
-        r.eax = x86::reg32(x86::sreg32(r.eax) >> 16);
-        r.edi &= 0xffff;
-        flags.add(r.edx, r.eax);
-        r.edx += r.eax;
-        r.eax = m.word(ebp - 8);
-        m.word(ebp - 4, r.edx);
-        if (!callTo(0x495b60))
-            return;
-        r.esi = r.eax;
-        if (!callTo(0x495b10))
-            return;
-    }
-    // the last frame's time out, then the sound to its end
-    for (;;)
-    {
-        safepoint();
-        if (!callTo(0x495a50))
-            return;
-        flags.compare(r.eax, m.word(ebp - 4));
-        if (x86::sreg32(r.eax) >= x86::sreg32(m.word(ebp - 4)))
-            break;
-        if (!callTo(0x495920))
-            return;
-        r.eax = 0;
-        flags.logic(0);
-        if (!callTo(0x4e7630))
-            return;
-    }
-    flags.logic(r.ecx);
-    if (x86::sreg32(r.ecx) >= 0)
-    {
-        for (;;)
-        {
-            safepoint();
-            r.edx = ebp - 0x58;
-            r.eax = r.ecx;
-            if (!callTo(0x4f2f50))
-                return;
-            r.eax = 0;
-            if (!callTo(0x4e7630) || !callTo(0x495b10))
-                return;
-            flags.compare(m.word(ebp - 0x58), 3);
-            if (m.word(ebp - 0x58) == 3)
-                break;
-            flags.compare(m.word(0x79f330), 0);
-            if (m.word(0x79f330))
-                break;
-        }
-    }
-cleanup:
-    r.eax = m.word(ebp - 0x44);
-    if (!callTo(0x4f43c0))
-        return;
-    r.eax = m.word(ebp - 8);
-    if (!callTo(0x4cfd30))
-        return;
-    r.eax = m.word(ebp - 0x40);
-    if (!callTo(0x4e1890))
-        return;
-    r.eax = m.word(ebp - 0x38);
-    if (!callTo(0x4e1890) || !callTo(0x495860))
-        return;
-    flags.store(cpu);
-    cpu.eax = r.eax;
-    cpu.ebx = r.ebx;
-    cpu.ecx = r.ecx;
-    cpu.edx = r.edx;
-    cpu.esi = saved[0];
-    cpu.edi = saved[1];
-    cpu.ebp = saved[2];
-    cpu.esp = entry + 8;
-}
-
 /* sub_4d0a10: the 2D picture at [0x56727c] (+4, +6 its width and height) made
  * texture [0x840184] (44 bytes each from 0x83f6a8: its size twice, the THRASH
  * handle): one over 0x8000 pixels by sub_4d4080 at 256; else decoded
  * (sub_4d37a0, its format to [ebp-0x34]) and copied into a square of 64, 128
  * or 256 by its depth (sub_4d18b0: 8, 16 or 32 bits), cut or padded to it,
  * then THRASH_talloc and THRASH_tupdate. */
-void pictureTextureNative(win32::WinApplication* app, x86::CPU& cpu)
+void pictureTexture(win32::WinApplication* app, x86::CPU& cpu)
 {
+    const ExactFpu exact(cpu);
     const Memory m{app};
     const x86::reg32 entry = cpu.esp;
     const x86::reg32 saved[] = { cpu.ebx, cpu.ecx, cpu.edx, cpu.esi, cpu.edi, cpu.ebp };
@@ -14535,8 +14068,9 @@ void pictureTextureNative(win32::WinApplication* app, x86::CPU& cpu)
  * THRASH_tupdate; the handle to eax, and at ebx the texture's corners inset
  * by half a texel ([0x549438] times its size): s, t at +8..+0x24, +0x28 0.
  * ret 4. */
-void squareTextureNative(win32::WinApplication* app, x86::CPU& cpu)
+void squareTexture(win32::WinApplication* app, x86::CPU& cpu)
 {
+    const ExactFpu exact(cpu);
     const Memory m{app};
     const x86::reg32 entry = cpu.esp;
     const x86::reg32 saved[] = { cpu.esi, cpu.edi, cpu.ebp };
@@ -14660,8 +14194,9 @@ void squareTextureNative(win32::WinApplication* app, x86::CPU& cpu)
  * of 1 KB, round robin); then with sub_4f24e0's name in sub_4e0820's list
  * ("0x54943c") expanded to 16 bits (sub_4d3380, format 7), else paletted
  * (format 2 with flag 4). */
-void paletteTextureNative(win32::WinApplication* app, x86::CPU& cpu)
+void paletteTexture(win32::WinApplication* app, x86::CPU& cpu)
 {
+    const ExactFpu exact(cpu);
     const Memory m{app};
     const x86::reg32 entry = cpu.esp;
     const x86::reg32 saved[] = { cpu.ebx, cpu.ecx, cpu.esi, cpu.edi, cpu.ebp };
@@ -14854,8 +14389,9 @@ void paletteTextureNative(win32::WinApplication* app, x86::CPU& cpu)
  * then THRASH_talloc (format 2 with the palette [0x563a84]), THRASH_tupdate
  * and the record's corners (+8..+0x24 by [0x549450], [0x549454], +0x28 4).
  * eax 1 when no texture could be had, else 0.  ret 8. */
-void pieceTextureNative(win32::WinApplication* app, x86::CPU& cpu)
+void pieceTexture(win32::WinApplication* app, x86::CPU& cpu)
 {
+    const ExactFpu exact(cpu);
     const Memory m{app};
     const x86::reg32 entry = cpu.esp;
     const x86::reg32 saved[] = { cpu.esi, cpu.edi, cpu.ebp };
@@ -15303,8 +14839,9 @@ void pieceTextureNative(win32::WinApplication* app, x86::CPU& cpu)
  * packed, as bars at 0x792090 (sub_4d4440), into one square texture of the
  * least power of two that holds it: THRASH_talloc, THRASH_tupdate.  eax the
  * number of records used, 0 when a texture could not be had.  ret 8. */
-void cabinTexturesNative(win32::WinApplication* app, x86::CPU& cpu)
+void cabinTextures(win32::WinApplication* app, x86::CPU& cpu)
 {
+    const ExactFpu exact(cpu);
     const Memory m{app};
     const x86::reg32 entry = cpu.esp;
     const x86::reg32 saved[] = { cpu.esi, cpu.edi, cpu.ebp };
@@ -15705,863 +15242,6 @@ void cabinTexturesNative(win32::WinApplication* app, x86::CPU& cpu)
     leave();
 }
 
-}
-
-bool clipByZ(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (nativeOriginalRunning() || !singlePrecision(cpu) || !renderNativeOn(0x4bf790))
-        return false;
-    if (nativeChecking())
-    {
-        static void* state = nullptr;
-        nativeCheckWhole(app, cpu, "sub_4bf790", 0x4bf790, state, render::clipByZNative, true);
-        return true;
-    }
-    render::clipByZNative(app, cpu);
-    return true;
-}
-
-bool quadByZ(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (nativeOriginalRunning() || !singlePrecision(cpu) || !renderNativeOn(0x4c20e0))
-        return false;
-    if (nativeChecking())
-    {
-        static void* state = nullptr;
-        nativeCheckWhole(app, cpu, "sub_4c20e0", 0x4c20e0, state, render::quadByZNative, true);
-        return true;
-    }
-    render::quadByZNative(app, cpu);
-    return true;
-}
-
-bool triangleRecords(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (nativeOriginalRunning() || !nativesEnabled() || !renderNativeOn(0x434120))
-        return false;
-    if (nativeChecking())
-    {
-        static void* state = nullptr;
-        nativeCheckWhole(app, cpu, "sub_434120", 0x434120, state, render::triangleRecordsNative, true);
-        return true;
-    }
-    render::triangleRecordsNative(app, cpu);
-    return true;
-}
-
-bool nearTriangle(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (nativeOriginalRunning() || !singlePrecision(cpu) || !renderNativeOn(0x4c3ad0))
-        return false;
-    if (nativeChecking())
-    {
-        static void* state = nullptr;
-        nativeCheckWhole(app, cpu, "sub_4c3ad0", 0x4c3ad0, state, render::nearTriangleNative, true);
-        return true;
-    }
-    render::nearTriangleNative(app, cpu);
-    return true;
-}
-
-bool quadRecords(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (nativeOriginalRunning() || !nativesEnabled() || !renderNativeOn(0x4332b0))
-        return false;
-    if (nativeChecking())
-    {
-        static void* state = nullptr;
-        nativeCheckWhole(app, cpu, "sub_4332b0", 0x4332b0, state, render::quadRecordsNative, true);
-        return true;
-    }
-    render::quadRecordsNative(app, cpu);
-    return true;
-}
-
-bool subdivideQuad(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (nativeOriginalRunning() || !singlePrecision(cpu) || !renderNativeOn(0x432720))
-        return false;
-    if (nativeChecking())
-    {
-        static void* state = nullptr;
-        nativeCheckWhole(app, cpu, "sub_432720", 0x432720, state, render::subdivideQuadNative, true);
-        return true;
-    }
-    render::subdivideQuadNative(app, cpu);
-    return true;
-}
-
-bool quadSubdivided(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (nativeOriginalRunning() || !singlePrecision(cpu) || !renderNativeOn(0x433060))
-        return false;
-    if (nativeChecking())
-    {
-        static void* state = nullptr;
-        nativeCheckWhole(app, cpu, "sub_433060", 0x433060, state, render::quadSubdividedNative, true);
-        return true;
-    }
-    render::quadSubdividedNative(app, cpu);
-    return true;
-}
-
-bool colouredTriangles(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (nativeOriginalRunning() || !singlePrecision(cpu) || !renderNativeOn(0x433e30))
-        return false;
-    if (nativeChecking())
-    {
-        static void* state = nullptr;
-        nativeCheckWhole(app, cpu, "sub_433e30", 0x433e30, state, render::colouredTrianglesNative, true);
-        return true;
-    }
-    render::colouredTrianglesNative(app, cpu);
-    return true;
-}
-
-bool sky(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (nativeOriginalRunning() || !nativesEnabled() || !renderNativeOn(0x47a190))
-        return false;
-    if (nativeChecking())
-    {
-        static void* state = nullptr;
-        nativeCheckWhole(app, cpu, "sub_47a190", 0x47a190, state, render::skyNative, true);
-        return true;
-    }
-    render::skyNative(app, cpu);
-    return true;
-}
-
-bool viewSky(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (nativeOriginalRunning() || !singlePrecision(cpu) || !renderNativeOn(0x47a880))
-        return false;
-    if (nativeChecking())
-    {
-        static void* state = nullptr;
-        nativeCheckWhole(app, cpu, "sub_47a880", 0x47a880, state, render::viewSkyNative, true);
-        return true;
-    }
-    render::viewSkyNative(app, cpu);
-    return true;
-}
-
-bool flatSky(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (nativeOriginalRunning() || !singlePrecision(cpu) || !renderNativeOn(0x47a1f0))
-        return false;
-    if (nativeChecking())
-    {
-        static void* state = nullptr;
-        nativeCheckWhole(app, cpu, "sub_47a1f0", 0x47a1f0, state, render::flatSkyNative, true);
-        return true;
-    }
-    render::flatSkyNative(app, cpu);
-    return true;
-}
-
-bool skyDome(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (nativeOriginalRunning() || !singlePrecision(cpu) || !renderNativeOn(0x47b850))
-        return false;
-    if (nativeChecking())
-    {
-        static void* state = nullptr;
-        nativeCheckWhole(app, cpu, "sub_47b850", 0x47b850, state, render::skyDomeNative, true);
-        return true;
-    }
-    render::skyDomeNative(app, cpu);
-    return true;
-}
-
-bool lightning(win32::WinApplication* app, x86::CPU& cpu)
-{
-    // A divisor of 0 would fault in the original: left to the generated code.
-    if (nativeOriginalRunning() || !singlePrecision(cpu) || !renderNativeOn(0x4946e0)
-        || !app->getMemory<x86::reg32>(0x55e4ac))
-        return false;
-    if (nativeChecking())
-    {
-        static void* state = nullptr;
-        nativeCheckWhole(app, cpu, "sub_4946e0", 0x4946e0, state, render::lightningNative, true);
-        return true;
-    }
-    render::lightningNative(app, cpu);
-    return true;
-}
-
-bool countdown(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (nativeOriginalRunning() || !singlePrecision(cpu) || cpu.flags.df || !renderNativeOn(0x482620))
-        return false;
-    if (nativeChecking())
-    {
-        static void* state = nullptr;
-        nativeCheckWhole(app, cpu, "sub_482620", 0x482620, state, render::countdownNative, true);
-        return true;
-    }
-    render::countdownNative(app, cpu);
-    return true;
-}
-
-bool carLights(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (nativeOriginalRunning() || !singlePrecision(cpu) || cpu.flags.df || !renderNativeOn(0x4b9bc0))
-        return false;
-    if (nativeChecking())
-    {
-        static void* state = nullptr;
-        nativeCheckWhole(app, cpu, "sub_4b9bc0", 0x4b9bc0, state, render::carLightsNative, true);
-        return true;
-    }
-    render::carLightsNative(app, cpu);
-    return true;
-}
-
-bool detailedCarLights(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (nativeOriginalRunning() || !singlePrecision(cpu) || cpu.flags.df || !renderNativeOn(0x4bae00))
-        return false;
-    if (nativeChecking())
-    {
-        static void* state = nullptr;
-        nativeCheckWhole(app, cpu, "sub_4bae00", 0x4bae00, state, render::detailedCarLightsNative, true);
-        return true;
-    }
-    render::detailedCarLightsNative(app, cpu);
-    return true;
-}
-
-bool solidText(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (nativeOriginalRunning() || !singlePrecision(cpu) || cpu.flags.df || !renderNativeOn(0x475b50))
-        return false;
-    if (nativeChecking())
-    {
-        static void* state = nullptr;
-        nativeCheckWhole(app, cpu, "sub_475b50", 0x475b50, state, render::solidTextNative, true);
-        return true;
-    }
-    render::solidTextNative(app, cpu);
-    return true;
-}
-
-bool mediumCarLights(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (nativeOriginalRunning() || !singlePrecision(cpu) || cpu.flags.df || !renderNativeOn(0x4bb200))
-        return false;
-    if (nativeChecking())
-    {
-        static void* state = nullptr;
-        nativeCheckWhole(app, cpu, "sub_4bb200", 0x4bb200, state, render::mediumCarLightsNative, true);
-        return true;
-    }
-    render::mediumCarLightsNative(app, cpu);
-    return true;
-}
-
-bool nightColour(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (nativeOriginalRunning() || !singlePrecision(cpu) || !renderNativeOn(0x4b97b0))
-        return false;
-    if (nativeChecking())
-    {
-        static void* state = nullptr;
-        nativeCheckWhole(app, cpu, "sub_4b97b0", 0x4b97b0, state, render::nightColourNative, true);
-        return true;
-    }
-    render::nightColourNative(app, cpu);
-    return true;
-}
-
-bool viewPass(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (nativeOriginalRunning() || !singlePrecision(cpu) || !renderNativeOn(0x41b9b0))
-        return false;
-    if (nativeChecking())
-    {
-        static void* state = nullptr;
-        nativeCheckWhole(app, cpu, "sub_41b9b0", 0x41b9b0, state, render::viewPassNative, true);
-        return true;
-    }
-    render::viewPassNative(app, cpu);
-    return true;
-}
-
-bool polygonDrawers(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (nativeOriginalRunning() || !nativesEnabled() || !renderNativeOn(0x434870))
-        return false;
-    if (nativeChecking())
-    {
-        static void* state = nullptr;
-        nativeCheckWhole(app, cpu, "sub_434870", 0x434870, state, render::polygonDrawersNative, true);
-        return true;
-    }
-    render::polygonDrawersNative(app, cpu);
-    return true;
-}
-
-bool glareColours(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (nativeOriginalRunning() || !singlePrecision(cpu) || !renderNativeOn(0x49d800))
-        return false;
-    if (nativeChecking())
-    {
-        static void* state = nullptr;
-        nativeCheckWhole(app, cpu, "sub_49d800", 0x49d800, state, render::glareColoursNative, true);
-        return true;
-    }
-    render::glareColoursNative(app, cpu);
-    return true;
-}
-
-bool detailSettings(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (nativeOriginalRunning() || !nativesEnabled() || cpu.flags.df || !renderNativeOn(0x472d10))
-        return false;
-    if (nativeChecking())
-    {
-        static void* state = nullptr;
-        nativeCheckWhole(app, cpu, "sub_472d10", 0x472d10, state, render::detailSettingsNative, true);
-        return true;
-    }
-    render::detailSettingsNative(app, cpu);
-    return true;
-}
-
-bool sparks(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (nativeOriginalRunning() || !singlePrecision(cpu) || cpu.flags.df || !renderNativeOn(0x4ddb40)
-        // A divisor of 0 or -1 would fault in the original: left to the generated code.
-        || app->getMemory<x86::reg32>(0x8ca27c) == 0 || app->getMemory<x86::reg32>(0x8ca27c) == 0xffffffff)
-        return false;
-    if (nativeChecking())
-    {
-        static void* state = nullptr;
-        nativeCheckWhole(app, cpu, "sub_4ddb40", 0x4ddb40, state, render::sparksNative, true);
-        return true;
-    }
-    render::sparksNative(app, cpu);
-    return true;
-}
-
-bool glow(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (nativeOriginalRunning() || !singlePrecision(cpu) || cpu.flags.df || !renderNativeOn(0x491190))
-        return false;
-    if (nativeChecking())
-    {
-        static void* state = nullptr;
-        nativeCheckWhole(app, cpu, "sub_491190", 0x491190, state, render::glowNative, true);
-        return true;
-    }
-    render::glowNative(app, cpu);
-    return true;
-}
-
-bool glareVertices(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (nativeOriginalRunning() || !singlePrecision(cpu) || !renderNativeOn(0x47b7d0))
-        return false;
-    if (nativeChecking())
-    {
-        static void* state = nullptr;
-        nativeCheckWhole(app, cpu, "sub_47b7d0", 0x47b7d0, state, render::glareVerticesNative, true);
-        return true;
-    }
-    render::glareVerticesNative(app, cpu);
-    return true;
-}
-
-bool clearBuffers(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (nativeOriginalRunning() || !nativesEnabled() || !renderNativeOn(0x4cb670))
-        return false;
-    if (nativeChecking())
-    {
-        static void* state = nullptr;
-        nativeCheckWhole(app, cpu, "sub_4cb670", 0x4cb670, state, render::clearBuffersNative, true);
-        return true;
-    }
-    render::clearBuffersNative(app, cpu);
-    return true;
-}
-
-bool bouncers(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (nativeOriginalRunning() || !singlePrecision(cpu) || !renderNativeOn(0x4a4410))
-        return false;
-    if (nativeChecking())
-    {
-        static void* state = nullptr;
-        nativeCheckWhole(app, cpu, "sub_4a4410", 0x4a4410, state, render::bouncersNative, true);
-        return true;
-    }
-    render::bouncersNative(app, cpu);
-    return true;
-}
-
-bool roadLight(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (nativeOriginalRunning() || !singlePrecision(cpu) || cpu.flags.df || !renderNativeOn(0x491bc0))
-        return false;
-    if (nativeChecking())
-    {
-        static void* state = nullptr;
-        nativeCheckWhole(app, cpu, "sub_491bc0", 0x491bc0, state, render::roadLightNative, true);
-        return true;
-    }
-    render::roadLightNative(app, cpu);
-    return true;
-}
-
-bool viewRecord(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (nativeOriginalRunning() || !singlePrecision(cpu) || !renderNativeOn(0x41df10))
-        return false;
-    if (nativeChecking())
-    {
-        static void* state = nullptr;
-        nativeCheckWhole(app, cpu, "sub_41df10", 0x41df10, state, render::viewRecordNative, true);
-        return true;
-    }
-    render::viewRecordNative(app, cpu);
-    return true;
-}
-
-bool raceViews(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (nativeOriginalRunning() || !nativesEnabled() || !renderNativeOn(0x41d960))
-        return false;
-    if (nativeChecking())
-    {
-        static void* state = nullptr;
-        nativeCheckWhole(app, cpu, "sub_41d960", 0x41d960, state, render::raceViewsNative, true);
-        return true;
-    }
-    render::raceViewsNative(app, cpu);
-    return true;
-}
-
-bool smoke(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (nativeOriginalRunning() || !singlePrecision(cpu) || !renderNativeOn(0x4de070))
-        return false;
-    if (nativeChecking())
-    {
-        static void* state = nullptr;
-        nativeCheckWhole(app, cpu, "sub_4de070", 0x4de070, state, render::smokeNative, true);
-        return true;
-    }
-    render::smokeNative(app, cpu);
-    return true;
-}
-
-bool streaks(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (nativeOriginalRunning() || !singlePrecision(cpu) || !renderNativeOn(0x4de700))
-        return false;
-    if (nativeChecking())
-    {
-        static void* state = nullptr;
-        nativeCheckWhole(app, cpu, "sub_4de700", 0x4de700, state, render::streaksNative, true);
-        return true;
-    }
-    render::streaksNative(app, cpu);
-    return true;
-}
-
-bool viewDistances(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (nativeOriginalRunning() || !singlePrecision(cpu) || cpu.flags.df || !renderNativeOn(0x41d620))
-        return false;
-    if (nativeChecking())
-    {
-        static void* state = nullptr;
-        nativeCheckWhole(app, cpu, "sub_41d620", 0x41d620, state, render::viewDistancesNative, true);
-        return true;
-    }
-    render::viewDistancesNative(app, cpu);
-    return true;
-}
-
-bool transformBuffer(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (nativeOriginalRunning() || !nativesEnabled() || !renderNativeOn(0x4b56e0))
-        return false;
-    if (nativeChecking())
-    {
-        static void* state = nullptr;
-        nativeCheckWhole(app, cpu, "sub_4b56e0", 0x4b56e0, state, render::transformBufferNative, true);
-        return true;
-    }
-    render::transformBufferNative(app, cpu);
-    return true;
-}
-
-bool screenMode(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (nativeOriginalRunning() || !nativesEnabled() || cpu.flags.df || !renderNativeOn(0x4bef50))
-        return false;
-    if (nativeChecking())
-    {
-        static void* state = nullptr;
-        nativeCheckWhole(app, cpu, "sub_4bef50", 0x4bef50, state, render::screenModeNative, true);
-        return true;
-    }
-    render::screenModeNative(app, cpu);
-    return true;
-}
-
-bool startDriver(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (nativeOriginalRunning() || !nativesEnabled() || cpu.flags.df || !renderNativeOn(0x4b59c0))
-        return false;
-    if (nativeChecking())
-    {
-        static void* state = nullptr;
-        nativeCheckWhole(app, cpu, "sub_4b59c0", 0x4b59c0, state, render::startDriverNative, true);
-        return true;
-    }
-    render::startDriverNative(app, cpu);
-    return true;
-}
-
-bool hudFrame(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (nativeOriginalRunning() || !singlePrecision(cpu) || !renderNativeOn(0x47f650))
-        return false;
-    if (nativeChecking())
-    {
-        static void* state = nullptr;
-        nativeCheckWhole(app, cpu, "sub_47f650", 0x47f650, state, render::hudFrameNative, true);
-        return true;
-    }
-    render::hudFrameNative(app, cpu);
-    return true;
-}
-
-bool hudRect(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (nativeOriginalRunning() || !singlePrecision(cpu) || !renderNativeOn(0x480910))
-        return false;
-    if (nativeChecking())
-    {
-        static void* state = nullptr;
-        nativeCheckWhole(app, cpu, "sub_480910", 0x480910, state, render::hudRectNative, true);
-        return true;
-    }
-    render::hudRectNative(app, cpu);
-    return true;
-}
-
-bool hudPicture(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (nativeOriginalRunning() || !singlePrecision(cpu) || !renderNativeOn(0x480fc0))
-        return false;
-    if (nativeChecking())
-    {
-        static void* state = nullptr;
-        nativeCheckWhole(app, cpu, "sub_480fc0", 0x480fc0, state, render::hudPictureNative, true);
-        return true;
-    }
-    render::hudPictureNative(app, cpu);
-    return true;
-}
-
-bool hudDial(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (nativeOriginalRunning() || !singlePrecision(cpu) || !renderNativeOn(0x4812e0))
-        return false;
-    if (nativeChecking())
-    {
-        static void* state = nullptr;
-        nativeCheckWhole(app, cpu, "sub_4812e0", 0x4812e0, state, render::hudDialNative, true);
-        return true;
-    }
-    render::hudDialNative(app, cpu);
-    return true;
-}
-
-
-bool hudPanel(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (nativeOriginalRunning() || !singlePrecision(cpu) || !renderNativeOn(0x481aa0))
-        return false;
-    if (nativeChecking())
-    {
-        static void* state = nullptr;
-        nativeCheckWhole(app, cpu, "sub_481aa0", 0x481aa0, state, render::hudPanelNative, true);
-        return true;
-    }
-    render::hudPanelNative(app, cpu);
-    return true;
-}
-
-bool hudTable(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (nativeOriginalRunning() || !singlePrecision(cpu) || !renderNativeOn(0x481c50))
-        return false;
-    if (nativeChecking())
-    {
-        static void* state = nullptr;
-        nativeCheckWhole(app, cpu, "sub_481c50", 0x481c50, state, render::hudTableNative, true);
-        return true;
-    }
-    render::hudTableNative(app, cpu);
-    return true;
-}
-
-bool hudInset(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (nativeOriginalRunning() || !singlePrecision(cpu) || !renderNativeOn(0x487210))
-        return false;
-    if (nativeChecking())
-    {
-        static void* state = nullptr;
-        nativeCheckWhole(app, cpu, "sub_487210", 0x487210, state, render::hudInsetNative, true);
-        return true;
-    }
-    render::hudInsetNative(app, cpu);
-    return true;
-}
-
-
-bool startLights(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (nativeOriginalRunning() || !nativesEnabled() || !renderNativeOn(0x48c7c0))
-        return false;
-    if (nativeChecking())
-    {
-        static void* state = nullptr;
-        nativeCheckWhole(app, cpu, "sub_48c7c0", 0x48c7c0, state, render::startLightsNative, true);
-        return true;
-    }
-    render::startLightsNative(app, cpu);
-    return true;
-}
-
-bool needles(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (nativeOriginalRunning() || !singlePrecision(cpu) || cpu.flags.df || !renderNativeOn(0x4880b0))
-        return false;
-    if (nativeChecking())
-    {
-        static void* state = nullptr;
-        nativeCheckWhole(app, cpu, "sub_4880b0", 0x4880b0, state, render::needlesNative, true);
-        return true;
-    }
-    render::needlesNative(app, cpu);
-    return true;
-}
-
-bool barGauges(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (nativeOriginalRunning() || !singlePrecision(cpu) || !renderNativeOn(0x488470))
-        return false;
-    if (nativeChecking())
-    {
-        static void* state = nullptr;
-        nativeCheckWhole(app, cpu, "sub_488470", 0x488470, state, render::barGaugesNative, true);
-        return true;
-    }
-    render::barGaugesNative(app, cpu);
-    return true;
-}
-
-bool cockpit(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (nativeOriginalRunning() || !singlePrecision(cpu) || !renderNativeOn(0x489240))
-        return false;
-    if (nativeChecking())
-    {
-        static void* state = nullptr;
-        nativeCheckWhole(app, cpu, "sub_489240", 0x489240, state, render::cockpitNative, true);
-        return true;
-    }
-    render::cockpitNative(app, cpu);
-    return true;
-}
-
-
-bool line(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (nativeOriginalRunning() || !singlePrecision(cpu) || cpu.flags.df || !renderNativeOn(0x4c0b20))
-        return false;
-    if (nativeChecking())
-    {
-        static void* state = nullptr;
-        nativeCheckWhole(app, cpu, "sub_4c0b20", 0x4c0b20, state, render::lineNative, true);
-        return true;
-    }
-    render::lineNative(app, cpu);
-    return true;
-}
-
-bool segmentMeter(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (nativeOriginalRunning() || !singlePrecision(cpu) || !renderNativeOn(0x48c0e0))
-        return false;
-    if (nativeChecking())
-    {
-        static void* state = nullptr;
-        nativeCheckWhole(app, cpu, "sub_48c0e0", 0x48c0e0, state, render::segmentMeterNative, true);
-        return true;
-    }
-    render::segmentMeterNative(app, cpu);
-    return true;
-}
-
-
-bool hudBand(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (nativeOriginalRunning() || !singlePrecision(cpu) || !renderNativeOn(0x4800a0))
-        return false;
-    if (nativeChecking())
-    {
-        static void* state = nullptr;
-        nativeCheckWhole(app, cpu, "sub_4800a0", 0x4800a0, state, render::hudBandNative, true);
-        return true;
-    }
-    render::hudBandNative(app, cpu);
-    return true;
-}
-
-
-bool hud(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (nativeOriginalRunning() || !singlePrecision(cpu) || !renderNativeOn(0x482b00))
-        return false;
-    if (nativeChecking())
-    {
-        static void* state = nullptr;
-        nativeCheckWhole(app, cpu, "sub_482b00", 0x482b00, state, render::hudNative, true);
-        return true;
-    }
-    render::hudNative(app, cpu);
-    return true;
-}
-
-
-bool carTextures(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (nativeOriginalRunning() || !nativesEnabled() || !renderNativeOn(0x4b7d30))
-        return false;
-    if (nativeChecking())
-    {
-        static void* state = nullptr;
-        nativeCheckWhole(app, cpu, "sub_4b7d30", 0x4b7d30, state, render::carTexturesNative, true);
-        return true;
-    }
-    render::carTexturesNative(app, cpu);
-    return true;
-}
-
-
-bool loadingScreen(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (nativeOriginalRunning() || !singlePrecision(cpu) || !renderNativeOn(0x494cb0))
-        return false;
-    if (nativeChecking())
-    {
-        static void* state = nullptr;
-        nativeCheckWhole(app, cpu, "sub_494cb0", 0x494cb0, state, render::loadingScreenNative, true);
-        return true;
-    }
-    render::loadingScreenNative(app, cpu);
-    return true;
-}
-
-
-bool moviePlayer(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (nativeOriginalRunning() || !nativesEnabled() || !renderNativeOn(0x495bc0))
-        return false;
-    if (nativeChecking())
-    {
-        static void* state = nullptr;
-        nativeCheckWhole(app, cpu, "sub_495bc0", 0x495bc0, state, render::moviePlayerNative, true);
-        return true;
-    }
-    render::moviePlayerNative(app, cpu);
-    return true;
-}
-
-
-bool pictureTexture(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (nativeOriginalRunning() || !nativesEnabled() || !renderNativeOn(0x4d0a10))
-        return false;
-    if (nativeChecking())
-    {
-        static void* state = nullptr;
-        nativeCheckWhole(app, cpu, "sub_4d0a10", 0x4d0a10, state, render::pictureTextureNative, true);
-        return true;
-    }
-    render::pictureTextureNative(app, cpu);
-    return true;
-}
-
-
-bool squareTexture(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (nativeOriginalRunning() || !singlePrecision(cpu) || !renderNativeOn(0x4d3f50))
-        return false;
-    if (nativeChecking())
-    {
-        static void* state = nullptr;
-        nativeCheckWhole(app, cpu, "sub_4d3f50", 0x4d3f50, state, render::squareTextureNative, true);
-        return true;
-    }
-    render::squareTextureNative(app, cpu);
-    return true;
-}
-
-
-bool paletteTexture(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (nativeOriginalRunning() || !nativesEnabled() || !renderNativeOn(0x4d41a0))
-        return false;
-    if (nativeChecking())
-    {
-        static void* state = nullptr;
-        nativeCheckWhole(app, cpu, "sub_4d41a0", 0x4d41a0, state, render::paletteTextureNative, true);
-        return true;
-    }
-    render::paletteTextureNative(app, cpu);
-    return true;
-}
-
-
-bool pieceTexture(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (nativeOriginalRunning() || !singlePrecision(cpu) || cpu.flags.df || !renderNativeOn(0x4d4580))
-        return false;
-    if (nativeChecking())
-    {
-        static void* state = nullptr;
-        nativeCheckWhole(app, cpu, "sub_4d4580", 0x4d4580, state, render::pieceTextureNative, true);
-        return true;
-    }
-    render::pieceTextureNative(app, cpu);
-    return true;
-}
-
-
-bool cabinTextures(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (nativeOriginalRunning() || !nativesEnabled() || !renderNativeOn(0x4d4ae0))
-        return false;
-    if (nativeChecking())
-    {
-        static void* state = nullptr;
-        nativeCheckWhole(app, cpu, "sub_4d4ae0", 0x4d4ae0, state, render::cabinTexturesNative, true);
-        return true;
-    }
-    render::cabinTexturesNative(app, cpu);
-    return true;
 }
 
 }

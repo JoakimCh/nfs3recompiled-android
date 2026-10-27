@@ -4508,7 +4508,7 @@ L_0x00466348:
     }
     // 00466366  e845a00700             -call 0x4e03b0
     cpu.esp -= 4;
-    sub_4e03b0(app, cpu.sync());
+    nfs3hp::vertices::rotateVectors(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0046636b  d945e4                 -fld dword ptr [ebp - 0x1c]
@@ -4631,7 +4631,7 @@ void Application::sub_4663a0(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.ebx = cpu.esi;
     // 004663ef  e80c9c0700             -call 0x4e0000
     cpu.esp -= 4;
-    sub_4e0000(app, cpu.sync());
+    nfs3hp::vertices::subtractVectors(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004663f4  8d55b8                 -lea edx, [ebp - 0x48]
@@ -4640,7 +4640,7 @@ void Application::sub_4663a0(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.eax = x86::reg32(cpu.ebp + x86::reg32(-72) /* -0x48 */);
     // 004663fa  e8c19d0700             -call 0x4e01c0
     cpu.esp -= 4;
-    sub_4e01c0(app, cpu.sync());
+    nfs3hp::vertices::unitVector(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004663ff  d945c0                 -fld dword ptr [ebp - 0x40]
@@ -5093,7 +5093,7 @@ void Application::sub_466580(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.ebx = cpu.esi;
     // 004665bb  e8409a0700             -call 0x4e0000
     cpu.esp -= 4;
-    sub_4e0000(app, cpu.sync());
+    nfs3hp::vertices::subtractVectors(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004665c0  8d55b8                 -lea edx, [ebp - 0x48]
@@ -5102,7 +5102,7 @@ void Application::sub_466580(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.eax = x86::reg32(cpu.ebp + x86::reg32(-72) /* -0x48 */);
     // 004665c6  e8f59b0700             -call 0x4e01c0
     cpu.esp -= 4;
-    sub_4e01c0(app, cpu.sync());
+    nfs3hp::vertices::unitVector(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004665cb  d945c0                 +fld dword ptr [ebp - 0x40]
@@ -6384,7 +6384,7 @@ L_0x004669a8:
     }
     // 00466ad2  e859990700             -call 0x4e0430
     cpu.esp -= 4;
-    sub_4e0430(app, cpu.sync());
+    nfs3hp::vertices::transformPoints(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00466ad7  31db                   +xor ebx, ebx
@@ -7706,7 +7706,7 @@ L_0x00466f7e:
     if (cpu.terminate) return;
     // 00466fb2  e889abfcff             -call 0x431b40
     cpu.esp -= 4;
-    sub_431b40(app, cpu.sync());
+    nfs3hp::collide::statesForHud(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00466fb7  b815000000             -mov eax, 0x15
@@ -7734,7 +7734,7 @@ L_0x00466f7e:
     cpu.eax = x86::reg32(cpu.ebp + x86::reg32(30) /* 0x1e */);
     // 00466fd6  e8e5910700             -call 0x4e01c0
     cpu.esp -= 4;
-    sub_4e01c0(app, cpu.sync());
+    nfs3hp::vertices::unitVector(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00466fdb  8d451e                 -lea eax, [ebp + 0x1e]
@@ -7871,7 +7871,7 @@ L_0x00467059:
     cpu.edx = cpu.esi;
     // 00467089  e872670300             -call 0x49d800
     cpu.esp -= 4;
-    sub_49d800(app, cpu.sync());
+    nfs3hp::render::glareColours(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0046708e  8b457a                 -mov eax, dword ptr [ebp + 0x7a]
@@ -9112,7 +9112,7 @@ L_0x00467565:
     cpu.eax = app->getMemory<x86::reg32>(cpu.ebp + x86::reg32(54) /* 0x36 */);
     // 00467568  e8e3d3fcff             -call 0x434950
     cpu.esp -= 4;
-    sub_434950(app, cpu.sync());
+    nfs3hp::collide::drawRecords(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0046756d  31d2                   -xor edx, edx
@@ -9128,7 +9128,7 @@ L_0x00467565:
     cpu.eax = app->getMemory<x86::reg32>(cpu.ebp + x86::reg32(70) /* 0x46 */);
     // 0046757c  e8cfd3fcff             -call 0x434950
     cpu.esp -= 4;
-    sub_434950(app, cpu.sync());
+    nfs3hp::collide::drawRecords(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00467581  b804000000             -mov eax, 4
@@ -9147,7 +9147,7 @@ L_0x00467565:
     if (cpu.terminate) return;
     // 00467596  e825a6fcff             -call 0x431bc0
     cpu.esp -= 4;
-    sub_431bc0(app, cpu.sync());
+    nfs3hp::collide::statesForScreens(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
 L_0x0046759b:

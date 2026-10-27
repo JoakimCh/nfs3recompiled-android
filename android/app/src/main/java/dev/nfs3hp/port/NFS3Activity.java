@@ -232,24 +232,16 @@ public class NFS3Activity extends SDLActivity
             // The opponents' pull and steering on their generated code (native_ai.cpp off).
             if (getIntent().getBooleanExtra("native_ai_off", false))
                 setEnv("NFS_NATIVE_AI", "0");
-            // Each native vertex loop checked against the generated code ([NATIVE]).
+            // The natives that keep a check in the game -- the loading's
+            // (native_loading.cpp) -- run against the generated code ([NATIVE]).
             if (getIntent().getBooleanExtra("native_check", false))
                 setEnv("NFS_NATIVE_CHECK", "1");
-            // Only the clipper checked (sub_4c2cd0, native_vertices.cpp).
-            else if (getIntent().getBooleanExtra("clip_check", false))
-                setEnv("NFS_NATIVE_CHECK", "clip");
-            // Only the loading stand-ins checked (native_loading.cpp).
+            // The same, by its own name.
             else if (getIntent().getBooleanExtra("load_check", false))
                 setEnv("NFS_NATIVE_CHECK", "load");
-            // The generated code for all of them instead, to compare speeds.
+            // The generated code for the loading, movie and specs natives, to compare speeds.
             if (!getIntent().getBooleanExtra("natives", true))
                 setEnv("NFS_NATIVES", "0");
-            else if (!getIntent().getBooleanExtra("polygon_natives", true))
-                setEnv("NFS_NATIVES", "vertices");
-            else if (!getIntent().getBooleanExtra("rotate_native", true))
-                setEnv("NFS_NATIVES", "no-rotate");
-            else if (!getIntent().getBooleanExtra("clip_native", true))
-                setEnv("NFS_NATIVES", "no-clip");
             // The rear-view mirror as the original draws it (short and coarse).
             if (!getIntent().getBooleanExtra("mirror_full", true))
                 setEnv("NFS_MIRROR_FULL", "0");

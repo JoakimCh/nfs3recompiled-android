@@ -2545,7 +2545,7 @@ L_0x00459699:
     cpu.eax = cpu.edx;
     // 0045969b  e83095fcff             -call 0x422bd0
     cpu.esp -= 4;
-    sub_422bd0(app, cpu.sync());
+    nfs3hp::carstate::cameraTarget(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004596a0  01d3                   -add ebx, edx
@@ -4678,7 +4678,7 @@ L_0x00459de5:
     }
     // 00459e32  e8998dfcff             -call 0x422bd0
     cpu.esp -= 4;
-    sub_422bd0(app, cpu.sync());
+    nfs3hp::carstate::cameraTarget(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00459e37  f6800002000020         +test byte ptr [eax + 0x200], 0x20
@@ -4772,7 +4772,7 @@ L_0x00459e5a:
     }
     // 00459e9b  e8308dfcff             -call 0x422bd0
     cpu.esp -= 4;
-    sub_422bd0(app, cpu.sync());
+    nfs3hp::carstate::cameraTarget(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00459ea0  f6800002000020         +test byte ptr [eax + 0x200], 0x20
@@ -4866,7 +4866,7 @@ L_0x00459eb8:
     cpu.eax = app->getMemory<x86::reg32>(cpu.ebp + x86::reg32(-8) /* -0x8 */);
     // 00459edb  e8c0610200             -call 0x4800a0
     cpu.esp -= 4;
-    sub_4800a0(app, cpu.sync());
+    nfs3hp::render::hudBand(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00459ee0  83fb11                 +cmp ebx, 0x11
@@ -4974,7 +4974,7 @@ L_0x00459f27:
     cpu.eax = app->getMemory<x86::reg32>(cpu.ebp + x86::reg32(-8) /* -0x8 */);
     // 00459f2f  e89c8cfcff             -call 0x422bd0
     cpu.esp -= 4;
-    sub_422bd0(app, cpu.sync());
+    nfs3hp::carstate::cameraTarget(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00459f34  f6800002000020         +test byte ptr [eax + 0x200], 0x20
@@ -5260,7 +5260,7 @@ void Application::sub_459fe0(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.eax ^= x86::reg32(x86::sreg32(cpu.eax));
     // 0045a000  e8cb8bfcff             -call 0x422bd0
     cpu.esp -= 4;
-    sub_422bd0(app, cpu.sync());
+    nfs3hp::carstate::cameraTarget(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045a005  f6800002000020         +test byte ptr [eax + 0x200], 0x20
@@ -5349,7 +5349,7 @@ L_0x0045a017:
     cpu.eax ^= x86::reg32(x86::sreg32(cpu.eax));
     // 0045a039  e862600200             -call 0x4800a0
     cpu.esp -= 4;
-    sub_4800a0(app, cpu.sync());
+    nfs3hp::render::hudBand(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045a03e  668b4302               -mov ax, word ptr [ebx + 2]
@@ -8126,7 +8126,7 @@ L_0x0045ab64:
     cpu.ecx = app->getMemory<x86::reg32>(cpu.ecx + x86::reg32(7493264) /* 0x725690 */ + cpu.edx * 4);
     // 0045abab  e82080fcff             -call 0x422bd0
     cpu.esp -= 4;
-    sub_422bd0(app, cpu.sync());
+    nfs3hp::carstate::cameraTarget(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045abb0  8945f4                 -mov dword ptr [ebp - 0xc], eax
@@ -8317,7 +8317,7 @@ L_0x0045ac47:
     cpu.ecx = 3 /*0x3*/;
     // 0045ac6a  e8511b0300             -call 0x48c7c0
     cpu.esp -= 4;
-    sub_48c7c0(app, cpu.sync());
+    nfs3hp::render::startLights(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045ac6f  b8389a7400             -mov eax, 0x749a38
@@ -8331,7 +8331,7 @@ L_0x0045ac47:
     cpu.eax ^= x86::reg32(x86::sreg32(cpu.eax));
     // 0045ac7b  e820540200             -call 0x4800a0
     cpu.esp -= 4;
-    sub_4800a0(app, cpu.sync());
+    nfs3hp::render::hudBand(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045ac80  8b35b0d36f00           -mov esi, dword ptr [0x6fd3b0]
@@ -8356,7 +8356,7 @@ L_0x0045ac47:
     cpu.eax = cpu.esi;
     // 0045ac91  e80a540200             -call 0x4800a0
     cpu.esp -= 4;
-    sub_4800a0(app, cpu.sync());
+    nfs3hp::render::hudBand(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045ac96  89ec                   -mov esp, ebp
@@ -11120,7 +11120,7 @@ L_0x0045b7ea:
     cpu.eax = cpu.esi;
     // 0045b829  e8b2080300             -call 0x48c0e0
     cpu.esp -= 4;
-    sub_48c0e0(app, cpu.sync());
+    nfs3hp::render::segmentMeter(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045b82e  89ec                   -mov esp, ebp
@@ -16359,7 +16359,7 @@ L_0x0045cac5:
     cpu.eax = cpu.edx;
     // 0045cacf  e8fc60fcff             -call 0x422bd0
     cpu.esp -= 4;
-    sub_422bd0(app, cpu.sync());
+    nfs3hp::carstate::cameraTarget(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045cad4  8db650bc6f00           -lea esi, [esi + 0x6fbc50]
@@ -17729,7 +17729,7 @@ L_0x0045da49:
     if (cpu.terminate) return;
     // 0045da4e  e80d60fcff             -call 0x423a60
     cpu.esp -= 4;
-    sub_423a60(app, cpu.sync());
+    nfs3hp::carstate::buildCameraCycle(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045da53  8b1554105e00           -mov edx, dword ptr [0x5e1054]
@@ -17738,7 +17738,7 @@ L_0x0045da49:
     cpu.eax ^= x86::reg32(x86::sreg32(cpu.eax));
     // 0045da5b  e88060fcff             -call 0x423ae0
     cpu.esp -= 4;
-    sub_423ae0(app, cpu.sync());
+    nfs3hp::carstate::rememberMode(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045da60  b801000000             -mov eax, 1
@@ -17747,7 +17747,7 @@ L_0x0045da49:
     cpu.edx = app->getMemory<x86::reg32>(x86::reg32(6164564) /* 0x5e1054 */);
     // 0045da6b  e87060fcff             -call 0x423ae0
     cpu.esp -= 4;
-    sub_423ae0(app, cpu.sync());
+    nfs3hp::carstate::rememberMode(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045da70  833d3492550000         +cmp dword ptr [0x559234], 0
@@ -17772,7 +17772,7 @@ L_0x0045da49:
     cpu.eax ^= x86::reg32(x86::sreg32(cpu.eax));
     // 0045da81  e82a5efcff             -call 0x4238b0
     cpu.esp -= 4;
-    sub_4238b0(app, cpu.sync());
+    nfs3hp::carstate::setCameraMode(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045da86  8b1db0d36f00           -mov ebx, dword ptr [0x6fd3b0]
@@ -17799,7 +17799,7 @@ L_0x0045da49:
     cpu.eax = cpu.ebx;
     // 0045da99  e8125efcff             -call 0x4238b0
     cpu.esp -= 4;
-    sub_4238b0(app, cpu.sync());
+    nfs3hp::carstate::setCameraMode(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
 L_0x0045da9e:
@@ -29959,7 +29959,7 @@ L_0x0046019c:
     if (cpu.terminate) return;
     // 004601c4  e847420400             -call 0x4a4410
     cpu.esp -= 4;
-    sub_4a4410(app, cpu.sync());
+    nfs3hp::render::bouncers(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004601c9  e919020000             -jmp 0x4603e7
@@ -47565,7 +47565,7 @@ L_0x00464dc9:
     cpu.eax = 5612612 /*0x55a444*/;
     // 00464ddf  e8fcc40500             -call 0x4c12e0
     cpu.esp -= 4;
-    sub_4c12e0(app, cpu.sync());
+    nfs3hp::vertices::clipQuad(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
 L_0x00464de4:
@@ -47802,7 +47802,7 @@ L_0x00464e92:
     if (cpu.terminate) return;
     // 00464ea3  e818cdfcff             -call 0x431bc0
     cpu.esp -= 4;
-    sub_431bc0(app, cpu.sync());
+    nfs3hp::collide::statesForScreens(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00464ea8  89ec                   -mov esp, ebp

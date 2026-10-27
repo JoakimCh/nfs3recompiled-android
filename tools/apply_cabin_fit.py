@@ -55,8 +55,18 @@ DECLARATION = "x86::reg32 cabinRect(win32::WinApplication* app, x86::reg32 field
 NAMESPACE = "namespace nfs3hp\n{\n"
 NAME = "nfs3hp.20.cpp"
 
+# Reads in functions that are native now, the change made in the native
+# (src/nfs3hp/native_render.cpp: render::needles, barGauges and cockpit --
+# sub_4880b0, sub_488470, sub_489240): all of them.
+# tools/game_checks/generate.py makes it to the game's code the natives are
+# held against.
+NATIVE_SITES = {int(instruction[:8], 16) for instruction, _ in READS}
+
 
 def apply(root):
+    reads = [read for read in READS if int(read[0][:8], 16) not in NATIVE_SITES]
+    if not reads:
+        return
     path = root / "src/nfs3hp/disassembly" / NAME
     text = path.read_text(newline="")
     eol = "\r\n" if text.count("\r\n") * 2 > text.count("\n") else "\n"
@@ -71,7 +81,7 @@ def apply(root):
             raise RuntimeError("%s: namespace opening changed" % NAME)
         text = text.replace(namespace, namespace + declarations, 1)
 
-    for instruction, field in READS:
+    for instruction, field in reads:
         decimal, index = FIELDS[field]
         old = "app->getMemory<x86::reg32>(x86::reg32(%d) /* %s */)" % (decimal, field)
         new = "cabinRect(app, %d) /* port: the cabin fitted to 4:3, was [%s] */" % (index, field)

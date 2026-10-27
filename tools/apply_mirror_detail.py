@@ -24,7 +24,7 @@ view would:
 - sub_4b9bc0 left out a car's lights, brake lights and flashers, and it,
   sub_4bae00 and sub_4bb200 their light at night (sub_4b97b0);
 - sub_41c310 and sub_41ae90 the headlights' light on the track's objects and
-  on the road (the latter in trackPolygonsNative as well).
+  on the road (the latter in vertices::trackPolygons, native whole).
 Left as they are: the mirror does not draw its own car under an in-car camera
 (sub_4bb5d0), clear the frame to the fog colour (THRASH_clearwindow) or the HUD.
 
@@ -95,8 +95,20 @@ SITES = [
 ]
 
 
+# Sites in functions that are native now, the change made in the native
+# (src/nfs3hp/native_track.cpp: track::modelByDistance, drawTrack,
+# headlightsOnObjects); tools/game_checks/generate.py makes it to the game's
+# code the natives are held against.
+NATIVE_SITES = {0x41aa64, 0x41cea2, 0x41c34a}
+# And native_render.cpp's (render::viewDistances, sky, viewSky, carLights,
+# detailedCarLights, mediumCarLights).
+NATIVE_SITES |= {0x41d7e5, 0x47a1ad, 0x47a8e2, 0x4b9bf0, 0x4b9c4f, 0x4bae51, 0x4bb259}
+# And native_vertices.cpp's (vertices::trackPolygons, carDetail).
+NATIVE_SITES |= {0x41b08e, 0x4bb6c8}
+
+
 def apply(root):
-    apply_sites(root, SITES, HEADER)
+    apply_sites(root, [site for site in SITES if int(site[1][:8], 16) not in NATIVE_SITES], HEADER)
 
 
 if __name__ == "__main__":

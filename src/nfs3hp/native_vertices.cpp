@@ -1,15 +1,11 @@
 #include <nfs3hp.h>
 #include "native_thrash.h"
-#include "port_thrash.h"
-#include <lib/memmap.h>
 #include <SDL3/SDL.h>
-#include <algorithm>
 #include <cfenv>
 #include <cfloat>
 #include <cmath>
 #include <cstring>
 #include <string>
-#include <vector>
 #ifdef __ANDROID__
 #include <SDL3/SDL_system.h>
 #endif
@@ -25,25 +21,39 @@
 #pragma fenv_access(on)
 #endif
 
-/* Native stand-ins for the game's hottest vertex loops, entered from the top of
- * the generated functions (tools/apply_native_vertices.py).  They do the
- * original's arithmetic in the original's order, and step aside -- the
- * generated code runs -- unless the FPU rounds to single precision and to
- * nearest, as it does in a race (fldcw at 0x4a3ed3).
+/* The game's hottest vertex and polygon loops, native whole since phase 2
+ * (2026-10-27): disassemble_nfs3hp.py binds each address of its
+ * VERTICES_NATIVES to the function of that name in nfs3hp::vertices, at the
+ * end of this file, and the generated code -- which has no code of its own for
+ * them any more, nor a generated fallback -- calls it by name; a call through
+ * a pointer (dynamic_call) finds it too.  They do the original's arithmetic in
+ * the original's order, rounded as the generated code rounds it in whatever
+ * mode the game has the x87 in at the call -- a race's single precision
+ * (fldcw at 0x4a3ed3), the extended precision the port runs its races and
+ * menus at (extendedRaces, raceControl), a directed rounding.  They carry the
+ * port's changes to their code: the mirror's car scale (mirrorCarScale) and
+ * its headlight light on the road (mirrorAsMain), the alpha intensity's
+ * scaling on this driver.  tools/game_checks/vertices holds each against the
+ * game's code, made afresh with those changes, in eight x87 control words.
+ * (The hooks left at the end -- arenaReset, aiVotes, the [COMM] traces --
+ * only watch, and always hand the call on to the generated code.)
  *
- * The x87 at single precision rounds each result to a float's 24-bit
- * significand but keeps its own wide exponent; the emulated FPU does the same
- * with a double (FPU::add, mul, sub, div).  With float inputs, float arithmetic
- * gives the same bits -- a double holds every product and sum of two floats
- * well enough that rounding it again to a float is the correct rounding -- as
- * long as nothing leaves a float's range.  One track vertex does: a product
- * past the largest float, an infinity the x87 never sees (2026-09-25).  So each
- * call runs as floats, and when the host raises overflow, underflow or invalid
- * on the way, runs again through the emulated FPU's own operations.
+ * The arithmetic is the emulated FPU's own (FpuMath: FPU::add, sub, mul, div
+ * and sqrt, which round as the control word asks -- a float's 24 bits at
+ * single precision, the double as it is at 53 or 64), on values kept as wide
+ * as the x87 stack keeps them; a float is made only where the original stores
+ * one (fstp dword), an integer only through FPU::toInteger (fistp, in the
+ * control word's rounding).  In the experiments' builds (WITH_PEDANTIC_FPU,
+ * WITH_WIDE_FPU) they run too, in double: not to the bit there.
  *
- * The polygon and car loops (sub_41ae90, sub_49d...) do a few operations per
- * item among much else, call other functions, and could not simply run twice;
- * they round the emulated FPU's way from the start (NearestMath).
+ * At single precision to nearest the hottest loops (FloatMath) run as floats
+ * instead: with float inputs, float arithmetic gives the x87's bits -- a double
+ * holds every product and sum of two floats well enough that rounding it again
+ * to a float is the correct rounding -- as long as nothing leaves a float's
+ * range.  One track vertex does: a product past the largest float, an infinity
+ * the x87 never sees (2026-09-25).  So each such call runs as floats, and when
+ * the host raises overflow, underflow or invalid on the way, runs again through
+ * the emulated FPU's own operations.
  *
  * Memory, registers, flags and the FPU status word come out as the generated
  * code leaves them -- which skips the flags of an instruction nothing reads --
@@ -51,22 +61,25 @@
 namespace nfs3hp
 {
 
-// Stand-ins further down that the clipper's callers call straight.
-bool clipPolygon(win32::WinApplication* app, x86::CPU& cpu);
-bool clipTriangle(win32::WinApplication* app, x86::CPU& cpu);
-bool objectVertices(win32::WinApplication* app, x86::CPU& cpu);
-bool projectedTriangle(win32::WinApplication* app, x86::CPU& cpu);
-bool clipQuad(win32::WinApplication* app, x86::CPU& cpu);
-bool clipTriangleByZ(win32::WinApplication* app, x86::CPU& cpu);
-bool sortedBuckets(win32::WinApplication* app, x86::CPU& cpu);
-// nfs3hp_main.cpp: races at extended precision, as the Modern Patch (tools/apply_race_precision.py).
-bool extendedRaces();
 // nfs3hp_main.cpp: a view pass's kind as the main view's where the mirror is drawn in full.
 x86::reg32 mirrorAsMain(x86::reg32 kind);
 double mirrorCarScale(double scale);
 
+namespace vertices
+{
+
 namespace
 {
+
+// Natives further down that the ones before them call straight, where the
+// game's code calls them.
+void clipPolygonNative(win32::WinApplication* app, x86::CPU& cpu);
+void clipTriangleNative(win32::WinApplication* app, x86::CPU& cpu);
+void objectVerticesNative(win32::WinApplication* app, x86::CPU& cpu);
+void projectedTriangleNative(win32::WinApplication* app, x86::CPU& cpu);
+void clipQuadNative(win32::WinApplication* app, x86::CPU& cpu);
+void clipTriangleByZNative(win32::WinApplication* app, x86::CPU& cpu);
+void sortedBucketsNative(win32::WinApplication* app, x86::CPU& cpu);
 
 inline float asFloat(x86::reg32 bits)
 {
@@ -82,7 +95,8 @@ inline x86::reg32 asBits(float value)
     return bits;
 }
 
-/* The arithmetic as floats: exact while nothing over- or underflows. */
+/* The arithmetic as floats: exact at single precision to nearest while
+ * nothing over- or underflows (singleNearest). */
 struct FloatMath
 {
     typedef float Value;
@@ -93,79 +107,68 @@ struct FloatMath
     static Value sqrt(Value a) { return std::sqrt(a); }
 };
 
-/* The arithmetic as the generated code does it, through the emulated FPU. */
+/* The arithmetic as the generated code does it, through the emulated FPU:
+ * each result rounded as the control word asks at the time (FPU::add and the
+ * rest), whatever the operands -- a float from memory or a double -- and with
+ * the x87's range.  Exact in every mode; what the natives call M. */
 struct FpuMath
 {
     typedef double Value;
     x86::FPU& fpu;
-    Value add(Value a, Value b) const { return fpu.add(a, b); }
-    Value sub(Value a, Value b) const { return fpu.sub(a, b); }
-    Value mul(Value a, Value b) const { return fpu.mul(a, b); }
-    Value div(Value a, Value b) const { return fpu.div(a, b); }
+    Value add(Value a, Value b) const { return double(fpu.add(x86::Float(a), x86::Float(b))); }
+    Value sub(Value a, Value b) const { return double(fpu.sub(x86::Float(a), x86::Float(b))); }
+    Value mul(Value a, Value b) const { return double(fpu.mul(x86::Float(a), x86::Float(b))); }
+    Value div(Value a, Value b) const { return double(fpu.div(x86::Float(a), x86::Float(b))); }
+    Value sqrt(Value a) const { return double(fpu.sqrt(x86::Float(a))); }
 };
 
-/* The emulated FPU's own rounding (FPU::toSingle) for the one mode the natives
- * run in, single precision to nearest, without looking the mode up: exact
- * whatever the operands -- a double from memory as well -- and with the x87's
- * range, so nothing has to be run again.  For loops whose few operations are
- * not worth two versions. */
-struct NearestMath
+/* Whether the FPU rounds to a float's 24 bits and to nearest -- a race's x87
+ * at single precision, or NFS_FPU_FLOAT's -- where float arithmetic is the
+ * x87's (FloatMath).  Never in the 80-bit and wide experiments, whose FPU
+ * keeps more than a double. */
+inline bool singleNearest(const x86::CPU& cpu)
 {
-    typedef double Value;
-#ifdef WITH_PEDANTIC_FPU
-    static Value add(Value a, Value b) { return a + b; }
-    static Value sub(Value a, Value b) { return a - b; }
-    static Value mul(Value a, Value b) { return a * b; }
-    static Value div(Value a, Value b) { return a / b; }
-    static Value sqrt(Value a) { return std::sqrt(a); }
+#if defined(WITH_PEDANTIC_FPU) || defined(WITH_WIDE_FPU)
+    NFS2_USE(cpu);
+    return false;
 #else
-    typedef x86::FPU::Rounded Rounded;
-    static Value round(double value, Rounded op, double a, double b)
-    {
-        std::uint64_t bits;
-        std::memcpy(&bits, &value, sizeof bits);
-        const std::uint64_t exponent = (bits >> 52) & 0x7ff;
-        if ((bits & x86::FPU::kSingleDropped) != x86::FPU::kSingleHalf && exponent - 0x381 < 0x47e - 0x381)
-            return double(float(value));
-        if ((bits << 1) == 0)
-            return value;
-        return x86::FPU::roundSingleSlow(value, op, a, b, 0);
-    }
-    static Value add(Value a, Value b) { return round(a + b, Rounded::Add, a, b); }
-    static Value sub(Value a, Value b) { return round(a - b, Rounded::Sub, a, b); }
-    static Value mul(Value a, Value b) { return round(a * b, Rounded::Mul, a, b); }
-    static Value div(Value a, Value b) { return round(a / b, Rounded::Div, a, b); }
-    static Value sqrt(Value a) { return round(std::sqrt(a), Rounded::Sqrt, a, 0.0); }
+    return cpu.fpu.rounding == x86::FPU::kRoundSingleNearest;
 #endif
-};
+}
 
-/* Two products of differences as the x87 works them out at single precision,
+/* Two products of differences as the x87 works them out,
  *   one = (p - q) * (r - s),  two = (t - u) * (v - w),  all eight floats,
- * for a comparison of the two -- a polygon's facing.  A difference of floats
- * comes out of float arithmetic as the x87 has it, unless it overflows; a
- * product of two floats is exact in a double; and rounding each to 24 bits
- * cannot swap two that lie further apart than 2^-20 of the larger.  So the
- * exact products are returned, which compare as the rounded ones would, and
- * the emulated FPU's rounding is done only for a near tie or an infinity. */
+ * for a comparison of the two -- a polygon's facing -- on the x87 stack, never
+ * stored.  At single precision to nearest: a difference of floats comes out
+ * of float arithmetic as the x87 has it, unless it overflows; a product of two
+ * floats is exact in a double; and rounding each to 24 bits cannot swap two
+ * that lie further apart than 2^-20 of the larger.  So the exact products are
+ * returned, which compare as the rounded ones would, and the emulated FPU's
+ * rounding is done only for a near tie or an infinity -- and in every other
+ * mode, where the differences and products are the double's. */
 struct CrossProducts
 {
     double two;
     double one;
 };
 
-inline CrossProducts crossProducts(float p, float q, float r, float s, float t, float u, float v, float w)
+inline CrossProducts crossProducts(x86::CPU& cpu, float p, float q, float r, float s, float t, float u, float v,
+                                   float w)
 {
-    const float a = p - q;
-    const float b = r - s;
-    const float c = t - u;
-    const float d = v - w;
-    const double one = double(a) * double(b);
-    const double two = double(c) * double(d);
-    if (std::isfinite(a) && std::isfinite(b) && std::isfinite(c) && std::isfinite(d)
-        && std::fabs(two - one) > 0x1p-20 * std::fmax(std::fabs(one), std::fabs(two)))
-        return {two, one};
-    typedef NearestMath M;
-    return {M::mul(M::sub(t, u), M::sub(v, w)), M::mul(M::sub(p, q), M::sub(r, s))};
+    if (singleNearest(cpu))
+    {
+        const float a = p - q;
+        const float b = r - s;
+        const float c = t - u;
+        const float d = v - w;
+        const double one = double(a) * double(b);
+        const double two = double(c) * double(d);
+        if (std::isfinite(a) && std::isfinite(b) && std::isfinite(c) && std::isfinite(d)
+            && std::fabs(two - one) > 0x1p-20 * std::fmax(std::fabs(one), std::fabs(two)))
+            return {two, one};
+    }
+    const FpuMath M{cpu.fpu};
+    return {M.mul(M.sub(t, u), M.sub(v, w)), M.mul(M.sub(p, q), M.sub(r, s))};
 }
 
 /* The last fcomp of a loop over doubles, replayed on the FPU at its end. */
@@ -246,85 +249,10 @@ struct IntegerFlags
     }
 };
 
-/* NFS_NATIVES=0: the generated code throughout, to compare speeds; =vertices:
- * only the three vertex loops native, not the polygon and car loops. */
-bool nativesOn()
-{
-    static const bool on = []() {
-        const char* value = SDL_getenv("NFS_NATIVES");
-        return !value || SDL_strcmp(value, "0") != 0;
-    }();
-    return on;
-}
-
-bool polygonNativesOn()
-{
-    static const bool on = []() {
-        const char* value = SDL_getenv("NFS_NATIVES");
-        return !value || (SDL_strcmp(value, "0") != 0 && SDL_strcmp(value, "vertices") != 0);
-    }();
-    return on;
-}
-
-/* NFS_NATIVES=no-clip: all but the clipper, sub_4c2cd0. */
-bool clipNativeOn()
-{
-    static const bool on = []() {
-        const char* value = SDL_getenv("NFS_NATIVES");
-        return polygonNativesOn() && !(value && SDL_strcmp(value, "no-clip") == 0);
-    }();
-    return on;
-}
-
-/* NFS_NATIVES=no-rotate: all but sub_4e03b0, which the game also calls outside
- * the drawing (sub_466330 turns a point of a car into the world). */
-bool rotateNativeOn()
-{
-    static const bool on = []() {
-        const char* value = SDL_getenv("NFS_NATIVES");
-        return !(value && SDL_strcmp(value, "no-rotate") == 0);
-    }();
-    return on;
-}
-
-inline bool singlePrecision(const x86::CPU& cpu)
-{
-#if defined(WITH_PEDANTIC_FPU)
-    NFS2_USE(cpu);
-    return false;
-#elif defined(WITH_WIDE_FPU)
-    /* The wide experiment never rounds to single precision, but the loops
-     * here only draw: vertices, colours and polygons worked out in float
-     * change the picture by a last bit at most, and the game's own logic
-     * keeps its wide arithmetic. */
-    return cpu.fpu.control.rc == 0 && nativesOn();
-#else
-    return cpu.fpu.control.pc == x86::FPU::s_singlePrecision && cpu.fpu.control.rc == 0 && nativesOn();
-#endif
-}
-
-/* The stand-ins that only draw -- vertices, colours, polygons, the clipper,
- * the lights -- stay on in a race at extended precision (extendedRaces, as
- * the Modern Patch runs one): what they work out in float reaches the picture
- * and nothing else, a last bit of a pixel at most, while every stand-in the
- * physics and the opponents' driving can reach (the vector helpers, the
- * nearest block, the ground's height, the particles with their share of the
- * random numbers) steps aside for the generated code and its extended
- * arithmetic. */
-inline bool drawingPrecision(const x86::CPU& cpu)
-{
-#if defined(WITH_PEDANTIC_FPU) || defined(WITH_WIDE_FPU)
-    return cpu.fpu.control.rc == 0 && nativesOn();
-#else
-    return cpu.fpu.control.rc == 0 && nativesOn()
-        && (cpu.fpu.control.pc == x86::FPU::s_singlePrecision || (cpu.fpu.control.pc == 3 && extendedRaces()));
-#endif
-}
-
 /* sub_41a3e0: the colour of a track vertex, darkened by how far off the view's
  * axis it lies and by the fog past [0x552e04].  Written to `out`, returned. */
 template <typename Math>
-x86::reg32 shadeVertex(win32::WinApplication* app, const Math& math, float x, float y, float z,
+x86::reg32 shadeVertex(win32::WinApplication* app, x86::FPU& fpu, const Math& math, float x, float y, float z,
                        x86::reg32 colour, x86::reg32 out, LastCompare& compared)
 {
     const float inverse = float(math.div(1.0f, z));
@@ -344,10 +272,12 @@ x86::reg32 shadeVertex(win32::WinApplication* app, const Math& math, float x, fl
     const float clampX = 0.0f > offX ? 0.0f : (x86::sreg32(asBits(offX)) > 0x3f800000 ? 1.0f : offX);
     compared(0.0f, offY);
     const float clampY = 0.0f > offY ? 0.0f : (x86::sreg32(asBits(offY)) > 0x3f800000 ? 1.0f : offY);
+    // On the x87 stack all the way to the fistp ([0x536c74] 0.5f, [0x536c7c] 65536.0).
     const double light = double(math.mul(math.mul(math.sub(1.0f, math.mul(math.add(clampX, clampY), 0.5f)), fog),
                                          65536.0f));
-    // fistp as the generated code has it (FPU::rndint, round to nearest).
-    x86::reg32 level = x86::reg32(x86::sreg32(std::nearbyint(light)));
+    // fistp as the generated code has it: the control word's rounding, the
+    // indefinite past an integer's range.
+    x86::reg32 level = x86::reg32(fpu.toInteger<x86::sreg32>(x86::Float(light)));
     if (x86::sreg32(level) >= 0x10000)
         level = 0xffff;
     level = (level >> 8) & 0xff;
@@ -452,7 +382,7 @@ void trackVerticesWith(win32::WinApplication* app, x86::CPU& cpu, const Math& ma
             compared(z, farthest);
             if (!(z >= farthest))
             {
-                eax = shadeVertex(app, math, x, y, z, frontColour, out + 0x14, compared);
+                eax = shadeVertex(app, cpu.fpu, math, x, y, z, frontColour, out + 0x14, compared);
                 shaded = true;
             }
         }
@@ -465,7 +395,7 @@ void trackVerticesWith(win32::WinApplication* app, x86::CPU& cpu, const Math& ma
             compared(bz, farthest);
             if (!(bz >= farthest))
             {
-                eax = shadeVertex(app, math, bx, by, bz, backColour, out + 0x18, compared);
+                eax = shadeVertex(app, cpu.fpu, math, bx, by, bz, backColour, out + 0x18, compared);
                 shaded = true;
             }
         }
@@ -671,8 +601,8 @@ void rotateVectorsWith(win32::WinApplication* app, x86::CPU& cpu, const Math& ma
  *   s = 1 / sqrt((1 + |z|) * [0x53c6a8]) * [0x53c6b0], a double,
  *   u = x * s + [0x53c6b8] at +0x18 and v = s * y + [0x53c6b8] at +0x1c. */
 template <typename Math>
-void envMapLoop(win32::WinApplication* app, x86::reg32 count, x86::reg32 in, x86::reg32 out, x86::reg32& ebx,
-                LastWideCompare& compared)
+void envMapLoop(win32::WinApplication* app, x86::FPU& fpu, const Math& math, x86::reg32 count, x86::reg32 in,
+                x86::reg32 out, x86::reg32& ebx, LastWideCompare& compared)
 {
     typedef typename Math::Value V;
     const V scale = app->getMemory<float>(x86::reg32(0x53c6a8));
@@ -682,18 +612,20 @@ void envMapLoop(win32::WinApplication* app, x86::reg32 count, x86::reg32 in, x86
     {
         const float z = app->getMemory<float>(in + 8);
         compared(0.0, z);
+        // |z| through [ebp-4], a float
         V absZ = z;
         if (0.0f > z)
             absZ = -z;
         else
             ebx = app->getMemory<x86::reg32>(in + 8);
-        const V root = Math::sqrt(Math::mul(Math::add(V(1), absZ), scale));
-        // fmul qword: the one operand that is no float, rounded exactly
-        const V s = V(NearestMath::mul(double(Math::div(V(1), root)), wide));
+        const V root = math.sqrt(math.mul(math.add(V(1), absZ), scale));
+        // fmul qword: the one operand that is no float, rounded by the FPU
+        // (as floats, a result past a float's range raises overflow here)
+        const V s = V(FpuMath{fpu}.mul(double(math.div(V(1), root)), wide));
         const V x = app->getMemory<float>(in);
-        app->getMemory<float>(out + 0x18) = float(Math::add(Math::mul(x, s), centre));
+        app->getMemory<float>(out + 0x18) = float(math.add(math.mul(x, s), centre));
         const V y = app->getMemory<float>(in + 4);
-        app->getMemory<float>(out + 0x1c) = float(Math::add(Math::mul(s, y), centre));
+        app->getMemory<float>(out + 0x1c) = float(math.add(math.mul(s, y), centre));
     }
 }
 
@@ -714,17 +646,23 @@ void envMapCoordsNative(win32::WinApplication* app, x86::CPU& cpu)
     if (!call(app, cpu, 0x4e03b0))
         return;
 
-    // As floats, and once more the emulated FPU's way should one leave their
-    // range: the loop only writes what it works out from what it reads.
+    // At single precision to nearest as floats, and once more the emulated
+    // FPU's way should one leave their range: the loop only writes what it
+    // works out from what it reads.  In any other mode the FPU's way at once.
     x86::reg32 ebx = cpu.ebx;
     LastWideCompare compared;
-    std::feclearexcept(FE_OVERFLOW | FE_UNDERFLOW | FE_INVALID);
-    envMapLoop<FloatMath>(app, count, turned, vertices, ebx, compared);
-    if (std::fetestexcept(FE_OVERFLOW | FE_UNDERFLOW | FE_INVALID))
+    bool exact = !singleNearest(cpu);
+    if (!exact)
+    {
+        std::feclearexcept(FE_OVERFLOW | FE_UNDERFLOW | FE_INVALID);
+        envMapLoop(app, cpu.fpu, FloatMath(), count, turned, vertices, ebx, compared);
+        exact = std::fetestexcept(FE_OVERFLOW | FE_UNDERFLOW | FE_INVALID) != 0;
+    }
+    if (exact)
     {
         ebx = cpu.ebx;
         compared = LastWideCompare();
-        envMapLoop<NearestMath>(app, count, turned, vertices, ebx, compared);
+        envMapLoop(app, cpu.fpu, FpuMath{cpu.fpu}, count, turned, vertices, ebx, compared);
     }
     const x86::reg32 in = turned + count * 0xc;
     const x86::reg32 out = vertices + count * 0x20;
@@ -793,7 +731,8 @@ void shadeNormalsNative(win32::WinApplication* app, x86::CPU& cpu)
         compared(0.0, d);
         if (0.0 < d || d != d)
         {
-            const x86::reg32 n = x86::reg32(x86::sreg32(std::nearbyint(NearestMath::mul(d, factor))));
+            // fmul qword, fistp: the FPU's rounding, then the control word's
+            const x86::reg32 n = x86::reg32(cpu.fpu.toInteger<x86::sreg32>(x86::Float(FpuMath{cpu.fpu}.mul(d, factor))));
             x86::reg32 red = global(0x55e6b8) + ((n * global(0x55e6d0)) >> 16);
             if (red > global(0x55e6c4))
                 red = global(0x55e6c4);
@@ -869,7 +808,7 @@ void cullPolygonsNative(win32::WinApplication* app, x86::CPU& cpu)
         const x86::reg32 a = reg32At(polygon + 8);
         const x86::reg32 b = reg32At(polygon + 0xc);
         const x86::reg32 c = reg32At(polygon + 0x10);
-        const CrossProducts cross = crossProducts(floatAt(c + 4), floatAt(b + 4), floatAt(a), floatAt(b),
+        const CrossProducts cross = crossProducts(cpu, floatAt(c + 4), floatAt(b + 4), floatAt(a), floatAt(b),
                                                   floatAt(a + 4), floatAt(b + 4), floatAt(c), floatAt(b));
         compared(cross.two, cross.one);
         eax = cross.two > cross.one ? 1 : 0;
@@ -964,35 +903,30 @@ void cullPolygonsNative(win32::WinApplication* app, x86::CPU& cpu)
     cpu.esp = esp + 4;
 }
 
-/* A float product that is the x87's at single precision too: anything but a
- * product that left a float's range -- an infinity from finite factors, or a
- * subnormal or zero from nonzero ones -- which the x87 keeps with its wider
- * exponent. */
-inline bool floatProductExact(float a, float b, float product)
+/* The depth for Glide of a 1/w whose bits are `w` (taken as 0 when negative or
+ * past 1), as the drawing works it out: 1 - w, times [0x560094] (`scale`),
+ * plus [0x560098] (`offset`), each step through a float in memory.  `t` is
+ * the first step's float, `depth` the last. */
+struct DepthSteps
 {
-    const float size = std::fabs(product);
-    if (size >= FLT_MIN && size <= FLT_MAX)
-        return true;
-    if (std::isinf(product))
-        return std::isinf(a) || std::isinf(b);
-    if (product == 0)
-        return a == 0 || b == 0;
-    return product != product;  // NaN, the emulated FPU's as well
+    float t;
+    float depth;
+};
+
+inline DepthSteps depthSteps(const FpuMath& M, x86::reg32 w, float scale, float offset)
+{
+    float t = 0.0f;
+    if (!(w & 0x80000000) && x86::sreg32(w) <= 0x3f800000)
+        t = float(M.sub(1.0, asFloat(w)));
+    const float scaled = float(M.mul(scale, t));
+    return { t, float(M.add(offset, scaled)) };
 }
 
 /* A vertex's depth for Glide from its 1/z, as sub_434380 (and the clipper)
- * write it over z: 1 - w, or 0 for a negative w or one past 1, then times
- * [0x560094] and plus [0x560098], a float in memory after each step. */
-void polygonDepth(win32::WinApplication* app, x86::reg32 vertex, float scale, float offset)
+ * write it over z (depthSteps). */
+void polygonDepth(win32::WinApplication* app, const FpuMath& M, x86::reg32 vertex, float scale, float offset)
 {
-    const x86::reg32 w = app->getMemory<x86::reg32>(vertex + 0xc);
-    float t = 0.0f;
-    if (!(w & 0x80000000) && x86::sreg32(w) <= 0x3f800000)
-        t = 1.0f - app->getMemory<float>(vertex + 0xc);  // exact: w is in [0, 1]
-    float scaled = scale * t;
-    if (!floatProductExact(scale, t, scaled))
-        scaled = float(NearestMath::mul(scale, t));
-    app->getMemory<float>(vertex + 8) = offset + scaled;  // a float sum only overflows as fstp would
+    app->getMemory<float>(vertex + 8) = depthSteps(M, app->getMemory<x86::reg32>(vertex + 0xc), scale, offset).depth;
 }
 
 /* sub_434380: the frame's polygons to the renderer, in the order of their list
@@ -1073,8 +1007,7 @@ void submitPolygonsNative(win32::WinApplication* app, x86::CPU& cpu)
                     cpu.esi = polygon;
                     cpu.edi = pass == 0 ? first : texture;
                     cpu.esp -= 4;
-                    if (!clipTriangle(app, cpu))
-                        app->dynamic_call(0x4c11b0, cpu);
+                    clipTriangleNative(app, cpu);
                     if (cpu.terminate)
                         return;
                 }
@@ -1083,7 +1016,7 @@ void submitPolygonsNative(win32::WinApplication* app, x86::CPU& cpu)
                     const float scale = app->getMemory<float>(x86::reg32(0x560094));
                     const float offset = app->getMemory<float>(x86::reg32(0x560098));
                     for (int i = 0; i < 3; ++i)
-                        polygonDepth(app, corners[i], scale, offset);
+                        polygonDepth(app, FpuMath{cpu.fpu}, corners[i], scale, offset);
                     reg32At(cpu.esp - 4) = corners[2];
                     reg32At(cpu.esp - 8) = corners[1];
                     reg32At(cpu.esp - 12) = corners[0];
@@ -1193,8 +1126,7 @@ void trackPolygonsNative(win32::WinApplication* app, x86::CPU& cpu)
         cpu.esi = a;
         cpu.edi = ediThen;
         cpu.esp -= 4;
-        if (!projectedTriangle(app, cpu))
-            app->dynamic_call(0x41a360, cpu);
+        projectedTriangleNative(app, cpu);
         if (cpu.terminate)
             return false;
         total += cpu.eax;
@@ -1238,7 +1170,7 @@ void trackPolygonsNative(win32::WinApplication* app, x86::CPU& cpu)
             ecx = c0 | c1 | c2 | c3;
             if (!(ecx & 0x10))
             {
-                const CrossProducts p = crossProducts(floatAt(t2 + 4), floatAt(t1 + 4), floatAt(t0), floatAt(t1),
+                const CrossProducts p = crossProducts(cpu, floatAt(t2 + 4), floatAt(t1 + 4), floatAt(t0), floatAt(t1),
                                                       floatAt(t0 + 4), floatAt(t1 + 4), floatAt(t2), floatAt(t1));
                 compared(p.two, p.one);
                 ecx = t2;
@@ -1249,7 +1181,7 @@ void trackPolygonsNative(win32::WinApplication* app, x86::CPU& cpu)
                     const x86::reg32 t2again = reg32At(rec2 + 8);
                     ebx = t3;
                     ecx = reg32At(rec0 + 8);
-                    const CrossProducts q = crossProducts(floatAt(t3 + 4), floatAt(t2again + 4), floatAt(ecx),
+                    const CrossProducts q = crossProducts(cpu, floatAt(t3 + 4), floatAt(t2again + 4), floatAt(ecx),
                                                           floatAt(t2again), floatAt(ecx + 4), floatAt(t2again + 4),
                                                           floatAt(t3), floatAt(t2again));
                     compared(q.two, q.one);
@@ -1379,13 +1311,13 @@ inline bool indefinite(x86::reg32 bits)
  * pass leaves fewer than three corners, 0 otherwise (also when the first
  * corner is an indefinite and nothing is drawn).
  *
- * The arithmetic is the emulated FPU's rounding at single precision
- * (NearestMath), every float stored where the original stores one; the last
+ * The arithmetic is the emulated FPU's (FpuMath), in whatever precision the
+ * game has it at, every float stored where the original stores one; the last
  * fcomp and its sahf are replayed on the FPU, and the integer flags set as
  * the last instruction before the return (or the call) leaves them. */
 void clipPolygonNative(win32::WinApplication* app, x86::CPU& cpu)
 {
-    typedef NearestMath M;
+    const FpuMath M{cpu.fpu};
     auto word = [app](x86::reg32 address) { return app->getMemory<x86::reg32>(address); };
     auto byte = [app](x86::reg32 address) { return app->getMemory<x86::reg8>(address); };
     auto load = [app](x86::reg32 address) { return double(app->getMemory<float>(address)); };
@@ -1437,8 +1369,8 @@ void clipPolygonNative(win32::WinApplication* app, x86::CPU& cpu)
             fields[i][0] = app->getMemory<float>(from);
             fields[i][1] = app->getMemory<float>(from + 4);
             fields[i][2] = float(w);
-            fields[i][3] = float(M::mul(load(from + 0x18), w));
-            fields[i][4] = float(M::mul(load(from + 0x1c), w));
+            fields[i][3] = float(M.mul(load(from + 0x18), w));
+            fields[i][4] = float(M.mul(load(from + 0x1c), w));
             fields[i][5] = float(colour >> 24);
             fields[i][6] = float(colour >> 16 & 0xff);
             fields[i][7] = float(colour >> 8 & 0xff);
@@ -1473,7 +1405,7 @@ void clipPolygonNative(win32::WinApplication* app, x86::CPU& cpu)
     };
     auto between = [&](x86::reg32 a, x86::reg32 b, x86::reg32 made, x86::reg32 field, double t) {
         const double from = load(a + field);
-        store(made + field, M::sub(from, M::mul(M::sub(from, load(b + field)), t)));
+        store(made + field, M.sub(from, M.mul(M.sub(from, load(b + field)), t)));
     };
 
     /* One pass: the corners outside `bit` dropped, a vertex made where an edge
@@ -1525,17 +1457,17 @@ void clipPolygonNative(win32::WinApplication* app, x86::CPU& cpu)
     {
         const bool kept = pass(0x10, [&](x86::reg32 a, x86::reg32 b, x86::reg32 vertex, x86::reg32 code, x86::reg8) {
             const double aW = load(a + 8);
-            const double inverse = double(float(M::div(1.0, M::sub(aW, load(b + 8)))));
-            double t = double(float(M::mul(M::sub(aW, nearW), inverse)));
+            const double inverse = double(float(M.div(1.0, M.sub(aW, load(b + 8)))));
+            double t = double(float(M.mul(M.sub(aW, nearW), inverse)));
             for (x86::reg32 field : { 0u, 4u, 0xcu, 0x10u })
                 between(a, b, vertex, field, t);
             if (x86::sreg32(asBits(float(t))) > 0x3f800000)
-                t = double(float(M::mul(aW, inverse)));
+                t = double(float(M.mul(aW, inverse)));
             else
             {
                 compared(0.0, t);
                 if (0.0 > t)
-                    t = double(float(M::mul(aW, inverse)));
+                    t = double(float(M.mul(aW, inverse)));
             }
             for (x86::reg32 field : { 0x14u, 0x18u, 0x1cu, 0x20u })
                 between(a, b, vertex, field, t);
@@ -1569,7 +1501,7 @@ void clipPolygonNative(win32::WinApplication* app, x86::CPU& cpu)
             const bool kept = pass(bit, [&](x86::reg32 a, x86::reg32 b, x86::reg32 vertex, x86::reg32 code,
                                             x86::reg8 previousCode) {
                 const double aY = load(a + 4);
-                const double t = M::div(M::sub(aY, edge), M::sub(aY, load(b + 4)));
+                const double t = M.div(M.sub(aY, edge), M.sub(aY, load(b + 4)));
                 for (x86::reg32 field : { 0u, 8u, 0xcu, 0x10u, 0x14u, 0x18u, 0x1cu, 0x20u })
                     between(a, b, vertex, field, t);
                 word(vertex + 4) = edgeBits;
@@ -1593,7 +1525,7 @@ void clipPolygonNative(win32::WinApplication* app, x86::CPU& cpu)
             const bool kept = pass(bit, [&](x86::reg32 a, x86::reg32 b, x86::reg32 vertex, x86::reg32 code,
                                             x86::reg8 previousCode) {
                 const double aX = load(a);
-                const double t = M::div(M::sub(aX, edge), M::sub(aX, load(b)));
+                const double t = M.div(M.sub(aX, edge), M.sub(aX, load(b)));
                 for (x86::reg32 field : { 4u, 8u, 0xcu, 0x10u, 0x14u, 0x18u, 0x1cu, 0x20u })
                     between(a, b, vertex, field, t);
                 word(vertex) = edgeBits;
@@ -1630,23 +1562,23 @@ void clipPolygonNative(win32::WinApplication* app, x86::CPU& cpu)
     {
         vertex = word(list + 4 * i);
         const double w = load(vertex + 8);
-        const double inverse = double(float(M::div(1.0, w)));
+        const double inverse = double(float(M.div(1.0, w)));
         const x86::reg32 wBits = word(vertex + 8);
         float depth = 0.0f;
         if (!(wBits & 0x80000000) && x86::sreg32(wBits) <= 0x3f800000)
-            depth = float(M::sub(1.0, w));
+            depth = float(M.sub(1.0, w));
         word(fan) = word(vertex);
         word(fan + 4) = word(vertex + 4);
-        const float scaled = float(M::mul(scale, depth));
-        store(fan + 8, M::add(offset, scaled));
+        const float scaled = float(M.mul(scale, depth));
+        store(fan + 8, M.add(offset, scaled));
         store(fan + 0xc, w);
         auto channel = [&](x86::reg32 field) {
             return x86::reg32(cpu.fpu.toInteger<x86::sreg32>(x86::Float(load(vertex + field)))) & 0xff;
         };
         word(fan + 0x10) = channel(0x14) << 24 | channel(0x18) << 16 | channel(0x1c) << 8 | channel(0x20);
         word(fan + 0x14) = 0;
-        store(fan + 0x18, M::mul(load(vertex + 0xc), inverse));
-        store(fan + 0x1c, M::mul(load(vertex + 0x10), inverse));
+        store(fan + 0x18, M.mul(load(vertex + 0xc), inverse));
+        store(fan + 0x1c, M.mul(load(vertex + 0x10), inverse));
         if (!indefinite(word(fan)) && !indefinite(word(fan + 4)) && !indefinite(word(fan + 8))
             && !indefinite(word(fan + 0xc)))
         {
@@ -1688,12 +1620,11 @@ bool callThrash(win32::WinApplication* app, x86::CPU& cpu, x86::reg32 slot)
     return !cpu.terminate;
 }
 
-/* call 0x4c2cd0, to the native clipper when it takes the call. */
+/* call 0x4c2cd0: the clipper. */
 bool callClipper(win32::WinApplication* app, x86::CPU& cpu)
 {
     cpu.esp -= 4;
-    if (!clipPolygon(app, cpu))
-        app->dynamic_call(0x4c2cd0, cpu);
+    clipPolygonNative(app, cpu);
     return !cpu.terminate;
 }
 
@@ -1716,26 +1647,21 @@ struct InlineDepth
     x86::reg32 t;
 };
 
-InlineDepth inlineDepth(win32::WinApplication* app, x86::reg32 vertex, float scale, float offset,
+InlineDepth inlineDepth(win32::WinApplication* app, const FpuMath& M, x86::reg32 vertex, float scale, float offset,
                         IntegerFlags& flags)
 {
     const x86::reg32 w = app->getMemory<x86::reg32>(vertex + 0xc);
-    float t = 0.0f;
     bool zeroed = true;
     if (!(w & 0x80000000))
     {
         flags.compare(w, 0x3f800000);
         zeroed = x86::sreg32(w) > 0x3f800000;
-        if (!zeroed)
-            t = 1.0f - asFloat(w);
     }
     if (zeroed)
         flags.logic(0);
-    float scaled = scale * t;
-    if (!floatProductExact(scale, t, scaled))
-        scaled = float(NearestMath::mul(scale, t));
-    app->getMemory<float>(vertex + 8) = offset + scaled;
-    return { zeroed, asBits(t) };
+    const DepthSteps steps = depthSteps(M, w, scale, offset);
+    app->getMemory<float>(vertex + 8) = steps.depth;
+    return { zeroed, asBits(steps.t) };
 }
 
 /* The first indefinite (either sign) among x, y, depth, w, u, v of the
@@ -1804,9 +1730,9 @@ void clipTriangleNative(win32::WinApplication* app, x86::CPU& cpu)
     const float scale = app->getMemory<float>(x86::reg32(0x560094));
     const float offset = app->getMemory<float>(x86::reg32(0x560098));
     IntegerFlags flags;
-    const InlineDepth da = inlineDepth(app, a, scale, offset, flags);
-    const InlineDepth db = inlineDepth(app, b, scale, offset, flags);
-    const InlineDepth dc = inlineDepth(app, c, scale, offset, flags);
+    const InlineDepth da = inlineDepth(app, FpuMath{cpu.fpu}, a, scale, offset, flags);
+    const InlineDepth db = inlineDepth(app, FpuMath{cpu.fpu}, b, scale, offset, flags);
+    const InlineDepth dc = inlineDepth(app, FpuMath{cpu.fpu}, c, scale, offset, flags);
     cpu.eax = dc.t;
     cpu.edx = b;
     cpu.esi = db.zeroed ? 0 : saved[1];
@@ -1877,10 +1803,10 @@ void clipQuadNative(win32::WinApplication* app, x86::CPU& cpu)
 
     if (!any)
     {
-        inlineDepth(app, a, scale, offset, flags);
-        const InlineDepth db = inlineDepth(app, b, scale, offset, flags);
-        inlineDepth(app, c, scale, offset, flags);
-        const InlineDepth dd = inlineDepth(app, d, scale, offset, flags);
+        inlineDepth(app, FpuMath{cpu.fpu}, a, scale, offset, flags);
+        const InlineDepth db = inlineDepth(app, FpuMath{cpu.fpu}, b, scale, offset, flags);
+        inlineDepth(app, FpuMath{cpu.fpu}, c, scale, offset, flags);
+        const InlineDepth dd = inlineDepth(app, FpuMath{cpu.fpu}, d, scale, offset, flags);
         flags.store(cpu);
         cpu.eax = dd.t;
         cpu.ebx = d;
@@ -1915,9 +1841,9 @@ void clipQuadNative(win32::WinApplication* app, x86::CPU& cpu)
         }
         else
         {
-            const InlineDepth da = inlineDepth(app, a, scale, offset, flags);
-            const InlineDepth db = inlineDepth(app, b, scale, offset, flags);
-            inlineDepth(app, c, scale, offset, flags);
+            const InlineDepth da = inlineDepth(app, FpuMath{cpu.fpu}, a, scale, offset, flags);
+            const InlineDepth db = inlineDepth(app, FpuMath{cpu.fpu}, b, scale, offset, flags);
+            inlineDepth(app, FpuMath{cpu.fpu}, c, scale, offset, flags);
             if (da.zeroed)
                 ebx = 0;
             if (db.zeroed)
@@ -1981,9 +1907,9 @@ void clipQuadNative(win32::WinApplication* app, x86::CPU& cpu)
         return;
     }
     flags = IntegerFlags();
-    const InlineDepth da = inlineDepth(app, a, scale, offset, flags);
-    inlineDepth(app, c, scale, offset, flags);
-    const InlineDepth dd = inlineDepth(app, d, scale, offset, flags);
+    const InlineDepth da = inlineDepth(app, FpuMath{cpu.fpu}, a, scale, offset, flags);
+    inlineDepth(app, FpuMath{cpu.fpu}, c, scale, offset, flags);
+    const InlineDepth dd = inlineDepth(app, FpuMath{cpu.fpu}, d, scale, offset, flags);
     if (da.zeroed || dd.zeroed)
         ecx = 0;
     edx = d;
@@ -2016,20 +1942,14 @@ void clipQuadNative(win32::WinApplication* app, x86::CPU& cpu)
  * depth: the depth of 1/z written there as polygonDepth works it out (1/z
  * taken as 65535 for a z of 0), the clip code's dword at +0x14 cleared, and
  * 1/w at +0xc held to 0..1.  Returns 1/w as it came, for the last fcomp. */
-float zCornerDepth(win32::WinApplication* app, x86::reg32 vertex, float scale, float offset)
+float zCornerDepth(win32::WinApplication* app, const FpuMath& M, x86::reg32 vertex, float scale, float offset)
 {
     auto word = [app](x86::reg32 address) { return app->getMemory<x86::reg32>(address); };
     const x86::reg32 z = word(vertex + 8);
-    const float inverse = (z & 0x7fffffff) ? float(NearestMath::div(1.0, asFloat(z))) : asFloat(0x477fff00);
+    // 1/z through [ebp-0xc], a float
+    const float inverse = (z & 0x7fffffff) ? float(M.div(1.0, asFloat(z))) : asFloat(0x477fff00);
     word(vertex + 0x14) = 0;
-    const x86::reg32 bits = asBits(inverse);
-    float t = 0.0f;
-    if (!(bits & 0x80000000) && x86::sreg32(bits) <= 0x3f800000)
-        t = 1.0f - inverse;
-    float scaled = scale * t;
-    if (!floatProductExact(scale, t, scaled))
-        scaled = float(NearestMath::mul(scale, t));
-    app->getMemory<float>(vertex + 8) = offset + scaled;
+    app->getMemory<float>(vertex + 8) = depthSteps(M, asBits(inverse), scale, offset).depth;
     const x86::reg32 w = word(vertex + 0xc);
     const float oow = asFloat(w);
     if (0.0f > oow)
@@ -2092,9 +2012,9 @@ void clipTriangleByZNative(win32::WinApplication* app, x86::CPU& cpu)
     }
     const float scale = app->getMemory<float>(x86::reg32(0x560094));
     const float offset = app->getMemory<float>(x86::reg32(0x560098));
-    zCornerDepth(app, a, scale, offset);
-    zCornerDepth(app, b, scale, offset);
-    const float last = zCornerDepth(app, c, scale, offset);
+    zCornerDepth(app, FpuMath{cpu.fpu}, a, scale, offset);
+    zCornerDepth(app, FpuMath{cpu.fpu}, b, scale, offset);
+    const float last = zCornerDepth(app, FpuMath{cpu.fpu}, c, scale, offset);
     LastWideCompare compared;
     compared(0.0, last);
     compared.replay(cpu);
@@ -2188,8 +2108,7 @@ void quadMeshNative(win32::WinApplication* app, x86::CPU& cpu)
             cpu.ecx = corner(quad, 3);
             cpu.edi = quad;
             cpu.esp = frame - 0x30 - 4;
-            if (!clipQuad(app, cpu))
-                app->dynamic_call(0x4c12e0, cpu);
+            clipQuadNative(app, cpu);
             if (cpu.terminate)
                 return;
             ebx = cpu.ebx;
@@ -2207,7 +2126,7 @@ void quadMeshNative(win32::WinApplication* app, x86::CPU& cpu)
     {
         const x86::reg32 quad = list + x86::reg32(i) * 0x10;
         for (x86::reg32 k = 0; k < 4; ++k)
-            inlineDepth(app, corner(quad, k), scale, offset, flags);
+            inlineDepth(app, FpuMath{cpu.fpu}, corner(quad, k), scale, offset, flags);
     }
     flags.compare(x86::reg32(i), x86::reg32(count));  // cmp edi, edx
     flags.store(cpu);
@@ -2223,24 +2142,27 @@ void quadMeshNative(win32::WinApplication* app, x86::CPU& cpu)
     finish(cpu.eax, cpu.ebx, cpu.edx);
 }
 
-/* As floats; again through the emulated FPU when the host says a result left a
- * float's range (or came from one that had).  Every output is a function of
- * inputs the call does not write, so the second run simply writes over the
- * first. */
+/* At single precision to nearest as floats; again through the emulated FPU
+ * when the host says a result left a float's range (or came from one that
+ * had).  Every output is then a function of inputs the call does not write
+ * (`inPlace` says when that is not so), so the second run simply writes over
+ * the first.  In any other mode, and in place, the emulated FPU's way at once. */
 constexpr int kOutOfRange = FE_OVERFLOW | FE_UNDERFLOW | FE_INVALID;
 
 template <void (*Float)(win32::WinApplication*, x86::CPU&, const FloatMath&),
           void (*Exact)(win32::WinApplication*, x86::CPU&, const FpuMath&)>
-void runNative(win32::WinApplication* app, x86::CPU& cpu)
+void runNative(win32::WinApplication* app, x86::CPU& cpu, bool inPlace = false)
 {
-    const x86::CPU entry = cpu;
-    std::feclearexcept(kOutOfRange);
-    Float(app, cpu, FloatMath());
-    if (std::fetestexcept(kOutOfRange))
+    if (singleNearest(cpu) && !inPlace)
     {
+        const x86::CPU entry = cpu;
+        std::feclearexcept(kOutOfRange);
+        Float(app, cpu, FloatMath());
+        if (!std::fetestexcept(kOutOfRange))
+            return;
         cpu = entry;
-        Exact(app, cpu, FpuMath{cpu.fpu});
     }
+    Exact(app, cpu, FpuMath{cpu.fpu});
 }
 
 void trackVerticesNative(win32::WinApplication* app, x86::CPU& cpu)
@@ -2253,9 +2175,13 @@ void objectVerticesNative(win32::WinApplication* app, x86::CPU& cpu)
     runNative<objectVerticesWith<FloatMath>, objectVerticesWith<FpuMath>>(app, cpu);
 }
 
+/* Vectors turned where they are (or with the output across the input) could
+ * not be turned again from what they were: one run, the FPU's. */
 void rotateVectorsNative(win32::WinApplication* app, x86::CPU& cpu)
 {
-    runNative<rotateVectorsWith<FloatMath>, rotateVectorsWith<FpuMath>>(app, cpu);
+    const x86::reg32 span = x86::sreg32(cpu.eax) > 0 ? cpu.eax * 0xc : 0;
+    const bool inPlace = span != 0 && cpu.ecx - cpu.edx + span - 1 < 2 * span - 1;
+    runNative<rotateVectorsWith<FloatMath>, rotateVectorsWith<FpuMath>>(app, cpu, inPlace);
 }
 
 /* sub_4e0210: dot products, out[i] = v[i] . d.
@@ -2305,11 +2231,11 @@ void dotProductsNative(win32::WinApplication* app, x86::CPU& cpu)
  *   eax  a; edx  b; ebx  c
  * c may be a or b: the original copies whichever it is to its frame first, and
  * leaves eax or edx pointing at the copy.  Here everything is read before
- * anything is written; the arithmetic is the emulated FPU's (NearestMath), so
+ * anything is written; the arithmetic is the emulated FPU's (FpuMath), so
  * nothing runs twice. */
 void multiplyMatricesNative(win32::WinApplication* app, x86::CPU& cpu)
 {
-    typedef NearestMath M;
+    const FpuMath M{cpu.fpu};
     const x86::reg32 esp = cpu.esp;
     const x86::reg32 a = cpu.eax, b = cpu.edx, c = cpu.ebx;
     const x86::reg32 frame = esp - 16 - 0x2c;  // push ecx, esi, edi, ebp; sub esp, 0x2c
@@ -2319,8 +2245,8 @@ void multiplyMatricesNative(win32::WinApplication* app, x86::CPU& cpu)
     float product[9];
     for (int i = 0; i < 3; ++i)
         for (int j = 0; j < 3; ++j)
-            product[i * 3 + j] = float(M::add(M::add(M::mul(left[i * 3], right[j]), M::mul(left[i * 3 + 1], right[3 + j])),
-                                              M::mul(left[i * 3 + 2], right[6 + j])));
+            product[i * 3 + j] = float(M.add(M.add(M.mul(left[i * 3], right[j]), M.mul(left[i * 3 + 1], right[3 + j])),
+                                              M.mul(left[i * 3 + 2], right[6 + j])));
     std::memcpy(&app->getMemory<float>(c), product, sizeof product);
     // The copy in the frame, where the original makes one.
     if (a == c || b == c)
@@ -2340,11 +2266,11 @@ void multiplyMatricesNative(win32::WinApplication* app, x86::CPU& cpu)
  *   eax  count; edx  the points in; ebx  the matrix; ecx  the move;
  *   [esp+4]  the points out, 12 bytes each (it returns with ret 4)
  * A point's three are read before it is written, so it works in place; the
- * move is added to what was stored, as floats.  NearestMath, as for a
+ * move is added to what was stored, as floats.  FpuMath, as for a
  * multiplied matrix: out may be in. */
 void transformPointsNative(win32::WinApplication* app, x86::CPU& cpu)
 {
-    typedef NearestMath M;
+    const FpuMath M{cpu.fpu};
     const x86::sreg32 count = x86::sreg32(cpu.eax);
     const x86::reg32 esp = cpu.esp;
     const x86::reg32 outArgument = app->getMemory<x86::reg32>(esp + 4);
@@ -2366,18 +2292,18 @@ void transformPointsNative(win32::WinApplication* app, x86::CPU& cpu)
         const float* v = &app->getMemory<float>(in);
         const float v0 = v[0], v1 = v[1], v2 = v[2];
         const float* m = &app->getMemory<float>(matrix);
-        const float x = float(M::add(M::add(M::mul(v0, m[0]), M::mul(v1, m[3])), M::mul(v2, m[6])));
-        const float y = float(M::add(M::add(M::mul(v0, m[1]), M::mul(v1, m[4])), M::mul(v2, m[7])));
-        const float z = float(M::add(M::add(M::mul(v0, m[2]), M::mul(v1, m[5])), M::mul(v2, m[8])));
+        const float x = float(M.add(M.add(M.mul(v0, m[0]), M.mul(v1, m[3])), M.mul(v2, m[6])));
+        const float y = float(M.add(M.add(M.mul(v0, m[1]), M.mul(v1, m[4])), M.mul(v2, m[7])));
+        const float z = float(M.add(M.add(M.mul(v0, m[2]), M.mul(v1, m[5])), M.mul(v2, m[8])));
         float* o = &app->getMemory<float>(out);
         o[0] = x;
         o[1] = y;
         o[2] = z;
         const float* t = &app->getMemory<float>(move);
         const float t0 = t[0], t1 = t[1], t2 = t[2];
-        const float x2 = float(M::add(o[0], t0));
-        const float y2 = float(M::add(o[1], t1));
-        const float z2 = float(M::add(o[2], t2));
+        const float x2 = float(M.add(o[0], t0));
+        const float y2 = float(M.add(o[1], t1));
+        const float z2 = float(M.add(o[2], t2));
         o[0] = x2;
         o[1] = y2;
         o[2] = z2;
@@ -2412,6 +2338,10 @@ void gatherBucketsNative(win32::WinApplication* app, x86::CPU& cpu)
     x86::reg32 head, tail;
     if (word(0x7a3a60) == 0)
     {
+        // cmp dword ptr [0x7a3a60], 0: what sub_4bbe70 leaves the flags as
+        IntegerFlags flags;
+        flags.compare(0, 0);
+        flags.store(cpu);
         cpu.ecx = out;
         cpu.ebx = deep;
         cpu.esi = frame - 0x10;
@@ -2471,7 +2401,7 @@ void gatherBucketsNative(win32::WinApplication* app, x86::CPU& cpu)
 }
 
 /* sub_49d9d0: an object's vertices to view space and the screen (sub_4bf4c0,
- * the stand-in objectVertices), each given the colour [esp+8], and the
+ * objectVertices), each given the colour [esp+8], and the
  * nearest z of them -- from 65535 down -- returned on the x87 stack.
  *   eax  count; ebx  the vertices out (sub_4bf4c0's argument); ecx  its ebx;
  *   edx  its edx; [esp+4]  its ecx; [esp+8]  the colour (ret 8)
@@ -2494,8 +2424,7 @@ void objectVerticesNearestNative(win32::WinApplication* app, x86::CPU& cpu)
     cpu.ebp = frame;
     cpu.esp = frame - 8;
     cpu.esp -= 4;
-    if (!objectVertices(app, cpu))
-        app->dynamic_call(0x4bf4c0, cpu);
+    objectVerticesNative(app, cpu);
     if (cpu.terminate)
         return;
 
@@ -2574,7 +2503,7 @@ void signedDivide(x86::sreg64 dividend, x86::sreg32 divisor, x86::reg32& quotien
  * them; the last fcomp and sahf are replayed before each call and the end. */
 void trackRecordsNative(win32::WinApplication* app, x86::CPU& cpu)
 {
-    typedef NearestMath M;
+    const FpuMath M{cpu.fpu};
     auto word = [app](x86::reg32 address) { return app->getMemory<x86::reg32>(address); };
     auto half = [app](x86::reg32 address) { return app->getMemory<x86::reg16>(address); };
     auto byte = [app](x86::reg32 address) { return app->getMemory<x86::reg8>(address); };
@@ -2628,13 +2557,13 @@ void trackRecordsNative(win32::WinApplication* app, x86::CPU& cpu)
             continue;
         if (!(flags & 0x10) && !((c0 | c1 | c2 | c3) & 0x10))
         {
-            const CrossProducts p = crossProducts(floatAt(v2 + 4), floatAt(v1 + 4), floatAt(v0), floatAt(v1),
+            const CrossProducts p = crossProducts(cpu, floatAt(v2 + 4), floatAt(v1 + 4), floatAt(v0), floatAt(v1),
                                                   floatAt(v0 + 4), floatAt(v1 + 4), floatAt(v2), floatAt(v1));
             compared(p.two, p.one);
             const x86::reg32 back = (p.two < p.one || p.two != p.two || p.one != p.one) ? 1 : 0;
             if (back ^ word(0x554e4c))
             {
-                const CrossProducts q = crossProducts(floatAt(v3 + 4), floatAt(v2 + 4), floatAt(v0), floatAt(v2),
+                const CrossProducts q = crossProducts(cpu, floatAt(v3 + 4), floatAt(v2 + 4), floatAt(v0), floatAt(v2),
                                                       floatAt(v0 + 4), floatAt(v2 + 4), floatAt(v3), floatAt(v2));
                 compared(q.two, q.one);
                 const x86::reg32 backToo = (q.two < q.one || q.two != q.two || q.one != q.one) ? 1 : 0;
@@ -2650,7 +2579,7 @@ void trackRecordsNative(win32::WinApplication* app, x86::CPU& cpu)
         if (flags & 1)
             byte(cursor + 6) = x86::reg8(byte(cursor + 6) | 4);
         auto depthSum = [&]() {
-            return M::mul(M::add(M::add(M::add(floatAt(v0 + 8), floatAt(v1 + 8)), floatAt(v2 + 8)), floatAt(v3 + 8)),
+            return M.mul(M.add(M.add(M.add(floatAt(v0 + 8), floatAt(v1 + 8)), floatAt(v2 + 8)), floatAt(v3 + 8)),
                           app->getMemory<double>(x86::reg32(0x536c8c)));
         };
         if ((byte(0x7a3a58) & 6) && word(0x6fbc48) != 0)
@@ -2807,8 +2736,8 @@ void quadListNative(win32::WinApplication* app, x86::CPU& cpu)
         cpu.esp -= 4;
         if (bits & 0x10)
             app->dynamic_call(0x4c20e0, cpu);
-        else if (!clipQuad(app, cpu))
-            app->dynamic_call(0x4c12e0, cpu);
+        else
+            clipQuadNative(app, cpu);
         if (cpu.terminate)
             return;
         quad = word(quad);
@@ -2908,11 +2837,10 @@ void triangleListNative(win32::WinApplication* app, x86::CPU& cpu)
         cpu.esp -= 4;
         if (bits & 0x10)
         {
-            if (!clipTriangleByZ(app, cpu))
-                app->dynamic_call(0x4c1aa0, cpu);
+            clipTriangleByZNative(app, cpu);
         }
-        else if (!clipTriangle(app, cpu))
-            app->dynamic_call(0x4c11b0, cpu);
+        else
+            clipTriangleNative(app, cpu);
         if (cpu.terminate)
             return;
         triangle = word(triangle);
@@ -2983,7 +2911,7 @@ void sortedBucketsNative(win32::WinApplication* app, x86::CPU& cpu)
         {
             const x86::reg32 next = word(polygon);
             x86::sreg32 index = cpu.fpu.toInteger<x86::sreg32>(
-                x86::Float(NearestMath::mul(app->getMemory<float>(polygon + 0x1c), scale)));
+                x86::Float(FpuMath{cpu.fpu}.mul(app->getMemory<float>(polygon + 0x1c), scale)));
             if (index < 0)
                 index = 0;
             else if (index > 0x31f)
@@ -3054,7 +2982,7 @@ void sortedBucketsNative(win32::WinApplication* app, x86::CPU& cpu)
  * sub_4c7480 does it instead. */
 void depthBucketsNative(win32::WinApplication* app, x86::CPU& cpu)
 {
-    typedef NearestMath M;
+    const FpuMath M{cpu.fpu};
     auto word = [app](x86::reg32 address) { return app->getMemory<x86::reg32>(address); };
     auto floatAt = [app](x86::reg32 address) -> double { return app->getMemory<float>(address); };
     const x86::reg32 esp = cpu.esp;
@@ -3097,8 +3025,7 @@ void depthBucketsNative(win32::WinApplication* app, x86::CPU& cpu)
                 cpu.ebp = frame;
                 cpu.esp = frame - 8;
                 cpu.esp -= 4;
-                if (!sortedBuckets(app, cpu))
-                    app->dynamic_call(0x4c7610, cpu);
+                sortedBucketsNative(app, cpu);
                 if (cpu.terminate)
                     return;
                 eax = cpu.eax;
@@ -3124,12 +3051,12 @@ void depthBucketsNative(win32::WinApplication* app, x86::CPU& cpu)
                 polygon = next;
                 continue;
             }
-            double sum = M::add(M::add(floatAt(v0 + 8), floatAt(v1 + 8)), floatAt(v2 + 8));
+            double sum = M.add(M.add(floatAt(v0 + 8), floatAt(v1 + 8)), floatAt(v2 + 8));
             if (kind == 0)
-                sum = M::add(sum, floatAt(v3 + 8));
-            const double mean = M::mul(sum, app->getMemory<double>(x86::reg32(kind == 0 ? 0x540254 : 0x540264)));
-            const double shifted = M::add(M::sub(mean, asFloat(start)), floatAt(0x7dcfdc));
-            x86::sreg32 index = cpu.fpu.toInteger<x86::sreg32>(x86::Float(M::mul(shifted, floatAt(0x54025c))));
+                sum = M.add(sum, floatAt(v3 + 8));
+            const double mean = M.mul(sum, app->getMemory<double>(x86::reg32(kind == 0 ? 0x540254 : 0x540264)));
+            const double shifted = M.add(M.sub(mean, asFloat(start)), floatAt(0x7dcfdc));
+            x86::sreg32 index = cpu.fpu.toInteger<x86::sreg32>(x86::Float(M.mul(shifted, floatAt(0x54025c))));
             if (index < 0)
                 index = 0;
             else if (index > 0x7cf)
@@ -3157,10 +3084,10 @@ void depthBucketsNative(win32::WinApplication* app, x86::CPU& cpu)
  * x87 stack: (a0 b0 + a1 b1) + a2 b2. */
 void dotPushNative(win32::WinApplication* app, x86::CPU& cpu)
 {
-    typedef NearestMath M;
+    const FpuMath M{cpu.fpu};
     const float* a = &app->getMemory<float>(cpu.eax);
     const float* b = &app->getMemory<float>(cpu.edx);
-    const double sum = M::add(M::add(M::mul(a[0], b[0]), M::mul(a[1], b[1])), M::mul(a[2], b[2]));
+    const double sum = M.add(M.add(M.mul(a[0], b[0]), M.mul(a[1], b[1])), M.mul(a[2], b[2]));
     cpu.fpu.count += 1;
     cpu.fpu.st(0) = x86::Float(sum);
     cpu.esp += 4;
@@ -3170,19 +3097,19 @@ void dotPushNative(win32::WinApplication* app, x86::CPU& cpu)
  * float, 0 for a zero vector, which stays) pushed onto the x87 stack. */
 void normaliseNative(win32::WinApplication* app, x86::CPU& cpu)
 {
-    typedef NearestMath M;
+    const FpuMath M{cpu.fpu};
     float* v = &app->getMemory<float>(cpu.eax);
     const float x = v[0], y = v[1], z = v[2];
-    const float length = float(M::sqrt(M::add(M::add(M::mul(y, y), M::mul(x, x)), M::mul(z, z))));
+    const float length = float(M.sqrt(M.add(M.add(M.mul(y, y), M.mul(x, x)), M.mul(z, z))));
     IntegerFlags flags;
     float result = 0.0f;
     if (asBits(length) & 0x7fffffff)
     {
         flags.logic(asBits(length) & 0x7fffffff);  // test ecx, 0x7fffffff
-        const double inverse = M::div(1.0, length);
-        v[0] = float(M::mul(x, inverse));
-        v[1] = float(M::mul(y, inverse));
-        v[2] = float(M::mul(z, inverse));
+        const double inverse = M.div(1.0, length);
+        v[0] = float(M.mul(x, inverse));
+        v[1] = float(M.mul(y, inverse));
+        v[2] = float(M.mul(z, inverse));
         result = length;
     }
     else
@@ -3223,7 +3150,7 @@ void nearestBlockNative(win32::WinApplication* app, x86::CPU& cpu)
     const float* p = &app->getMemory<float>(cpu.eax);
     x86::reg32* point = &app->getMemory<x86::reg32>(frame - 0x10);
     for (int i = 0; i < 3; ++i)
-        point[i] = x86::reg32(cpu.fpu.toInteger<x86::sreg32>(x86::Float(NearestMath::mul(p[i], scale))));
+        point[i] = x86::reg32(cpu.fpu.toInteger<x86::sreg32>(x86::Float(FpuMath{cpu.fpu}.mul(p[i], scale))));
     const x86::sreg32 count = x86::sreg32(app->getMemory<x86::reg32>(0x5dd940));
     const x86::reg32 blocks = app->getMemory<x86::reg32>(0x5dd948);
     x86::sreg32 best = 0x7fffffff;
@@ -3278,7 +3205,7 @@ void gatherSortedNative(win32::WinApplication* app, x86::CPU& cpu)
     cpu.esp += 4;
 }
 
-/* sub_41a970: an object's vertices (sub_4bf4c0, the stand-in objectVertices,
+/* sub_41a970: an object's vertices (sub_4bf4c0, objectVertices,
  * with the view's matrix at +0x38 and move at +0x44), each then given the
  * colour from the list at ecx.
  *   eax  the view; edx  the count; ebx  the vertices in; ecx  the colours;
@@ -3301,8 +3228,7 @@ void objectVerticesColouredNative(win32::WinApplication* app, x86::CPU& cpu)
     cpu.ebp = frame;
     cpu.esp = frame - 4;
     cpu.esp -= 4;
-    if (!objectVertices(app, cpu))
-        app->dynamic_call(0x4bf4c0, cpu);
+    objectVerticesNative(app, cpu);
     if (cpu.terminate)
         return;
     x86::reg32 left = count;
@@ -3335,21 +3261,21 @@ void objectVerticesColouredNative(win32::WinApplication* app, x86::CPU& cpu)
  * Only the stack and the arguments are written; the flags are untouched. */
 void groundHeightNative(win32::WinApplication* app, x86::CPU& cpu)
 {
-    typedef NearestMath M;
+    const FpuMath M{cpu.fpu};
     const x86::reg32 esp = cpu.esp;
     const float* m = &app->getMemory<float>(cpu.eax);
     const float* args = &app->getMemory<float>(esp + 4);
     const float o[3] = { args[0], args[1], args[2] };
-    const float d[3] = { float(M::sub(args[3], o[0])), float(M::sub(args[4], o[1])), float(M::sub(args[5], o[2])) };
+    const float d[3] = { float(M.sub(args[3], o[0])), float(M.sub(args[4], o[1])), float(M.sub(args[5], o[2])) };
     float r[3];
     for (int j = 0; j < 3; ++j)
-        r[j] = float(M::add(M::add(M::mul(d[0], m[3 * j]), M::mul(d[1], m[3 * j + 1])), M::mul(d[2], m[3 * j + 2])));
+        r[j] = float(M.add(M.add(M.mul(d[0], m[3 * j]), M.mul(d[1], m[3 * j + 1])), M.mul(d[2], m[3 * j + 2])));
     r[1] = 0.0f;
     float q[3];
     for (int j = 0; j < 3; ++j)
-        q[j] = float(M::add(M::add(M::mul(r[0], m[j]), M::mul(r[1], m[3 + j])), M::mul(r[2], m[6 + j])));
+        q[j] = float(M.add(M.add(M.mul(r[0], m[j]), M.mul(r[1], m[3 + j])), M.mul(r[2], m[6 + j])));
     for (int j = 0; j < 3; ++j)
-        q[j] = float(M::add(q[j], o[j]));
+        q[j] = float(M.add(q[j], o[j]));
     float* written = &app->getMemory<float>(esp + 0x10);
     written[0] = d[0];
     written[1] = d[1];
@@ -3443,7 +3369,7 @@ inline x86::reg8 screenCode(win32::WinApplication* app, x86::reg32 vertex, x86::
  * for every particle not drawn this way.  Returns esi. */
 void particlesNative(win32::WinApplication* app, x86::CPU& cpu)
 {
-    typedef NearestMath M;
+    const FpuMath M{cpu.fpu};
     auto word = [app](x86::reg32 address) { return app->getMemory<x86::reg32>(address); };
     auto byte = [app](x86::reg32 address) { return app->getMemory<x86::reg8>(address); };
     auto floatAt = [app](x86::reg32 address) -> float { return app->getMemory<float>(address); };
@@ -3472,7 +3398,7 @@ void particlesNative(win32::WinApplication* app, x86::CPU& cpu)
     word(ebp - 0xe) = 0;
     word(ebp - 0xa) = 0;
     const x86::reg32 alphaScale = x86::reg32(cpu.fpu.toInteger<x86::sreg32>(
-        x86::Float(M::mul(floatAt(0x6fbc38), app->getMemory<double>(x86::reg32(0x540448))))));
+        x86::Float(M.mul(floatAt(0x6fbc38), app->getMemory<double>(x86::reg32(0x540448))))));
     const float camera[3] = { floatAt(view + 0x38), floatAt(view + 0x3c), floatAt(view + 0x40) };
     const x86::reg32 player = word(view + 4);
 
@@ -3504,8 +3430,8 @@ void particlesNative(win32::WinApplication* app, x86::CPU& cpu)
     {
         const x86::reg32 particle = 0x7ddfd0 + i * 0x80;
         const float position[3] = { floatAt(particle + 0xc), floatAt(particle + 0x10), floatAt(particle + 0x14) };
-        float sizeX = float(M::mul(floatAt(particle + 0x24), k1));
-        float sizeY = float(M::mul(floatAt(particle + 0x24), k2));
+        float sizeX = float(M.mul(floatAt(particle + 0x24), k1));
+        float sizeY = float(M.mul(floatAt(particle + 0x24), k2));
         const x86::reg32 kind = word(particle + 4);
         const x86::reg32 pass = word(view);
         const x86::reg32 flag = particle + 0x78 + player * 2 + (pass == 1 ? 1 : 0);
@@ -3521,12 +3447,12 @@ void particlesNative(win32::WinApplication* app, x86::CPU& cpu)
             continue;
         }
         const float* m = &app->getMemory<float>(matrix);
-        float x = float(M::add(M::add(M::mul(position[0], m[0]), M::mul(position[1], m[3])), M::mul(position[2], m[6])));
-        float y = float(M::add(M::add(M::mul(position[0], m[1]), M::mul(position[1], m[4])), M::mul(position[2], m[7])));
-        float z = float(M::add(M::add(M::mul(position[0], m[2]), M::mul(position[1], m[5])), M::mul(position[2], m[8])));
-        x = float(M::add(x, camera[0]));
-        y = float(M::add(y, camera[1]));
-        z = float(M::add(z, camera[2]));
+        float x = float(M.add(M.add(M.mul(position[0], m[0]), M.mul(position[1], m[3])), M.mul(position[2], m[6])));
+        float y = float(M.add(M.add(M.mul(position[0], m[1]), M.mul(position[1], m[4])), M.mul(position[2], m[7])));
+        float z = float(M.add(M.add(M.mul(position[0], m[2]), M.mul(position[1], m[5])), M.mul(position[2], m[8])));
+        x = float(M.add(x, camera[0]));
+        y = float(M.add(y, camera[1]));
+        z = float(M.add(z, camera[2]));
         edx = matrix;
         compared(0.0, z);
         if (0.0 >= z)
@@ -3535,7 +3461,7 @@ void particlesNative(win32::WinApplication* app, x86::CPU& cpu)
             continue;
         }
         edx = kind << 7;
-        const double reach = M::mul(floatAt(0x560bc4 + (kind << 7)), floatAt(0x4ca480 + viewLevel * 4));
+        const double reach = M.mul(floatAt(0x560bc4 + (kind << 7)), floatAt(0x4ca480 + viewLevel * 4));
         compared(reach, z);
         if (!(reach >= z))
         {
@@ -3544,10 +3470,10 @@ void particlesNative(win32::WinApplication* app, x86::CPU& cpu)
         }
         if (!(asBits(z) & 0x7fffffff))
             z = asFloat(0x37800080);
-        const float inverse = float(M::div(1.0, z));
+        const float inverse = float(M.div(1.0, z));
         const x86::reg32 centre = ebp - 0x62;
-        putFloat(centre, M::add(M::mul(M::mul(k1, inverse), x), c1));
-        putFloat(centre + 4, M::add(M::mul(M::mul(k2, inverse), y), c2));
+        putFloat(centre, M.add(M.mul(M.mul(k1, inverse), x), c1));
+        putFloat(centre + 4, M.add(M.mul(M.mul(k2, inverse), y), c2));
         word(centre + 8) = asBits(z);
         word(centre + 0xc) = asBits(inverse);
         edx = asBits(z);
@@ -3597,9 +3523,9 @@ void particlesNative(win32::WinApplication* app, x86::CPU& cpu)
         compared(1.0, z);
         if (!(1.0 > z))
         {
-            const float scale = float(M::div(1.0, z));
-            sizeX = float(cpu.fpu.toInteger<x86::sreg32>(x86::Float(M::mul(sizeX, scale))));
-            sizeY = float(cpu.fpu.toInteger<x86::sreg32>(x86::Float(M::mul(sizeY, scale))));
+            const float scale = float(M.div(1.0, z));
+            sizeX = float(cpu.fpu.toInteger<x86::sreg32>(x86::Float(M.mul(sizeX, scale))));
+            sizeY = float(cpu.fpu.toInteger<x86::sreg32>(x86::Float(M.mul(sizeY, scale))));
         }
         app->getMemory<x86::reg16>(cursor + 4) = 0;
         word(cursor) = cursor + 0xa0;
@@ -3637,24 +3563,24 @@ void particlesNative(win32::WinApplication* app, x86::CPU& cpu)
                 word(corners[1]) = asBits(px);
                 word(corners[0] + 4) = word(previous + 4);
                 word(corners[1] + 4) = word(previous + 4);
-                putFloat(corners[2], M::add(cx, width));
-                putFloat(corners[2] + 4, M::add(cy, height));
-                putFloat(corners[3], M::sub(cx, width));
-                putFloat(corners[3] + 4, M::sub(cy, height));
+                putFloat(corners[2], M.add(cx, width));
+                putFloat(corners[2] + 4, M.add(cy, height));
+                putFloat(corners[3], M.sub(cx, width));
+                putFloat(corners[3] + 4, M.sub(cy, height));
                 const double half = floatAt(0x540458);
-                putFloat(previous, M::mul(M::add(cx, floatAt(previous)), half));
-                putFloat(previous + 4, M::mul(M::add(cy, floatAt(previous + 4)), half));
+                putFloat(previous, M.mul(M.add(cx, floatAt(previous)), half));
+                putFloat(previous + 4, M.mul(M.add(cy, floatAt(previous + 4)), half));
             }
             else
             {
                 word(corners[0]) = word(centre);
                 word(corners[0] + 4) = word(centre + 4);
-                putFloat(corners[1], M::add(cx, width));
-                putFloat(corners[1] + 4, M::sub(cy, height));
-                putFloat(corners[2], M::add(width, cx));
-                putFloat(corners[2] + 4, M::add(cy, height));
+                putFloat(corners[1], M.add(cx, width));
+                putFloat(corners[1] + 4, M.sub(cy, height));
+                putFloat(corners[2], M.add(width, cx));
+                putFloat(corners[2] + 4, M.add(cy, height));
                 word(corners[3]) = word(centre);
-                putFloat(corners[3] + 4, M::add(height, cy));
+                putFloat(corners[3] + 4, M.add(height, cy));
                 word(previous) = word(centre);
                 word(previous + 4) = word(centre + 4);
             }
@@ -3662,16 +3588,16 @@ void particlesNative(win32::WinApplication* app, x86::CPU& cpu)
         }
         else
         {
-            const double a = M::mul(floatAt(particle + 0x3c), sizeY);
-            const double b = M::mul(floatAt(particle + 0x38), sizeX);
-            putFloat(corners[0], M::sub(cx, a));
-            putFloat(corners[0] + 4, M::add(cy, b));
-            putFloat(corners[1], M::add(cx, b));
-            putFloat(corners[1] + 4, M::add(cy, a));
-            putFloat(corners[2], M::add(cx, a));
-            putFloat(corners[2] + 4, M::sub(cy, b));
-            putFloat(corners[3], M::sub(cx, b));
-            putFloat(corners[3] + 4, M::sub(cy, a));
+            const double a = M.mul(floatAt(particle + 0x3c), sizeY);
+            const double b = M.mul(floatAt(particle + 0x38), sizeX);
+            putFloat(corners[0], M.sub(cx, a));
+            putFloat(corners[0] + 4, M.add(cy, b));
+            putFloat(corners[1], M.add(cx, b));
+            putFloat(corners[1] + 4, M.add(cy, a));
+            putFloat(corners[2], M.add(cx, a));
+            putFloat(corners[2] + 4, M.sub(cy, b));
+            putFloat(corners[3], M.sub(cx, b));
+            putFloat(corners[3] + 4, M.sub(cy, a));
         }
         for (int c = 0; c < 4; ++c)
             byte(corners[c] + 0x14) = screenCode(app, corners[c], edx);
@@ -3721,7 +3647,7 @@ void particlesNative(win32::WinApplication* app, x86::CPU& cpu)
  * Only eax is not kept: what its last step left in it. */
 void dropsNative(win32::WinApplication* app, x86::CPU& cpu)
 {
-    typedef NearestMath M;
+    const FpuMath M{cpu.fpu};
     auto word = [app](x86::reg32 address) { return app->getMemory<x86::reg32>(address); };
     auto byte = [app](x86::reg32 address) { return app->getMemory<x86::reg8>(address); };
     auto floatAt = [app](x86::reg32 address) -> float { return app->getMemory<float>(address); };
@@ -3741,7 +3667,7 @@ void dropsNative(win32::WinApplication* app, x86::CPU& cpu)
         cpu.esp = esp + 4;
     };
     const x86::reg32 alphaScale = x86::reg32(cpu.fpu.toInteger<x86::sreg32>(
-        x86::Float(M::mul(floatAt(0x6fbc38), app->getMemory<double>(x86::reg32(0x540440))))));
+        x86::Float(M.mul(floatAt(0x6fbc38), app->getMemory<double>(x86::reg32(0x540440))))));
     // The camera's mode, three times as the original reads it.
     auto cameraMode = [&]() -> x86::reg32 {
         const x86::reg32 first = word(0x5e10b8 + player * 4);
@@ -3807,10 +3733,10 @@ void dropsNative(win32::WinApplication* app, x86::CPU& cpu)
         for (x86::reg32 c = 0; c < 4; ++c)
         {
             const x86::reg32 corner = polygon + 0x20 + c * 0x20;
-            app->getMemory<float>(corner) = float(M::add(M::mul(floatAt(drop + 8 + c * 8), k1), c1));
+            app->getMemory<float>(corner) = float(M.add(M.mul(floatAt(drop + 8 + c * 8), k1), c1));
             word(corner + 8) = 0;
             word(corner + 0xc) = 0x3f7fff00;
-            app->getMemory<float>(corner + 4) = float(M::add(M::mul(floatAt(drop + 0xc + c * 8), k2), c2));
+            app->getMemory<float>(corner + 4) = float(M.add(M.mul(floatAt(drop + 0xc + c * 8), k2), c2));
             byte(corner + 0x14) = screenCode(app, corner, edx);
             word(corner + 0x10) = colour;
         }
@@ -3833,7 +3759,7 @@ void dropsNative(win32::WinApplication* app, x86::CPU& cpu)
  * itself to sub_4cab60 as it dies.  Only eax is not kept. */
 void moveParticlesNative(win32::WinApplication* app, x86::CPU& cpu)
 {
-    typedef NearestMath M;
+    const FpuMath M{cpu.fpu};
     auto word = [app](x86::reg32 address) { return app->getMemory<x86::reg32>(address); };
     auto byte = [app](x86::reg32 address) { return app->getMemory<x86::reg8>(address); };
     auto floatAt = [app](x86::reg32 address) -> float { return app->getMemory<float>(address); };
@@ -3879,19 +3805,19 @@ void moveParticlesNative(win32::WinApplication* app, x86::CPU& cpu)
             const x86::reg32 kind = 0x560b64 + (word(p + 4) << 7);
             const double damping = floatAt(kind + 0x38);
             word(frame - 8) = word(p + 8) - life;
-            const float age = float(M::div(double(x86::sreg32(word(frame - 8))), double(x86::sreg32(word(p + 8)))));
+            const float age = float(M.div(double(x86::sreg32(word(frame - 8))), double(x86::sreg32(word(p + 8)))));
             if (word(p + 0x44) & 0x7fffffff)
             {
                 const double s = trig(true, p + 0x40);
-                putFloat(p + 0x18, M::add(M::mul(s, floatAt(p + 0x48)), floatAt(p + 0x18)));
-                const double c = M::mul(trig(false, p + 0x40), floatAt(p + 0x48));
-                const float swirl = float(M::mul(floatAt(p + 0x4c), damping));
-                const float turn = float(M::mul(damping, floatAt(p + 0x44)));
+                putFloat(p + 0x18, M.add(M.mul(s, floatAt(p + 0x48)), floatAt(p + 0x18)));
+                const double c = M.mul(trig(false, p + 0x40), floatAt(p + 0x48));
+                const float swirl = float(M.mul(floatAt(p + 0x4c), damping));
+                const float turn = float(M.mul(damping, floatAt(p + 0x44)));
                 app->getMemory<float>(p + 0x4c) = swirl;
                 app->getMemory<float>(p + 0x44) = turn;
-                putFloat(p + 0x20, M::add(c, floatAt(p + 0x20)));
-                putFloat(p + 0x48, M::add(double(swirl), floatAt(p + 0x48)));
-                putFloat(p + 0x40, M::add(double(turn), floatAt(p + 0x40)));
+                putFloat(p + 0x20, M.add(c, floatAt(p + 0x20)));
+                putFloat(p + 0x48, M.add(double(swirl), floatAt(p + 0x48)));
+                putFloat(p + 0x40, M.add(double(turn), floatAt(p + 0x40)));
             }
             const x86::reg32 spinBits = word(p + 0x34);
             if (spinBits & 0x7fffffff)
@@ -3913,28 +3839,28 @@ void moveParticlesNative(win32::WinApplication* app, x86::CPU& cpu)
                     }
                     word(p + 0x34) = bounced;
                 }
-                putFloat(p + 0x30, M::add(floatAt(p + 0x34), floatAt(p + 0x30)));
+                putFloat(p + 0x30, M.add(floatAt(p + 0x34), floatAt(p + 0x30)));
                 const double c = trig(false, p + 0x30);
                 app->getMemory<float>(p + 0x38) = float(c);
                 const double s = trig(true, p + 0x30);
-                const float damped = float(M::mul(floatAt(p + 0x34), damping));
+                const float damped = float(M.mul(floatAt(p + 0x34), damping));
                 app->getMemory<float>(p + 0x3c) = float(s);
                 app->getMemory<float>(p + 0x34) = damped;
             }
-            putFloat(p + 0x24, M::add(M::mul(floatAt(p + 0x2c), age), floatAt(p + 0x28)));
+            putFloat(p + 0x24, M.add(M.mul(floatAt(p + 0x2c), age), floatAt(p + 0x28)));
             if ((byte(0x7d3684) & 2) && word(kind + 0x50) != 0)
             {
                 for (int c = 3; c >= 0; --c)
                 {
                     const x86::sreg32 fade = cpu.fpu.toInteger<x86::sreg32>(
-                        x86::Float(M::mul(double(byte(kind + 0x50 + x86::reg32(c))), age)));
+                        x86::Float(M.mul(double(byte(kind + 0x50 + x86::reg32(c))), age)));
                     byte(p + 0x54 + x86::reg32(c)) = x86::reg8(byte(kind + 0x4c + x86::reg32(c)) - x86::reg8(fade));
                 }
             }
-            const double vx = M::mul(floatAt(velocity), damping);
-            const double fallen = M::add(floatAt(kind + 0x2c), floatAt(velocity + 4));
-            const double vz = M::mul(floatAt(velocity + 8), damping);
-            const double vy = M::mul(damping, fallen);
+            const double vx = M.mul(floatAt(velocity), damping);
+            const double fallen = M.add(floatAt(kind + 0x2c), floatAt(velocity + 4));
+            const double vz = M.mul(floatAt(velocity + 8), damping);
+            const double vy = M.mul(damping, fallen);
             putFloat(velocity, vx);
             putFloat(velocity + 8, vz);
             putFloat(velocity + 4, vy);
@@ -3961,9 +3887,9 @@ void moveParticlesNative(win32::WinApplication* app, x86::CPU& cpu)
                 cpu.esp = frame - 0x38;
             }
         }
-        putFloat(position, M::add(M::mul(floatAt(velocity), step), floatAt(position)));
-        putFloat(position + 4, M::add(M::mul(floatAt(velocity + 4), step), floatAt(position + 4)));
-        putFloat(position + 8, M::add(M::mul(step, floatAt(velocity + 8)), floatAt(position + 8)));
+        putFloat(position, M.add(M.mul(floatAt(velocity), step), floatAt(position)));
+        putFloat(position + 4, M.add(M.mul(floatAt(velocity + 4), step), floatAt(position + 4)));
+        putFloat(position + 8, M.add(M.mul(step, floatAt(velocity + 8)), floatAt(position + 8)));
         eax = position;
     }
     compared.replay(cpu);
@@ -3985,18 +3911,18 @@ x86::reg32 scaleColour(x86::reg32 colour, x86::reg32 scale);
 /* The projection inline in the game's drawing: x, y, z in view space to the
  * screen record at `record` -- x, y on the screen, z, 1/z -- as sub_41bf30
  * and the rest write it, z of zero first made 0x37800080. */
-inline void projectToScreen(win32::WinApplication* app, x86::reg32 record, float x, float y, float& z)
+inline void projectToScreen(win32::WinApplication* app, const FpuMath& M, x86::reg32 record, float x, float y,
+                            float& z)
 {
-    typedef NearestMath M;
     if (!(asBits(z) & 0x7fffffff))
         z = asFloat(0x37800080);
-    const float inverse = float(M::div(1.0, z));
+    const float inverse = float(M.div(1.0, z));
     const double k1 = app->getMemory<float>(x86::reg32(0x56009c));
     const double k2 = app->getMemory<float>(x86::reg32(0x5600a0));
     app->getMemory<float>(record) =
-        float(M::add(M::mul(M::mul(k1, inverse), x), app->getMemory<float>(x86::reg32(0x5600a4))));
+        float(M.add(M.mul(M.mul(k1, inverse), x), app->getMemory<float>(x86::reg32(0x5600a4))));
     app->getMemory<float>(record + 4) =
-        float(M::add(M::mul(M::mul(k2, inverse), y), app->getMemory<float>(x86::reg32(0x5600a8))));
+        float(M.add(M.mul(M.mul(k2, inverse), y), app->getMemory<float>(x86::reg32(0x5600a8))));
     app->getMemory<float>(record + 8) = z;
     app->getMemory<float>(record + 0xc) = inverse;
 }
@@ -4015,7 +3941,7 @@ inline void projectToScreen(win32::WinApplication* app, x86::reg32 record, float
  * kept. */
 void lightGlowNative(win32::WinApplication* app, x86::CPU& cpu)
 {
-    typedef NearestMath M;
+    const FpuMath M{cpu.fpu};
     auto word = [app](x86::reg32 address) { return app->getMemory<x86::reg32>(address); };
     auto floatAt = [app](x86::reg32 address) -> float { return app->getMemory<float>(address); };
     const x86::reg32 esp = cpu.esp;
@@ -4049,12 +3975,12 @@ void lightGlowNative(win32::WinApplication* app, x86::CPU& cpu)
     }
     const float* m = &app->getMemory<float>(view + 0x44);
     const float p0 = floatAt(ebp + 0x1c), p1 = floatAt(ebp + 0x20), p2 = floatAt(ebp + 0x24);
-    float x = float(M::add(M::add(M::mul(p0, m[0]), M::mul(p1, m[3])), M::mul(p2, m[6])));
-    float y = float(M::add(M::add(M::mul(p0, m[1]), M::mul(p1, m[4])), M::mul(p2, m[7])));
-    float z = float(M::add(M::add(M::mul(p0, m[2]), M::mul(p1, m[5])), M::mul(p2, m[8])));
-    x = float(M::add(x, floatAt(view + 0x38)));
-    y = float(M::add(y, floatAt(view + 0x3c)));
-    z = float(M::add(z, floatAt(view + 0x40)));
+    float x = float(M.add(M.add(M.mul(p0, m[0]), M.mul(p1, m[3])), M.mul(p2, m[6])));
+    float y = float(M.add(M.add(M.mul(p0, m[1]), M.mul(p1, m[4])), M.mul(p2, m[7])));
+    float z = float(M.add(M.add(M.mul(p0, m[2]), M.mul(p1, m[5])), M.mul(p2, m[8])));
+    x = float(M.add(x, floatAt(view + 0x38)));
+    y = float(M.add(y, floatAt(view + 0x3c)));
+    z = float(M.add(z, floatAt(view + 0x40)));
     app->getMemory<float>(ebp - 0x40) = x;
     app->getMemory<float>(ebp - 0x3c) = y;
     app->getMemory<float>(ebp - 0x38) = z;
@@ -4071,13 +3997,14 @@ void lightGlowNative(win32::WinApplication* app, x86::CPU& cpu)
     compared(0.0, z);
     if (0.0 >= z)
     {
-        compared.replay(cpu);
+        // sahf's flags over the cmp's, OF the cmp's
         flags.store(cpu);
+        compared.replay(cpu);
         finish(statusInto(afterTurn));
         return;
     }
     const x86::reg32 record = ebp - 0x60;
-    projectToScreen(app, record, x, y, z);
+    projectToScreen(app, M, record, x, y, z);
     app->getMemory<float>(ebp - 0x38) = z;
     x86::reg32 edx = 0;
     app->getMemory<x86::reg8>(record + 0x14) = screenCode(app, record, edx);
@@ -4085,9 +4012,9 @@ void lightGlowNative(win32::WinApplication* app, x86::CPU& cpu)
     word(ebp - 4) = lightInverse;
     if (!(word(ebp + 0x30) & 0x7fffffff))
         word(ebp + 0x30) = word(record + 8);
-    const double depth = M::add(floatAt(ebp + 0x30), floatAt(ebp + 0x34));
+    const double depth = M.add(floatAt(ebp + 0x30), floatAt(ebp + 0x34));
     app->getMemory<float>(ebp + 0x30) = float(depth);
-    app->getMemory<float>(record + 0xc) = float(M::div(1.0, depth));
+    app->getMemory<float>(record + 0xc) = float(M.div(1.0, depth));
     word(record + 8) = word(ebp + 0x30);
     const x86::reg8 code = screenCode(app, record, edx);
     app->getMemory<x86::reg8>(record + 0x14) = code;
@@ -4114,7 +4041,7 @@ void lightGlowNative(win32::WinApplication* app, x86::CPU& cpu)
     {
         scaled = true;
         scale = x86::reg32(cpu.fpu.toInteger<x86::sreg32>(
-            x86::Float(M::mul(alpha, app->getMemory<double>(x86::reg32(0x53bcf8))))));
+            x86::Float(M.mul(alpha, app->getMemory<double>(x86::reg32(0x53bcf8))))));
         word(ebp + 0x28) = scaleColour(word(ebp + 0x28), scale);
     }
     word(ebp - 0x50) = word(ebp + 0x28);
@@ -4138,11 +4065,11 @@ void lightGlowNative(win32::WinApplication* app, x86::CPU& cpu)
     if (cpu.eax != 0)
     {
         const x86::reg32 corners[4] = { polygon + 0x20, polygon + 0x40, polygon + 0x60, polygon + 0x80 };
-        const double slope = M::div(x, floatAt(ebp - 0x38));
-        const double k1i = M::mul(floatAt(0x56009c), asFloat(lightInverse));
-        const double k2i = M::mul(asFloat(lightInverse), floatAt(0x5600a0));
-        const float width = float(M::mul(k1i, size));
-        const float height = float(M::mul(size, k2i));
+        const double slope = M.div(x, floatAt(ebp - 0x38));
+        const double k1i = M.mul(floatAt(0x56009c), asFloat(lightInverse));
+        const double k2i = M.mul(asFloat(lightInverse), floatAt(0x5600a0));
+        const float width = float(M.mul(k1i, size));
+        const float height = float(M.mul(size, k2i));
         app->getMemory<x86::reg16>(polygon + 4) = 0;
         word(polygon) = 0;
         app->getMemory<x86::reg16>(polygon + 6) = 1;
@@ -4153,36 +4080,36 @@ void lightGlowNative(win32::WinApplication* app, x86::CPU& cpu)
         const float slopeFloat = float(slope);
         for (int c = 3; c >= 0; --c)
             std::memmove(&app->getMemory<x86::reg8>(corners[c]), &app->getMemory<x86::reg8>(record), 0x20);
-        const float angle = float(M::mul(M::add(1.0, slopeFloat), app->getMemory<float>(x86::reg32(0x53bd00))));
+        const float angle = float(M.mul(M.add(1.0, slopeFloat), app->getMemory<float>(x86::reg32(0x53bd00))));
         word(ebp - 8) = asBits(angle);
         word(ebp - 0x24) = asBits(width);
         word(ebp - 0x20) = asBits(height);
         const x86::Float turned = cpu.fpu.mul(x86::Float(angle), x86::Float(app->getMemory<double>(x86::reg32(0x54b6b0))));
-        const float sw = float(M::mul(double(cpu.fpu.sin(turned)), width));
+        const float sw = float(M.mul(double(cpu.fpu.sin(turned)), width));
         const x86::Float turnedToo = cpu.fpu.mul(x86::Float(angle), x86::Float(app->getMemory<double>(x86::reg32(0x54b6b8))));
-        const double ch = M::mul(double(cpu.fpu.cos(turnedToo)), height);
+        const double ch = M.mul(double(cpu.fpu.cos(turnedToo)), height);
         word(ebp - 0x10) = asBits(sw);
         auto move = [&](x86::reg32 corner, double dx, double dy) {
             const double cx = floatAt(corner), cy = floatAt(corner + 4);
-            app->getMemory<float>(corner) = float(M::add(cx, dx));
-            app->getMemory<float>(corner + 4) = float(M::add(cy, dy));
+            app->getMemory<float>(corner) = float(M.add(cx, dx));
+            app->getMemory<float>(corner + 4) = float(M.add(cy, dy));
         };
         // v0: x - sw, y + ch; v1: x + ch, y + sw; v2: x + sw, y - ch; v3: x - ch, y - sw
         {
             const double cx = floatAt(corners[0]), cy = floatAt(corners[0] + 4);
-            app->getMemory<float>(corners[0]) = float(M::sub(cx, sw));
-            app->getMemory<float>(corners[0] + 4) = float(M::add(cy, ch));
+            app->getMemory<float>(corners[0]) = float(M.sub(cx, sw));
+            app->getMemory<float>(corners[0] + 4) = float(M.add(cy, ch));
         }
         move(corners[1], ch, sw);
         {
             const double cx = floatAt(corners[2]), cy = floatAt(corners[2] + 4);
-            app->getMemory<float>(corners[2]) = float(M::add(cx, sw));
-            app->getMemory<float>(corners[2] + 4) = float(M::sub(cy, ch));
+            app->getMemory<float>(corners[2]) = float(M.add(cx, sw));
+            app->getMemory<float>(corners[2] + 4) = float(M.sub(cy, ch));
         }
         {
             const double cx = floatAt(corners[3]), cy = floatAt(corners[3] + 4);
-            app->getMemory<float>(corners[3]) = float(M::sub(cx, ch));
-            app->getMemory<float>(corners[3] + 4) = float(M::sub(cy, sw));
+            app->getMemory<float>(corners[3]) = float(M.sub(cx, ch));
+            app->getMemory<float>(corners[3] + 4) = float(M.sub(cy, sw));
         }
         IntegerFlags codeFlags;
         for (int c = 0; c < 4; ++c)
@@ -4198,8 +4125,7 @@ void lightGlowNative(win32::WinApplication* app, x86::CPU& cpu)
     cpu.esp -= 4;
     cpu.eax = polygon;
     cpu.esp -= 4;
-    if (!sortedBuckets(app, cpu))
-        app->dynamic_call(0x4c7610, cpu);
+    sortedBucketsNative(app, cpu);
     if (cpu.terminate)
         return;
     finish(cpu.eax);
@@ -4231,7 +4157,7 @@ inline x86::sreg32 truncated(x86::CPU& cpu, double value)
  * corner.  Only eax is not kept. */
 void headlightBeamNative(win32::WinApplication* app, x86::CPU& cpu)
 {
-    typedef NearestMath M;
+    const FpuMath M{cpu.fpu};
     auto word = [app](x86::reg32 address) { return app->getMemory<x86::reg32>(address); };
     auto floatAt = [app](x86::reg32 address) -> float { return app->getMemory<float>(address); };
     const x86::reg32 esp = cpu.esp;
@@ -4275,9 +4201,9 @@ void headlightBeamNative(win32::WinApplication* app, x86::CPU& cpu)
         finish(view);
         return;
     }
-    float d[3] = { float(M::sub(floatAt(view + 8), lamp[0])), float(M::sub(floatAt(view + 0xc), lamp[1])),
-                   float(M::sub(floatAt(view + 0x10), lamp[2])) };
-    const float distance = float(M::sqrt(M::add(M::add(M::mul(d[1], d[1]), M::mul(d[0], d[0])), M::mul(d[2], d[2]))));
+    float d[3] = { float(M.sub(floatAt(view + 8), lamp[0])), float(M.sub(floatAt(view + 0xc), lamp[1])),
+                   float(M.sub(floatAt(view + 0x10), lamp[2])) };
+    const float distance = float(M.sqrt(M.add(M.add(M.mul(d[1], d[1]), M.mul(d[0], d[0])), M.mul(d[2], d[2]))));
     flags.logic(asBits(distance) & 0x7fffffff);
     if (!(asBits(distance) & 0x7fffffff))
     {
@@ -4295,21 +4221,21 @@ void headlightBeamNative(win32::WinApplication* app, x86::CPU& cpu)
         return;
     }
     {
-        const double inverse = M::div(1.0, distance);
-        d[0] = float(M::mul(d[0], inverse));
-        d[1] = float(M::mul(d[1], inverse));
-        d[2] = float(M::mul(inverse, d[2]));
+        const double inverse = M.div(1.0, distance);
+        d[0] = float(M.mul(d[0], inverse));
+        d[1] = float(M.mul(d[1], inverse));
+        d[2] = float(M.mul(inverse, d[2]));
     }
     auto dot = [&](x86::reg32 w) {
         const float* v = &app->getMemory<float>(w);
-        return float(M::add(M::add(M::mul(d[0], v[0]), M::mul(d[1], v[1])), M::mul(d[2], v[2])));
+        return float(M.add(M.add(M.mul(d[0], v[0]), M.mul(d[1], v[1])), M.mul(d[2], v[2])));
     };
     const float c1 = dot(carMatrix + 0x18);
     const float c2 = dot(carMatrix);
     const float c3 = dot(carMatrix + 0xc);
     const double k8 = floatAt(0x53bd08);
-    const double segments = M::mul(M::sub(1.0, M::mul(distance, floatAt(0x53bd10))), floatAt(0x53bd14));
-    const float start = float(M::mul(k8, M::sub(M::sub(floatAt(0x53bd0c), M::mul(c2, k8)), M::mul(c3, k8))));
+    const double segments = M.mul(M.sub(1.0, M.mul(distance, floatAt(0x53bd10))), floatAt(0x53bd14));
+    const float start = float(M.mul(k8, M.sub(M.sub(floatAt(0x53bd0c), M.mul(c2, k8)), M.mul(c3, k8))));
     const x86::sreg32 raw = truncated(cpu, segments);
     const x86::sreg32 n = raw > 12 ? 12 : (raw >= 3 ? raw : 3);
     const x86::sreg32 count = n + 1;
@@ -4329,10 +4255,10 @@ void headlightBeamNative(win32::WinApplication* app, x86::CPU& cpu)
     }
     else
     {
-        angle = M::mul(double(cpu.fpu.atan(x86::Float(asFloat(lengthBits)), x86::Float(nearRadius))),
+        angle = M.mul(double(cpu.fpu.atan(x86::Float(asFloat(lengthBits)), x86::Float(nearRadius))),
                        app->getMemory<double>(x86::reg32(0x54b6c0)));
     }
-    const float spread = float(M::mul(angle, floatAt(0x53bd18)));
+    const float spread = float(M.mul(angle, floatAt(0x53bd18)));
     float width;
     compared(1.0, spread);
     bool small = false;
@@ -4348,15 +4274,15 @@ void headlightBeamNative(win32::WinApplication* app, x86::CPU& cpu)
         compared(1.0, spread);
         width = 1.0 >= spread ? spread : 1.0f;
     }
-    compared(M::sub(1.0, width), c1);
-    if (!(M::sub(1.0, width) >= c1))
+    compared(M.sub(1.0, width), c1);
+    if (!(M.sub(1.0, width) >= c1))
     {
-        const double into = M::sub(c1, M::sub(1.0, width));
-        const double fade = M::sub(1.0, M::mul(M::div(1.0, width), into));
-        const x86::reg32 a = x86::reg32(truncated(cpu, M::mul(double((colour >> 24) & 0xff), fade))) & 0xff;
-        const x86::reg32 r = x86::reg32(truncated(cpu, M::mul(double((colour >> 16) & 0xff), fade))) & 0xff;
-        const x86::reg32 b = x86::reg32(truncated(cpu, M::mul(double(colour & 0xff), fade))) & 0xff;
-        const x86::reg32 g = x86::reg32(truncated(cpu, M::mul(fade, double((colour >> 8) & 0xff)))) & 0xff;
+        const double into = M.sub(c1, M.sub(1.0, width));
+        const double fade = M.sub(1.0, M.mul(M.div(1.0, width), into));
+        const x86::reg32 a = x86::reg32(truncated(cpu, M.mul(double((colour >> 24) & 0xff), fade))) & 0xff;
+        const x86::reg32 r = x86::reg32(truncated(cpu, M.mul(double((colour >> 16) & 0xff), fade))) & 0xff;
+        const x86::reg32 b = x86::reg32(truncated(cpu, M.mul(double(colour & 0xff), fade))) & 0xff;
+        const x86::reg32 g = x86::reg32(truncated(cpu, M.mul(fade, double((colour >> 8) & 0xff)))) & 0xff;
         colour = a << 24 | r << 16 | g << 8 | b;
     }
     // [0x7a3a58] & 0x40 forced on (tools/apply_alpha_intensity.py)
@@ -4364,8 +4290,8 @@ void headlightBeamNative(win32::WinApplication* app, x86::CPU& cpu)
     compared(1.0, alpha);
     if (1.0 > alpha)
         colour = scaleColour(colour, x86::reg32(cpu.fpu.toInteger<x86::sreg32>(
-                                         x86::Float(M::mul(alpha, app->getMemory<double>(x86::reg32(0x53bd20)))))));
-    const float step = float(M::div(1.0, double(n)));
+                                         x86::Float(M.mul(alpha, app->getMemory<double>(x86::reg32(0x53bd20)))))));
+    const float step = float(M.div(1.0, double(n)));
 
     // The two rings: points round the beam, to the car, the world, the view, the screen.
     auto ring = [&](x86::reg32 records, float radius, bool lit) {
@@ -4375,31 +4301,31 @@ void headlightBeamNative(win32::WinApplication* app, x86::CPU& cpu)
         float a = start;
         for (x86::sreg32 i = 0; i < count; ++i)
         {
-            const double c = M::mul(double(cpu.fpu.cos(cpu.fpu.mul(x86::Float(a),
+            const double c = M.mul(double(cpu.fpu.cos(cpu.fpu.mul(x86::Float(a),
                                                                    x86::Float(app->getMemory<double>(x86::reg32(0x54b6b8)))))),
                                     radius);
-            const double s = M::mul(double(cpu.fpu.sin(cpu.fpu.mul(x86::Float(a),
+            const double s = M.mul(double(cpu.fpu.sin(cpu.fpu.mul(x86::Float(a),
                                                                    x86::Float(app->getMemory<double>(x86::reg32(0x54b6b0)))))),
                                     radius);
             const float p[3] = { float(c), float(s), lit ? 0.0f : asFloat(lengthBits) };
-            a = float(M::add(a, step));
+            a = float(M.add(a, step));
             float q[3];
             for (int j = 0; j < 3; ++j)
-                q[j] = float(M::add(M::add(M::mul(p[0], m[j]), M::mul(p[1], m[3 + j])), M::mul(p[2], m[6 + j])));
+                q[j] = float(M.add(M.add(M.mul(p[0], m[j]), M.mul(p[1], m[3 + j])), M.mul(p[2], m[6 + j])));
             for (int j = 0; j < 3; ++j)
-                q[j] = float(M::add(q[j], lamp[j]));
+                q[j] = float(M.add(q[j], lamp[j]));
             float w[3];
             for (int j = 0; j < 3; ++j)
-                w[j] = float(M::add(M::add(M::mul(q[0], v[j]), M::mul(q[1], v[3 + j])), M::mul(q[2], v[6 + j])));
+                w[j] = float(M.add(M.add(M.mul(q[0], v[j]), M.mul(q[1], v[3 + j])), M.mul(q[2], v[6 + j])));
             for (int j = 0; j < 3; ++j)
-                w[j] = float(M::add(camera[j], w[j]));
+                w[j] = float(M.add(camera[j], w[j]));
             const x86::reg32 record = records + x86::reg32(i) * 0x20;
-            projectToScreen(app, record, w[0], w[1], w[2]);
+            projectToScreen(app, M, record, w[0], w[1], w[2]);
             x86::reg32 edx = 0;
             app->getMemory<x86::reg8>(record + 0x14) = screenCode(app, record, edx);
             word(record + 0x10) = lit ? colour : 0;
-            app->getMemory<float>(record + 0x18) = float(M::div(double(i), double(n)));
-            app->getMemory<float>(record + 0x1c) = lit ? float(M::sub(1.0, textureV)) : -textureV;
+            app->getMemory<float>(record + 0x18) = float(M.div(double(i), double(n)));
+            app->getMemory<float>(record + 0x1c) = lit ? float(M.sub(1.0, textureV)) : -textureV;
         }
     };
     const x86::reg32 nearRing = ebp - 0x3ba;
@@ -4468,7 +4394,7 @@ void headlightBeamNative(win32::WinApplication* app, x86::CPU& cpu)
             compared(z1, a2);
             deepest = z1 > a2 ? z1 : max23();
         }
-        app->getMemory<float>(polygon + 0x1c) = float(M::add(deepest, depthBias));
+        app->getMemory<float>(polygon + 0x1c) = float(M.add(deepest, depthBias));
         head = polygon;
     }
     compared.replay(cpu);
@@ -4476,8 +4402,7 @@ void headlightBeamNative(win32::WinApplication* app, x86::CPU& cpu)
     cpu.esp -= 4;
     cpu.eax = word(ebp - 0x32);
     cpu.esp -= 4;
-    if (!sortedBuckets(app, cpu))
-        app->dynamic_call(0x4c7610, cpu);
+    sortedBucketsNative(app, cpu);
     if (cpu.terminate)
         return;
     finish(cpu.eax);
@@ -4500,7 +4425,7 @@ void signedDivide(x86::sreg64 dividend, x86::sreg32 divisor, x86::reg32& quotien
  * the FPU status as the original leaves them. */
 void carDetailNative(win32::WinApplication* app, x86::CPU& cpu)
 {
-    typedef NearestMath M;
+    const FpuMath M{cpu.fpu};
     auto word = [app](x86::reg32 address) { return app->getMemory<x86::reg32>(address); };
     auto byte = [app](x86::reg32 address) { return app->getMemory<x86::reg8>(address); };
     auto floatAt = [app](x86::reg32 address) -> float { return app->getMemory<float>(address); };
@@ -4591,22 +4516,22 @@ void carDetailNative(win32::WinApplication* app, x86::CPU& cpu)
     if (word(0x6fd3b0) == 1 || word(0x6fd4c8) != 0)
     {
         const double k = app->getMemory<double>(x86::reg32(0x540130));
-        t[1] = float(M::mul(t[1], k));
-        t[2] = float(M::mul(k, t[2]));
-        t[0] = float(M::mul(t[0], k));
+        t[1] = float(M.mul(t[1], k));
+        t[2] = float(M.mul(k, t[2]));
+        t[0] = float(M.mul(t[0], k));
     }
     if (word(view) == 1)
     {
         const double k = mirrorCarScale(app->getMemory<double>(x86::reg32(0x540138)));
         for (int i = 0; i < 3; ++i)
-            t[i] = float(M::mul(t[i], k));
-        t[3] = float(M::mul(k, t[3]));
+            t[i] = float(M.mul(t[i], k));
+        t[3] = float(M.mul(k, t[3]));
     }
     if (asBits(zoom) != 0x3f800000)
     {
         for (int i = 0; i < 3; ++i)
-            t[i] = float(M::mul(t[i], zoom));
-        t[3] = float(M::mul(zoom, t[3]));
+            t[i] = float(M.mul(t[i], zoom));
+        t[3] = float(M.mul(zoom, t[3]));
     }
     const float e0 = floatAt(car + 0x114), e1 = floatAt(car + 0x118), e2 = floatAt(car + 0x11c);
     const float corners[8][3] = { { -e0, e1, e2 },  { e0, e1, e2 },  { e0, e1, -e2 },  { -e0, e1, -e2 },
@@ -4616,31 +4541,31 @@ void carDetailNative(win32::WinApplication* app, x86::CPU& cpu)
     const float* position = &app->getMemory<float>(car + 0x98);
     float place[3];
     for (int j = 0; j < 3; ++j)
-        place[j] = float(M::add(M::add(M::mul(position[0], v[j]), M::mul(position[1], v[3 + j])), M::mul(position[2], v[6 + j])));
+        place[j] = float(M.add(M.add(M.mul(position[0], v[j]), M.mul(position[1], v[3 + j])), M.mul(position[2], v[6 + j])));
     for (int j = 0; j < 3; ++j)
-        place[j] = float(M::add(place[j], floatAt(view + 0x38 + x86::reg32(j) * 4)));
+        place[j] = float(M.add(place[j], floatAt(view + 0x38 + x86::reg32(j) * 4)));
     const float* turn = &app->getMemory<float>(car + 0xc0);
     float r[9];
     for (int i = 0; i < 3; ++i)
         for (int j = 0; j < 3; ++j)
-            r[i * 3 + j] = float(M::add(M::add(M::mul(turn[i * 3], v[j]), M::mul(turn[i * 3 + 1], v[3 + j])),
-                                        M::mul(turn[i * 3 + 2], v[6 + j])));
+            r[i * 3 + j] = float(M.add(M.add(M.mul(turn[i * 3], v[j]), M.mul(turn[i * 3 + 1], v[3 + j])),
+                                        M.mul(turn[i * 3 + 2], v[6 + j])));
     float sum = 0.0f;
     x86::reg32 code = 0;
     for (int i = 0; i < 8; ++i)
     {
         float p[3];
         for (int j = 0; j < 3; ++j)
-            p[j] = float(M::add(M::add(M::mul(corners[i][0], r[j]), M::mul(corners[i][1], r[3 + j])),
-                                M::mul(corners[i][2], r[6 + j])));
+            p[j] = float(M.add(M.add(M.mul(corners[i][0], r[j]), M.mul(corners[i][1], r[3 + j])),
+                                M.mul(corners[i][2], r[6 + j])));
         for (int j = 0; j < 3; ++j)
-            p[j] = float(M::add(p[j], place[j]));
+            p[j] = float(M.add(p[j], place[j]));
         const x86::reg32 record = 0x7a3bf0 + x86::reg32(i) * 0x20;
-        projectToScreen(app, record, p[0], p[1], p[2]);
+        projectToScreen(app, M, record, p[0], p[1], p[2]);
         x86::reg32 unused = 0;
         code = screenCode(app, record, unused);
         byte(record + 0x14) = x86::reg8(code);
-        sum = float(M::add(sum, p[2]));
+        sum = float(M.add(sum, p[2]));
     }
     const x86::reg32 near = byte(0x7a3c04) & byte(0x7a3c24) & byte(0x7a3c44);
     flags.logic(near & byte(0x7a3c64));
@@ -4655,7 +4580,7 @@ void carDetailNative(win32::WinApplication* app, x86::CPU& cpu)
             return;
         }
     }
-    const float mean = float(M::mul(sum, app->getMemory<double>(x86::reg32(0x540140))));
+    const float mean = float(M.mul(sum, app->getMemory<double>(x86::reg32(0x540140))));
     word(out) = asBits(mean);
     x86::reg32 level = 0xffffffff;
     bool decided = false;
@@ -4697,13 +4622,13 @@ void carDetailNative(win32::WinApplication* app, x86::CPU& cpu)
  *   eax  the matrix; edx  the move; ebx  the count; ecx  the vertices in,
  *   12 bytes each; [esp+4]  the colours; [esp+8]  the screen records out,
  *   0x20 bytes each (ret 8)
- * More than 20 go to sub_4bf4c0 (the stand-in objectVertices) at once, fewer
+ * More than 20 go to sub_4bf4c0 (objectVertices) at once, fewer
  * one by one, turned, moved and projected inline; each record then takes its
  * colour at +0x10.  esi, edi and ebp are kept, the rest as the original leaves
  * them; the two pointers it moves on in its arguments are left, past the return. */
 void objectVerticesListNative(win32::WinApplication* app, x86::CPU& cpu)
 {
-    typedef NearestMath M;
+    const FpuMath M{cpu.fpu};
     auto word = [app](x86::reg32 address) { return app->getMemory<x86::reg32>(address); };
     const x86::reg32 esp = cpu.esp;
     const x86::reg32 saved[] = { cpu.esi, cpu.edi, cpu.ebp };
@@ -4729,8 +4654,7 @@ void objectVerticesListNative(win32::WinApplication* app, x86::CPU& cpu)
         cpu.ebp = ebp;
         cpu.esp = ebp - 0x24;
         cpu.esp -= 4;
-        if (!objectVertices(app, cpu))
-            app->dynamic_call(0x4bf4c0, cpu);
+        objectVerticesNative(app, cpu);
         if (cpu.terminate)
             return;
         x86::reg32 left = count;
@@ -4768,10 +4692,10 @@ void objectVerticesListNative(win32::WinApplication* app, x86::CPU& cpu)
         const float* v = &app->getMemory<float>(in);
         float p[3];
         for (int j = 0; j < 3; ++j)
-            p[j] = float(M::add(M::add(M::mul(v[0], m[j]), M::mul(v[1], m[3 + j])), M::mul(v[2], m[6 + j])));
+            p[j] = float(M.add(M.add(M.mul(v[0], m[j]), M.mul(v[1], m[3 + j])), M.mul(v[2], m[6 + j])));
         for (int j = 0; j < 3; ++j)
-            p[j] = float(M::add(p[j], t[j]));
-        projectToScreen(app, out, p[0], p[1], p[2]);
+            p[j] = float(M.add(p[j], t[j]));
+        projectToScreen(app, M, out, p[0], p[1], p[2]);
         x86::reg32 unused = 0;
         ebx = screenCode(app, out, unused);
         app->getMemory<x86::reg8>(out + 0x14) = x86::reg8(ebx);
@@ -4800,7 +4724,7 @@ void objectVerticesListNative(win32::WinApplication* app, x86::CPU& cpu)
  * rest, the flags and the FPU status as the original leaves them. */
 void objectRecordsNative(win32::WinApplication* app, x86::CPU& cpu)
 {
-    typedef NearestMath M;
+    const FpuMath M{cpu.fpu};
     auto word = [app](x86::reg32 address) { return app->getMemory<x86::reg32>(address); };
     auto half = [app](x86::reg32 address) { return app->getMemory<x86::reg16>(address); };
     auto byte = [app](x86::reg32 address) { return app->getMemory<x86::reg8>(address); };
@@ -4840,13 +4764,13 @@ void objectRecordsNative(win32::WinApplication* app, x86::CPU& cpu)
         }
         if (!(flags8 & 0x10) && !((c0 | c1 | c2 | c3) & 0x10))
         {
-            const CrossProducts p = crossProducts(floatAt(v2 + 4), floatAt(v1 + 4), floatAt(v0), floatAt(v1),
+            const CrossProducts p = crossProducts(cpu, floatAt(v2 + 4), floatAt(v1 + 4), floatAt(v0), floatAt(v1),
                                                   floatAt(v0 + 4), floatAt(v1 + 4), floatAt(v2), floatAt(v1));
             compared(p.two, p.one);
             const x86::reg32 back = (p.two < p.one || p.two != p.two || p.one != p.one) ? 1 : 0;
             if (back ^ word(0x554e4c))
             {
-                const CrossProducts q = crossProducts(floatAt(v3 + 4), floatAt(v2 + 4), floatAt(v0), floatAt(v2),
+                const CrossProducts q = crossProducts(cpu, floatAt(v3 + 4), floatAt(v2 + 4), floatAt(v0), floatAt(v2),
                                                       floatAt(v0 + 4), floatAt(v2 + 4), floatAt(v3), floatAt(v2));
                 compared(q.two, q.one);
                 const x86::reg32 backToo = (q.two < q.one || q.two != q.two || q.one != q.one) ? 1 : 0;
@@ -4870,7 +4794,7 @@ void objectRecordsNative(win32::WinApplication* app, x86::CPU& cpu)
         if (flags8 & 1)
             byte(record + 6) = x86::reg8(byte(record + 6) | 4);
         auto depthSum = [&]() {
-            return M::mul(M::add(M::add(M::add(floatAt(v0 + 8), floatAt(v1 + 8)), floatAt(v2 + 8)), floatAt(v3 + 8)),
+            return M.mul(M.add(M.add(M.add(floatAt(v0 + 8), floatAt(v1 + 8)), floatAt(v2 + 8)), floatAt(v3 + 8)),
                           app->getMemory<double>(x86::reg32(0x536c9c)));
         };
         if ((byte(0x7a3a58) & 6) && word(0x6fbc48) != 0)
@@ -4922,7 +4846,8 @@ void objectRecordsNative(win32::WinApplication* app, x86::CPU& cpu)
 }
 
 /* The game's small vector helpers (Watcom-style register calls, used from
- * dozens of places): each element as the x87 at single precision has it. */
+ * dozens of places, the physics and the opponents' driving among them): each
+ * element as the emulated x87 has it in the precision it is in. */
 
 /* The flags dec leaves after a loop counted down to zero, CF from the add
  * before it. */
@@ -4938,7 +4863,7 @@ inline void countedDown(x86::CPU& cpu, x86::reg32 added, x86::reg32 before)
  * (ret 8). */
 void scaleVectorsNative(win32::WinApplication* app, x86::CPU& cpu)
 {
-    typedef NearestMath M;
+    const FpuMath M{cpu.fpu};
     const x86::reg32 esp = cpu.esp;
     const x86::sreg32 count = x86::sreg32(cpu.eax);
     const double scale = app->getMemory<float>(esp + 4);
@@ -4958,9 +4883,9 @@ void scaleVectorsNative(win32::WinApplication* app, x86::CPU& cpu)
         const float* v = &app->getMemory<float>(in);
         const float x = v[0], y = v[1], z = v[2];
         float* o = &app->getMemory<float>(out);
-        o[0] = float(M::mul(x, scale));
-        o[1] = float(M::mul(y, scale));
-        o[2] = float(M::mul(z, scale));
+        o[0] = float(M.mul(x, scale));
+        o[1] = float(M.mul(y, scale));
+        o[2] = float(M.mul(z, scale));
         out += 0xc;
         in += 0xc;
     }
@@ -4975,7 +4900,7 @@ void scaleVectorsNative(win32::WinApplication* app, x86::CPU& cpu)
 template <bool Add>
 void offsetVectorsNative(win32::WinApplication* app, x86::CPU& cpu)
 {
-    typedef NearestMath M;
+    const FpuMath M{cpu.fpu};
     const x86::sreg32 count = x86::sreg32(cpu.eax);
     x86::reg32 in = cpu.edx;
     const x86::reg32 by = cpu.ebx;
@@ -4997,9 +4922,9 @@ void offsetVectorsNative(win32::WinApplication* app, x86::CPU& cpu)
         const float a0 = a[0], a1 = a[1], a2 = a[2];
         const float b0 = b[0], b1 = b[1], b2 = b[2];
         float* o = &app->getMemory<float>(out);
-        o[0] = float(Add ? M::add(a0, b0) : M::sub(a0, b0));
-        o[1] = float(Add ? M::add(a1, b1) : M::sub(a1, b1));
-        o[2] = float(Add ? M::add(a2, b2) : M::sub(a2, b2));
+        o[0] = float(Add ? M.add(a0, b0) : M.sub(a0, b0));
+        o[1] = float(Add ? M.add(a1, b1) : M.sub(a1, b1));
+        o[2] = float(Add ? M.add(a2, b2) : M.sub(a2, b2));
         last = out;
         in += 0xc;
         out += 0xc;
@@ -5013,17 +4938,17 @@ void offsetVectorsNative(win32::WinApplication* app, x86::CPU& cpu)
 }
 
 /* sub_4e06a0: the length of the vector at eax, pushed onto the x87 stack. */
-inline double vectorLength(win32::WinApplication* app, x86::reg32 at)
+inline double vectorLength(win32::WinApplication* app, x86::FPU& fpu, x86::reg32 at)
 {
-    typedef NearestMath M;
+    const FpuMath M{fpu};
     const float* v = &app->getMemory<float>(at);
-    return M::sqrt(M::add(M::add(M::mul(v[1], v[1]), M::mul(v[0], v[0])), M::mul(v[2], v[2])));
+    return M.sqrt(M.add(M.add(M.mul(v[1], v[1]), M.mul(v[0], v[0])), M.mul(v[2], v[2])));
 }
 
 void vectorLengthNative(win32::WinApplication* app, x86::CPU& cpu)
 {
     cpu.fpu.count += 1;
-    cpu.fpu.st(0) = x86::Float(vectorLength(app, cpu.eax));
+    cpu.fpu.st(0) = x86::Float(vectorLength(app, cpu.fpu, cpu.eax));
     cpu.esp += 4;
 }
 
@@ -5031,14 +4956,14 @@ void vectorLengthNative(win32::WinApplication* app, x86::CPU& cpu)
  * as the x87 divides it). */
 void unitVectorNative(win32::WinApplication* app, x86::CPU& cpu)
 {
-    typedef NearestMath M;
-    const double inverse = M::div(1.0, vectorLength(app, cpu.eax));
+    const FpuMath M{cpu.fpu};
+    const double inverse = M.div(1.0, vectorLength(app, cpu.fpu, cpu.eax));
     const float* v = &app->getMemory<float>(cpu.eax);
     const float x = v[0], y = v[1], z = v[2];
     float* o = &app->getMemory<float>(cpu.edx);
-    o[0] = float(M::mul(x, inverse));
-    o[1] = float(M::mul(y, inverse));
-    o[2] = float(M::mul(inverse, z));
+    o[0] = float(M.mul(x, inverse));
+    o[1] = float(M.mul(y, inverse));
+    o[2] = float(M.mul(inverse, z));
     cpu.esp += 4;
 }
 
@@ -5068,7 +4993,7 @@ float viewZoom(win32::WinApplication* app, x86::reg32 view)
  * leaves them. */
 void boxOutsideNative(win32::WinApplication* app, x86::CPU& cpu)
 {
-    typedef NearestMath M;
+    const FpuMath M{cpu.fpu};
     auto word = [app](x86::reg32 address) { return app->getMemory<x86::reg32>(address); };
     const x86::reg32 esp = cpu.esp;
     const x86::reg32 corners = cpu.edx;
@@ -5095,18 +5020,18 @@ void boxOutsideNative(win32::WinApplication* app, x86::CPU& cpu)
         const float* v = &app->getMemory<float>(corners + x86::reg32(i) * 12);
         const float v0 = v[0], v1 = v[1], v2 = v[2];
         const float* m = &app->getMemory<float>(matrix);
-        float x = float(M::add(M::add(M::mul(v0, m[0]), M::mul(v1, m[3])), M::mul(v2, m[6])));
-        float y = float(M::add(M::add(M::mul(v0, m[1]), M::mul(v1, m[4])), M::mul(v2, m[7])));
-        float z = float(M::add(M::add(M::mul(v0, m[2]), M::mul(v1, m[5])), M::mul(v2, m[8])));
+        float x = float(M.add(M.add(M.mul(v0, m[0]), M.mul(v1, m[3])), M.mul(v2, m[6])));
+        float y = float(M.add(M.add(M.mul(v0, m[1]), M.mul(v1, m[4])), M.mul(v2, m[7])));
+        float z = float(M.add(M.add(M.mul(v0, m[2]), M.mul(v1, m[5])), M.mul(v2, m[8])));
         const float* t = &app->getMemory<float>(move);
-        x = float(M::add(t[0], x));
-        y = float(M::add(t[1], y));
-        z = float(M::add(t[2], z));
+        x = float(M.add(t[0], x));
+        y = float(M.add(t[1], y));
+        z = float(M.add(t[2], z));
         if (!(asBits(z) & 0x7fffffff))
             z = asFloat(0x37800080);
-        const float inverse = float(M::div(1.0, z));
-        const float sx = float(M::add(M::mul(M::mul(k1, inverse), x), c1));
-        const float sy = float(M::add(M::mul(M::mul(k2, inverse), y), c2));
+        const float inverse = float(M.div(1.0, z));
+        const float sx = float(M.add(M.mul(M.mul(k1, inverse), x), c1));
+        const float sy = float(M.add(M.mul(M.mul(k2, inverse), y), c2));
         const x86::reg32 inverseBits = asBits(inverse);
         if ((inverseBits & 0x80000000) || x86::sreg32(inverseBits) >= nearest)
         {
@@ -5131,7 +5056,7 @@ void boxOutsideNative(win32::WinApplication* app, x86::CPU& cpu)
         codes[i] = x86::reg8(code);
         compared(0.0, x);
         const float size = (0.0 <= x || x != x) ? x : -x;
-        xs[i] = float(M::mul(size, scale));
+        xs[i] = float(M.mul(size, scale));
         zs[i] = z;
     }
 
@@ -5256,7 +5181,7 @@ void projectedTriangleNative(win32::WinApplication* app, x86::CPU& cpu)
         if (1.0 > brightness)
         {
             const x86::reg32 scale = x86::reg32(cpu.fpu.toInteger<x86::sreg32>(
-                x86::Float(NearestMath::mul(brightness, app->getMemory<double>(x86::reg32(0x536c6c))))));
+                x86::Float(FpuMath{cpu.fpu}.mul(brightness, app->getMemory<double>(x86::reg32(0x536c6c))))));
             for (int i = 0; i < 3; ++i)
                 recordWords[i][5] = scaleColour(recordWords[i][5], scale);
             // the last mul's: ebx the red and blue of the third colour, shifted and masked
@@ -5291,10 +5216,245 @@ void projectedTriangleNative(win32::WinApplication* app, x86::CPU& cpu)
     finish();
 }
 
-/* NFS_NATIVE_CHECK=1: every call runs twice -- the native loop into a copy, then
- * the generated code for real -- and whatever differs is logged: the output
- * records, the registers, the flags and the FPU status word. */
-bool checking()
+}  // namespace
+
+/* The functions disassemble_nfs3hp.py's VERTICES_NATIVES binds to the game's
+ * addresses: the generated code calls them by name where it called the
+ * game's, with no generated code behind them. */
+void projectedTriangle(win32::WinApplication* app, x86::CPU& cpu)  // 0x41a360
+{
+    projectedTriangleNative(app, cpu);
+}
+
+void trackVertices(win32::WinApplication* app, x86::CPU& cpu)  // 0x41a550
+{
+    trackVerticesNative(app, cpu);
+}
+
+void objectVerticesColoured(win32::WinApplication* app, x86::CPU& cpu)  // 0x41a970
+{
+    objectVerticesColouredNative(app, cpu);
+}
+
+void groundDistanceOf(win32::WinApplication* app, x86::CPU& cpu)  // 0x41aab0
+{
+    groundDistanceNative(app, cpu);
+}
+
+void trackPolygons(win32::WinApplication* app, x86::CPU& cpu)  // 0x41ae90
+{
+    trackPolygonsNative(app, cpu);
+}
+
+void trackRecords(win32::WinApplication* app, x86::CPU& cpu)  // 0x41b300
+{
+    trackRecordsNative(app, cpu);
+}
+
+void objectRecords(win32::WinApplication* app, x86::CPU& cpu)  // 0x41b640
+{
+    objectRecordsNative(app, cpu);
+}
+
+void boxOutside(win32::WinApplication* app, x86::CPU& cpu)  // 0x41bf30
+{
+    boxOutsideNative(app, cpu);
+}
+
+void nearestBlock(win32::WinApplication* app, x86::CPU& cpu)  // 0x41e0f0
+{
+    nearestBlockNative(app, cpu);
+}
+
+void triangleList(win32::WinApplication* app, x86::CPU& cpu)  // 0x433a50
+{
+    triangleListNative(app, cpu);
+}
+
+void quadList(win32::WinApplication* app, x86::CPU& cpu)  // 0x433bb0
+{
+    quadListNative(app, cpu);
+}
+
+void submitPolygons(win32::WinApplication* app, x86::CPU& cpu)  // 0x434380
+{
+    submitPolygonsNative(app, cpu);
+}
+
+void lightGlow(win32::WinApplication* app, x86::CPU& cpu)  // 0x492370
+{
+    lightGlowNative(app, cpu);
+}
+
+void headlightBeam(win32::WinApplication* app, x86::CPU& cpu)  // 0x492980
+{
+    headlightBeamNative(app, cpu);
+}
+
+void groundHeight(win32::WinApplication* app, x86::CPU& cpu)  // 0x4968a0
+{
+    groundHeightNative(app, cpu);
+}
+
+void normalise(win32::WinApplication* app, x86::CPU& cpu)  // 0x4972f0
+{
+    normaliseNative(app, cpu);
+}
+
+void objectVerticesNearest(win32::WinApplication* app, x86::CPU& cpu)  // 0x49d9d0
+{
+    objectVerticesNearestNative(app, cpu);
+}
+
+void shadeNormals(win32::WinApplication* app, x86::CPU& cpu)  // 0x49da30
+{
+    shadeNormalsNative(app, cpu);
+}
+
+void envMapCoords(win32::WinApplication* app, x86::CPU& cpu)  // 0x49db70
+{
+    envMapCoordsNative(app, cpu);
+}
+
+void cullPolygons(win32::WinApplication* app, x86::CPU& cpu)  // 0x49dbf0
+{
+    cullPolygonsNative(app, cpu);
+}
+
+void carDetail(win32::WinApplication* app, x86::CPU& cpu)  // 0x4bb5d0
+{
+    carDetailNative(app, cpu);
+}
+
+void objectVertices(win32::WinApplication* app, x86::CPU& cpu)  // 0x4bf4c0
+{
+    objectVerticesNative(app, cpu);
+}
+
+void clipTriangle(win32::WinApplication* app, x86::CPU& cpu)  // 0x4c11b0
+{
+    clipTriangleNative(app, cpu);
+}
+
+void clipQuad(win32::WinApplication* app, x86::CPU& cpu)  // 0x4c12e0
+{
+    clipQuadNative(app, cpu);
+}
+
+void clipTriangleByZ(win32::WinApplication* app, x86::CPU& cpu)  // 0x4c1aa0
+{
+    clipTriangleByZNative(app, cpu);
+}
+
+void quadMesh(win32::WinApplication* app, x86::CPU& cpu)  // 0x4c1e20
+{
+    quadMeshNative(app, cpu);
+}
+
+void clipPolygon(win32::WinApplication* app, x86::CPU& cpu)  // 0x4c2cd0
+{
+    clipPolygonNative(app, cpu);
+}
+
+void gatherSorted(win32::WinApplication* app, x86::CPU& cpu)  // 0x4c7320
+{
+    gatherSortedNative(app, cpu);
+}
+
+void sortedBuckets(win32::WinApplication* app, x86::CPU& cpu)  // 0x4c7610
+{
+    sortedBucketsNative(app, cpu);
+}
+
+void depthBuckets(win32::WinApplication* app, x86::CPU& cpu)  // 0x4c7790
+{
+    depthBucketsNative(app, cpu);
+}
+
+void gatherBuckets(win32::WinApplication* app, x86::CPU& cpu)  // 0x4c79a0
+{
+    gatherBucketsNative(app, cpu);
+}
+
+void moveParticles(win32::WinApplication* app, x86::CPU& cpu)  // 0x4cb2c0
+{
+    moveParticlesNative(app, cpu);
+}
+
+void drops(win32::WinApplication* app, x86::CPU& cpu)  // 0x4cb750
+{
+    dropsNative(app, cpu);
+}
+
+void particles(win32::WinApplication* app, x86::CPU& cpu)  // 0x4cbc90
+{
+    particlesNative(app, cpu);
+}
+
+void objectVerticesList(win32::WinApplication* app, x86::CPU& cpu)  // 0x4dbef0
+{
+    objectVerticesListNative(app, cpu);
+}
+
+void addVectors(win32::WinApplication* app, x86::CPU& cpu)  // 0x4dffb0
+{
+    offsetVectorsNative<true>(app, cpu);
+}
+
+void subtractVectors(win32::WinApplication* app, x86::CPU& cpu)  // 0x4e0000
+{
+    offsetVectorsNative<false>(app, cpu);
+}
+
+void scaleVectors(win32::WinApplication* app, x86::CPU& cpu)  // 0x4e0050
+{
+    scaleVectorsNative(app, cpu);
+}
+
+void unitVector(win32::WinApplication* app, x86::CPU& cpu)  // 0x4e01c0
+{
+    unitVectorNative(app, cpu);
+}
+
+void dotPush(win32::WinApplication* app, x86::CPU& cpu)  // 0x4e01f0
+{
+    dotPushNative(app, cpu);
+}
+
+void dotProducts(win32::WinApplication* app, x86::CPU& cpu)  // 0x4e0210
+{
+    dotProductsNative(app, cpu);
+}
+
+void multiplyMatrices(win32::WinApplication* app, x86::CPU& cpu)  // 0x4e0280
+{
+    multiplyMatricesNative(app, cpu);
+}
+
+void rotateVectors(win32::WinApplication* app, x86::CPU& cpu)  // 0x4e03b0
+{
+    rotateVectorsNative(app, cpu);
+}
+
+void transformPoints(win32::WinApplication* app, x86::CPU& cpu)  // 0x4e0430
+{
+    transformPointsNative(app, cpu);
+}
+
+void vectorLengthOf(win32::WinApplication* app, x86::CPU& cpu)  // 0x4e06a0
+{
+    vectorLengthNative(app, cpu);
+}
+
+}  // namespace vertices
+
+/* For the other files' natives, which keep checks of their own
+ * (native_loading.cpp, native_movie.cpp, native_specs_file.cpp):
+ * NFS_NATIVE_CHECK=1, which native_loading.cpp's checks run under as they do
+ * under =load.  Nothing here is checked in the game any more: these
+ * functions have no generated code to be held against there
+ * (tools/game_checks/vertices holds them against it on the desktop). */
+bool nativeChecking()
 {
     static const bool check = []() {
         const char* value = SDL_getenv("NFS_NATIVE_CHECK");
@@ -5303,507 +5463,28 @@ bool checking()
     return check;
 }
 
-/* NFS_NATIVE_CHECK=clip: only the clipper checked (checkClip). */
-bool clipChecking()
-{
-    static const bool check = []() {
-        const char* value = SDL_getenv("NFS_NATIVE_CHECK");
-        return value && SDL_strcmp(value, "clip") == 0;
-    }();
-    return check || checking();
-}
-
-thread_local bool t_original = false;
-/* Whether a check is running the generated code: the thread-local is only
- * looked at while checks are on.  On Android every read of one is a call into
- * the runtime (__emutls_get_address), which a profile of a race had at a
- * percent of the game thread across the stand-ins' entries (2026-10-03). */
-inline bool originalRunning()
-{
-    return clipChecking() && t_original;
-}
-/* Set while a whole-memory check traces the triangles of both paths: a nested
- * check would take the trace over. */
-thread_local bool t_tracing = false;
-
-struct CheckCounts
-{
-    unsigned calls = 0;
-    unsigned items = 0;
-    unsigned mismatches = 0;
-};
-
-void report(const char* name, CheckCounts& counts, bool same, x86::reg32 items, const char* what)
-{
-    counts.calls++;
-    counts.items += items;
-    if (!same)
-    {
-        counts.mismatches++;
-        if (counts.mismatches <= 20)
-            SDL_Log("[NATIVE] %s differs: %s (call %u, %u items)", name, what, counts.calls, unsigned(items));
-    }
-    if (counts.calls % 20000 == 0)
-        SDL_Log("[NATIVE] %s checked: %u calls, %u items, %u differ", name, counts.calls, counts.items, counts.mismatches);
-}
-
-/* What differs between the state a native left (`mine`) and the one the
- * generated code left: registers, then flags, then the FPU; empty if nothing. */
-void describeState(const x86::CPU& mine, const x86::CPU& cpu, char* what, std::size_t size)
-{
-    if (mine.eax != cpu.eax || mine.ebx != cpu.ebx || mine.ecx != cpu.ecx || mine.edx != cpu.edx
-        || mine.esi != cpu.esi || mine.edi != cpu.edi || mine.ebp != cpu.ebp || mine.esp != cpu.esp)
-    {
-        SDL_snprintf(what, size, "registers: eax %08x/%08x ebx %08x/%08x ecx %08x/%08x edx %08x/%08x esp %08x/%08x",
-                     unsigned(mine.eax), unsigned(cpu.eax), unsigned(mine.ebx), unsigned(cpu.ebx),
-                     unsigned(mine.ecx), unsigned(cpu.ecx), unsigned(mine.edx), unsigned(cpu.edx),
-                     unsigned(mine.esp), unsigned(cpu.esp));
-    }
-    else if ((mine.flags.lo & 0xd5) != (cpu.flags.lo & 0xd5) || mine.flags.of != cpu.flags.of)
-    {
-        SDL_snprintf(what, size, "flags %02x/%02x of %u/%u", unsigned(mine.flags.lo), unsigned(cpu.flags.lo),
-                     unsigned(mine.flags.of), unsigned(cpu.flags.of));
-    }
-    else if (mine.fpu.status.word != cpu.fpu.status.word || mine.fpu.count != cpu.fpu.count)
-    {
-        SDL_snprintf(what, size, "fpu status %04x/%04x depth %u/%u", unsigned(mine.fpu.status.word),
-                     unsigned(cpu.fpu.status.word), unsigned(mine.fpu.count), unsigned(cpu.fpu.count));
-    }
-    else if (mine.fpu.count > 0
-             && std::memcmp(&mine.fpu.regs[mine.fpu.count & 7], &cpu.fpu.regs[cpu.fpu.count & 7],
-                            sizeof cpu.fpu.regs[0]) != 0)
-    {
-        SDL_snprintf(what, size, "st(0) %.17g/%.17g", double(mine.fpu.regs[mine.fpu.count & 7]),
-                     double(cpu.fpu.regs[cpu.fpu.count & 7]));
-    }
-}
-
-/* Runs `native` against the generated function at `address`: the output block of
- * `size` bytes at `out` and the state the caller sees afterwards must agree. */
-void checkAgainstOriginal(win32::WinApplication* app, x86::CPU& cpu, const char* name, x86::reg32 address,
-                          x86::reg32 out, x86::reg32 size, x86::reg32 items, CheckCounts& counts,
-                          void (*native)(win32::WinApplication*, x86::CPU&))
-{
-    x86::reg8* block = &app->getMemory<x86::reg8>(out);
-    std::vector<x86::reg8> before(block, block + size);
-    const x86::CPU entry = cpu;
-    native(app, cpu);
-    const x86::CPU mine = cpu;
-    std::vector<x86::reg8> written(block, block + size);
-    std::memcpy(block, before.data(), size);
-    cpu = entry;
-    t_original = true;
-    app->dynamic_call(address, cpu);
-    t_original = false;
-
-    char what[160] = "";
-    if (std::memcmp(block, written.data(), size) != 0)
-    {
-        x86::reg32 at = 0;
-        while (at < size && block[at] == written[at])
-            ++at;
-        SDL_snprintf(what, sizeof what, "memory at +0x%x (item %u, byte 0x%x): 0x%02x native, 0x%02x original",
-                     unsigned(at), unsigned(items ? at / (size / items) : 0), unsigned(items ? at % (size / items) : at),
-                     unsigned(written[at]), unsigned(block[at]));
-    }
-    else
-    {
-        describeState(mine, cpu, what, sizeof what);
-    }
-    report(name, counts, what[0] == 0, items, what);
-}
-
-/* What differs between the triangles two paths handed to the renderer: their
- * number, or a field THRASH_drawtri sets; empty if nothing. */
-void describeTriangles(const std::vector<port::driver::GrVertex>& mineTraced,
-                       const std::vector<port::driver::GrVertex>& originalTraced, char* what, std::size_t size)
-{
-    if (mineTraced.size() != originalTraced.size())
-    {
-        SDL_snprintf(what, size, "vertices: %u native, %u original", unsigned(mineTraced.size()),
-                     unsigned(originalTraced.size()));
-        return;
-    }
-    struct Field
-    {
-        const char* name;
-        float port::driver::GrVertex::*member;
-    };
-    static const Field fields[] = {
-        {"x", &port::driver::GrVertex::x}, {"y", &port::driver::GrVertex::y}, {"ooz", &port::driver::GrVertex::ooz},
-        {"r", &port::driver::GrVertex::r}, {"g", &port::driver::GrVertex::g}, {"b", &port::driver::GrVertex::b},
-        {"a", &port::driver::GrVertex::a}, {"oow", &port::driver::GrVertex::oow},
-    };
-    for (std::size_t i = 0; i < mineTraced.size() && !what[0]; ++i)
-    {
-        const port::driver::GrVertex& m = mineTraced[i];
-        const port::driver::GrVertex& o = originalTraced[i];
-        auto differ = [&](const char* field, float a, float b) {
-            if (!what[0] && std::memcmp(&a, &b, sizeof a) != 0)
-                SDL_snprintf(what, size, "vertex %u %s: %.9g native, %.9g original", unsigned(i), field, double(a),
-                             double(b));
-        };
-        for (const Field& field : fields)
-            differ(field.name, m.*field.member, o.*field.member);
-        differ("s", m.tmuvtx[0].sow, o.tmuvtx[0].sow);
-        differ("t", m.tmuvtx[0].tow, o.tmuvtx[0].tow);
-    }
-}
-
-/* NFS_NATIVE_CHECK=1, or =clip for these alone: the clipper or one of its
- * callers run natively, what they write put back, then the generated code; the
- * clipper's records -- the work vertices, the lists and codes after them, the
- * vertices it made, the fan -- and the game's vertices handed in (`vertices`,
- * whose depths the callers write), the triangles that went to THRASH, and the
- * state after must agree.  The triangles are drawn twice. */
-typedef std::vector<std::pair<x86::reg32, x86::reg32>> Ranges;
-
-/* The game's vertex records handed in, 0x20 bytes each. */
-Ranges vertexRanges(std::initializer_list<x86::reg32> vertices)
-{
-    Ranges ranges;
-    for (x86::reg32 vertex : vertices)
-        ranges.push_back({ vertex, 0x20 });
-    return ranges;
-}
-
-void checkClip(win32::WinApplication* app, x86::CPU& cpu, CheckCounts& counts, const char* name,
-               x86::reg32 address, void (*native)(win32::WinApplication*, x86::CPU&), const Ranges& extra = {})
-{
-    static Ranges kRanges;
-    kRanges.assign({ { 0x7cdbb0, 0x400 }, { 0x7d0db0, 0x8c8 }, { 0x7d3570, 0x6c } });
-    kRanges.insert(kRanges.end(), extra.begin(), extra.end());
-    static std::vector<x86::reg8> before;
-    static std::vector<x86::reg8> written;
-    static std::vector<port::driver::GrVertex> mineTraced;
-    static std::vector<port::driver::GrVertex> originalTraced;
-    auto copyOut = [app](std::vector<x86::reg8>& to) {
-        to.clear();
-        for (const auto& range : kRanges)
-        {
-            const x86::reg8* bytes = &app->getMemory<x86::reg8>(range.first);
-            to.insert(to.end(), bytes, bytes + range.second);
-        }
-    };
-    mineTraced.clear();
-    originalTraced.clear();
-    copyOut(before);
-    const x86::CPU entry = cpu;
-    t_tracing = true;
-    port::driver::traceTriangles(&mineTraced);
-    native(app, cpu);
-    port::driver::traceTriangles(nullptr);
-    const x86::CPU mine = cpu;
-    copyOut(written);
-    std::size_t at = 0;
-    // Backwards: where two ranges overlap, the first copy is the one from before.
-    at = before.size();
-    for (std::size_t i = kRanges.size(); i-- > 0;)
-    {
-        at -= kRanges[i].second;
-        std::memcpy(&app->getMemory<x86::reg8>(kRanges[i].first), &before[at], kRanges[i].second);
-    }
-    cpu = entry;
-    port::driver::traceTriangles(&originalTraced);
-    t_original = true;
-    app->dynamic_call(address, cpu);
-    t_original = false;
-    port::driver::traceTriangles(nullptr);
-    t_tracing = false;
-
-    char what[200] = "";
-    at = 0;
-    for (std::size_t r = 0; r < kRanges.size(); ++r)
-    {
-        const auto& range = kRanges[r];
-        const x86::reg8* original = &app->getMemory<x86::reg8>(range.first);
-        for (x86::reg32 i = 0; i < range.second && !what[0]; ++i)
-        {
-            if (original[i] != written[at + i])
-            {
-                // the dword it is in, as integers and floats, and where in its range
-                const x86::reg32 aligned = i & ~3u;
-                x86::reg32 mineWord = 0, originalWord = 0;
-                std::memcpy(&mineWord, &written[at + aligned], std::min<x86::reg32>(4, range.second - aligned));
-                std::memcpy(&originalWord, &original[aligned], std::min<x86::reg32>(4, range.second - aligned));
-                SDL_snprintf(what, sizeof what,
-                             "memory at %08x (range %u +0x%x): %08x/%g native, %08x/%g original",
-                             unsigned(range.first + i), unsigned(r), unsigned(aligned), unsigned(mineWord),
-                             double(asFloat(mineWord)), unsigned(originalWord), double(asFloat(originalWord)));
-            }
-        }
-        at += range.second;
-    }
-    if (!what[0])
-        describeTriangles(mineTraced, originalTraced, what, sizeof what);
-    if (!what[0])
-        describeState(mine, cpu, what, sizeof what);
-    report(name, counts, what[0] == 0, x86::reg32(mineTraced.size() / 3), what);
-}
-
-/* NFS_NATIVE_CHECK for a native whose writes go all over the game's records,
- * and through its callees: the call runs natively, everything is put back,
- * the generated code runs, and all of guest memory is compared -- all but the
- * stack below the esp the call returns with, which the natives do not write.
- * Copying the game's memory three times takes a while, so one call of each
- * function in every kWholeEveryMs is checked and the rest run natively.  A
- * callee's own effects outside guest memory (a triangle drawn) happen twice. */
-constexpr Uint64 kWholeEveryMs = 1000;
-/* Set while a whole-memory check runs a call: a native it calls that has a
- * check of its own (sub_480fc0's sub_47f650) runs unchecked, as its check would
- * take over the copies the outer one puts memory back from.  The outer check
- * covers what it does. */
-thread_local bool t_wholeChecking = false;
-
-void checkWholeMemory(win32::WinApplication* app, x86::CPU& cpu, const char* name, x86::reg32 address,
-                      x86::reg32 items, CheckCounts& counts, Uint64& last,
-                      void (*native)(win32::WinApplication*, x86::CPU&), bool triangles = false)
-{
-    static std::vector<port::driver::GrVertex> mineTraced;
-    static std::vector<port::driver::GrVertex> originalTraced;
-    mineTraced.clear();
-    originalTraced.clear();
-    const Uint64 now = SDL_GetTicks();
-    if (t_wholeChecking || now - last < kWholeEveryMs)
-    {
-        native(app, cpu);
-        return;
-    }
-    last = now;
-
-    static std::vector<std::pair<x86::reg32, x86::reg32>> ranges;
-    static std::vector<x86::reg8> before;
-    static std::vector<x86::reg8> written;
-    win32::MemMap::usedRanges(ranges);
-    std::size_t total = 0;
-    for (const auto& range : ranges)
-        total += range.second;
-    if (before.size() != total)
-        SDL_Log("[NATIVE] whole-memory checks over %u KB in %u ranges", unsigned(total >> 10), unsigned(ranges.size()));
-    before.resize(total);
-    written.resize(total);
-    auto copyOut = [&](std::vector<x86::reg8>& to) {
-        std::size_t at = 0;
-        for (const auto& range : ranges)
-        {
-            std::memcpy(&to[at], &app->getMemory<x86::reg8>(range.first), range.second);
-            at += range.second;
-        }
-    };
-
-    static unsigned timed = 0;
-    Uint64 stamps[6];
-    stamps[0] = SDL_GetTicksNS();
-    copyOut(before);
-    stamps[1] = SDL_GetTicksNS();
-    const x86::CPU entry = cpu;
-    t_tracing = triangles;
-    t_wholeChecking = true;
-    if (triangles)
-        port::driver::traceTriangles(&mineTraced);
-    native(app, cpu);
-    port::driver::traceTriangles(nullptr);
-    const x86::CPU mine = cpu;
-    stamps[2] = SDL_GetTicksNS();
-    copyOut(written);
-    stamps[3] = SDL_GetTicksNS();
-    std::size_t at = 0;
-    for (const auto& range : ranges)
-    {
-        std::memcpy(&app->getMemory<x86::reg8>(range.first), &before[at], range.second);
-        at += range.second;
-    }
-    stamps[4] = SDL_GetTicksNS();
-    cpu = entry;
-    if (triangles)
-        port::driver::traceTriangles(&originalTraced);
-    t_original = true;
-    app->dynamic_call(address, cpu);
-    t_original = false;
-    port::driver::traceTriangles(nullptr);
-    t_tracing = false;
-    t_wholeChecking = false;
-    stamps[5] = SDL_GetTicksNS();
-    if (timed++ < 6)
-        SDL_Log("[NATIVE] %s whole-memory check: copy %u ms, native %u us, copy %u ms, restore %u ms, original %u us",
-                name, unsigned((stamps[1] - stamps[0]) / 1000000), unsigned((stamps[2] - stamps[1]) / 1000),
-                unsigned((stamps[3] - stamps[2]) / 1000000), unsigned((stamps[4] - stamps[3]) / 1000000),
-                unsigned((stamps[5] - stamps[4]) / 1000));
-
-    const x86::reg32 stackEnd = cpu.esp;
-    const x86::reg32 stackStart = cpu.esp - 0x10000;
-    unsigned differing = 0;
-    // The first few differing bytes: where, and native/original.
-    char where[120] = "";
-    std::size_t whereLength = 0;
-    at = 0;
-    for (const auto& range : ranges)
-    {
-        const x86::reg8* original = &app->getMemory<x86::reg8>(range.first);
-        const x86::reg8* mineBytes = &written[at];
-        for (x86::reg32 chunk = 0; chunk < range.second; chunk += 0x1000)
-        {
-            const x86::reg32 end = std::min<x86::reg32>(chunk + 0x1000, range.second);
-            if (std::memcmp(original + chunk, mineBytes + chunk, end - chunk) == 0)
-                continue;
-            for (x86::reg32 i = chunk; i < end; ++i)
-            {
-                const x86::reg32 address = range.first + i;
-                if (original[i] == mineBytes[i] || (address >= stackStart && address < stackEnd))
-                    continue;
-                if (differing++ < 4 && whereLength < sizeof where)
-                    whereLength += SDL_snprintf(where + whereLength, sizeof where - whereLength, " %08x:%02x/%02x",
-                                                unsigned(address), unsigned(mineBytes[i]), unsigned(original[i]));
-            }
-        }
-        at += range.second;
-    }
-
-    char what[200] = "";
-    if (differing)
-    {
-        // Whose memory: a block's start and size tell a thread's stack from a heap.
-        const auto block = win32::MemMap::blockOf(x86::reg32(SDL_strtoul(where + 1, nullptr, 16)));
-        SDL_snprintf(what, sizeof what, "memory: %u bytes, native/original at%s; block %08x+%x", differing, where,
-                     unsigned(block.first), unsigned(block.second));
-    }
-    else
-    {
-        describeTriangles(mineTraced, originalTraced, what, sizeof what);
-        if (!what[0])
-            describeState(mine, cpu, what, sizeof what);
-    }
-    report(name, counts, what[0] == 0, items, what);
-    if (counts.calls % 100 == 0)
-        SDL_Log("[NATIVE] %s checked whole: %u calls, %u items, %u differ", name, counts.calls, counts.items,
-                counts.mismatches);
-}
-
-}
-
-/* For the stand-ins of the other files, which keep their own checks. */
-bool nativeChecking()
-{
-    return checking();
-}
-
+/* NFS_NATIVES=0: what the other files' natives (native_loading.cpp,
+ * native_movie.cpp, native_specs_file.cpp) ask, to leave theirs to the
+ * generated code.  The ones here have no generated code to leave theirs to. */
 bool nativesEnabled()
 {
-    return nativesOn();
+    static const bool on = []() {
+        const char* value = SDL_getenv("NFS_NATIVES");
+        return !value || SDL_strcmp(value, "0") != 0;
+    }();
+    return on;
 }
 
+/* Whether a check here is running the generated code, or a whole-memory
+ * check a call: never any more -- none is left here to do so. */
 bool nativeOriginalRunning()
 {
-    return originalRunning();
+    return false;
 }
 
-void nativeCheckWhole(win32::WinApplication* app, x86::CPU& cpu, const char* name, x86::reg32 address,
-                      void*& state, void (*native)(win32::WinApplication*, x86::CPU&), bool triangles)
+bool nativeWholeChecking()
 {
-    struct State
-    {
-        CheckCounts counts;
-        Uint64 last = 0;
-    };
-    if (!state)
-        state = new State;
-    State& checked = *static_cast<State*>(state);
-    checkWholeMemory(app, cpu, name, address, 1, checked.counts, checked.last, native, triangles);
-}
-
-bool trackVertices(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (originalRunning() || !drawingPrecision(cpu))
-        return false;
-    if (checking() && cpu.edx < 0x10000)
-    {
-        static CheckCounts counts;
-        checkAgainstOriginal(app, cpu, "sub_41a550", 0x41a550, cpu.ecx, cpu.edx * 0x1c, cpu.edx, counts,
-                             trackVerticesNative);
-        return true;
-    }
-    trackVerticesNative(app, cpu);
-    return true;
-}
-
-bool objectVertices(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (originalRunning() || !drawingPrecision(cpu))
-        return false;
-    if (checking())
-    {
-        static CheckCounts counts;
-        const x86::sreg32 count = x86::sreg32(cpu.eax);
-        const x86::reg32 items = count > 0 && count < 0x10000 ? x86::reg32(count) : 0;
-        checkAgainstOriginal(app, cpu, "sub_4bf4c0", 0x4bf4c0, app->getMemory<x86::reg32>(cpu.esp + 4),
-                             items * 0x20, items, counts, objectVerticesNative);
-        return true;
-    }
-    objectVerticesNative(app, cpu);
-    return true;
-}
-
-bool rotateVectors(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (originalRunning() || !singlePrecision(cpu) || !rotateNativeOn())
-        return false;
-    if (checking())
-    {
-        static CheckCounts counts;
-        const x86::sreg32 count = x86::sreg32(cpu.eax);
-        const x86::reg32 items = count > 0 && count < 0x10000 ? x86::reg32(count) : 0;
-        checkAgainstOriginal(app, cpu, "sub_4e03b0", 0x4e03b0, cpu.ecx, items * 0xc, items, counts,
-                             rotateVectorsNative);
-        return true;
-    }
-    rotateVectorsNative(app, cpu);
-    return true;
-}
-
-bool envMapCoords(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (originalRunning() || !drawingPrecision(cpu) || !polygonNativesOn())
-        return false;
-    if (checking())
-    {
-        static CheckCounts counts;
-        static Uint64 last = 0;
-        checkWholeMemory(app, cpu, "sub_49db70", 0x49db70, cpu.eax, counts, last, envMapCoordsNative);
-        return true;
-    }
-    envMapCoordsNative(app, cpu);
-    return true;
-}
-
-bool shadeNormals(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (originalRunning() || !drawingPrecision(cpu) || !polygonNativesOn())
-        return false;
-    if (checking())
-    {
-        static CheckCounts counts;
-        static Uint64 last = 0;
-        checkWholeMemory(app, cpu, "sub_49da30", 0x49da30, cpu.edx, counts, last, shadeNormalsNative);
-        return true;
-    }
-    shadeNormalsNative(app, cpu);
-    return true;
-}
-
-bool cullPolygons(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (originalRunning() || !drawingPrecision(cpu) || !polygonNativesOn())
-        return false;
-    if (checking())
-    {
-        static CheckCounts counts;
-        static Uint64 last = 0;
-        const x86::reg32 items = app->getMemory<x86::reg32>(cpu.eax + cpu.edx * 4 + 0x6fc);
-        checkWholeMemory(app, cpu, "sub_49dbf0", 0x49dbf0, items, counts, last, cullPolygonsNative);
-        return true;
-    }
-    cullPolygonsNative(app, cpu);
-    return true;
+    return false;
 }
 
 /* sub_4bbd70, where each view pass starts Render_GetTm's buffer over: how much
@@ -5958,649 +5639,6 @@ x86::reg32 takeArenaPeak()
     const x86::reg32 peak = s_arenaPeak;
     s_arenaPeak = 0;
     return peak;
-}
-
-bool submitPolygons(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (originalRunning() || !drawingPrecision(cpu) || !polygonNativesOn())
-        return false;
-    if (checking())
-    {
-        static CheckCounts counts;
-        static Uint64 last = 0;
-        checkWholeMemory(app, cpu, "sub_434380", 0x434380, 1, counts, last, submitPolygonsNative, true);
-        return true;
-    }
-    submitPolygonsNative(app, cpu);
-    return true;
-}
-
-bool clipPolygon(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (originalRunning() || !drawingPrecision(cpu) || !clipNativeOn())
-        return false;
-    if (clipChecking() && !t_tracing && !port::driver::tracingTriangles())
-    {
-        static CheckCounts counts;
-        checkClip(app, cpu, counts, "sub_4c2cd0", 0x4c2cd0, clipPolygonNative);
-        return true;
-    }
-    clipPolygonNative(app, cpu);
-    return true;
-}
-
-bool clipTriangle(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (originalRunning() || !drawingPrecision(cpu) || !clipNativeOn())
-        return false;
-    if (clipChecking() && !t_tracing && !port::driver::tracingTriangles())
-    {
-        static CheckCounts counts;
-        checkClip(app, cpu, counts, "sub_4c11b0", 0x4c11b0, clipTriangleNative,
-                  vertexRanges({ cpu.eax, cpu.edx, cpu.ebx }));
-        return true;
-    }
-    clipTriangleNative(app, cpu);
-    return true;
-}
-
-bool clipTriangleByZ(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (originalRunning() || !drawingPrecision(cpu) || !clipNativeOn())
-        return false;
-    if (clipChecking() && !t_tracing && !port::driver::tracingTriangles())
-    {
-        static CheckCounts counts;
-        checkClip(app, cpu, counts, "sub_4c1aa0", 0x4c1aa0, clipTriangleByZNative,
-                  vertexRanges({ cpu.eax, cpu.edx, cpu.ebx }));
-        return true;
-    }
-    clipTriangleByZNative(app, cpu);
-    return true;
-}
-
-bool quadMesh(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (originalRunning() || !drawingPrecision(cpu) || !clipNativeOn())
-        return false;
-    if (clipChecking() && !t_tracing && !port::driver::tracingTriangles())
-    {
-        static CheckCounts counts;
-        Ranges ranges;
-        const x86::sreg32 count = x86::sreg32(cpu.eax);
-        for (x86::sreg32 i = 0; i < (count < 1 ? 1 : count) && i < 0x1000; ++i)
-            for (x86::reg32 k = 0; k < 4; ++k)
-                ranges.push_back({ cpu.edx + (app->getMemory<x86::reg32>(cpu.ebx + x86::reg32(i) * 0x10 + k * 4) << 5),
-                                   0x20 });
-        checkClip(app, cpu, counts, "sub_4c1e20", 0x4c1e20, quadMeshNative, ranges);
-        return true;
-    }
-    quadMeshNative(app, cpu);
-    return true;
-}
-
-bool clipQuad(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (originalRunning() || !drawingPrecision(cpu) || !clipNativeOn())
-        return false;
-    if (clipChecking() && !t_tracing && !port::driver::tracingTriangles())
-    {
-        static CheckCounts counts;
-        checkClip(app, cpu, counts, "sub_4c12e0", 0x4c12e0, clipQuadNative,
-                  vertexRanges({ cpu.eax, cpu.edx, cpu.ebx, cpu.ecx }));
-        return true;
-    }
-    clipQuadNative(app, cpu);
-    return true;
-}
-
-/* The checks below run under NFS_NATIVE_CHECK=clip as well as =1: each call,
- * the native into the output block, then the generated code (checkAgainstOriginal). */
-bool targetedCheck()
-{
-    return clipChecking() && !t_tracing;
-}
-
-/* Counts the checks can take as items. */
-x86::reg32 checkItems(x86::reg32 count)
-{
-    return x86::sreg32(count) > 0 && x86::sreg32(count) < 0x10000 ? count : 0;
-}
-
-bool dotProducts(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (originalRunning() || !singlePrecision(cpu) || !polygonNativesOn())
-        return false;
-    if (targetedCheck())
-    {
-        static CheckCounts counts;
-        const x86::reg32 items = checkItems(cpu.eax);
-        checkAgainstOriginal(app, cpu, "sub_4e0210", 0x4e0210, cpu.ecx, items * 4, items, counts, dotProductsNative);
-        return true;
-    }
-    dotProductsNative(app, cpu);
-    return true;
-}
-
-bool multiplyMatrices(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (originalRunning() || !singlePrecision(cpu) || !polygonNativesOn())
-        return false;
-    if (targetedCheck())
-    {
-        static CheckCounts counts;
-        checkAgainstOriginal(app, cpu, "sub_4e0280", 0x4e0280, cpu.ebx, 0x24, 1, counts, multiplyMatricesNative);
-        return true;
-    }
-    multiplyMatricesNative(app, cpu);
-    return true;
-}
-
-bool transformPoints(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (originalRunning() || !singlePrecision(cpu) || !polygonNativesOn())
-        return false;
-    if (targetedCheck())
-    {
-        static CheckCounts counts;
-        const x86::reg32 items = checkItems(cpu.eax);
-        checkAgainstOriginal(app, cpu, "sub_4e0430", 0x4e0430, app->getMemory<x86::reg32>(cpu.esp + 4), items * 0xc,
-                             items, counts, transformPointsNative);
-        return true;
-    }
-    transformPointsNative(app, cpu);
-    return true;
-}
-
-/* No arithmetic of the FPU's in it: it takes the call in any precision. */
-bool gatherBuckets(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (originalRunning() || !polygonNativesOn())
-        return false;
-    if (targetedCheck())
-    {
-        static CheckCounts counts;
-        checkAgainstOriginal(app, cpu, "sub_4c79a0", 0x4c79a0, cpu.esi, 8, 1, counts, gatherBucketsNative);
-        return true;
-    }
-    gatherBucketsNative(app, cpu);
-    return true;
-}
-
-bool objectVerticesNearest(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (originalRunning() || !drawingPrecision(cpu) || !polygonNativesOn())
-        return false;
-    if (targetedCheck())
-    {
-        static CheckCounts counts;
-        const x86::reg32 items = checkItems(cpu.eax);
-        checkAgainstOriginal(app, cpu, "sub_49d9d0", 0x49d9d0, cpu.ebx, items * 0x20, items, counts,
-                             objectVerticesNearestNative);
-        return true;
-    }
-    objectVerticesNearestNative(app, cpu);
-    return true;
-}
-
-bool trackRecords(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (originalRunning() || !drawingPrecision(cpu) || !polygonNativesOn())
-        return false;
-    if (targetedCheck() && !port::driver::tracingTriangles())
-    {
-        static CheckCounts counts;
-        /* What it can write: the allocator's pointers, the buffer past its
-         * end, the colours of the piece's corners, and the list's links. */
-        const x86::reg32 piece = cpu.edx * 0x5c0 + 0x571370;
-        const x86::reg32 count = app->getMemory<x86::reg32>(piece + cpu.ebx * 4);
-        x86::reg32 polygon = app->getMemory<x86::reg32>(piece + cpu.ebx * 4 + 0x2c);
-        Ranges ranges = { { 0x55fe34, 8 }, { app->getMemory<x86::reg32>(0x55fe38), checkItems(count) * 0x20 + 0x40 } };
-        for (x86::reg32 i = 0; i < checkItems(count); ++i, polygon += 0xe)
-        {
-            ranges.push_back({ cpu.ecx + (x86::reg32(x86::sreg32(x86::sreg16(app->getMemory<x86::reg16>(polygon)))) << 5) + 0x10, 4 });
-            for (x86::reg32 at : { 0u, 2u, 4u })
-                ranges.push_back({ cpu.ecx + (x86::reg32(x86::sreg32(app->getMemory<x86::reg32>(polygon + at)) >> 16) << 5) + 0x10, 4 });
-        }
-        const x86::reg32 tailArgument = app->getMemory<x86::reg32>(cpu.esp + 4);
-        const x86::reg32 tail = app->getMemory<x86::reg32>(tailArgument);
-        ranges.push_back({ tailArgument, 4 });
-        ranges.push_back({ tail != 0 ? tail : app->getMemory<x86::reg32>(cpu.esp + 8), 4 });
-        checkClip(app, cpu, counts, "sub_41b300", 0x41b300, trackRecordsNative, ranges);
-        return true;
-    }
-    trackRecordsNative(app, cpu);
-    return true;
-}
-
-bool boxOutside(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (originalRunning() || !drawingPrecision(cpu) || !polygonNativesOn())
-        return false;
-    if (targetedCheck())
-    {
-        static CheckCounts counts;
-        checkAgainstOriginal(app, cpu, "sub_41bf30", 0x41bf30, cpu.edx, 0, 0, counts, boxOutsideNative);
-        return true;
-    }
-    boxOutsideNative(app, cpu);
-    return true;
-}
-
-bool projectedTriangle(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (originalRunning() || !drawingPrecision(cpu) || !polygonNativesOn())
-        return false;
-    if (targetedCheck() && !port::driver::tracingTriangles())
-    {
-        static CheckCounts counts;
-        const x86::reg32 slot = cpu.eax;
-        checkClip(app, cpu, counts, "sub_41a360", 0x41a360, projectedTriangleNative,
-                  Ranges{ { slot, 4 }, { app->getMemory<x86::reg32>(slot), 0xa0 } });
-        return true;
-    }
-    projectedTriangleNative(app, cpu);
-    return true;
-}
-
-/* The first dword of every polygon on a list, from `first` while `more` says
- * the next belongs to it: the links these functions rewrite. */
-template <typename More>
-void listLinks(win32::WinApplication* app, x86::reg32 first, Ranges& ranges, More more)
-{
-    x86::reg32 polygon = first;
-    for (int i = 0; polygon != 0 && i < 0x4000; ++i)
-    {
-        ranges.push_back({ polygon, 4 });
-        more(polygon);
-        polygon = app->getMemory<x86::reg32>(polygon);
-        if (polygon == 0)
-            break;
-    }
-}
-
-/* Everything already in the buckets a call may hang polygons on: every node
- * of the sorted buckets (0x7db6dc, sub_4c7610 rewrites links in the middle of
- * them) and the tail of every other bucket.  Without these the check put back
- * the call's own list but not the links it changed in the buckets, and the
- * generated code then walked a ring (2026-10-03). */
-void bucketRanges(win32::WinApplication* app, Ranges& ranges, bool depthBucketsToo)
-{
-    for (x86::reg32 i = 0; i < 0x320; ++i)
-    {
-        x86::reg32 node = app->getMemory<x86::reg32>(0x7db6dc + i * 8);
-        for (int n = 0; node != 0 && n < 0x4000; ++n)
-        {
-            ranges.push_back({ node, 4 });
-            node = app->getMemory<x86::reg32>(node);
-        }
-    }
-    if (!depthBucketsToo)
-        return;
-    for (x86::reg32 i = 0; i < 0x100 + 0x7d0; ++i)
-    {
-        const x86::reg32 bucket = 0x7d575c + i * 8;
-        if (app->getMemory<x86::reg32>(bucket) != 0 && app->getMemory<x86::reg32>(bucket + 4) != 0)
-            ranges.push_back({ app->getMemory<x86::reg32>(bucket + 4), 4 });
-    }
-}
-
-bool triangleList(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (originalRunning() || !drawingPrecision(cpu) || !polygonNativesOn())
-        return false;
-    if (targetedCheck() && !port::driver::tracingTriangles())
-    {
-        static CheckCounts counts;
-        Ranges ranges = { { 0x554e54, 12 } };
-        x86::reg32 triangle = cpu.eax;
-        for (int i = 0; triangle != 0 && i < 0x1000; ++i)
-        {
-            for (x86::reg32 at : { 8u, 0xcu, 0x10u })
-                ranges.push_back({ app->getMemory<x86::reg32>(triangle + at), 0x20 });
-            triangle = app->getMemory<x86::reg32>(triangle);
-            if (triangle == 0 || app->getMemory<x86::reg16>(triangle + 4) != 1)
-                break;
-        }
-        checkClip(app, cpu, counts, "sub_433a50", 0x433a50, triangleListNative, ranges);
-        return true;
-    }
-    triangleListNative(app, cpu);
-    return true;
-}
-
-bool quadList(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (originalRunning() || !drawingPrecision(cpu) || !polygonNativesOn())
-        return false;
-    if (targetedCheck() && !port::driver::tracingTriangles())
-    {
-        static CheckCounts counts;
-        Ranges ranges = { { 0x554e54, 12 } };
-        x86::reg32 quad = cpu.eax;
-        for (int i = 0; quad != 0 && i < 0x1000; ++i)
-        {
-            for (x86::reg32 at : { 8u, 0xcu, 0x10u, 0x14u })
-                ranges.push_back({ app->getMemory<x86::reg32>(quad + at), 0x20 });
-            quad = app->getMemory<x86::reg32>(quad);
-            if (quad == 0 || app->getMemory<x86::reg16>(quad + 4) != 0)
-                break;
-        }
-        checkClip(app, cpu, counts, "sub_433bb0", 0x433bb0, quadListNative, ranges);
-        return true;
-    }
-    quadListNative(app, cpu);
-    return true;
-}
-
-bool sortedBuckets(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (originalRunning() || !drawingPrecision(cpu) || !polygonNativesOn())
-        return false;
-    if (targetedCheck() && !port::driver::tracingTriangles())
-    {
-        static CheckCounts counts;
-        Ranges ranges = { { 0x7db6dc, 0x320 * 8 } };
-        listLinks(app, cpu.eax, ranges, [](x86::reg32) {});
-        bucketRanges(app, ranges, false);
-        checkClip(app, cpu, counts, "sub_4c7610", 0x4c7610, sortedBucketsNative, ranges);
-        return true;
-    }
-    sortedBucketsNative(app, cpu);
-    return true;
-}
-
-bool depthBuckets(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (originalRunning() || !drawingPrecision(cpu) || !polygonNativesOn())
-        return false;
-    if (targetedCheck() && !port::driver::tracingTriangles())
-    {
-        static CheckCounts counts;
-        Ranges ranges = { { 0x7d575c, (0x100 + 0x7d0) * 8 }, { 0x7db6dc, 0x320 * 8 } };
-        listLinks(app, cpu.eax, ranges, [](x86::reg32) {});
-        bucketRanges(app, ranges, true);
-        checkClip(app, cpu, counts, "sub_4c7790", 0x4c7790, depthBucketsNative, ranges);
-        return true;
-    }
-    depthBucketsNative(app, cpu);
-    return true;
-}
-
-/* Small helpers called from everywhere: under NFS_NATIVE_CHECK=clip one call
- * in 64 is checked against the generated code -- every call of the float to
- * integer step alone ran to millions a race and stopped the game. */
-/* What a small stand-in needs of the FPU: nothing (integers only, false),
- * the race's single precision (true), or only to draw (kDrawing). */
-const int kDrawing = 2;
-
-template <void (*Native)(win32::WinApplication*, x86::CPU&)>
-bool smallNative(win32::WinApplication* app, x86::CPU& cpu, int precise, const char* name, x86::reg32 address,
-                 x86::reg32 out, x86::reg32 size, CheckCounts& counts)
-{
-    if (originalRunning() || !nativesOn() || (precise == 1 && !singlePrecision(cpu))
-        || (precise == kDrawing && !drawingPrecision(cpu)))
-        return false;
-    static unsigned s_calls = 0;
-    if (targetedCheck() && (++s_calls & 63) == 0)
-    {
-        checkAgainstOriginal(app, cpu, name, address, out, size, 0, counts, Native);
-        return true;
-    }
-    Native(app, cpu);
-    return true;
-}
-
-/* The particles' drawing, the drops on the view, the particles' moving: each
- * checked whole against the generated code under NFS_NATIVE_CHECK=clip. */
-Ranges particleRanges(win32::WinApplication* app)
-{
-    Ranges ranges = { { 0x55fe34, 8 }, { 0x7a3d08, 8 }, { 0x7ddfd0, 0x258 * 0x80 }, { 0x5644e0, 0x18 },
-                      { 0x7f0bd0, 0x3200 * 2 },
-                      { app->getMemory<x86::reg32>(0x55fe38), 0x258 * 0xa0 + 0x40 } };
-    const x86::reg32 tail = app->getMemory<x86::reg32>(0x7a3d08);
-    if (tail != 0)
-        ranges.push_back({ tail, 4 });
-    return ranges;
-}
-
-bool particles(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (originalRunning() || !singlePrecision(cpu) || !polygonNativesOn())
-        return false;
-    if (targetedCheck() && !port::driver::tracingTriangles())
-    {
-        static CheckCounts counts;
-        Ranges ranges = particleRanges(app);
-        ranges.push_back({ cpu.esi, 8 });
-        checkClip(app, cpu, counts, "sub_4cbc90", 0x4cbc90, particlesNative, ranges);
-        return true;
-    }
-    particlesNative(app, cpu);
-    return true;
-}
-
-bool drops(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (originalRunning() || !singlePrecision(cpu) || !polygonNativesOn())
-        return false;
-    if (targetedCheck() && !port::driver::tracingTriangles())
-    {
-        static CheckCounts counts;
-        Ranges ranges = particleRanges(app);
-        ranges.push_back({ 0x7f0bd0, 0x3200 * 2 });
-        checkClip(app, cpu, counts, "sub_4cb750", 0x4cb750, dropsNative, ranges);
-        return true;
-    }
-    dropsNative(app, cpu);
-    return true;
-}
-
-bool moveParticles(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (originalRunning() || !singlePrecision(cpu) || !polygonNativesOn())
-        return false;
-    if (targetedCheck() && !port::driver::tracingTriangles())
-    {
-        static CheckCounts counts;
-        // sub_4cb220 and sub_4cab60 write their own; the RNG and the drops too
-        Ranges ranges = { { 0x7ddfd0, 0x258 * 0x80 }, { 0x5644e0, 0x18 }, { 0x7f0bd0, 0x3200 * 2 },
-                          { 0x7f6fd0, 0x10 } };
-        checkClip(app, cpu, counts, "sub_4cb2c0", 0x4cb2c0, moveParticlesNative, ranges);
-        return true;
-    }
-    moveParticlesNative(app, cpu);
-    return true;
-}
-
-bool lightGlow(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (originalRunning() || !drawingPrecision(cpu) || !polygonNativesOn())
-        return false;
-    if (targetedCheck() && !port::driver::tracingTriangles())
-    {
-        static CheckCounts counts;
-        Ranges ranges = { { 0x55fe34, 8 }, { app->getMemory<x86::reg32>(0x55fe38), 0xa0 + 0x40 },
-                          { 0x7db6dc, 0x320 * 8 }, { cpu.esp + 0x10, 4 }, { cpu.esp + 0x18, 4 } };
-        bucketRanges(app, ranges, false);
-        checkClip(app, cpu, counts, "sub_492370", 0x492370, lightGlowNative, ranges);
-        return true;
-    }
-    lightGlowNative(app, cpu);
-    return true;
-}
-
-bool headlightBeam(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (originalRunning() || !drawingPrecision(cpu) || !polygonNativesOn())
-        return false;
-    if (targetedCheck() && !port::driver::tracingTriangles())
-    {
-        static CheckCounts counts;
-        Ranges ranges = { { 0x55fe34, 8 }, { app->getMemory<x86::reg32>(0x55fe38), 12 * 0xa0 + 0x40 },
-                          { 0x7db6dc, 0x320 * 8 } };
-        bucketRanges(app, ranges, false);
-        checkClip(app, cpu, counts, "sub_492980", 0x492980, headlightBeamNative, ranges);
-        return true;
-    }
-    headlightBeamNative(app, cpu);
-    return true;
-}
-
-bool carDetail(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (originalRunning() || !drawingPrecision(cpu) || !polygonNativesOn())
-        return false;
-    if (targetedCheck() && !port::driver::tracingTriangles())
-    {
-        static CheckCounts counts;
-        checkClip(app, cpu, counts, "sub_4bb5d0", 0x4bb5d0, carDetailNative,
-                  Ranges{ { 0x7a3bf0, 0x100 }, { cpu.ebx, 4 } });
-        return true;
-    }
-    carDetailNative(app, cpu);
-    return true;
-}
-
-bool objectVerticesList(win32::WinApplication* app, x86::CPU& cpu)
-{
-    static CheckCounts counts;
-    return smallNative<objectVerticesListNative>(app, cpu, kDrawing, "sub_4dbef0", 0x4dbef0,
-                                                 app->getMemory<x86::reg32>(cpu.esp + 8), checkItems(cpu.ebx) * 0x20,
-                                                 counts);
-}
-
-bool objectRecords(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (originalRunning() || !drawingPrecision(cpu) || !polygonNativesOn())
-        return false;
-    if (targetedCheck() && !port::driver::tracingTriangles())
-    {
-        static CheckCounts counts;
-        const x86::reg32 count = checkItems(cpu.edx);
-        Ranges ranges = { { cpu.ecx, count * 0x20 } };
-        const x86::reg32 base = app->getMemory<x86::reg32>(cpu.esp + 4);
-        x86::reg32 polygon = cpu.ebx;
-        for (x86::reg32 i = 0; i < count; ++i, polygon += 0xe)
-        {
-            ranges.push_back({ base + (x86::reg32(x86::sreg32(x86::sreg16(app->getMemory<x86::reg16>(polygon)))) << 5) + 0x10, 4 });
-            for (x86::reg32 at : { 0u, 2u, 4u })
-                ranges.push_back({ base + (x86::reg32(x86::sreg32(app->getMemory<x86::reg32>(polygon + at)) >> 16) << 5) + 0x10, 4 });
-        }
-        checkClip(app, cpu, counts, "sub_41b640", 0x41b640, objectRecordsNative, ranges);
-        return true;
-    }
-    objectRecordsNative(app, cpu);
-    return true;
-}
-
-bool scaleVectors(win32::WinApplication* app, x86::CPU& cpu)
-{
-    static CheckCounts counts;
-    return smallNative<scaleVectorsNative>(app, cpu, true, "sub_4e0050", 0x4e0050,
-                                           app->getMemory<x86::reg32>(cpu.esp + 8), checkItems(cpu.eax) * 0xc, counts);
-}
-
-bool addVectors(win32::WinApplication* app, x86::CPU& cpu)
-{
-    static CheckCounts counts;
-    return smallNative<offsetVectorsNative<true>>(app, cpu, true, "sub_4dffb0", 0x4dffb0, cpu.ecx,
-                                                  checkItems(cpu.eax) * 0xc, counts);
-}
-
-bool subtractVectors(win32::WinApplication* app, x86::CPU& cpu)
-{
-    static CheckCounts counts;
-    return smallNative<offsetVectorsNative<false>>(app, cpu, true, "sub_4e0000", 0x4e0000, cpu.ecx,
-                                                   checkItems(cpu.eax) * 0xc, counts);
-}
-
-bool vectorLengthOf(win32::WinApplication* app, x86::CPU& cpu)
-{
-    static CheckCounts counts;
-    return smallNative<vectorLengthNative>(app, cpu, true, "sub_4e06a0", 0x4e06a0, 0, 0, counts);
-}
-
-bool unitVector(win32::WinApplication* app, x86::CPU& cpu)
-{
-    static CheckCounts counts;
-    return smallNative<unitVectorNative>(app, cpu, true, "sub_4e01c0", 0x4e01c0, cpu.edx, 12, counts);
-}
-
-bool groundHeight(win32::WinApplication* app, x86::CPU& cpu)
-{
-    static CheckCounts counts;
-    // p, written over with p - o as the original does: put back before the generated code runs
-    return smallNative<groundHeightNative>(app, cpu, true, "sub_4968a0", 0x4968a0, cpu.esp + 0x10, 12, counts);
-}
-
-bool dotPush(win32::WinApplication* app, x86::CPU& cpu)
-{
-    static CheckCounts counts;
-    return smallNative<dotPushNative>(app, cpu, true, "sub_4e01f0", 0x4e01f0, 0, 0, counts);
-}
-
-bool normalise(win32::WinApplication* app, x86::CPU& cpu)
-{
-    static CheckCounts counts;
-    return smallNative<normaliseNative>(app, cpu, true, "sub_4972f0", 0x4972f0, cpu.eax, 12, counts);
-}
-
-bool groundDistanceOf(win32::WinApplication* app, x86::CPU& cpu)
-{
-    static CheckCounts counts;
-    return smallNative<groundDistanceNative>(app, cpu, false, "sub_41aab0", 0x41aab0, 0, 0, counts);
-}
-
-bool nearestBlock(win32::WinApplication* app, x86::CPU& cpu)
-{
-    static CheckCounts counts;
-    return smallNative<nearestBlockNative>(app, cpu, true, "sub_41e0f0", 0x41e0f0, 0, 0, counts);
-}
-
-bool objectVerticesColoured(win32::WinApplication* app, x86::CPU& cpu)
-{
-    static CheckCounts counts;
-    return smallNative<objectVerticesColouredNative>(app, cpu, kDrawing, "sub_41a970", 0x41a970,
-                                                     app->getMemory<x86::reg32>(cpu.esp + 4),
-                                                     checkItems(cpu.edx) * 0x20, counts);
-}
-
-bool gatherSorted(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (originalRunning() || !nativesOn())
-        return false;
-    if (targetedCheck() && !port::driver::tracingTriangles())
-    {
-        static CheckCounts counts;
-        Ranges ranges = { { cpu.esi, 8 } };
-        for (x86::reg32 i = 0; i < 0x320; ++i)
-        {
-            const x86::reg32 tail = app->getMemory<x86::reg32>(0x7db6d4 - i * 8 + 4);
-            if (app->getMemory<x86::reg32>(0x7db6d4 - i * 8) != 0 && tail != 0)
-                ranges.push_back({ tail, 4 });
-        }
-        checkClip(app, cpu, counts, "sub_4c7320", 0x4c7320, gatherSortedNative, ranges);
-        return true;
-    }
-    gatherSortedNative(app, cpu);
-    return true;
-}
-
-bool trackPolygons(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (originalRunning() || !drawingPrecision(cpu) || !polygonNativesOn())
-        return false;
-    if (checking())
-    {
-        static CheckCounts counts;
-        static Uint64 last = 0;
-        const x86::reg32 items = app->getMemory<x86::reg32>(cpu.ebx * 0x5c0 + 0x571370 + cpu.ecx * 4);
-        checkWholeMemory(app, cpu, "sub_41ae90", 0x41ae90, items, counts, last, trackPolygonsNative);
-        return true;
-    }
-    trackPolygonsNative(app, cpu);
-    return true;
 }
 
 }

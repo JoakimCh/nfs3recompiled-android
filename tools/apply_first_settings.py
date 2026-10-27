@@ -35,13 +35,14 @@ DECLARATION = "bool firstSettings(win32::WinApplication* app);\n"
 
 # (generated file, address and bytes of the instruction, original code, patched code)
 SITES = [
-    # sub_4730d0: the game has just chosen what suits the machine (sub_472d10),
-    # on the first front end after it started its settings over.
+    # sub_4730d0: the game has just chosen what suits the machine (sub_472d10,
+    # native_render.cpp's render::detailSettings, called by its name), on the
+    # first front end after it started its settings over.
     ("nfs3hp.18.cpp", "00473195  e876fbffff",
-     "    sub_472d10(app, cpu.sync());\n"
+     "    nfs3hp::render::detailSettings(app, cpu.sync());\n"
      "    cpu.reload();\n"
      "    if (cpu.terminate) return;",
-     "    sub_472d10(app, cpu.sync());\n"
+     "    nfs3hp::render::detailSettings(app, cpu.sync());\n"
      "    cpu.reload();\n"
      "    if (cpu.terminate) return;\n"
      "    if (firstSettings(app)) /* port: the phone's settings over the new player's */\n"

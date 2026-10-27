@@ -19,19 +19,19 @@ namespace nfs3hp
 x86::reg32 thrashMalloc(win32::WinApplication* app, x86::CPU& cpu, x86::reg32 amount);
 void thrashFree(win32::WinApplication* app, x86::CPU& cpu, x86::reg32 pointer);
 
-/* From native_vertices.cpp, for the stand-ins of the other files:
- * NFS_NATIVE_CHECK, NFS_NATIVES, and whether one of its checks is running the
- * generated code, when every stand-in steps aside. */
+/* From native_vertices.cpp, for the natives of the other files that keep
+ * checks of their own (native_loading.cpp, native_movie.cpp,
+ * native_specs_file.cpp): NFS_NATIVE_CHECK=1 and NFS_NATIVES=0 as read once.
+ * Since phase 2 (2026-10-27) the vertex and drawing natives are whole, with
+ * no generated code behind them and no check of their own in the game:
+ * nativeOriginalRunning (a check of theirs running the generated code, when
+ * every other native stepped aside) and nativeWholeChecking (one of theirs
+ * checking a call over all of memory, when a nested check ran the native
+ * alone) are false. */
 bool nativeChecking();
 bool nativesEnabled();
 bool nativeOriginalRunning();
-
-/* From native_vertices.cpp, for native_render.cpp: NFS_NATIVE_CHECK's
- * whole-memory check of `native` against the generated function at `address`,
- * once a second, the triangles it hands THRASH compared when `triangles`;
- * `state` (null at first) keeps the function's counts. */
-void nativeCheckWhole(win32::WinApplication* app, x86::CPU& cpu, const char* name, x86::reg32 address,
-                      void*& state, void (*native)(win32::WinApplication*, x86::CPU&), bool triangles);
+bool nativeWholeChecking();
 
 }
 

@@ -206,9 +206,16 @@ SITES = [
 
 NAMESPACE = "namespace nfs3hp\n{\n"
 
+# Sites in functions that are native now, the change made in the native
+# (src/nfs3hp/native_render.cpp: render::hudTable, sub_481c50);
+# tools/game_checks/generate.py makes it to the game's code the native is held
+# against.
+NATIVE_SITES = {0x481f86}
+
 
 def apply(root):
-    for name in dict.fromkeys(site[0] for site in SITES):
+    remaining = [site for site in SITES if int(site[1][:8], 16) not in NATIVE_SITES]
+    for name in dict.fromkeys(site[0] for site in remaining):
         path = root / "src/nfs3hp/disassembly" / name
         text = path.read_text(newline="")
         eol = "\r\n" if text.count("\r\n") * 2 > text.count("\n") else "\n"
@@ -216,7 +223,7 @@ def apply(root):
         def native(s):
             return eol.join(s.split("\n"))
 
-        sites = [site for site in SITES if site[0] == name]
+        sites = [site for site in remaining if site[0] == name]
         declarations = native(HEADER + "".join(site[4] for site in sites))
         if declarations not in text:
             namespace = native(NAMESPACE)

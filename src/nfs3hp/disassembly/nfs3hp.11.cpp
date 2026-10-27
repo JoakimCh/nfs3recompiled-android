@@ -4953,7 +4953,7 @@ void Application::sub_441950(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.eax ^= x86::reg32(x86::sreg32(cpu.eax));
     // 00441999  e8e256ffff             -call 0x437080
     cpu.esp -= 4;
-    sub_437080(app, cpu.sync());
+    nfs3hp::collide::copyMessageLines(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0044199e  8955e8                 -mov dword ptr [ebp - 0x18], edx

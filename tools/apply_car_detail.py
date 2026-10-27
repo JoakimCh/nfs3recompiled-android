@@ -54,9 +54,16 @@ SITES = [
 
 NAMESPACE = "namespace nfs3hp\n{\n"
 
+# Sites in functions that are native now, the change made in the native
+# (src/nfs3hp/native_render.cpp: render::carTextures, sub_4b7d30, and
+# render::transformBuffer, sub_4b56e0); tools/game_checks/generate.py makes it
+# to the game's code the natives are held against.
+NATIVE_SITES = {0x4b7d5b, 0x4b56e5, 0x4b56ea}
+
 
 def apply(root):
-    for name in dict.fromkeys(site[0] for site in SITES):
+    sites = [site for site in SITES if int(site[1][:8], 16) not in NATIVE_SITES]
+    for name in dict.fromkeys(site[0] for site in sites):
         path = root / "src/nfs3hp/disassembly" / name
         text = path.read_text(newline="")
         eol = "\r\n" if text.count("\r\n") * 2 > text.count("\n") else "\n"
@@ -68,7 +75,7 @@ def apply(root):
                 raise RuntimeError("%s: namespace opening changed" % name)
             text = text.replace(namespace, namespace + declarations, 1)
 
-        for site_name, instruction, old, new in SITES:
+        for site_name, instruction, old, new in sites:
             if site_name != name:
                 continue
             anchor = "    // " + instruction
