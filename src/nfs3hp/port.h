@@ -132,6 +132,30 @@ inline bool callGame(App* app, CPU& cpu, reg32 esp, reg32 target, Args a = {}, s
     return callGame(app, cpu, esp, target, a, stack, ignored);
 }
 
+/* The same call of another rewrite's adapter, as the game's code calls its
+ * address: the same registers, stack and return address, the adapter run as
+ * C++ rather than found through the game's address. */
+inline bool callGame(App* app, CPU& cpu, reg32 esp, guest::Native target, Args a, std::initializer_list<reg32> stack,
+                     reg32& result)
+{
+    cpu.esp = esp;
+    cpu.eax = a.eax;
+    cpu.edx = a.edx;
+    cpu.ebx = a.ebx;
+    cpu.ecx = a.ecx;
+    if (!guest::call(app, cpu, target, stack))
+        return false;
+    result = cpu.eax;
+    return true;
+}
+
+inline bool callGame(App* app, CPU& cpu, reg32 esp, guest::Native target, Args a = {},
+                     std::initializer_list<reg32> stack = {})
+{
+    reg32 ignored;
+    return callGame(app, cpu, esp, target, a, stack, ignored);
+}
+
 /* What a rewritten function that calls the game's code gives back: its
  * result -- what the game's code leaves in eax -- or nothing when the game
  * stopped in a call (cpu.terminate), and then its callers stop as well, up to

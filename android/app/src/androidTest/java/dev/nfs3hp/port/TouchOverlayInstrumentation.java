@@ -88,17 +88,18 @@ public final class TouchOverlayInstrumentation extends Instrumentation {
                     require(held(view).containsKey(spikeKey),"spike strip emits its configured key");
                     view.releaseAll();
                     /* The menu layout is what the game asks for when it is not
-                     * racing, and it has nothing on it: a menu is worked with the
-                     * screen itself, the system's back is the game's Escape, and
-                     * the keyboard comes up by itself while the game takes a name. */
+                     * racing, and only the keyboard is on it: a menu is worked
+                     * with the screen itself and the system's back is the game's
+                     * Escape, but cheat codes and a network game's chat are typed
+                     * with no name box to raise the keyboard by itself. */
                     view.setMenuMode(true);
                     require(TouchRefinementChecks.bounds(view,"back","box")==null
-                        &&TouchRefinementChecks.bounds(view,"keyboard","box")==null
+                        &&TouchRefinementChecks.bounds(view,"keyboard","box")!=null
                         &&TouchRefinementChecks.bounds(view,"headlights","box")==null
                         &&TouchRefinementChecks.bounds(view,"recover","box")==null
                         &&TouchRefinementChecks.bounds(view,"steer_left","box")==null
                         &&TouchRefinementChecks.bounds(view,"accelerate","box")==null,
-                        "the menu layout is the menu, with nothing of ours on it");
+                        "the menu layout is the menu, with only the keyboard of ours on it");
                     require((boolean)field(view,"menuMode"),"the game decides which layout is up");
                     view.setMenuMode(false);
                     view.releaseAll();require(held(view).isEmpty(),"pause clears key state");

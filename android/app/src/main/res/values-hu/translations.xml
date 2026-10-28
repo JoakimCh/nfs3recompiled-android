@@ -65,7 +65,7 @@
  <string name="size_label">Gombméret</string>
  <string name="auto_hide_label">Elrejtés 4 másodperc tétlenség után</string>
  <string name="auto_hide_note">A Java oldalon még nincs menü/verseny jelzés, ezért az automatikus elrejtés a tétlenséget menüben és versenyen egyaránt számolja. Érintsd meg a réteget, hogy újra látszódjon.</string>
- <string name="orientation_label">A játék tájolása</string>
+ <string name="orientation_label">Képernyő tájolása</string>
  <string name="orientation_auto">Automatikus forgatás — mindkét irány</string>
  <string name="orientation_landscape">Rögzített — fekvő</string>
  <string name="orientation_landscape_reverse">Rögzített — fekvő, fordítva</string>

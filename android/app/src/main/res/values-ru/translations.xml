@@ -65,7 +65,7 @@
  <string name="size_label">Размер кнопок</string>
  <string name="auto_hide_label">Автоскрытие после 4 секунд бездействия</string>
  <string name="auto_hide_note">Признака «меню/гонка» на стороне Java пока нет, поэтому автоскрытие считает бездействие и в меню, и в гонке. Коснитесь оверлея, чтобы показать его.</string>
- <string name="orientation_label">Ориентация игры</string>
+ <string name="orientation_label">Ориентация экрана</string>
  <string name="orientation_auto">Автоповорот — обе стороны ландшафта</string>
  <string name="orientation_landscape">Фиксированно — ландшафт</string>
  <string name="orientation_landscape_reverse">Фиксированно — ландшафт наоборот</string>

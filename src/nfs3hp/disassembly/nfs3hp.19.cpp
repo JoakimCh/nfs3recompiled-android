@@ -6627,7 +6627,7 @@ void Application::sub_478dc0(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.eax = 7330884 /*0x6fdc44*/;
     // 00478dda  e8a15d0400             -call 0x4beb80
     cpu.esp -= 4;
-    nfs3hp::frontend::viewport(app, cpu.sync());
+    nfs3hp::port::text::viewport(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00478ddf  a144dc6f00             -mov eax, dword ptr [0x6fdc44]
@@ -11887,7 +11887,7 @@ L_0x0047a510:
     cpu.esi = x86::reg32(cpu.ebp + x86::reg32(2) /* 0x2 */);
     // 0047a55e  e81d460400             -call 0x4beb80
     cpu.esp -= 4;
-    nfs3hp::frontend::viewport(app, cpu.sync());
+    nfs3hp::port::text::viewport(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0047a563  b900ff7f3f             -mov ecx, 0x3f7fff00
@@ -30091,7 +30091,7 @@ void Application::sub_47fbe0(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.edx = cpu.esi;
     // 0047fbfa  e831c10100             -call 0x49bd30
     cpu.esp -= 4;
-    sub_49bd30(app, cpu.sync());
+    nfs3hp::port::text::queueQuad(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0047fbff  8d4607                 -lea eax, [esi + 7]
@@ -30109,7 +30109,7 @@ void Application::sub_47fbe0(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.edx = x86::reg32(cpu.esi + x86::reg32(4) /* 0x4 */);
     // 0047fc11  e81ac10100             -call 0x49bd30
     cpu.esp -= 4;
-    sub_49bd30(app, cpu.sync());
+    nfs3hp::port::text::queueQuad(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0047fc16  8d460b                 -lea eax, [esi + 0xb]
@@ -30127,7 +30127,7 @@ void Application::sub_47fbe0(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.edx = x86::reg32(cpu.esi + x86::reg32(8) /* 0x8 */);
     // 0047fc28  e803c10100             -call 0x49bd30
     cpu.esp -= 4;
-    sub_49bd30(app, cpu.sync());
+    nfs3hp::port::text::queueQuad(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0047fc2d  8d460f                 -lea eax, [esi + 0xf]
@@ -30145,7 +30145,7 @@ void Application::sub_47fbe0(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.edx = x86::reg32(cpu.esi + x86::reg32(12) /* 0xc */);
     // 0047fc3f  e8ecc00100             -call 0x49bd30
     cpu.esp -= 4;
-    sub_49bd30(app, cpu.sync());
+    nfs3hp::port::text::queueQuad(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0047fc44  8d4613                 -lea eax, [esi + 0x13]
@@ -30163,7 +30163,7 @@ void Application::sub_47fbe0(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.edx = x86::reg32(cpu.esi + x86::reg32(16) /* 0x10 */);
     // 0047fc56  e8d5c00100             -call 0x49bd30
     cpu.esp -= 4;
-    sub_49bd30(app, cpu.sync());
+    nfs3hp::port::text::queueQuad(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0047fc5b  8d4617                 -lea eax, [esi + 0x17]
@@ -30181,7 +30181,7 @@ void Application::sub_47fbe0(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.edx = x86::reg32(cpu.esi + x86::reg32(20) /* 0x14 */);
     // 0047fc6d  e8bec00100             -call 0x49bd30
     cpu.esp -= 4;
-    sub_49bd30(app, cpu.sync());
+    nfs3hp::port::text::queueQuad(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0047fc72  8d461b                 -lea eax, [esi + 0x1b]
@@ -30199,7 +30199,7 @@ void Application::sub_47fbe0(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.edx = x86::reg32(cpu.esi + x86::reg32(24) /* 0x18 */);
     // 0047fc84  e8a7c00100             -call 0x49bd30
     cpu.esp -= 4;
-    sub_49bd30(app, cpu.sync());
+    nfs3hp::port::text::queueQuad(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0047fc89  8d461f                 -lea eax, [esi + 0x1f]
@@ -30217,7 +30217,7 @@ void Application::sub_47fbe0(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.edx = x86::reg32(cpu.esi + x86::reg32(28) /* 0x1c */);
     // 0047fc9b  e890c00100             -call 0x49bd30
     cpu.esp -= 4;
-    sub_49bd30(app, cpu.sync());
+    nfs3hp::port::text::queueQuad(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0047fca0  5d                     -pop ebp

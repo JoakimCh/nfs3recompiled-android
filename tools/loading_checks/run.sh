@@ -11,7 +11,6 @@ mkdir -p "$build"
 disassembly="${1:-$root}/src/nfs3hp/disassembly"
 python3 "$here/extract.py" "$disassembly" "$build/generated.cpp" \
     sub_5102a4 sub_5102f0 sub_510337 sub_51039e \
-    sub_4d18e0 sub_4d1950 sub_4d19b0 sub_4d1a00 sub_4d1a90 sub_4d1ad0 \
     sub_49cfa0 \
     sub_419c20 sub_419bf0 sub_419bc0 sub_4198e0 sub_419ab0 \
     sub_4ea4f0 sub_503281 sub_50356d

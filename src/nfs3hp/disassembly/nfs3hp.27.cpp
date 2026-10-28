@@ -567,7 +567,7 @@ void Application::sub_4beb60(WinApplication* __restrict app, x86::CPU& cpu_)
     return;
 }
 
-/* sub_4beb80: native, nfs3hp::frontend::viewport */
+/* sub_4beb80: native, nfs3hp::port::text::viewport */
 
 /* align: skip 0x8d 0x80 0x00 0x00 0x00 0x00 0x8d 0x92 0x00 0x00 0x00 0x00 */
 void Application::sub_4bebb0(WinApplication* __restrict app, x86::CPU& cpu_)
@@ -2334,7 +2334,7 @@ L_0x004c3fd1:
     cpu.ebx = 333 /*0x14d*/;
     // 004c3fe0  e86bd80000             -call 0x4d1850
     cpu.esp -= 4;
-    nfs3hp::frontend::languageText(app, cpu.sync());
+    nfs3hp::port::text::languageText(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004c3fe5  a364367d00             -mov dword ptr [0x7d3664], eax
@@ -2345,7 +2345,7 @@ L_0x004c3fd1:
     cpu.edx = 8205924 /*0x7d3664*/;
     // 004c3ff4  e857d80000             -call 0x4d1850
     cpu.esp -= 4;
-    nfs3hp::frontend::languageText(app, cpu.sync());
+    nfs3hp::port::text::languageText(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004c3ff9  6a00                   -push 0

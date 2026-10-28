@@ -116,6 +116,22 @@ final class GamePreferences
      * one is "right way up" depends on how the phone is held, and there is no
      * way to guess it. */
     static final String ORIENTATION_LANDSCAPE_REVERSE = "landscape_reverse";
+
+    /** The launcher's and the game's request, from the Display screen's
+     *  choice.  Landscape whatever happens -- the game cannot use portrait.
+     *  "auto" turns over with the phone the way the system lets apps turn:
+     *  USER_LANDSCAPE keeps to the rotation lock where SENSOR_LANDSCAPE would
+     *  go round it.  The fixed choices pin one direction each.  The game's
+     *  SDL_HINT_ORIENTATIONS (nfs3hp_main.cpp) asks SDL for the same. */
+    static int screenOrientation(SharedPreferences preferences)
+    {
+        String orientation = preferences.getString(ORIENTATION, ORIENTATION_AUTO);
+        if (ORIENTATION_LANDSCAPE.equals(orientation))
+            return android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE;
+        if (ORIENTATION_LANDSCAPE_REVERSE.equals(orientation))
+            return android.content.pm.ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE;
+        return android.content.pm.ActivityInfo.SCREEN_ORIENTATION_USER_LANDSCAPE;
+    }
     static final String TOUCH_MODE_BUTTONS = "buttons";
     static final String TOUCH_MODE_WHEEL = "wheel";
     static final String TOUCH_MODE_TILT = "tilt";

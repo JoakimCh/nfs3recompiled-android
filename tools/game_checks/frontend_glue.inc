@@ -34,14 +34,10 @@ case kFeMouseKey:
 #elif defined(FE_GAME_FUNCTIONS)
 // {address, "name", convention, registers, words, clobbers, through, deref, effect},
 // This file's that the other files' natives call: a list found by its name
-// (logged), the background dimmed, a menu's text drawn (logged), the
-// network's locks freed, the font's quads drawn, the mouse as a key, the
-// keyboard's next key.
+// (logged), the network's locks freed, the mouse as a key, the keyboard's
+// next key.
 {0x442c80, "a list found", kWatcom, 2, 0, kEax | kEdx, 0, 2, kFeList},
-{0x451530, "the background dimmed", kStdcall, 0, 1, kEax, -1, 0, kNothing},
-{0x452190, "a menu text drawn", kStdcall, 4, 2, kScratch, 0, 4, kNothing},
 {0x49a4d0, "the network's locks freed", kWatcom, 0, 0, kEax, -1, 0, kNothing},
-{0x49be40, "the font's quads drawn", kWatcom, 1, 0, kEax, -1, 0, kNothing},
 {0x49c080, "the mouse as a key", kWatcom, 0, 0, kEax, -1, 0, kFeMouseKey},
 {0x4cc970, "the next key", kWatcom, 0, 0, kEax, -1, 0, kFeKey},
 // What they call of the game's: the menus' click; the music stopped, a tune
@@ -73,27 +69,17 @@ case kFeMouseKey:
 {"frontend::listLength", true, true, 0},
 {"frontend::findList", true, true, 0},
 {"frontend::loadShapes", true, true, 0},
-{"frontend::setTextColour", true, true, 0},
-{"frontend::screenToMenuX", true, true, 0},
-{"frontend::screenToMenuY", true, true, 0},
-{"frontend::readMenuMouse", true, true, 0},
-{"frontend::dimBackground", true, true, 0, true, kNoHeap, true},
-{"frontend::drawTextAt", true, true, 0, true, kNoHeap, true},
-{"frontend::drawMenuText", true, true, 0, true, kNoHeap, true},
 {"frontend::buttonKey", true, true, 0},
 {"frontend::listKey", true, true, 0},
 {"frontend::layoutList", true, true, 0},
-{"frontend::sliderSetValue", true, true, 0},
 {"frontend::sliderValue", true, true, 0, true, kNoHeap, true},
 {"frontend::sliderSetOnMove", true, true, 0},
-{"frontend::sliderDraw", true, true, 0},
 {"frontend::sliderSetColour", true, true, 0},
 {"frontend::playMovie", true, true, 0},
 {"frontend::resetAttractTimer", true, true, 0},
 {"frontend::attractMode", true, true, 0},
 {"frontend::freeNetworkLocks", true, true, 0},
 {"frontend::allPlayersReady", true, true, 0},
-{"frontend::flushQuads", true, true, 0},
 {"frontend::mouseKey", true, true, 0},
 {"frontend::pointerInBox", true, true, 0},
 {"frontend::nextKey", true, true, 0},

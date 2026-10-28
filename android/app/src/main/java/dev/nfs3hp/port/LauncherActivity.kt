@@ -4,7 +4,6 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ActivityInfo
-import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.hardware.input.InputManager
 import android.net.Uri
@@ -41,7 +40,7 @@ class LauncherActivity : ComponentActivity() {
     enum class Screen {
         Main, Language, Data, GameData, DataSets, Saves, LauncherSettings,
         Controls, Touch, TouchKeys, Editor, Gamepads, GamepadButtons, ControlsHelp,
-        ForceFeedback, Faq, Display, Adjustment, Network,
+        ForceFeedback, Faq, Display, Adjustment, Network, Advanced,
     }
 
     /** A question put to the player: a title, the question, and what the
@@ -100,11 +99,12 @@ class LauncherActivity : ComponentActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        AppLog.configure(this)
         /* On a desktop -- Samsung DeX -- the launcher is a window the player
          * sizes, so the orientation lock is let go: the task's window is made
          * to its shape, and the game that follows into it inherits it
-         * (NFS3Activity.desktopWindow).  On a phone it turns over with the
-         * phone, in landscape. */
+         * (NFS3Activity.desktopWindow).  On a phone it lies as the Display
+         * screen says, the same as the game. */
         requestedOrientation = launcherOrientation()
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
@@ -123,11 +123,16 @@ class LauncherActivity : ComponentActivity() {
             AppLog.e(TAG, "Could not initialize data sets", e)
             Toast.makeText(this, getString(R.string.data_error, e.message), Toast.LENGTH_LONG).show()
         }
+        debugMode = DebugOptions.enabled(this)
         refreshDataSets()
         showScreens()
     }
 
     fun launcherOrientation(): Int = orientationFor(this)
+
+    /** Debug mode as the Advanced screen has it; the version under the menu
+     *  says so. */
+    var debugMode by mutableStateOf(false)
 
     private fun showScreens() {
         setContent { GameTheme { LauncherScreens(this) } }
@@ -142,16 +147,15 @@ class LauncherActivity : ComponentActivity() {
         activeSet = manager?.active()
     }
 
-    /** Which build this is, under the menu: v0.75, or v0.75 DEBUG for a debug
-     *  build, which installs beside a release one under a package of its own. */
+    /** Which build this is, under the menu: v0.78, or v0.78 DEBUG while debug
+     *  mode is on (the Advanced screen). */
     fun versionLabel(): String {
         val name = try {
             packageManager.getPackageInfo(packageName, 0).versionName ?: ""
         } catch (ignored: PackageManager.NameNotFoundException) {
             ""
         }
-        val debug = applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0
-        return "v" + name + if (debug) " DEBUG" else ""
+        return "v" + name + if (debugMode) " DEBUG" else ""
     }
 
     fun go(next: Screen) {
@@ -580,13 +584,13 @@ class LauncherActivity : ComponentActivity() {
             controller.hide(androidx.core.view.WindowInsetsCompat.Type.statusBars())
         }
 
-        /** Landscape either way up, turning with the phone as any app does --
-         *  the game has an orientation setting of its own, the launcher does
-         *  not need one; portrait never, the game cannot use it.  A desktop
+        /** As the Display screen says, for the launcher as for the game: either
+         *  way up turning with the phone while the system lets apps turn, or
+         *  one way fixed (GamePreferences.screenOrientation).  A desktop
          *  window (DeX) takes whatever shape the player gives it. */
         fun orientationFor(context: Context): Int =
             if (DesktopMode.active(context)) ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
-            else ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+            else GamePreferences.screenOrientation(GamePreferences.get(context))
 
         /** One step of an import, the same on the first run's screen and on
          *  Game data: the file it is on and how far, or that the folder is

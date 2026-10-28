@@ -1,4 +1,5 @@
 #include "native_guest.h"
+#include "port_text.h"
 
 #include <cstdint>
 #include <initializer_list>
@@ -27,21 +28,17 @@
  * 0x60 a player); on "exitprogram" it leaves the game (10).  A list's keys
  * move its line by one, by a page, open it or close it.
  *
- * The menus' text: the font chosen, a text placed by its alignment (1 and 4
- * right, 2 and 5 centred; past 2 with a shadow in colour 8), drawn by the 3D
- * card's font in a race's pause screens (0x559234), by the 2D screen's
- * otherwise; the mouse read and put on the 640 by 480 screen the menus are
- * laid out on.  The HUD's art, hud.fsh, is the language's (GeHud.fsh ...)
- * and kept loaded at 0x55922c while its name is the one before (0x662850).
+ * The HUD's art, hud.fsh, is the language's (GeHud.fsh ...) and kept loaded
+ * at 0x55922c while its name is the one before (0x662850).
  *
  * The attract mode: after 0x1400 ticks of the clock (0x79c1a4) with the
  * mouse still and no dialog up, the music stops and the next of titleav.mad,
  * demoav1-3.mad plays from the movies' folder (0x7a32b4), unless movies are
  * off (0x7a1fdc); the keys flushed around it.  And the keyboard's ring
  * (0x7f6fe0, its read and write indexes and size at 0x7f7474, 0x7f747c,
- * 0x7f7480, under the lock at 0x7f7478) taken a key at a time; the font's
- * quads drawn and those of a later frame kept (0x49be40); the network's
- * locks freed; the controls' bindings that are digital noted.
+ * 0x7f7480, under the lock at 0x7f7478) taken a key at a time; the network's
+ * locks freed; the controls' bindings that are digital noted.  The menus'
+ * text and the mouse put on their 640 by 480 screen are port_text.cpp's.
  *
  * Written as their code is: each push and pop to the guest's stack, each call
  * with the return address's slot, the frame's locals in the guest's memory,
@@ -70,8 +67,6 @@ using x86::sreg16;
 using x86::sreg32;
 
 // The menus.
-constexpr reg32 kInRace = 0x559234;           // the menus are a race's pause screens
-constexpr reg32 kTextColour = 0x561b34, kScreenTextColour = 0x559434;
 constexpr reg32 kLanguage = 0x6fbb4c;         // 1 to 5: German, French, Spanish, Italian, Swedish
 constexpr reg32 kLists = 0x5563e8, kListLines = 0x5563ec, kListAllowed = 0x5563f0;
 constexpr reg32 kListChosen = 0x5563f8, kListBytes = 0x14;
@@ -88,9 +83,6 @@ constexpr reg32 kSliderFlags = 0x55eb2e;      // 0x20 a demo's command line, 0x1
 constexpr reg32 kHud = 0x539004;              // "hud.fsh"
 constexpr reg32 kLanguageHuds[] = {0x53900c, 0x539018, 0x539024, 0x539030, 0x53903c};
 constexpr reg32 kHudShapes = 0x55922c, kHudName = 0x662850;
-// The dimmed background's shades.
-constexpr reg32 kShadeFull = 0x791b50, kShadeMost = 0x791b54, kShadeLess = 0x791b4c;
-constexpr reg32 kSixTenths = 0x5395e0;        // double 0.6
 // The controls.
 constexpr reg32 kGameMode = 0x6fd3b0;         // 1: two players on one screen
 constexpr reg32 kControllers = 0x6fc970;      // 0x88 bytes each, the first byte's 4 a game pad
@@ -112,20 +104,14 @@ constexpr reg32 kKeyWrite = 0x7f747c, kKeyRingSize = 0x7f7480;
 constexpr reg32 kEnterCriticalSection = 0x5344b8, kLeaveCriticalSection = 0x534588;
 constexpr reg32 kMusicStreamMake = 0x410330, kMusicStart = 0x4104f0, kMusicStop = 0x4109d0;
 constexpr reg32 kMusicStreamEnd = 0x410aa0, kMenuEffect = 0x4181d0, kTrace = 0x42d500;
-constexpr reg32 kSetRenderState = 0x431900, kReadMouse = 0x435310;
 constexpr reg32 kCodelinkMatches = 0x4429c0, kDialogShown = 0x4438b0;
-constexpr reg32 kToScreenX = 0x451400, kToScreenY = 0x451440, kTextWidth = 0x452020;
-constexpr reg32 kSelectFont = 0x452100, kDrawList = 0x4613e0;
-constexpr reg32 kSliderSetSingle = 0x469480, kSliderSingle = 0x469520, kSliderDrawSingle = 0x469680;
-constexpr reg32 kSliderHighlightSingle = 0x46a5f0, kSliderSetRange = 0x46add0, kSliderRange = 0x46afd0;
-constexpr reg32 kSliderDrawRange = 0x46b3a0, kSliderHighlightRange = 0x46c320;
+constexpr reg32 kTextWidth = 0x452020, kDrawList = 0x4613e0;
+constexpr reg32 kSliderSingle = 0x469520, kSliderRange = 0x46afd0;
 constexpr reg32 kLoadQfs = 0x4956f0, kPlayMovieFile = 0x495bc0, kSetPointer = 0x49bfc0;
-constexpr reg32 kNetworkSlot = 0x4a6690, kViewport = 0x4beb80, kQuadIndices = 0x4c1e20;
-constexpr reg32 kDrawText = 0x4d1000, kFlushText = 0x4d1340, kTextScale = 0x4d1390;
-constexpr reg32 kLanguageText = 0x4d1850, kDrawQuads = 0x4d5840, kClearBuffers = 0x4d5d30;
-constexpr reg32 kClearBuffersReset = 0x4d5d70, kScreenText = 0x4da4a0, kFillZero = 0x4e070c;
+constexpr reg32 kNetworkSlot = 0x4a6690, kLanguageText = 0x4d1850, kClearBuffers = 0x4d5d30;
+constexpr reg32 kClearBuffersReset = 0x4d5d70, kFillZero = 0x4e070c;
 constexpr reg32 kStrstr = 0x4e0820, kFileExists = 0x4e0e60, kFree = 0x4e1890;
-constexpr reg32 kMemmove = 0x4ea4f0, kFreeLock = 0x4eb360, kStrcmp = 0x4ee310;
+constexpr reg32 kFreeLock = 0x4eb360, kStrcmp = 0x4ee310;
 constexpr reg32 kKeyCharacter = 0x4f0010, kWaitForKey = 0x4f0120, kFlushKeys = 0x4f0240;
 // This file's that the checks stand in for: by address too.
 constexpr reg32 kFindList = 0x442c80;
@@ -234,13 +220,6 @@ void cwde(x86::CPU& cpu)
     cpu.eax = reg32(sreg32(sreg16(cpu.ax)));
 }
 
-/* fnstsw ax; sahf. */
-void statusToFlags(x86::CPU& cpu)
-{
-    cpu.ax = cpu.fpu.status.word;
-    cpu.flags.lo = reg8(0x02 | (cpu.ah & 0xd7));
-}
-
 }  // namespace
 
 void bindingIsDigital(win32::WinApplication* app, x86::CPU& cpu);
@@ -249,27 +228,17 @@ void listAllowed(win32::WinApplication* app, x86::CPU& cpu);
 void listLength(win32::WinApplication* app, x86::CPU& cpu);
 void findList(win32::WinApplication* app, x86::CPU& cpu);
 void loadShapes(win32::WinApplication* app, x86::CPU& cpu);
-void setTextColour(win32::WinApplication* app, x86::CPU& cpu);
-void screenToMenuX(win32::WinApplication* app, x86::CPU& cpu);
-void screenToMenuY(win32::WinApplication* app, x86::CPU& cpu);
-void readMenuMouse(win32::WinApplication* app, x86::CPU& cpu);
-void dimBackground(win32::WinApplication* app, x86::CPU& cpu);
-void drawTextAt(win32::WinApplication* app, x86::CPU& cpu);
-void drawMenuText(win32::WinApplication* app, x86::CPU& cpu);
 void buttonKey(win32::WinApplication* app, x86::CPU& cpu);
 void listKey(win32::WinApplication* app, x86::CPU& cpu);
 void layoutList(win32::WinApplication* app, x86::CPU& cpu);
-void sliderSetValue(win32::WinApplication* app, x86::CPU& cpu);
 void sliderValue(win32::WinApplication* app, x86::CPU& cpu);
 void sliderSetOnMove(win32::WinApplication* app, x86::CPU& cpu);
-void sliderDraw(win32::WinApplication* app, x86::CPU& cpu);
 void sliderSetColour(win32::WinApplication* app, x86::CPU& cpu);
 void playMovie(win32::WinApplication* app, x86::CPU& cpu);
 void resetAttractTimer(win32::WinApplication* app, x86::CPU& cpu);
 void attractMode(win32::WinApplication* app, x86::CPU& cpu);
 void freeNetworkLocks(win32::WinApplication* app, x86::CPU& cpu);
 void allPlayersReady(win32::WinApplication* app, x86::CPU& cpu);
-void flushQuads(win32::WinApplication* app, x86::CPU& cpu);
 void mouseKey(win32::WinApplication* app, x86::CPU& cpu);
 void pointerInBox(win32::WinApplication* app, x86::CPU& cpu);
 void nextKey(win32::WinApplication* app, x86::CPU& cpu);
@@ -518,245 +487,6 @@ void loadShapes(win32::WinApplication* app, x86::CPU& cpu)
     cpu.edx = pop(app, cpu);
     cpu.ecx = pop(app, cpu);
     cpu.esp += 4;
-}
-
-/* 0x4513c0: the menus' text's colour, eax: the 3D card's font's in a race's
- * pause screens (0x561b34), the 2D screen's (0x559434) otherwise. */
-void setTextColour(win32::WinApplication* app, x86::CPU& cpu)
-{
-    push(app, cpu, cpu.ebp);
-    cpu.ebp = cpu.esp;
-    put(app, at(app, kInRace) != 0 ? kTextColour : kScreenTextColour, cpu.eax);
-    cpu.ebp = pop(app, cpu);
-    cpu.esp += 4;
-}
-
-namespace
-{
-
-/* idiv ecx after mov edx, esi; mov eax, esi; sar edx, 0x1f. */
-void divideEsi(x86::CPU& cpu)
-{
-    cpu.edx = cpu.esi;
-    cpu.eax = cpu.esi;
-    cpu.edx = reg32(sreg32(cpu.edx) >> 31);
-    const std::int64_t dividend = std::int64_t(sreg32(cpu.eax));
-    cpu.eax = reg32(sreg32(dividend / sreg32(cpu.ecx)));
-    cpu.edx = reg32(sreg32(dividend % sreg32(cpu.ecx)));
-}
-
-}  // namespace
-
-/* 0x451480: x eax on the screen's own, on the 640 wide screen of the menus:
- * times 640 over the viewport's width. */
-void screenToMenuX(win32::WinApplication* app, x86::CPU& cpu)
-{
-    enter(app, cpu, {&cpu.ebx, &cpu.ecx, &cpu.edx, &cpu.esi}, 0x10);
-    const reg32 ebp = cpu.ebp;
-    cpu.esi = cpu.eax;
-    cpu.ecx = ebp - 0xc;
-    cpu.ebx = ebp - 0x10;
-    cpu.edx = ebp - 4;
-    cpu.eax = ebp - 8;
-    if (!byAddress(app, cpu, kViewport))
-        return;
-    cpu.eax = cpu.esi;
-    cpu.esi <<= 2;
-    cpu.esi += cpu.eax;
-    cpu.esi <<= 7;
-    cpu.ecx = at(app, ebp - 0x10);
-    divideEsi(cpu);
-    leave(app, cpu, {&cpu.ebx, &cpu.ecx, &cpu.edx, &cpu.esi});
-}
-
-/* 0x4514c0: y eax on the screen's own, on the 480 high screen of the menus:
- * times 480 over the viewport's height. */
-void screenToMenuY(win32::WinApplication* app, x86::CPU& cpu)
-{
-    enter(app, cpu, {&cpu.ebx, &cpu.ecx, &cpu.edx, &cpu.esi}, 0x10);
-    const reg32 ebp = cpu.ebp;
-    cpu.esi = cpu.eax;
-    cpu.ecx = ebp - 0xc;
-    cpu.ebx = ebp - 0x10;
-    cpu.edx = ebp - 4;
-    cpu.eax = ebp - 8;
-    cpu.esi <<= 5;
-    if (!byAddress(app, cpu, kViewport))
-        return;
-    cpu.eax = cpu.esi;
-    cpu.esi <<= 4;
-    cpu.esi -= cpu.eax;
-    cpu.ecx = at(app, ebp - 0xc);
-    divideEsi(cpu);
-    leave(app, cpu, {&cpu.ebx, &cpu.ecx, &cpu.edx, &cpu.esi});
-}
-
-/* 0x451500: the mouse read (0x435310: the buttons to [eax], x to [edx], y to
- * [ebx], the wheel to [ecx]), x and y put on the menus' 640 by 480 screen in
- * a race's pause screens. */
-void readMenuMouse(win32::WinApplication* app, x86::CPU& cpu)
-{
-    push(app, cpu, cpu.esi);
-    push(app, cpu, cpu.edi);
-    push(app, cpu, cpu.ebp);
-    cpu.ebp = cpu.esp;
-    cpu.edi = cpu.edx;
-    cpu.esi = cpu.ebx;
-    if (!byAddress(app, cpu, kReadMouse))
-        return;
-    if (at(app, kInRace) != 0)
-    {
-        cpu.eax = at(app, cpu.edi);
-        if (!direct(app, cpu, screenToMenuX))
-            return;
-        put(app, cpu.edi, cpu.eax);
-        cpu.eax = at(app, cpu.esi);
-        if (!direct(app, cpu, screenToMenuY))
-            return;
-        put(app, cpu.esi, cpu.eax);
-    }
-    cpu.ebp = pop(app, cpu);
-    cpu.edi = pop(app, cpu);
-    cpu.esi = pop(app, cpu);
-    cpu.esp += 4;
-}
-
-/* 0x451530 (a float on the stack): the screen behind the menus dimmed by it
- * (0x4d1390) -- in a race's pause screens by one of three shades instead:
- * 1 or more [0x791b50], 0.6 or more [0x791b54], less [0x791b4c]. */
-void dimBackground(win32::WinApplication* app, x86::CPU& cpu)
-{
-    enter(app, cpu, {}, 8);
-    const reg32 ebp = cpu.ebp;
-    if (at(app, kInRace) != 0)
-    {
-        cpu.fpu.push(x86::Float(app->getMemory<float>(ebp + 8)));      // fld dword ptr [ebp + 8]
-        cpu.fpu.push(1.0);                                              // fld1
-        std::swap(cpu.fpu.st(0), cpu.fpu.st(1));                        // fxch st(1)
-        app->getMemory<double>(ebp - 8) = double(cpu.fpu.pop());        // fstp qword ptr [ebp - 8]
-        cpu.fpu.compare(cpu.fpu.st(0), x86::Float(app->getMemory<double>(ebp - 8)));
-        cpu.fpu.pop();                                                  // fcomp
-        statusToFlags(cpu);
-        if (!cpu.flags.cf && !cpu.flags.zf)                             // ja: 1 above it
-        {
-            cpu.fpu.push(x86::Float(app->getMemory<double>(ebp - 8)));
-            cpu.fpu.compare(cpu.fpu.st(0), x86::Float(app->getMemory<double>(kSixTenths)));
-            cpu.fpu.pop();
-            statusToFlags(cpu);
-            cpu.eax = at(app, cpu.flags.cf ? kShadeLess : kShadeMost);
-        }
-        else
-            cpu.eax = at(app, kShadeFull);
-        put(app, ebp + 8, cpu.eax);
-    }
-    push(app, cpu, at(app, ebp + 8));
-    if (!byAddress(app, cpu, kTextScale))
-        return;
-    cpu.fpu.pop();                                                      // fstp st(0)
-    leave(app, cpu, {});
-    cpu.esp += 4;
-}
-
-/* 0x451590: text eax drawn at edx, ebx of the menus' screen: by the 3D
- * card's font (0x4d1000) at its place on the screen's own in a race's pause
- * screens, by the 2D screen's (0x4da4a0) otherwise. */
-void drawTextAt(win32::WinApplication* app, x86::CPU& cpu)
-{
-    push(app, cpu, cpu.ecx);
-    push(app, cpu, cpu.esi);
-    push(app, cpu, cpu.ebp);
-    cpu.ebp = cpu.esp;
-    cpu.esi = cpu.eax;
-    cpu.eax = cpu.edx;
-    if (at(app, kInRace) != 0)
-    {
-        if (!byAddress(app, cpu, kToScreenX))
-            return;
-        cpu.edx = cpu.eax;
-        cpu.eax = cpu.ebx;
-        if (!byAddress(app, cpu, kToScreenY))
-            return;
-        cpu.ebx = cpu.eax;
-        cpu.eax = cpu.esi;
-        if (!byAddress(app, cpu, kDrawText))
-            return;
-        cpu.fpu.pop();                                                  // fstp st(0)
-        if (!byAddress(app, cpu, kFlushText))
-            return;
-    }
-    else
-    {
-        cpu.edx = cpu.eax;
-        cpu.ecx = 0;
-        cpu.eax = cpu.esi;
-        if (!byAddress(app, cpu, kScreenText))
-            return;
-    }
-    cpu.ebp = pop(app, cpu);
-    cpu.esi = pop(app, cpu);
-    cpu.ecx = pop(app, cpu);
-    cpu.esp += 4;
-}
-
-/* 0x452190 (stdcall 8): text eax (none: nothing) drawn in font ecx at edx,
- * ebx -- its right at x with the stack's first word 1 or 4, its middle with
- * 2 or 5; past 2 with a shadow in colour 8 a pixel down and right first --
- * in the colour of the stack's second word. */
-void drawMenuText(win32::WinApplication* app, x86::CPU& cpu)
-{
-    enter(app, cpu, {&cpu.esi, &cpu.edi}, 4);
-    const reg32 ebp = cpu.ebp;
-    put(app, ebp - 4, cpu.eax);
-    cpu.esi = cpu.edx;
-    cpu.edi = cpu.ebx;
-    cpu.ebx = at(app, ebp + 0x10);
-    cpu.edx = cpu.ecx;
-    if (cpu.eax != 0)
-    {
-        cpu.eax = cpu.ecx;
-        if (!byAddress(app, cpu, kSelectFont))
-            return;
-        cpu.ecx = at(app, ebp - 4);
-        if (cpu.ebx == 1 || cpu.ebx == 4)
-        {
-            cpu.eax = cpu.ecx;
-            if (!byAddress(app, cpu, kTextWidth))
-                return;
-            cpu.esi -= cpu.eax;
-        }
-        else if (cpu.ebx == 2 || cpu.ebx == 5)
-        {
-            cpu.eax = cpu.ecx;
-            if (!byAddress(app, cpu, kTextWidth))
-                return;
-            cpu.edx = cpu.eax;
-            cpu.edx = reg32(sreg32(cpu.edx) >> 31);
-            cpu.eax -= cpu.edx;
-            cpu.eax = reg32(sreg32(cpu.eax) >> 1);
-            cpu.esi -= cpu.eax;
-        }
-        if (sreg32(cpu.ebx) > 2)
-        {
-            cpu.eax = 8;
-            if (!direct(app, cpu, setTextColour))
-                return;
-            cpu.ebx = cpu.edi + 1;
-            cpu.edx = cpu.esi + 1;
-            cpu.eax = cpu.ecx;
-            if (!direct(app, cpu, drawTextAt))
-                return;
-        }
-        cpu.eax = at(app, ebp + 0x14);
-        if (!direct(app, cpu, setTextColour))
-            return;
-        cpu.ebx = cpu.edi;
-        cpu.edx = cpu.esi;
-        cpu.eax = cpu.ecx;
-        if (!direct(app, cpu, drawTextAt))
-            return;
-    }
-    leave(app, cpu, {&cpu.esi, &cpu.edi});
-    cpu.esp += 8;
 }
 
 /* 0x461270: key bx on button eax.  With a listname (+0x58), Enter steps its
@@ -1448,40 +1178,6 @@ void layoutList(win32::WinApplication* app, x86::CPU& cpu)
     leave(app, cpu, {&cpu.ebx, &cpu.ecx, &cpu.edx, &cpu.esi, &cpu.edi});
 }
 
-/* 0x46c950 (stdcall 8): slider eax set to the stack's value -- a range's
- * (kind 2, +0x42) end of the stack's second word (0x46add0), none for kind
- * 1, a single one's (0x469480) else. */
-void sliderSetValue(win32::WinApplication* app, x86::CPU& cpu)
-{
-    push(app, cpu, cpu.edx);
-    push(app, cpu, cpu.ebp);
-    cpu.ebp = cpu.esp;
-    const reg32 ebp = cpu.ebp;
-    cpu.edx = cpu.eax;
-    cpu.dx = half(app, cpu.eax + 0x42);
-    // The table at 0x46c930: 0x46c97e, 0x46c988, 0x46c96d, 0x46c97e, 0x46c97e, 0x46c97e.
-    if (cpu.dx <= 5)
-        cpu.edx &= 0xffff;
-    if (cpu.dx == 2)
-    {
-        cpu.edx = at(app, ebp + 0x10);
-        push(app, cpu, cpu.edx);
-        push(app, cpu, at(app, ebp + 0xc));
-        if (!byAddress(app, cpu, kSliderSetRange))
-            return;
-    }
-    else if (cpu.dx != 1)
-    {
-        push(app, cpu, 0);
-        push(app, cpu, at(app, ebp + 0xc));
-        if (!byAddress(app, cpu, kSliderSetSingle))
-            return;
-    }
-    cpu.ebp = pop(app, cpu);
-    cpu.edx = pop(app, cpu);
-    cpu.esp += 4 + 8;
-}
-
 /* 0x46c9b0: slider eax's value onto the x87's stack -- a range's (kind 2)
  * end edx (0x46afd0), 0 for kind 1, a single one's (0x469520) else -- as a
  * float. */
@@ -1520,54 +1216,6 @@ void sliderSetOnMove(win32::WinApplication* app, x86::CPU& cpu)
     cpu.ebp = cpu.esp;
     put(app, cpu.eax + 0x78, cpu.edx);
     cpu.ebp = pop(app, cpu);
-    cpu.esp += 4;
-}
-
-/* 0x46cae0: slider eax drawn, highlighted first if edx -- a range's (kind 2:
- * 0x46c320, 0x46b3a0), none for kind 1, a single one's (0x46a5f0, 0x469680)
- * else; greyed out (+4's bit 0) from a demo's command line (0x55eb2e). eax
- * left what the drawing answered, 0 for kind 1. */
-void sliderDraw(win32::WinApplication* app, x86::CPU& cpu)
-{
-    push(app, cpu, cpu.ebx);
-    push(app, cpu, cpu.ecx);
-    push(app, cpu, cpu.esi);
-    push(app, cpu, cpu.ebp);
-    cpu.ebp = cpu.esp;
-    cpu.ecx = cpu.eax;
-    cpu.ebx = 0;
-    const reg8 flags = byte(app, kSliderFlags);
-    const bool kept = ((flags & 0x20) && (byte(app, cpu.eax + 0x18) & 1))
-                      || ((flags & 0x10) && half(app, cpu.ecx + 0x18) != 0);
-    if (!kept && ((flags & 0x20) || (flags & 0x10)))
-        putByte(app, cpu.ecx + 4, byte(app, cpu.ecx + 4) | 1);
-    cpu.si = half(app, cpu.ecx + 0x42);
-    // The table at 0x46cac8: 0x46cb4a, 0x46cb5c, 0x46cb36, 0x46cb4a, 0x46cb4a, 0x46cb4a.
-    if (cpu.si <= 5)
-        cpu.esi &= 0xffff;
-    if (cpu.si == 2)
-    {
-        if (cpu.edx != 0 && !byAddress(app, cpu, kSliderHighlightRange))
-            return;
-        cpu.eax = cpu.ecx;
-        if (!byAddress(app, cpu, kSliderDrawRange))
-            return;
-        cpu.ebx = cpu.eax;
-    }
-    else if (cpu.si != 1)
-    {
-        if (cpu.edx != 0 && !byAddress(app, cpu, kSliderHighlightSingle))
-            return;
-        cpu.eax = cpu.ecx;
-        if (!byAddress(app, cpu, kSliderDrawSingle))
-            return;
-        cpu.ebx = cpu.eax;
-    }
-    cpu.eax = cpu.ebx;
-    cpu.ebp = pop(app, cpu);
-    cpu.esi = pop(app, cpu);
-    cpu.ecx = pop(app, cpu);
-    cpu.ebx = pop(app, cpu);
     cpu.esp += 4;
 }
 
@@ -1834,68 +1482,6 @@ void allPlayersReady(win32::WinApplication* app, x86::CPU& cpu)
     done();
 }
 
-/* 0x49be40: the font's quads of list eax drawn: its texture's state set
- * (0x431900), the quads (0x4d5840) and their indices (0x4c1e20); then those
- * of a later frame than the list's (a word at +0x20010 each four) kept --
- * the others taken out, those after moved down (0x4ea4f0) -- and the list's
- * frame 0xfff. */
-void flushQuads(win32::WinApplication* app, x86::CPU& cpu)
-{
-    enter(app, cpu, {&cpu.ebx, &cpu.ecx, &cpu.edx, &cpu.esi, &cpu.edi}, 4);
-    const reg32 ebp = cpu.ebp;
-    cpu.ecx = cpu.eax;
-    cpu.edx = at(app, cpu.eax + 0xc);
-    cpu.esi = 0;
-    if (cpu.edx != 0)
-    {
-        cpu.edx = at(app, cpu.eax);
-        cpu.eax = 1;
-        if (!byAddress(app, cpu, kSetRenderState))
-            return;
-        cpu.eax = cpu.ecx;
-        cpu.eax += 0x20010;
-        cpu.edi = cpu.ecx + 0x10;
-        put(app, ebp - 4, cpu.eax);
-        cpu.edx = cpu.edi;
-        cpu.eax = at(app, cpu.ecx + 0xc);
-        cpu.ebx = at(app, ebp - 4);
-        cpu.eax = reg32(sreg32(cpu.eax) >> 2);
-        if (!byAddress(app, cpu, kDrawQuads))
-            return;
-        cpu.ebx = at(app, ebp - 4);
-        cpu.eax = at(app, cpu.ecx + 0xc);
-        cpu.edx = cpu.edi;
-        cpu.eax = reg32(sreg32(cpu.eax) >> 2);
-        if (!byAddress(app, cpu, kQuadIndices))
-            return;
-        for (;;)
-        {
-            cpu.ebx = at(app, cpu.ecx + 0xc);
-            if (sreg32(cpu.esi) >= sreg32(cpu.ebx))
-                break;
-            cpu.eax = cpu.esi * 4;
-            cpu.edx = cpu.ecx + cpu.eax;
-            cpu.edi = at(app, cpu.ecx + 4);
-            if (sreg32(cpu.edi) >= sreg32(at(app, cpu.edx + 0x20010)))
-            {
-                cpu.esi += 4;
-                continue;
-            }
-            cpu.ebx -= cpu.esi;
-            cpu.edx = cpu.ecx + 0x20010;
-            cpu.ebx <<= 2;
-            cpu.edx += cpu.eax;
-            cpu.ebx -= 0x10;
-            cpu.eax = cpu.edx + 0x10;
-            if (!byAddress(app, cpu, kMemmove))
-                return;
-            put(app, cpu.ecx + 0xc, at(app, cpu.ecx + 0xc) - 4);
-        }
-        put(app, cpu.ecx + 4, 0xfff);
-    }
-    leave(app, cpu, {&cpu.ebx, &cpu.ecx, &cpu.edx, &cpu.esi, &cpu.edi});
-}
-
 /* 0x49c080: the mouse read into the menus' (0x55e5f4 its buttons, 0x55e5e4
  * and 0x55e5e8 the pointer, 0x55e5f8 the wheel) as a key: a button pressed,
  * the click forgotten (0x55e5ec) and Enter (0xd) for the left, Escape (0x1b)
@@ -1911,7 +1497,7 @@ void mouseKey(win32::WinApplication* app, x86::CPU& cpu)
     cpu.ebx = kMouseY;
     cpu.edx = kMouseX;
     cpu.eax = kMouseButtons;
-    if (!direct(app, cpu, readMenuMouse))
+    if (!direct(app, cpu, port::text::readMenuMouse))
         return;
     cpu.ah = byte(app, kMouseButtons);
     if ((cpu.ah & 0xf) != 0)

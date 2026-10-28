@@ -122,9 +122,9 @@ SITES = [
      "x86::Float(zoomHalfWidth(app)) /* port: a racing zoom camera's x scale is its y scale on a wide view */",
      "float zoomHalfWidth(win32::WinApplication* app);\n"),
     ("nfs3hp.11.cpp", "00443a44  e8b7750900",
-     "    nfs3hp::frontend::drawTexturedQuad(app, cpu.sync());",
+     "    nfs3hp::port::draw2d::drawTexturedQuad(app, cpu.sync());",
      "    dialogEmblem(true); /* port: the dialog's NFS emblem round on a wide screen */\n"
-     "    nfs3hp::frontend::drawTexturedQuad(app, cpu.sync());\n"
+     "    nfs3hp::port::draw2d::drawTexturedQuad(app, cpu.sync());\n"
      "    dialogEmblem(false);",
      "void dialogEmblem(bool drawing);\n"),
     ("nfs3hp.20.cpp", "004809eb  898264977400",

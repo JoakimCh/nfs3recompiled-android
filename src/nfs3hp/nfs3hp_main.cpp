@@ -2514,11 +2514,11 @@ int main(int argc, char* argv[])
     }
     /* SDL_INIT_GAMEPAD is what turns raw joysticks into the mapped
      * SDL_EVENT_GAMEPAD_* stream window.cpp translates into keystrokes. */
-#ifdef NFS_RELEASE
-    /* A release writes nothing to the log: every line below critical -- the
-     * port's diagnostics and SDL's own -- is dropped before it is formatted. */
-    SDL_SetLogPriorities(SDL_LOG_PRIORITY_CRITICAL);
-#endif
+    /* Debug mode off (NFS_LOG=0, the launcher's Debug screen) writes nothing
+     * to the log: every line below critical -- the port's diagnostics and
+     * SDL's own -- is dropped before it is formatted. */
+    if (const char* log = SDL_getenv("NFS_LOG"); log && SDL_strcmp(log, "0") == 0)
+        SDL_SetLogPriorities(SDL_LOG_PRIORITY_CRITICAL);
     SDL_Init(SDL_INIT_EVENTS|SDL_INIT_VIDEO|SDL_INIT_AUDIO|SDL_INIT_JOYSTICK|SDL_INIT_GAMEPAD);
     /* Window::getMessage consumes key, text, quit and its own registered user
      * events; everything else falls through its switch and is thrown away.  The

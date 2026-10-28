@@ -65,7 +65,7 @@
  <string name="size_label">Knappstorlek</string>
  <string name="auto_hide_label">Dölj efter 4 sekunders inaktivitet</string>
  <string name="auto_hide_note">Det finns ännu ingen meny-/loppsignal synlig från Java, så den automatiska döljningen räknar inaktivitet både i menyer och i lopp. Rör vid överlägget för att visa det igen.</string>
- <string name="orientation_label">Spelets orientering</string>
+ <string name="orientation_label">Skärmorientering</string>
  <string name="orientation_auto">Autorotation — båda liggande riktningarna</string>
  <string name="orientation_landscape">Låst — liggande</string>
  <string name="orientation_landscape_reverse">Låst — liggande, omvänt</string>

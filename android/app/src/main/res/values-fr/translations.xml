@@ -65,7 +65,7 @@
  <string name="size_label">Taille des boutons</string>
  <string name="auto_hide_label">Masquage automatique après 4 secondes d\'inactivité</string>
  <string name="auto_hide_note">Aucun signal menu/course n\'est encore visible côté Java : le masquage automatique se base donc sur l\'inactivité aussi bien dans les menus qu\'en course. Touchez la surcouche pour la faire réapparaître.</string>
- <string name="orientation_label">Orientation du jeu</string>
+ <string name="orientation_label">Orientation de l\'écran</string>
  <string name="orientation_auto">Rotation auto — les deux sens paysage</string>
  <string name="orientation_landscape">Fixe — paysage</string>
  <string name="orientation_landscape_reverse">Fixe — paysage inversé</string>

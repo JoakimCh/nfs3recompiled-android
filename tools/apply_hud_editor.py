@@ -207,10 +207,11 @@ SITES = [
 NAMESPACE = "namespace nfs3hp\n{\n"
 
 # Sites in functions that are native now, the change made in the native
-# (src/nfs3hp/native_render.cpp: render::hudTable, sub_481c50);
+# (src/nfs3hp/native_render.cpp: render::hudTable, sub_481c50;
+# src/nfs3hp/port_text.cpp: port::text::queueQuad, sub_49bd30);
 # tools/game_checks/generate.py makes it to the game's code the native is held
 # against.
-NATIVE_SITES = {0x481f86}
+NATIVE_SITES = {0x481f86, 0x49bd30}
 
 
 def apply(root):

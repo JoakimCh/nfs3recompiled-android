@@ -1809,7 +1809,7 @@ void Application::sub_48fb40(WinApplication* __restrict app, x86::CPU& cpu_)
     }
     // 0048fb9c  e8dfef0200             -call 0x4beb80
     cpu.esp -= 4;
-    nfs3hp::frontend::viewport(app, cpu.sync());
+    nfs3hp::port::text::viewport(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0048fba1  8b55d4                 -mov edx, dword ptr [ebp - 0x2c]
@@ -10391,7 +10391,7 @@ void Application::sub_495600(WinApplication* __restrict app, x86::CPU& cpu_)
     }
     // 00495627  e854590400             -call 0x4daf80
     cpu.esp -= 4;
-    sub_4daf80(app, cpu.sync());
+    nfs3hp::port::draw2d::startScreens(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0049562c  57                     -push edi
@@ -10549,7 +10549,7 @@ L_0x00495645:
     cpu.ebx ^= x86::reg32(x86::sreg32(cpu.ebx));
     // 00495695  e8f60c0400             -call 0x4d6390
     cpu.esp -= 4;
-    nfs3hp::graphics::artShapeTextures(app, cpu.sync());
+    nfs3hp::port::shapes::artShapeTextures(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0049569a  a338768b00             -mov dword ptr [0x8b7638], eax
@@ -10565,7 +10565,7 @@ L_0x00495645:
     cpu.eax = app->getMemory<x86::reg32>(x86::reg32(9139768) /* 0x8b7638 */);
     // 004956ab  e8e0220400             -call 0x4d7990
     cpu.esp -= 4;
-    nfs3hp::frontend::drawShape(app, cpu.sync());
+    nfs3hp::port::shapes::drawShape(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004956b0  e88b3a0400             -call 0x4d9140
@@ -10586,7 +10586,7 @@ L_0x00495645:
     cpu.edx ^= x86::reg32(x86::sreg32(cpu.edx));
     // 004956c3  e8c8220400             -call 0x4d7990
     cpu.esp -= 4;
-    nfs3hp::frontend::drawShape(app, cpu.sync());
+    nfs3hp::port::shapes::drawShape(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004956c8  89c8                   -mov eax, ecx
@@ -10598,7 +10598,7 @@ L_0x00495645:
     if (cpu.terminate) return;
     // 004956cf  e8ac580400             -call 0x4daf80
     cpu.esp -= 4;
-    sub_4daf80(app, cpu.sync());
+    nfs3hp::port::draw2d::startScreens(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
 L_0x004956d4:
@@ -11623,7 +11623,7 @@ void Application::sub_495b10(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.eax = 1 /*0x1*/;
     // 00495b18  e843befbff             -call 0x451960
     cpu.esp -= 4;
-    sub_451960(app, cpu.sync());
+    nfs3hp::port::text::menuKey(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00495b1d  85c0                   +test eax, eax

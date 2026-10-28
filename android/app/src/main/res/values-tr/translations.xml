@@ -65,7 +65,7 @@
  <string name="size_label">Düğme boyutu</string>
  <string name="auto_hide_label">4 saniye hareketsizlikten sonra gizle</string>
  <string name="auto_hide_note">Java tarafında henüz menü/yarış sinyali yok, bu yüzden otomatik gizleme hem menülerde hem yarışta hareketsizlik süresini sayar. Yeniden görünmesi için katmana dokun.</string>
- <string name="orientation_label">Oyun yönü</string>
+ <string name="orientation_label">Ekran yönü</string>
  <string name="orientation_auto">Otomatik döndürme — her iki yön</string>
  <string name="orientation_landscape">Sabit — yatay</string>
  <string name="orientation_landscape_reverse">Sabit — yatay, ters</string>

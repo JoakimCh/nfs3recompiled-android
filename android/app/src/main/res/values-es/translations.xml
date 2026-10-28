@@ -65,7 +65,7 @@
  <string name="size_label">Tamaño de los botones</string>
  <string name="auto_hide_label">Ocultar automáticamente tras 4 segundos de inactividad</string>
  <string name="auto_hide_note">Todavía no hay una señal de menú/carrera visible desde Java, así que la ocultación automática usa el tiempo de inactividad tanto en los menús como en las carreras. Toca la superposición para mostrarla.</string>
- <string name="orientation_label">Orientación del juego</string>
+ <string name="orientation_label">Orientación de la pantalla</string>
  <string name="orientation_auto">Rotación automática — ambos sentidos</string>
  <string name="orientation_landscape">Fijo — horizontal</string>
  <string name="orientation_landscape_reverse">Fijo — horizontal invertido</string>

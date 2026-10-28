@@ -16,27 +16,13 @@
 #elif defined(FE_GAME_FUNCTIONS)
 // {address, "name", convention, registers, words, clobbers, through, deref, effect},
 // This file's functions that the menus' other code calls (frontend_glue's), as
-// they keep to their conventions: a menu item laid out; a slider's value set,
-// read (onto the x87's stack), the slider drawn (eax 0, edx its own), worked
-// by the mouse -- and a two-axis slider's; a .qfs loaded (its name's first 16
-// bytes logged; a block back); the fonts' quads drawn; the screen's quads'
+// they keep to their conventions: a menu item laid out; a slider's value read
+// (onto the x87's stack) -- and a two-axis slider's; the screen's quads'
 // outcodes.
 {0x4613e0, "a menu item laid out", kWatcom, 1, 0, kEax, -1, 0, kNothing},
-{0x469480, "a slider's value set", kStdcall, 1, 2, kEax, -1, 0, kNothing},
 {0x469520, "a slider's value", kWatcom, 1, 0, 0, -1, 0, kFloatBack},
-{0x469680, "a slider drawn", kWatcom, 2, 0, kEax | kEdx, -1, 0, kNothing},
-{0x46a5f0, "a slider worked by the mouse", kWatcom, 1, 0, kEax, -1, 0, kNothing},
-{0x46add0, "a two-axis slider's value set", kStdcall, 1, 2, kEax, -1, 0, kNothing},
 {0x46afd0, "a two-axis slider's value", kWatcom, 2, 0, 0, -1, 0, kFloatBack},
-{0x46b3a0, "a two-axis slider drawn", kWatcom, 2, 0, kEax | kEdx, -1, 0, kNothing},
-{0x46c320, "a two-axis slider worked by the mouse", kWatcom, 1, 0, kEax, -1, 0, kNothing},
-{0x4d1340, "the fonts' quads drawn", kWatcom, 0, 0, kEax, -1, 0, kNothing},
 {0x4d5840, "the quads' outcodes", kWatcom, 3, 0, kEax | kEdx | kEbx, -1, 0, kNothing},
-// The text scale set (0x4d1390), its last onto the x87's stack: as its ret 4
-// has it, stdcall -- game_checks.cpp's row further on (kWatcom, its word left
-// on the stack) is shadowed by this one, the first found; drop that at merge.
-// restoreTextScale pops ebp right after it.
-{0x4d1390, "the text scale set", kStdcall, 0, 1, 0, -1, 0, kFloatBack},
 // What they call that has no stand-in: the quad of four vertices clipped and
 // drawn (0x4c12e0, the port's vertices' native) -- the vertices, 0x80 bytes
 // from eax, logged, as they are in the caller's frame.
@@ -49,38 +35,9 @@
 // {"frontend::name", watcom, result, arguments, fpu, heap, liveOnly},
 // Every register compared; the x87's stack, its live registers and its words too.
 {"frontend::layoutMenuItem", true, true, 0, true, kNoHeap, true},
-{"frontend::sliderPartUnderPointer", true, true, 0, true, kNoHeap, true},
-{"frontend::sliderThumbPlace", true, true, 0, true, kNoHeap, true},
-{"frontend::snapToStep", true, true, 0, true, kNoHeap, true},
-{"frontend::setSliderValue", true, true, 0, true, kNoHeap, true},
 {"frontend::sliderStoredValue", true, true, 0, true, kNoHeap, true},
-{"frontend::dragSliderTo", true, true, 0, true, kNoHeap, true},
-{"frontend::drawSlider", true, true, 0, true, kNoHeap, true},
-{"frontend::trackSlider", true, true, 0, true, kNoHeap, true},
-{"frontend::twoAxisThumbPlace", true, true, 0, true, kNoHeap, true},
-{"frontend::setTwoAxisValue", true, true, 0, true, kNoHeap, true},
 {"frontend::twoAxisValue", true, true, 0, true, kNoHeap, true},
-{"frontend::dragTwoAxisTo", true, true, 0, true, kNoHeap, true},
-{"frontend::drawTwoAxis", true, true, 0, true, kNoHeap, true},
-{"frontend::trackTwoAxis", true, true, 0, true, kNoHeap, true},
 {"frontend::loadQfs", true, true, 0, true, kNoHeap, true},
-{"frontend::flushFonts", true, true, 0, true, kNoHeap, true},
-{"frontend::setTextScale", true, true, 0, true, kNoHeap, true},
-{"frontend::keepTextScale", true, true, 0, true, kNoHeap, true},
-{"frontend::restoreTextScale", true, true, 0, true, kNoHeap, true},
-{"frontend::characterWidth", true, true, 0, true, kNoHeap, true},
-{"frontend::characterOverhang", true, true, 0, true, kNoHeap, true},
-{"frontend::quadOutcodes", true, true, 0, true, kNoHeap, true},
-{"frontend::shapeByName", true, true, 0, true, kNoHeap, true},
-{"frontend::drawShape", true, true, 0, true, kNoHeap, true},
-{"frontend::gradientRectangle", true, true, 0, true, kNoHeap, true},
-{"frontend::filledRectangle", true, true, 0, true, kNoHeap, true},
-{"frontend::frame", true, true, 0, true, kNoHeap, true},
-{"frontend::accentedCharacter", true, true, 0, true, kNoHeap, true},
-{"frontend::drawScreenCharacter", true, true, 0, true, kNoHeap, true},
-{"frontend::drawScreenText", true, true, 0, true, kNoHeap, true},
-{"frontend::drawTexturedQuad", true, true, 0, true, kNoHeap, true},
-{"frontend::drawShadedQuad", true, true, 0, true, kNoHeap, true},
 #elif defined(FE_ARGUMENTS)
 /* Where the drawing's cases keep their own: a slider's record, a menu item,
  * the words their callers hand pointers to, vertices and quads, texts. */
@@ -286,7 +243,7 @@ bool makeFeDrawArguments(CheckApp& g, const std::string& name, x86::CPU& cpu, x8
         "layoutMenuItem", "sliderPartUnderPointer", "sliderThumbPlace", "snapToStep", "setSliderValue", "sliderStoredValue",
         "dragSliderTo", "drawSlider", "trackSlider", "twoAxisThumbPlace", "setTwoAxisValue", "twoAxisValue",
         "dragTwoAxisTo", "drawTwoAxis", "trackTwoAxis", "loadQfs", "flushFonts", "setTextScale", "keepTextScale",
-        "restoreTextScale", "characterWidth", "characterOverhang", "quadOutcodes", "shapeByName", "drawShape",
+        "restoreTextScale", "characterWidth", "characterOverhang", "quadOutcodes",
         "gradientRectangle", "filledRectangle", "frame", "accentedCharacter", "drawScreenCharacter",
         "drawScreenText", "drawTexturedQuad", "drawShadedQuad"};
     if (std::find_if(std::begin(names), std::end(names), [&](const char* n) { return name == n; })
@@ -389,34 +346,6 @@ bool makeFeDrawArguments(CheckApp& g, const std::string& name, x86::CPU& cpu, x8
         cpu.eax = chance(95) ? below(9) : random32() | 0x80000000;
         cpu.edx = kFeVertices;
         cpu.ebx = kFeQuads;
-    }
-    else if (name == "shapeByName")
-    {
-        const x86::reg32 text = kFeTexts + 0x100;
-        for (x86::reg32 c = 0; c < 4; ++c)
-            g.getMemory<x86::reg8>(text + c) = x86::reg8('a' + below(3));
-        g.getMemory<x86::reg8>(text + 4) = 0;
-        cpu.eax = text;
-        // Found among the shapes known, or none known: where the search
-        // runs out, the game's strncmp leaves ebx otherwise than the port's
-        // (watcom::strncmp, ebx an argument), and the tick's stand-in logs it.
-        if (chance(50))
-        {
-            g.word(0x8b7628) = 0;
-        }
-        else
-        {
-            const x86::reg32 count = 1 + below(12), found = below(count);
-            g.word(0x8b7628) = count;
-            for (x86::reg32 c = 0; c < 4; ++c)
-                g.getMemory<x86::reg8>(text + c) = g.getMemory<x86::reg8>(0x8b48c0 + 0x14 * found + 0x10 + c);
-        }
-    }
-    else if (name == "drawShape")
-    {
-        cpu.eax = below(0x40);
-        cpu.edx = aScreenX();
-        cpu.ebx = aScreenY();
     }
     else if (name == "gradientRectangle" || name == "filledRectangle" || name == "frame")
     {

@@ -65,7 +65,7 @@
  <string name="size_label">Dimensione dei pulsanti</string>
  <string name="auto_hide_label">Nascondi dopo 4 secondi di inattività</string>
  <string name="auto_hide_note">Non esiste ancora un segnale menu/gara visibile da Java, quindi la scomparsa automatica usa il tempo di inattività sia nei menu sia in gara. Tocca la sovrapposizione per farla riapparire.</string>
- <string name="orientation_label">Orientamento del gioco</string>
+ <string name="orientation_label">Orientamento dello schermo</string>
  <string name="orientation_auto">Rotazione automatica — entrambi i versi</string>
  <string name="orientation_landscape">Fisso — orizzontale</string>
  <string name="orientation_landscape_reverse">Fisso — orizzontale capovolto</string>

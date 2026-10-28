@@ -76,7 +76,7 @@
     <string name="auto_hide_label">Auto-hide after 4 seconds idle</string>
     <string name="auto_hide_note">There is no Java-visible menu/race signal yet, so auto-hide currently uses idle time in both menus and races. Touch the overlay to reveal it.</string>
 
-    <string name="orientation_label">Game orientation</string>
+    <string name="orientation_label">Screen orientation</string>
     <string name="orientation_auto">Auto-rotate — both landscape directions</string>
     <string name="orientation_landscape">Fixed landscape</string>
     <string name="orientation_landscape_reverse">Fixed landscape, flipped</string>
@@ -95,4 +95,18 @@
     <string name="network_port_original">1030 · original game</string>
     <string name="network_hint">IPX finds races on this Wi-Fi by itself. TCP/IP races anyone who knows the host\'s address, a PC with the original game or the Modern Patch too. Every player uses the same port.</string>
     <string name="fps_unlimited">Unlimited</string>
+    <!-- The Advanced screen: the button says Advanced in every language, and the
+         screen is in English everywhere (it is for the people testing). -->
+    <string name="advanced_title" translatable="false">Advanced</string>
+    <string name="debug_mode" translatable="false">Debug mode</string>
+    <string name="debug_mode_note" translatable="false">Off: nothing is written to the log and the game starts as a player has it. On: the log is open and the switches below reach the game when it next starts. Launch extras (adb, the names under each switch) still win for that one start.</string>
+    <string name="debug_traces" translatable="false">Traces</string>
+    <string name="debug_code" translatable="false">Natives and experiments</string>
+    <string name="debug_picture" translatable="false">Picture and renderer</string>
+    <string name="debug_depth16" translatable="false">Depth in the Voodoo\'s 16-bit steps (depth16)</string>
+    <string name="debug_depth16_auto" translatable="false">As the renderer chooses</string>
+    <string name="debug_depth16_off" translatable="false">Off</string>
+    <string name="debug_depth16_on" translatable="false">On</string>
+    <string name="debug_depth16_ab" translatable="false">Five seconds each, in turns [GPU]</string>
+    <string name="debug_reset" translatable="false">Reset every switch</string>
 </resources>

@@ -67,7 +67,7 @@
  <string name="size_label">Tastengröße</string>
  <string name="auto_hide_label">Nach 4 Sekunden Untätigkeit ausblenden</string>
  <string name="auto_hide_note">Ein Menü-/Rennen-Signal ist auf der Java-Seite noch nicht sichtbar, deshalb zählt das Ausblenden die Untätigkeit in Menüs und Rennen gleichermaßen. Tippe auf die Überlagerung, um sie wieder anzuzeigen.</string>
- <string name="orientation_label">Ausrichtung des Spiels</string>
+ <string name="orientation_label">Bildschirmausrichtung</string>
  <string name="orientation_auto">Autodrehung — beide Querrichtungen</string>
  <string name="orientation_landscape">Fest — Querformat</string>
  <string name="orientation_landscape_reverse">Fest — Querformat, gedreht</string>

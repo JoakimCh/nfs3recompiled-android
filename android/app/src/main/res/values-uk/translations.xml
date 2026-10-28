@@ -64,7 +64,7 @@
  <string name="size_label">Розмір кнопок</string>
  <string name="auto_hide_label">Автоприховування після 4 секунд бездіяльності</string>
  <string name="auto_hide_note">Ознаки «меню/гонка» на боці Java поки немає, тому автоприховування рахує бездіяльність і в меню, і в гонці. Торкніться оверлея, щоб показати його.</string>
- <string name="orientation_label">Орієнтація гри</string>
+ <string name="orientation_label">Орієнтація екрана</string>
  <string name="orientation_auto">Автоповорот — обидві сторони ландшафту</string>
  <string name="orientation_landscape">Фіксовано — ландшафт</string>
  <string name="orientation_landscape_reverse">Фіксовано — ландшафт навпаки</string>

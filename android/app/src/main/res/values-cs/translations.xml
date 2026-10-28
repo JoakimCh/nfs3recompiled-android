@@ -65,7 +65,7 @@
  <string name="size_label">Velikost tlačítek</string>
  <string name="auto_hide_label">Skrýt po 4 sekundách nečinnosti</string>
  <string name="auto_hide_note">Na straně Javy zatím není signál nabídka/závod, takže automatické skrývání počítá nečinnost v nabídkách i v závodě. Dotkni se překrytí, aby se znovu zobrazilo.</string>
- <string name="orientation_label">Orientace hry</string>
+ <string name="orientation_label">Orientace obrazovky</string>
  <string name="orientation_auto">Automatické otáčení — oba směry</string>
  <string name="orientation_landscape">Pevně — na šířku</string>
  <string name="orientation_landscape_reverse">Pevně — na šířku, obráceně</string>

@@ -548,29 +548,6 @@
   "fpu": true
  },
  {
-  "address": "0x4d37a0",
-  "name": "shapeToPixels",
-  "namespace": "graphics",
-  "globals": [],
-  "values": [
-   "0x1",
-   "0x2",
-   "0x6",
-   "0x7",
-   "0x200000",
-   "0x400000"
-  ]
- },
- {
-  "address": "0x4d5c40",
-  "name": "resetTextures",
-  "namespace": "graphics",
-  "globals": [
-   "0x563d44"
-  ],
-  "values": []
- },
- {
   "address": "0x4d5c90",
   "name": "clearWithDepth",
   "namespace": "graphics",
@@ -619,79 +596,6 @@
   "namespace": "graphics",
   "globals": [],
   "values": []
- },
- {
-  "address": "0x4d6070",
-  "name": "shapeTexture",
-  "namespace": "graphics",
-  "globals": [],
-  "values": []
- },
- {
-  "address": "0x4d6390",
-  "name": "artShapeTextures",
-  "namespace": "graphics",
-  "globals": [
-   "0x563a88",
-   "0x8b48c0",
-   "0x8b5090",
-   "0x8b6090",
-   "0x8b7090"
-  ],
-  "values": [
-   "0x0"
-  ]
- },
- {
-  "address": "0x4d70f0",
-  "name": "drawShapeQuad",
-  "namespace": "graphics",
-  "globals": [
-   "0x7a3a58"
-  ],
-  "values": [
-   "0x1",
-   "0x2",
-   "0x3"
-  ]
- },
- {
-  "address": "0x4d7160",
-  "name": "drawArtShape",
-  "namespace": "graphics",
-  "globals": [
-   "0x563aa8",
-   "0x563aac",
-   "0x7d34f8",
-   "0x7d34fc",
-   "0x7d3500",
-   "0x7d3504",
-   "0x7d350c",
-   "0x8b48c0",
-   "0x8b5090",
-   "0x8b6090",
-   "0x8b7090"
-  ],
-  "values": [
-   "0xa"
-  ],
-  "fpu": true
- },
- {
-  "address": "0x4d81b0",
-  "name": "drawShadedRectangle",
-  "namespace": "graphics",
-  "globals": [
-   "0x563aa8",
-   "0x563aac",
-   "0x7d34f8",
-   "0x7d34fc",
-   "0x7d3500",
-   "0x7d3504",
-   "0x7d350c"
-  ],
-  "values": [],
-  "fpu": true
  },
  {
   "address": "0x4d9120",

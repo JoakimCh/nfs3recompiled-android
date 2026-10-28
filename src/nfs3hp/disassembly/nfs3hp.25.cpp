@@ -30939,7 +30939,7 @@ void Application::sub_4b6810(WinApplication* __restrict app, x86::CPU& cpu_)
     app->getMemory<x86::reg32>(x86::reg32(5635528) /* 0x55fdc8 */) = cpu.edx;
     // 004b681b  e830b00100             -call 0x4d1850
     cpu.esp -= 4;
-    nfs3hp::frontend::languageText(app, cpu.sync());
+    nfs3hp::port::text::languageText(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004b6820  a3e03b7a00             -mov dword ptr [0x7a3be0], eax
@@ -30948,7 +30948,7 @@ void Application::sub_4b6810(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.eax = 196 /*0xc4*/;
     // 004b682a  e821b00100             -call 0x4d1850
     cpu.esp -= 4;
-    nfs3hp::frontend::languageText(app, cpu.sync());
+    nfs3hp::port::text::languageText(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004b682f  a3e43b7a00             -mov dword ptr [0x7a3be4], eax
@@ -30957,7 +30957,7 @@ void Application::sub_4b6810(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.eax = 197 /*0xc5*/;
     // 004b6839  e812b00100             -call 0x4d1850
     cpu.esp -= 4;
-    nfs3hp::frontend::languageText(app, cpu.sync());
+    nfs3hp::port::text::languageText(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004b683e  68b0674b00             -push 0x4b67b0

@@ -65,7 +65,7 @@
  <string name="size_label">Μέγεθος κουμπιών</string>
  <string name="auto_hide_label">Απόκρυψη μετά από 4 δευτερόλεπτα αδράνειας</string>
  <string name="auto_hide_note">Δεν υπάρχει ακόμη σήμα μενού/αγώνα ορατό από τη Java, οπότε η αυτόματη απόκρυψη μετρά την αδράνεια και στα μενού και στους αγώνες. Άγγιξε την επικάλυψη για να εμφανιστεί ξανά.</string>
- <string name="orientation_label">Προσανατολισμός παιχνιδιού</string>
+ <string name="orientation_label">Προσανατολισμός οθόνης</string>
  <string name="orientation_auto">Αυτόματη περιστροφή — και οι δύο φορές</string>
  <string name="orientation_landscape">Σταθερά — οριζόντια</string>
  <string name="orientation_landscape_reverse">Σταθερά — οριζόντια, ανάποδα</string>

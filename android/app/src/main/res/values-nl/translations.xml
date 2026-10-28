@@ -65,7 +65,7 @@
  <string name="size_label">Knopgrootte</string>
  <string name="auto_hide_label">Verbergen na 4 seconden inactiviteit</string>
  <string name="auto_hide_note">Er is nog geen menu-/racesignaal zichtbaar aan de Java-kant, dus het automatisch verbergen telt inactiviteit in menu\'s én races. Raak de overlay aan om die weer te tonen.</string>
- <string name="orientation_label">Schermstand van het spel</string>
+ <string name="orientation_label">Schermstand</string>
  <string name="orientation_auto">Automatisch draaien — beide richtingen</string>
  <string name="orientation_landscape">Vast — liggend</string>
  <string name="orientation_landscape_reverse">Vast — liggend, omgedraaid</string>

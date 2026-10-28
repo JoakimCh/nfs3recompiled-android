@@ -170,8 +170,6 @@ void makeGraphicsArguments(CheckApp& g, const std::string& name, x86::CPU& cpu, 
             g.word(0x559234) = chance(15);
         }
     }
-    else if (name == "drawShadedRectangle")
-        g.word(0x559234) = chance(30);
     else if (name == "hudMessageBox")
         cpu.eax = below(4);
     else if (name == "hudEditorFrame")

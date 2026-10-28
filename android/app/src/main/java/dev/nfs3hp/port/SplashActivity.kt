@@ -59,6 +59,7 @@ class SplashActivity : ComponentActivity() {
         /* The first screen of all, so the shape of the task's window on a
          * desktop is decided here: DeX gets a window the player sizes rather
          * than a phone's landscape (see DesktopMode). */
+        AppLog.configure(this)
         requestedOrientation = LauncherActivity.orientationFor(this)
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)

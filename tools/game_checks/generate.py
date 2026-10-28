@@ -43,13 +43,19 @@ STOOD_IN = {
     0x4df690: (),
     0x4ff014: (0x4f4b80,),  # vfprintf: fprintf's
     0x4f4b80: (),           # fprintf: graphics::warnTextureMemory's
-    0x4d37a0: (),           # graphics::shapeToPixels: the menus' art's
     0x515c2c: (),
     0x4dfd04: (),
     0x4ee168: (),
     0x5185c0: (0x4f8ce8, 0x518290, 0x52c178),  # _nrealloc: __setenv's, __wsetenv's, __wputenv's
     0x522e60: (),
     0x5243a7: (),
+    # The port's rewrites one part calls of another's, by address: stood in on
+    # both sides, each held against its code on its own (port_text's
+    # flushQuads the 2D drawing's quads' outcodes; port_draw2d's
+    # buildScreenFont and startScreens the shapes' texture and textures freed).
+    0x4d5840: (),
+    0x4d6070: (),
+    0x4d5c40: (),
 }
 
 
@@ -188,8 +194,9 @@ def cabin_fit(text):
 
 
 def hud_editor(text):
-    """tools/apply_hud_editor.py's change, which render::hudTable has: the
-    table's rectangle is its panel."""
+    """tools/apply_hud_editor.py's changes, which render::hudTable has -- the
+    table's rectangle is its panel -- and port::text::queueQuad: each quad
+    queued measured for the editor."""
     from tools.apply_hud_editor import SITES
     return port_sites(SITES)(text)
 
@@ -237,6 +244,7 @@ def coll_file_strncmp(text):
 
 
 PORT_CHANGES = {0x4710f0: force_feedback_car, 0x410030: music_stream, 0x4107c0: music_stream,
+                0x49bd30: hud_editor,
                 0x4bed90: widescreen, 0x4bee80: widescreen,
                 0x494fa0: race_precision, 0x495230: race_precision, 0x4a39f0: race_precision,
                 0x4723f0: track_detail,
@@ -416,7 +424,10 @@ def main():
                 "/* The races' x87 word (race precision). */\n"
                 "x86::reg16 raceControl(x86::reg16 word);\n"
                 "/* The mirror's pass as the main view's (mirror detail). */\n"
-                "x86::reg32 mirrorAsMain(x86::reg32 kind);\n")
+                "x86::reg32 mirrorAsMain(x86::reg32 kind);\n"
+                "/* The HUD editor's measure of each quad queued (hud editor). */\n"
+                "void hudQueueQuad(win32::WinApplication* app, x86::reg32 list, x86::reg32 a, x86::reg32 b,"
+                " x86::reg32 c, x86::reg32 d);\n")
         h.write("\nclass Application : public win32::WinApplication\n{\npublic:\n"
                 "    /* The game's code for the natives (game_functions.cpp). */\n")
         for address in sorted(natives):

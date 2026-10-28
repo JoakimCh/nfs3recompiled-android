@@ -65,7 +65,7 @@
  <string name="size_label">Mărimea butoanelor</string>
  <string name="auto_hide_label">Ascunde după 4 secunde de inactivitate</string>
  <string name="auto_hide_note">Încă nu există un semnal meniu/cursă vizibil din Java, așa că ascunderea automată folosește timpul de inactivitate atât în meniuri, cât și în curse. Atinge suprapunerea ca să reapară.</string>
- <string name="orientation_label">Orientarea jocului</string>
+ <string name="orientation_label">Orientarea ecranului</string>
  <string name="orientation_auto">Rotire automată — ambele sensuri</string>
  <string name="orientation_landscape">Fix — orizontal</string>
  <string name="orientation_landscape_reverse">Fix — orizontal, invers</string>

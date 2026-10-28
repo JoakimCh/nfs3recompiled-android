@@ -65,11 +65,31 @@ The launcher holds what the game cannot ask for itself: **Controls → Touch** (
 on-screen controls, their layout editor, the key each one sends),
 **Controls → Gamepads** (which pad is which player, Analog or Digital for each,
 the key each button sends), **Controls → Force Feedback** (where the game's
-effects are felt: off, the phone or the gamepad) and **Display** with **Screen
-adjustment** (orientation, frame rate cap, gamma, brightness, contrast).
+effects are felt: off, the phone or the gamepad), **Display** with **Screen
+adjustment** (orientation, frame rate cap, gamma, brightness, contrast) and
+**Advanced** (below).
 
-The menus carry no buttons of the port's at all: a finger works them as a
-pointer, and the system's own back is the game's Escape. When the game asks for
+The orientation is the launcher's as well as the game's: **Auto-rotate** is
+`USER_LANDSCAPE`, both landscape directions as long as the system's rotation
+lock lets apps turn, and the two fixed choices pin one direction each
+(`GamePreferences.screenOrientation`). A DeX window takes the shape the player
+gives it.
+
+There is one build, the release. **Advanced** on the main menu says whether it
+behaves as a debug build: with debug mode off nothing is written to the log -- the Java
+side through `AppLog`/`SDLLog`, the native side through `NFS_LOG=0` (log
+priority critical, and SDL's direct Android logging held back by
+`android/app/jni/sdl_quiet.h`) -- and the game starts as a player has it. With it
+on, the log is open and the screen's switches (`DebugOptions`) set the
+diagnostic variables below when the game next starts. Each switch keeps its
+launch-extra name, and a launch extra wins over the screen for that start:
+`adb shell am start -n dev.nfs3hp.port/.SplashActivity --ez debug true --ez trace_ticks true`.
+
+The menus carry one button of the port's, the keyboard in the top-right corner:
+a finger works them as a pointer, and the system's own back is the game's
+Escape. The button is there for typing the game takes with no box on the
+screen -- the main menu's cheat codes and a network game's chat from the menu
+over a race -- and it follows the touch size and opacity settings. When the game asks for
 a name, a tap on the line being typed in brings up the phone's keyboard and a
 tap beside it puts it away; a box opened from a pad brings the keyboard up at
 once, and with a real keyboard connected it never comes up. A tap on the
@@ -248,7 +268,7 @@ version is checked when a machine joins. The port reports nfs3.exe's own,
 "27, 2.0" — the version resource the phone has no copy of, and the string the
 Modern Patch keeps in its data. Winsock 1.1 is in `src/lib/winapi/wsock32.cpp`
 over the phone's sockets (`src/lib/socket.cpp`); `NFS_NET_TRACE=1` writes a
-join into the log in a debug build.
+join into the log in debug mode (switch `net_trace`).
 
 ### The x87's precision
 
@@ -264,7 +284,7 @@ of a network race needs the same.
 
 How wide "extended" is depends on the build. The default keeps the x87's
 values in doubles: 53 bits. `WITH_PEDANTIC_FPU` (`./gradlew -Px87Exact
-assembleDebug`) keeps them in 80 bits and does the x87's arithmetic in portable
+assembleRelease`) keeps them in 80 bits and does the x87's arithmetic in portable
 C++ (`src/lib/x87soft.cpp`): addition, subtraction, multiplication, division,
 square root, comparisons, frndint, fscale, fprem and every conversion come out
 as an x87's to the bit, at every precision control and in every rounding mode
@@ -501,8 +521,8 @@ go through it:
   attract mode's movies; the HUD's art in the language's version; the
   pointer and keys read -- and the menus' drawing (`FRONTEND_DRAW_NATIVES`,
   `native_frontend_draw.cpp`): the sliders, one and two axes, drawn and
-  dragged, an item's layout, text at a scale, a 2D screen's text, shapes,
-  rectangles and quads; under them EA's network layer (`EA_NET_NATIVES`,
+  dragged, an item's layout, a .qfs loaded (the text, the 2D drawing and
+  the shapes under them are the port's own, below); under them EA's network layer (`EA_NET_NATIVES`,
   `native_ea_net.cpp`: the game's packets, NET, CONN, the queues, LAYER) and
   EA's unpackers, keys and the low timer (`EA_FORMATS_NATIVES`,
   `native_ea_formats.cpp`, `native_ea_net.cpp`'s decompressors with them).
@@ -554,8 +574,7 @@ go through it:
   nothing still generated, no game data and no native calls.
 - The loading of the game's data (`src/nfs3hp/native_loading.cpp`, hooked by
   `tools/apply_native_loading.py`): EA's RefPack decoder behind every `.qfs`,
-  the alpha scan each FSH texture gets in each of its pixel formats, an FCE
-  model turned into the game's polygon records, and a track's FRD read into
+  an FCE model turned into the game's polygon records, and a track's FRD read into
   its blocks. The formats are the ones OpenNFS reads; the structures they go
   into are the game's own, filled as the generated code fills them.
   `tools/loading_checks/run.sh` builds them on the desktop with the generated
@@ -633,6 +652,22 @@ sessions of the game's calls, and after each call what the renderer was
 handed and its state, the window, the frame buffer's locks, the game's
 callbacks, the registers and the memory the game sees, all compared.
 
+And the game's 2D drawing and text under the menus, the HUD and the pause
+screens, the first layer of the menus taken out of emulation: the text and
+its fonts -- the language's lines, a text measured, drawn and wrapped into a
+box, the text scale, the characters queued as quads, the menus' key and
+pointer read (`port_text.h`, `port_text.cpp`, 41 functions); the 2D drawing
+-- rectangles, boxes, panels, frames and lines, the 640 by 480 quads scaled
+to the screen, the 2D screens' font, texts and titles, the menus' pointer
+(`port_draw2d.h`, `port_draw2d.cpp`, 22); the shapes -- an FSH shape's alpha
+scanned and its pixels converted and resized into a texture's format, the
+menus' art made textures a tile at a time, found by name and drawn
+(`port_shapes.h`, `port_shapes.cpp`, 40; the race's textures load through
+them too). Their x87 arithmetic is the x87's to the bit, through the
+emulated FPU in the game's order. `PORT_TEXT_NATIVES`, `PORT_DRAW2D_NATIVES`
+and `PORT_SHAPES_NATIVES` bind them; `tools/game_checks` holds each against
+its code (`text.inc`, `draw2d.inc`, `shapes.inc`).
+
 A test showed the whole game playing normally in single precision
 (`NFS_FPU_FLOAT=1`), the menus too: the port's own C++ can use the host's
 floats.
@@ -670,16 +705,17 @@ port's change among them — mainsplt's rows stand higher while it is up. The
 menus' text it asks for — a line of the language's by its number, the names
 of display modes, cars and controllers past them, and the check of a
 player's name — is native whole too (`native_frontend_text.cpp`,
-`FRONTEND_NATIVES`), compared by `tools/game_checks`. So is all the rest of
+`FRONTEND_NATIVES`; the language's lines themselves `port_text.cpp`'s),
+compared by `tools/game_checks`. So is all the rest of
 what the main menu calls of the menus' own: of the menu loop, a screen's
 items shown and the shown screen's name (`native_frontend_loop.cpp`); of the
 dialogs, a question, a message and a line to type in as it opens them, their
 boxes and buttons laid out and the pointer put on the button highlighted
 (`native_frontend_dialogs.cpp`) — these in `MENU_NATIVES`, compared by
 `tools/frontend_checks` — and under them, in `FRONTEND_NATIVES`, compared by
-`tools/game_checks`: the checks of a line typed in, the font a text is
-measured and drawn in, a character at a time as a quad of its texture
-(`native_frontend_text.cpp`), the pointer moved and the screens' art loaded
+`tools/game_checks`: the checks of a line typed in
+(`native_frontend_text.cpp`; the font a text is measured and drawn in, a
+character at a time as a quad of its texture, is `port_text.cpp`'s), the pointer moved and the screens' art loaded
 (`native_frontend_screen.cpp`). What is left under the main menu is the
 game's: its sound, its art and files, its drawing, the attract-mode movie
 and the network.
@@ -784,11 +820,12 @@ Then build:
 
 ```bash
 cd android
-./gradlew assembleDebug
+./gradlew assembleRelease
 ```
 
-The APK lands in `android/app/build/outputs/apk/debug/`. `assembleRelease`
-builds unsigned, so align and sign it yourself with `zipalign` and `apksigner`.
+The APK lands in `android/app/build/outputs/apk/release/` unsigned: align it
+with `zipalign -p 4` and sign it with `apksigner` and the key in `APK/`. Testing needs no other build: the launcher's Advanced screen
+opens the log and the diagnostic switches.
 
 ### Desktop (Windows)
 
@@ -830,7 +867,7 @@ from the phone; the rest matter for a desktop run.
 |---|---|---|
 | `NFS_FPS_CAP` | `30` | Frame rate the renderer paces presents to. The game's logic is tuned for 30 Hz. |
 | `NFS_GAMMA`, `NFS_BRIGHTNESS`, `NFS_CONTRAST` | `1.0` | Applied to the finished frame in the final blit, so menus and movies are covered as well as a race. |
-| `NFS_ORIENTATION` | unset | `auto` allows both landscape directions; anything else pins one. Must be set before `SDL_Init`. |
+| `NFS_ORIENTATION` | unset | `auto` allows both landscape directions as the rotation lock allows; anything else pins one. Must be set before `SDL_Init`. |
 | `NFS_CAR_DETAIL_FULL` | on | With Car Detail at High, every car keeps its detailed model and the player's texture size out to the draw distance, in every view, and the limit on how many are drawn at once is lifted. `0` restores the original. |
 | `NFS_MIRROR_FULL` | on | The rear-view mirror is drawn as the main view is: its distances, the track's detailed models, cars at full detail, the sky with clouds and lightning, car lights and the headlights' light. `0` restores the original short, coarse mirror. |
 | `NFS_WIDESCREEN` | on | `0` takes the 1280x720, 1600x900 and 1920x1080 modes back out of the Screen Size list. |
@@ -838,17 +875,17 @@ from the phone; the rest matter for a desktop run.
 | `NFS_TEXCOORD_REBASE` | on | `0` leaves far-out texture coordinates as the game sends them (see Projected headlights), to compare. |
 | `NFS_DEPTH16` | auto | On where the depth buffer has more than 16 bits and the GPU is not an Adreno 5xx. `0` keeps the GPU's own depth precision, `1` forces the Voodoo's 16-bit steps (see Projected headlights); the `[GPU]` lines count the frames drawn in them. |
 | `NFS_NATIVES` | on | `0` runs the generated code instead of the loading, movie and car-specs natives (`NFS_NATIVE_LOAD`, `NFS_MAD`), to compare speeds. The vertex, polygon and drawing natives always run. |
-| `NFS_NATIVE_LOAD` | on | `0` leaves the loading of the game's data to the generated code: RefPack, the FSH textures' alpha scans, FCE models and FRD tracks (`src/nfs3hp/native_loading.cpp`). `NFS_NATIVE_CHECK=load` checks only these, every call. |
+| `NFS_NATIVE_LOAD` | on | `0` leaves the loading of the game's data to the generated code: RefPack, FCE models and FRD tracks (`src/nfs3hp/native_loading.cpp`). `NFS_NATIVE_CHECK=load` checks only these, every call. |
 | `NFS_MAD` | on | `0` plays the movies with the generated MAD player, decoder and display instead of `src/nfs3hp/native_movie.cpp`; `NFS_MAD_PLAYER=0` and `NFS_MAD_GL=0` leave just the player or the full-colour output generated. `NFS_MAD_CHECK=1` (debug) runs the generated player and checks the native decoder against the generated one ([MAD]). |
-| *(release)* | | A release build writes nothing to the log and takes none of these flags: the native code is built with `NFS_RELEASE` (log priority critical, SDL's direct Android logging compiled out through `android/app/jni/sdl_quiet.h`), the Java side logs through `AppLog`/`SDLLog` only when `BuildConfig.DEBUG`. Use the debug build (`-Pandroid10`) for diagnostics. |
-| `NFS_FPU_EXTENDED` | on | Races at the x87's extended precision, as the Modern Patch runs them; `0` races in single precision, as the original (see The x87's precision). Every player of a network race needs the same. A debug build takes it from a launch: `adb shell am start -n dev.nfs3hp.port/.SplashActivity --ez fpu_single_races true`. |
-| `NFS_FPU_FLOAT` | off | `1` rounds every x87 operation of the whole game to a float's 24 bits, the menus too, and races in single precision (`NFS_FPU_EXTENDED=0`): the game as it would run on the host's float. An experiment. A debug build takes it from a launch: `--ez fpu_float true`. |
-| `NFS_NATIVE_AI` | on | `0` runs the generated sub_4064f0 and sub_4070c0 instead of their decompiled C++ (`src/nfs3hp/native_ai.h`). A debug build takes it from a launch: `--ez native_ai_off true`. |
+| `NFS_LOG` | on | `0` (debug mode off, the launcher's Advanced screen) writes nothing to the log: log priority critical, and SDL's direct Android logging held back (`android/app/jni/sdl_quiet.h`). With debug mode off the launcher sets none of the diagnostic variables. |
+| `NFS_FPU_EXTENDED` | on | Races at the x87's extended precision, as the Modern Patch runs them; `0` races in single precision, as the original (see The x87's precision). Every player of a network race needs the same. Debug mode takes it from its screen or a launch: `adb shell am start -n dev.nfs3hp.port/.SplashActivity --ez fpu_single_races true`. |
+| `NFS_FPU_FLOAT` | off | `1` rounds every x87 operation of the whole game to a float's 24 bits, the menus too, and races in single precision (`NFS_FPU_EXTENDED=0`): the game as it would run on the host's float. An experiment. Debug mode takes it from its screen or a launch: `--ez fpu_float true`. |
+| `NFS_NATIVE_AI` | on | `0` runs the generated sub_4064f0 and sub_4070c0 instead of their decompiled C++ (`src/nfs3hp/native_ai.h`). Debug mode takes it from its screen or a launch: `--ez native_ai_off true`. |
 | `NFS_NET_PORT` | `9803` | TCP port of network races, as the Modern Patch has it; the launcher's Network screen offers the original's `1030`. |
 | `NFS_NET_TRACE` | off | `1` (extra `net_trace`) writes a network race into the log: EA's comm library events and packet sends (`[COMM]`), up to 400 datagrams per socket instead of 16 (`[NET]`), and each new indirect call target once per thread after the IPX transport opens (`[CALL]`). For finding where two machines stop on the way into a race. |
 | `NFS_FE_NATIVE` | on | `0` leaves every hooked decompiled menu function, the screens' and the engine's, to the generated code (see Decompiled menus); the main menu, what it calls of the menu loop and the dialogs, and the controls' screens are native whole and stay native. |
 | `NFS_FE_NATIVE_OFF` | unset | A list of generated functions, `sub_437e00,sub_438260`, left to the generated code while the other decompiled ones run. |
-| `NFS_NATIVE_CHECK` | off | `1` (or `load`) runs each call of the loading natives (`src/nfs3hp/native_loading.cpp`: RefPack, the FSH textures' alpha scans, FCE models, FRD tracks) both ways -- the native, everything it wrote put back, then the generated code -- and logs any difference in memory, registers or flags (`[NATIVE]`), holding the guest context meanwhile (`WinApplication::KeepContext`). The vertex, polygon and drawing natives have no generated code left in the game to be held against: their checks are on the desktop (`tools/game_checks/vertices`, `tools/game_checks/render`). Launch extras: `--ez native_check true`, `--ez load_check true`. |
+| `NFS_NATIVE_CHECK` | off | `1` (or `load`) runs each call of the loading natives (`src/nfs3hp/native_loading.cpp`: RefPack, FCE models, FRD tracks) both ways -- the native, everything it wrote put back, then the generated code -- and logs any difference in memory, registers or flags (`[NATIVE]`), holding the guest context meanwhile (`WinApplication::KeepContext`). The vertex, polygon and drawing natives have no generated code left in the game to be held against: their checks are on the desktop (`tools/game_checks/vertices`, `tools/game_checks/render`). Launch extras: `--ez native_check true`, `--ez load_check true`. |
 | `NFS_AUDIO_RATE` | unset | The output's own sample rate. The game mixes at 22050 Hz and SDL converts to this; a device opened at any other rate is resampled by Android, off its low-latency path. Unset, the device opens at SDL's default. |
 | `NFS_TOUCH_STEER_LEFT` etc. | unset | Keys the touch overlay sends for steering and the pedals, so that endpoint can report them as axes. |
 | `NFS_GAMEPAD1_SOUTH` etc. | built-in defaults | What a pad button sends, as `NFS_GAMEPAD<n>_<BUTTON>`: an SDL key name (`Space`, `Return`), `axis:steer_left`, `axis:steer_right`, `axis:accelerate`, `axis:brake`, or empty for nothing. `_UI` after it is the same button in the menus. `LEFT_TRIGGER` and `RIGHT_TRIGGER` are the triggers read as buttons, empty by default; the launcher gives them the pedals' keys for a pad set to Digital. |

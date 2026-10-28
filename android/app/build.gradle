@@ -76,30 +76,13 @@ android {
     }
 
     buildTypes {
-        debug {
-            // Optional isolated install for UI QA beside a release-signed game.
-            if (providers.gradleProperty("uiPreview").isPresent()) {
-                applicationIdSuffix ".preview"
-                manifestPlaceholders = [launcherAppLabel: "NFS III · UI Preview"]
-            }
-            if (providers.gradleProperty("android10").isPresent()) {
-                applicationIdSuffix ".android10"
-                // "D" in the launcher label: this variant sits next to the release
-                // build under its own package, and the two are easy to mix up.
-                manifestPlaceholders = [launcherAppLabel: "Need For Speed III D"]
-            }
-        }
+        /* The only build: the one players get and the one tested.  The
+         * launcher's Debug screen is what tells the two apart -- with debug
+         * mode off nothing is written to the log (AppLog, NFS_LOG) and the
+         * game starts as a player has it.  Signed afterwards: zipalign -p 4,
+         * then apksigner (APK/README.md). */
         release {
-            // No tracing and no logging in a release: the native side keeps
-            // the log shut (NFS_RELEASE, nfs3hp_main.cpp), the Java side
-            // writes through AppLog and takes no diagnostic launch flags.
-            externalNativeBuild {
-                cmake {
-                    arguments "-DNFS_RELEASE=ON"
-                }
-            }
             minifyEnabled = false
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
 
@@ -110,8 +93,7 @@ android {
 
     buildFeatures {
         compose = true
-        // BuildConfig.DEBUG: AppLog and NFS3Activity's diagnostic launch flags.
-        buildConfig = true
+        buildConfig = false
     }
 
     externalNativeBuild {

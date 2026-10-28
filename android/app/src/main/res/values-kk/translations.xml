@@ -65,7 +65,7 @@
  <string name="size_label">Түймелердің өлшемі</string>
  <string name="auto_hide_label">4 секунд әрекетсіздіктен кейін жасыру</string>
  <string name="auto_hide_note">Java жағында әзірге мәзір/жарыс белгісі жоқ, сондықтан автоматты жасыру әрекетсіздікті мәзірде де, жарыста да санайды. Қайта көрсету үшін қабатты түрт.</string>
- <string name="orientation_label">Ойын бағдары</string>
+ <string name="orientation_label">Экран бағдары</string>
  <string name="orientation_auto">Автобұрылыс — екі көлденең бағыт</string>
  <string name="orientation_landscape">Бекітілген — көлденең</string>
  <string name="orientation_landscape_reverse">Бекітілген — көлденең кері</string>

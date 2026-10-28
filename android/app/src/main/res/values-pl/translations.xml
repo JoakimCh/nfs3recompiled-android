@@ -65,7 +65,7 @@
  <string name="size_label">Wielkość przycisków</string>
  <string name="auto_hide_label">Ukryj po 4 sekundach bezczynności</string>
  <string name="auto_hide_note">Po stronie Javy nie ma jeszcze sygnału menu/wyścig, więc automatyczne ukrywanie liczy bezczynność zarówno w menu, jak i podczas wyścigu. Dotknij nakładki, aby ją pokazać.</string>
- <string name="orientation_label">Orientacja gry</string>
+ <string name="orientation_label">Orientacja ekranu</string>
  <string name="orientation_auto">Autoobrót — oba kierunki poziome</string>
  <string name="orientation_landscape">Stały — poziomo</string>
  <string name="orientation_landscape_reverse">Stały — poziomo, odwrócony</string>

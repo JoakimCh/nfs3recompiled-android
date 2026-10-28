@@ -202,13 +202,12 @@ final class TouchRefinementChecks {
                 view.refreshSettings();
                 check(Math.abs(bounds(view,"pause","box").width()-visible.width())<.1f,
                     "the size it was given is kept when the layout is rebuilt");
-                /* The menu layout has nothing on it: a menu is worked with the screen
-                 * itself, the system's back is the game's Escape, and the keyboard
-                 * comes up by itself while the game takes a name.  So what is dragged
-                 * in the racing layout is all there is to keep. */
+                /* The menu layout has only the keyboard on it: a menu is worked with
+                 * the screen itself and the system's back is the game's Escape.  So
+                 * what is dragged in the racing layout stays in the racing layout. */
                 view.setMenuMode(true);
                 check(bounds(view,"pause","box")==null&&bounds(view,"back","box")==null
-                    &&bounds(view,"keyboard","box")==null,"the menu layout is empty");
+                    &&bounds(view,"keyboard","box")!=null,"the menu layout is the keyboard alone");
                 view.setMenuMode(false);check(Math.abs(bounds(view,"pause","box").centerX()-640)<1,"a dragged control keeps its place");
                 /* A placed control keeps its distance from the nearer edge, in layout
                  * units, on an area of another size: the controls along an edge keep
@@ -241,11 +240,12 @@ final class TouchRefinementChecks {
                 view.refreshSettings();
                 check(bounds(view,"steer_left","box").centerX()<640,"steering moves left again");
                 check(bounds(view,"steer_left","box").centerX()<bounds(view,"steer_right","box").centerX(),"left steers left of right");
-                /* The menus take a finger on the screen itself and nothing else: every
-                 * control stays behind, the two that used to be there among them. */
+                /* The menus take a finger on the screen itself and the keyboard
+                 * button: every racing control stays behind, and so does back. */
                 view.setEditing(false,null);view.setMenuMode(true);
                 Map<?,?> held=(Map<?,?>)field(field(view,"keys"),"held");
-                for(String gone:new String[]{"back","keyboard","steer_left","steer_right","accelerate","brake",
+                check(bounds(view,"keyboard","box")!=null,"the menu layout keeps the keyboard");
+                for(String gone:new String[]{"back","steer_left","steer_right","accelerate","brake",
                                              "handbrake","pause","headlights","recover","horn","spike_strip",
                                              "gear_up","gear_down","look_behind","camera"})
                     check(bounds(view,gone,"box")==null,"the menu layout leaves "+gone+" behind");

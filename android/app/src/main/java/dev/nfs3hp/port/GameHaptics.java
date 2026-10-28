@@ -2,7 +2,6 @@ package dev.nfs3hp.port;
 
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.content.pm.ApplicationInfo;
 import android.os.Build;
 import android.os.SystemClock;
 import android.os.VibrationEffect;
@@ -401,7 +400,7 @@ final class GameHaptics {
     GameHaptics(Context context) {
         preferences = GamePreferences.get(context);
         phone = (Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
-        verbose = (context.getApplicationInfo().flags & ApplicationInfo.FLAG_DEBUGGABLE) != 0;
+        verbose = AppLog.enabled();
         for (int slot = 0; slot < SLOTS; slot++) padOutputs[slot] = new Output();
         reportPhone();
     }

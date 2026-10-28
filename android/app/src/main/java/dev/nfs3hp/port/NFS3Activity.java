@@ -75,8 +75,14 @@ public class NFS3Activity extends SDLActivity
     @Override
     protected void onCreate(Bundle savedInstanceState)
     {
-        haptics=new GameHaptics(this);
         SharedPreferences preferences = GamePreferences.get(this);
+        /* Debug mode (the launcher's Advanced screen, DebugOptions): the log
+         * open and the switches the game reads as it starts.  Off, the game
+         * writes nothing to the log and starts as a player has it.  Said
+         * first, before anything here has a line to write. */
+        boolean debug = DebugOptions.enabled(preferences, getIntent());
+        AppLog.setEnabled(debug);
+        haptics=new GameHaptics(this);
         touchEnabled = preferences.getBoolean(GamePreferences.TOUCH_ENABLED, true);
         touchpadPointer = GamePreferences.TOUCH_POINTER_TOUCHPAD.equals(
             preferences.getString(GamePreferences.TOUCH_POINTER, GamePreferences.TOUCH_POINTER_TAP));
@@ -142,7 +148,7 @@ public class NFS3Activity extends SDLActivity
             + (GamepadButtons.digital(preferences,1) ? ", Gamepad 2 digital" : ""));
 
         String orientation = preferences.getString(GamePreferences.ORIENTATION,
-            GamePreferences.ORIENTATION_LANDSCAPE);
+            GamePreferences.ORIENTATION_AUTO);
         fpsCap = preferences.getInt(GamePreferences.FPS_CAP, 30);
         setEnv("NFS_ORIENTATION", orientation);
         setEnv("NFS_FPS_CAP", Integer.toString(fpsCap));
@@ -191,136 +197,31 @@ public class NFS3Activity extends SDLActivity
                 +audio.getProperty(android.media.AudioManager.PROPERTY_OUTPUT_FRAMES_PER_BUFFER)
                 +" frames, "+(bluetoothOutput(audio)?"a Bluetooth output connected":"no Bluetooth output"));
         }
-        /* Debug builds log the car detail the game settles on, once a second
-         * during a race ([CARDETAIL] in logcat): the level each car was drawn
-         * at against the game's budget, the transform buffer and the atlas. */
-        /* The traces that answer a question while it is being asked, and are
-         * noise the rest of the time: the car detail the game settles on
-         * ([CARDETAIL]), its clock against real time ([TICKS]) and what player
-         * one's car is driven with ([INPUT]).  Off unless the launch asks for
-         * one, which costs a line:
-         *   adb shell am start -n dev.nfs3hp.port/.SplashActivity --ez trace_ticks true
-         * The ones that speak only when something changes -- the layout, the
-         * pads, the steering, text entry -- stay on: they are a handful of
-         * lines a session and they are what makes a report readable.
-         * A release takes none of them: no tracing and no checks there. */
-        if (BuildConfig.DEBUG && getIntent() != null)
+        // The native side's log and SDL's (nfs3hp_main.cpp, sdl_quiet.h).
+        setEnv("NFS_LOG", debug ? "1" : "0");
+        if (debug)
         {
-            if (getIntent().getBooleanExtra("trace_car_detail", false))
-                setEnv("NFS_CAR_DETAIL_TRACE", "1");
-            if (getIntent().getBooleanExtra("trace_ticks", false))
-                setEnv("NFS_TICK_TRACE", "1");
-            if (getIntent().getBooleanExtra("trace_input", false))
-                setEnv("NFS_INPUT_TRACE", "1");
-            // EA's comm library into the log ([COMM]), for network races.
-            if (getIntent().getBooleanExtra("net_trace", false))
-                setEnv("NFS_NET_TRACE", "1");
-            // Every car's memory once a second of a race, to cars.bin (with trace_ticks).
-            if (getIntent().getBooleanExtra("trace_cars", false))
-                setEnv("NFS_CAR_TRACE", "1");
-            // A race without the x87's single-precision rounding, to compare frame rates.
-            if (getIntent().getBooleanExtra("fpu_double", false))
-                setEnv("NFS_FPU_SINGLE", "0");
-            // Races at the original's single precision, not the Modern Patch's extended one.
-            if (getIntent().getBooleanExtra("fpu_single_races", false))
-                setEnv("NFS_FPU_EXTENDED", "0");
-            // The whole game in single precision, the menus too (an experiment).
-            if (getIntent().getBooleanExtra("fpu_float", false)) {
-                setEnv("NFS_FPU_FLOAT", "1");
-                setEnv("NFS_FPU_EXTENDED", "0");
-            }
-            // The opponents' pull and steering on their generated code (native_ai.cpp off).
-            if (getIntent().getBooleanExtra("native_ai_off", false))
-                setEnv("NFS_NATIVE_AI", "0");
-            // The natives that keep a check in the game -- the loading's
-            // (native_loading.cpp) -- run against the generated code ([NATIVE]).
-            if (getIntent().getBooleanExtra("native_check", false))
-                setEnv("NFS_NATIVE_CHECK", "1");
-            // The same, by its own name.
-            else if (getIntent().getBooleanExtra("load_check", false))
-                setEnv("NFS_NATIVE_CHECK", "load");
-            // The generated code for the loading, movie and specs natives, to compare speeds.
-            if (!getIntent().getBooleanExtra("natives", true))
-                setEnv("NFS_NATIVES", "0");
-            // The rear-view mirror as the original draws it (short and coarse).
-            if (!getIntent().getBooleanExtra("mirror_full", true))
-                setEnv("NFS_MIRROR_FULL", "0");
-            // The loading (RefPack, FSH, FCE, FRD) as generated rather than native.
-            if (!getIntent().getBooleanExtra("load_native", true))
-                setEnv("NFS_NATIVE_LOAD", "0");
-            // voodoo2a's THRASH functions as generated rather than native.
-            if (!getIntent().getBooleanExtra("thrash", true))
-                setEnv("NFS_THRASH", "0");
-            // voodoo2a's data after each step of setting up, to set runs side by side.
-            if (getIntent().getBooleanExtra("thrash_init_trace", false))
-                setEnv("NFS_THRASH_INIT_TRACE", "1");
-            // The native driver through the old Voodoo2 renderer (GlideRenderer).
-            if (!getIntent().getBooleanExtra("thrash_gl", true))
-                setEnv("NFS_THRASH_GL", "0");
-            // The movies (MAD player, decoder, display) as generated rather than native,
-            // or each part: the player, the full-colour output.
-            if (!getIntent().getBooleanExtra("mad", true))
-                setEnv("NFS_MAD", "0");
-            if (!getIntent().getBooleanExtra("mad_player", true))
-                setEnv("NFS_MAD_PLAYER", "0");
-            if (!getIntent().getBooleanExtra("mad_gl", true))
-                setEnv("NFS_MAD_GL", "0");
-            // The native decoder checked against the generated one ([MAD]).
-            if (getIntent().getBooleanExtra("mad_check", false))
-                setEnv("NFS_MAD_CHECK", "1");
-            String thrashOff = getIntent().getStringExtra("thrash_off");
-            if (thrashOff != null)
-                setEnv("NFS_THRASH_OFF", thrashOff);
-            // Texture coordinates far from the origin ([TEXCOORD]), and whether
-            // they are brought near it (on unless the launch says false).
-            if (getIntent().getBooleanExtra("trace_texcoords", false))
-                setEnv("NFS_TEXCOORD_TRACE", "1");
-            if (!getIntent().getBooleanExtra("texcoord_rebase", true))
-                setEnv("NFS_TEXCOORD_REBASE", "0");
-            // The depth in the Voodoo's 16-bit steps, which the renderer otherwise
-            // chooses by the depth buffer and the GPU: "off", "on", or "ab" for
-            // turns of five seconds with and without, to weigh the GPU's load ([GPU]).
-            String depth16 = getIntent().getStringExtra("depth16");
+            for (DebugOptions.Option[] group : DebugOptions.ALL)
+                for (DebugOptions.Option option : group)
+                    if (DebugOptions.value(preferences, getIntent(), option) != option.byDefault)
+                        for (int i = 0; i + 1 < option.environment.length; i += 2)
+                            setEnv(option.environment[i], option.environment[i + 1]);
+            String depth16 = DebugOptions.depth16(preferences, getIntent());
             if ("off".equals(depth16))
                 setEnv("NFS_DEPTH16", "0");
             else if ("on".equals(depth16))
                 setEnv("NFS_DEPTH16", "1");
             else if ("ab".equals(depth16))
                 setEnv("NFS_DEPTH16", "ab");
-            // Textures through the shader's own filter alone, to compare pictures.
-            if (!getIntent().getBooleanExtra("gpu_filter", true))
-                setEnv("NFS_GPU_FILTER", "0");
-            // OpenGL on the game's own thread, as before the GL thread.
-            if (!getIntent().getBooleanExtra("gl_thread", true))
-                setEnv("NFS_GL_THREAD", "0");
         }
 
-        /* Landscape whatever happens -- portrait is not offered, the game
-         * cannot use it.  "auto" turns over with the phone; the two fixed
-         * choices pin one direction each, and which of them is the right way up
-         * depends only on how the player holds the device.
-         *
+        /* The Display screen's choice (GamePreferences.screenOrientation).
          * This has to agree with the SDL_HINT_ORIENTATIONS set natively in
          * nfs3hp_main.cpp: SDL applies the hint through setOrientationBis()
          * afterwards, so a disagreement means the hint wins and the choice
          * here is silently undone. */
-        setRequestedOrientation(
-            GamePreferences.ORIENTATION_AUTO.equals(orientation)
-                ? ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
-            : GamePreferences.ORIENTATION_LANDSCAPE_REVERSE.equals(orientation)
-                ? ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE
-                : ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+        setRequestedOrientation(GamePreferences.screenOrientation(preferences));
 
-        if (BuildConfig.DEBUG && getIntent() != null && getIntent().getBooleanExtra("trace_api", false))
-        {
-            // Bundled together: NFS_TRACE_API covers every win32 call and
-            // File::read's own byte counts, SDL_LOGGING=app,error surfaces
-            // File::File's "opening file %s" (SDL_LogDebug, silent by
-            // default) so a given File::read burst can be matched back to
-            // which path it belongs to.
-            setEnv("NFS_TRACE_API", "1");
-            setEnv("SDL_LOGGING", "app=verbose,error=verbose");
-        }
         desktopWindow();
         super.onCreate(savedInstanceState);
         running = true;
@@ -728,11 +629,11 @@ public class NFS3Activity extends SDLActivity
         return super.dispatchGenericMotionEvent(event);
     }
 
-    /* Debug builds: which pointers actually arrive, once per kind, so a device
+    /* Debug mode: which pointers actually arrive, once per kind, so a device
      * that routes differently from the DualSense shows up in the log. */
     private String lastPointerTrace;
     private void tracePointer(android.view.MotionEvent event) {
-        if((getApplicationInfo().flags&android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE)==0)return;
+        if(!AppLog.enabled())return;
         android.view.InputDevice device=event.getDevice();
         String kind="source=0x"+Integer.toHexString(event.getSource())+" tool="+event.getToolType(0)
             +" device="+(device==null?"?":device.getName());

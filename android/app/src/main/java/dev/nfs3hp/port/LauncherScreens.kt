@@ -135,6 +135,7 @@ private fun Screen(a: LauncherActivity, screen: LauncherActivity.Screen) {
         LauncherActivity.Screen.Display -> DisplayScreen(a)
         LauncherActivity.Screen.Adjustment -> AdjustmentScreen(a)
         LauncherActivity.Screen.Network -> NetworkScreen(a)
+        LauncherActivity.Screen.Advanced -> AdvancedScreen(a)
     }
 }
 
@@ -169,8 +170,8 @@ private val MENU_WIDTH = 440.dp
 
 // ---- The first screen ----
 
-/* The title card with Play on the left, the settings on the right, and the
- * build's version under them. */
+/* The title card with Play on the left, the settings on the right, the
+ * author under the card and the build's version under the buttons. */
 @Composable
 private fun MainScreen(a: LauncherActivity) {
     val active = a.activeSet
@@ -214,22 +215,32 @@ private fun MainScreen(a: LauncherActivity) {
             MainMenuButton(stringResource(R.string.data_settings), each) { a.go(LauncherActivity.Screen.Data) }
             MainMenuButton(stringResource(R.string.language_label), each) { a.go(LauncherActivity.Screen.Language) }
             MainMenuButton(stringResource(R.string.faq_title), each) { a.go(LauncherActivity.Screen.Faq) }
+            MainMenuButton(stringResource(R.string.advanced_title), each) { a.go(LauncherActivity.Screen.Advanced) }
         }
-        val version = @Composable { modifier: Modifier ->
+        val corner = @Composable { text: String, modifier: Modifier, align: androidx.compose.ui.text.style.TextAlign ->
             Text(
-                a.versionLabel(),
+                text,
                 modifier = modifier,
                 color = GameColors.Muted,
                 fontSize = 12.sp,
                 letterSpacing = 1.sp,
-                textAlign = androidx.compose.ui.text.style.TextAlign.End,
+                textAlign = align,
             )
+        }
+        val version = @Composable { modifier: Modifier ->
+            corner(a.versionLabel(), modifier, androidx.compose.ui.text.style.TextAlign.End)
+        }
+        val author = @Composable { modifier: Modifier ->
+            corner(AUTHOR, modifier, androidx.compose.ui.text.style.TextAlign.Start)
         }
         if (narrow) {
             Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 card(Modifier.fillMaxWidth())
                 menu(Modifier.fillMaxWidth())
-                version(Modifier.fillMaxWidth().padding(top = 8.dp))
+                Row(Modifier.fillMaxWidth().padding(top = 8.dp)) {
+                    author(Modifier.weight(1f))
+                    version(Modifier)
+                }
             }
         } else {
             /* One block, one height: the card fills it and the buttons share
@@ -259,17 +270,27 @@ private fun MainScreen(a: LauncherActivity) {
                     }
                 }
                 /* The version halfway down that room, its end under the
-                 * buttons' right edge. */
+                 * buttons' right edge, and the author the same in the other
+                 * corner, under the card's left edge. */
                 Box(
                     Modifier.align(Alignment.BottomEnd).offset(x = trailing, y = 24.dp).height(below),
                     contentAlignment = Alignment.CenterEnd,
                 ) {
                     version(Modifier)
                 }
+                Box(
+                    Modifier.align(Alignment.BottomStart).offset(y = 24.dp).height(below),
+                    contentAlignment = Alignment.CenterStart,
+                ) {
+                    author(Modifier)
+                }
             }
         }
     }
 }
+
+/* Who made the port, in the corner opposite the version. */
+private const val AUTHOR = "ZloiKILLER \u00a9 2026"
 
 /* Below this width a window gets one column instead of two: a small DeX
  * window, a split screen. */
@@ -913,9 +934,11 @@ private fun DisplayScreen(a: LauncherActivity) {
     val preferences = remember { GamePreferences.get(a) }
     val orientations = arrayOf(GamePreferences.ORIENTATION_AUTO, GamePreferences.ORIENTATION_LANDSCAPE,
         GamePreferences.ORIENTATION_LANDSCAPE_REVERSE)
+    /* What is saved, "auto" too -- an unknown value reads as auto, the
+     * default, as GamePreferences.screenOrientation reads it. */
     var orientation by remember {
         mutableIntStateOf(GamePreferences.indexOf(orientations,
-            preferences.getString(GamePreferences.ORIENTATION, GamePreferences.ORIENTATION_LANDSCAPE)).coerceAtLeast(1))
+            preferences.getString(GamePreferences.ORIENTATION, GamePreferences.ORIENTATION_AUTO)).coerceAtLeast(0))
     }
     /* 30, 60, or 0 for no cap but the display's own refresh. */
     val fpsCaps = intArrayOf(30, 60, 0)
@@ -934,8 +957,11 @@ private fun DisplayScreen(a: LauncherActivity) {
                         orientation,
                     ) { index ->
                         orientation = index
-                        // Written the moment it is chosen; the game picks it up when it next starts.
-                        preferences.edit().putString(GamePreferences.ORIENTATION, orientations[index]).apply()
+                        /* Written the moment it is chosen, and the launcher
+                         * turns to it at once; the game picks it up when it
+                         * next starts. */
+                        preferences.edit().putString(GamePreferences.ORIENTATION, orientations[index]).commit()
+                        a.requestedOrientation = a.launcherOrientation()
                     }
                 }
             },
@@ -1142,6 +1168,66 @@ private fun AdjustmentScreen(a: LauncherActivity) {
                     }
                 },
             )
+        }
+    }
+}
+
+// ---- Advanced ----
+
+/** One build for players and for testing: debug mode off is a release in all
+ *  but name -- nothing in the log, the game as a player has it.  On, the log
+ *  is open and the switches below reach the game when it next starts
+ *  (DebugOptions, NFS3Activity).  In English in every language: it is for
+ *  the people testing the port. */
+@Composable
+private fun AdvancedScreen(a: LauncherActivity) {
+    val preferences = remember { GamePreferences.get(a) }
+    /* Bumped by Reset, so every switch below is read again. */
+    var generation by remember { mutableIntStateOf(0) }
+    val width = Modifier.widthIn(max = 720.dp).fillMaxWidth()
+    ScreenFrame(stringResource(R.string.advanced_title), onBack = { a.go(LauncherActivity.Screen.Main) }) {
+        Panel(width) {
+            SwitchRow(stringResource(R.string.debug_mode), a.debugMode, { on ->
+                preferences.edit().putBoolean(DebugOptions.ENABLED, on).apply()
+                AppLog.setEnabled(on)
+                a.debugMode = on
+            }, stringResource(R.string.debug_mode_note))
+        }
+        if (a.debugMode) {
+            key(generation) {
+                val groups = listOf(
+                    R.string.debug_traces to DebugOptions.TRACES,
+                    R.string.debug_code to DebugOptions.CODE,
+                    R.string.debug_picture to DebugOptions.PICTURE,
+                )
+                for ((title, options) in groups) {
+                    Panel(width) {
+                        Label(stringResource(title))
+                        for (option in options)
+                            BooleanSetting(preferences, option.preference(), option.byDefault,
+                                option.description, option.name) {}
+                    }
+                }
+                Panel(width) {
+                    Label(stringResource(R.string.debug_depth16))
+                    var depth by remember {
+                        mutableIntStateOf(DebugOptions.DEPTH16_VALUES.indexOf(
+                            preferences.getString("debug_" + DebugOptions.DEPTH16, "")).coerceAtLeast(0))
+                    }
+                    ChoiceList(
+                        listOf(stringResource(R.string.debug_depth16_auto), stringResource(R.string.debug_depth16_off),
+                            stringResource(R.string.debug_depth16_on), stringResource(R.string.debug_depth16_ab)),
+                        depth,
+                    ) { index ->
+                        depth = index
+                        preferences.edit().putString("debug_" + DebugOptions.DEPTH16, DebugOptions.DEPTH16_VALUES[index]).apply()
+                    }
+                }
+            }
+            MenuButton(stringResource(R.string.debug_reset), {
+                DebugOptions.reset(preferences)
+                generation++
+            }, width)
         }
     }
 }

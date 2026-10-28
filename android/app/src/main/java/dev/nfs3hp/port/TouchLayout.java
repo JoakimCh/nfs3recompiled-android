@@ -8,8 +8,8 @@ import java.util.ArrayList;
  *  off the device.
  *
  *  There are two layouts and the game says which one is up: one to drive with,
- *  and one for its menus, where a finger works the screen itself and only the
- *  two things a screen cannot offer are left -- back, and the keyboard.
+ *  and one for its menus, where a finger works the screen itself and only
+ *  the one thing a screen cannot offer is left -- the keyboard.
  *
  *  Everything stands on the grid the layout editor draws and snaps to, GRID
  *  units a cell.  Rows and columns are whole cells apart, and once mirroring
@@ -82,21 +82,23 @@ final class TouchLayout
         final float column = cells(buttonWidth + 6), row = cells(buttonHeight + 8);
         final ArrayList<Box> boxes = new ArrayList<>();
 
-        /* The top row: pause on the left of a race, or the back and keyboard a
+        /* The top row: pause on the left of a race, or the keyboard a
          * menu needs.  In a race each side is one uninterrupted five-button
          * column, matching the layout settled on in the on-device editor. */
         final float topY = snap(18 + buttonHeight / 2);
         final float rightX = w - 10 - buttonWidth / 2;
         if (menu)
         {
-            /* A menu has no buttons at all.  The screen itself is what a menu
-             * is worked with; the system's own back, gesture or button, is the
-             * game's Escape; and the keyboard comes up by itself while the game
-             * waits for a name (nfs3hp_main.cpp, textEntryTick).  Those two
-             * were the only things a menu could not offer for itself, and
-             * neither is missing now -- so the menus are left as the game drew
-             * them, with nothing of ours on top. */
-            return boxes;
+            /* A menu has one button: the keyboard, in the corner.  The screen
+             * itself is what a menu is worked with, and the system's own back,
+             * gesture or button, is the game's Escape.  The keyboard comes up
+             * by itself while the game waits for a name (nfs3hp_main.cpp,
+             * textEntryTick), but the main menu also takes typing with no box
+             * on the screen -- the cheat codes (0x4524e0, fed by the front
+             * end's key handler 0x44a2d0) -- and so does a network game's chat
+             * from the menu over a race.  Both menus are this layout. */
+            boxes.add(new Box("keyboard", TOP_RIGHT, rightX, topY, buttonWidth, buttonHeight));
+            return placed(boxes, w, edge, false);
         }
         boxes.add(new Box("recover", TOP_RIGHT, rightX, topY, buttonWidth, buttonHeight));
         boxes.add(new Box("headlights", TOP_RIGHT, rightX, topY + row, buttonWidth, buttonHeight));

@@ -10,9 +10,10 @@
  * flags the generated code keeps, the FPU and MMX state are compared.
  *
  * The data is made up: RefPack streams of every command (overlapping copies,
- * the long forms, both headers), textures of every pixel format with and
- * without alpha, FCE models and FRD tracks with blocks, polygons in pieces,
- * objects and lights -- the layouts as the game reads them (OpenNFS's).
+ * the long forms, both headers), FCE models and FRD tracks with blocks,
+ * polygons in pieces, objects and lights -- the layouts as the game reads
+ * them (OpenNFS's).  The FSH textures' alpha scans are the port's own now
+ * (port_shapes.cpp), held against their code by tools/game_checks.
  *
  * See run.sh. */
 #include <nfs3hp.h>
@@ -40,12 +41,6 @@ bool nativeOriginalRunning() { return false; }
 bool nativeChecking() { return false; }
 
 bool refpack(win32::WinApplication* app, x86::CPU& cpu);
-bool alpha4444(win32::WinApplication* app, x86::CPU& cpu);
-bool alpha8888(win32::WinApplication* app, x86::CPU& cpu);
-bool alphaNibbles(win32::WinApplication* app, x86::CPU& cpu);
-bool alphaPaletted(win32::WinApplication* app, x86::CPU& cpu);
-bool alpha1555(win32::WinApplication* app, x86::CPU& cpu);
-bool alpha565(win32::WinApplication* app, x86::CPU& cpu);
 bool fceRecords(win32::WinApplication* app, x86::CPU& cpu);
 bool frd(win32::WinApplication* app, x86::CPU& cpu);
 }
@@ -442,111 +437,6 @@ void refpackCases(nfs3hp::Application& app)
     }
 }
 
-/* ---- FSH alpha scans ---------------------------------------------------- */
-
-void scanCases(nfs3hp::Application& app)
-{
-    struct Scan
-    {
-        const char* name;
-        x86::reg32 address;
-        Native native;
-        x86::reg32 bytes;
-    };
-    const Scan scans[] = {
-        {"fsh 4444 sub_4d18e0", 0x4d18e0, nfs3hp::alpha4444, 2},
-        {"fsh 8888 sub_4d1950", 0x4d1950, nfs3hp::alpha8888, 4},
-        {"fsh 1555 sub_4d1a90", 0x4d1a90, nfs3hp::alpha1555, 2},
-        {"fsh 565 sub_4d1ad0", 0x4d1ad0, nfs3hp::alpha565, 2},
-        {"fsh 8-bit sub_4d1a00", 0x4d1a00, nfs3hp::alphaPaletted, 1},
-    };
-    const x86::reg32 pixels = 0x1000000;
-    for (const Scan& scan : scans)
-    {
-        for (unsigned c = 0; c < 200; ++c)
-        {
-            x86::reg32 rows = 1 + random(c < 150 ? 64 : 256);
-            x86::reg32 columns = 1 + random(c < 150 ? 64 : 256);
-            if (c % 25 == 0)
-                rows = random(2) ? 0 : x86::reg32(-1 - random(3));
-            if (c % 25 == 1)
-                columns = random(2) ? 0 : x86::reg32(-1);
-            const x86::reg32 count = (x86::sreg32(rows) > 0 && x86::sreg32(columns) > 0) ? rows * columns : 0;
-            // opaque, keyed or translucent, and where the first odd pixel lies
-            const x86::reg32 kind = random(3);
-            const x86::reg32 odd = random(count + 1);
-            for (x86::reg32 i = 0; i < count; ++i)
-            {
-                const x86::reg32 at = pixels + i * scan.bytes;
-                const bool here = kind != 0 && (i == odd || (i > odd && random(16) == 0));
-                const x86::reg32 v = g_random();
-                switch (scan.address)
-                {
-                case 0x4d18e0:
-                {
-                    const x86::reg16 p = x86::reg16((v & 0x0fff) | (here ? (kind == 1 ? 0 : (1 + random(14)) << 12) : 0xf000));
-                    std::memcpy(g_memory + at, &p, 2);
-                    break;
-                }
-                case 0x4d1950:
-                {
-                    const x86::reg32 p = (v & 0xffffff) | (here ? (kind == 1 ? 0 : (1 + random(254)) << 24) : 0xff000000);
-                    std::memcpy(g_memory + at, &p, 4);
-                    break;
-                }
-                case 0x4d1a90:
-                {
-                    const x86::reg16 p = x86::reg16((v & 0x7fff) | (here ? 0 : 0x8000));
-                    std::memcpy(g_memory + at, &p, 2);
-                    break;
-                }
-                case 0x4d1ad0:
-                {
-                    x86::reg16 p = x86::reg16(v);
-                    if (p == 0x7c0 || p == 0x7e0)
-                        p = 0;
-                    if (here)
-                        p = random(2) ? 0x7c0 : 0x7e0;
-                    std::memcpy(g_memory + at, &p, 2);
-                    break;
-                }
-                default:
-                    g_memory[at] = x86::reg8(here ? (random(2) ? 0xff : random(4)) : 4 + random(251));
-                    break;
-                }
-            }
-            // the palette: 0-3 keyed (alpha 0) or translucent, the rest opaque
-            const x86::reg32 palette = 0x1800000;
-            for (x86::reg32 i = 0; i < 256; ++i)
-            {
-                x86::reg32 colour = g_random() & 0xffffff;
-                colour |= (i < 4 ? (kind == 1 ? 0 : 1 + random(254)) : 0xff) << 24;
-                std::memcpy(g_memory + palette + i * 4, &colour, 4);
-            }
-            nfs3hp::setWord(0x563a88, c % 40 == 7 ? 0 : palette);
-            x86::CPU cpu = entryState();
-            cpu.eax = pixels;
-            cpu.edx = rows;
-            cpu.ebx = columns;
-            compare(app, scan.name, scan.address, scan.native, cpu);
-        }
-    }
-    // 0x7a: the width in edx, rows in ebx, until a byte with a nibble of 0
-    for (unsigned c = 0; c < 200; ++c)
-    {
-        const x86::reg32 bytes = 1 + random(4000);
-        for (x86::reg32 i = 0; i < bytes; ++i)
-            g_memory[pixels + i] = x86::reg8(0x11 + random(0xee) | 0x11);
-        g_memory[pixels + bytes] = random(2) ? 0x0f : 0xa0;
-        x86::CPU cpu = entryState();
-        cpu.eax = pixels;
-        const x86::reg32 widths[] = {0, x86::reg32(-1), 1, 2, 7, 8, 64, 100};
-        cpu.edx = widths[random(8)];
-        cpu.ebx = c % 20 == 0 ? x86::reg32(-1) : random(c % 3 ? 4 : 2);
-        compare(app, "fsh 0x7a sub_4d19b0", 0x4d19b0, nfs3hp::alphaNibbles, cpu);
-    }
-}
-
 /* ---- FCE -------------------------------------------------------------- */
 
 void fceCases(nfs3hp::Application& app)
@@ -757,7 +647,6 @@ int main()
 {
     nfs3hp::Application app("loading_checks");
     refpackCases(app);
-    scanCases(app);
     fceCases(app);
     frdCases(app);
     unsigned failures = 0;

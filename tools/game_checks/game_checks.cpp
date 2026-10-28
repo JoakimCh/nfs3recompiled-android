@@ -220,6 +220,12 @@ const std::pair<x86::reg32, x86::reg32> kWindows[] = {
 #include "frontend_glue.inc"
 #include "frontend_draw.inc"
 #undef FE_WINDOWS
+#define DRAW2D_WINDOWS
+#include "draw2d.inc"
+#undef DRAW2D_WINDOWS
+#define TEXT_WINDOWS
+#include "text.inc"
+#undef TEXT_WINDOWS
 #define RACESTART_WINDOWS
 #include "racestart.inc"
 #undef RACESTART_WINDOWS
@@ -263,6 +269,15 @@ const std::pair<x86::reg32, x86::reg32> kWindows[] = {
 #define GRAPHICS_WINDOWS
 #include "graphics_world.inc"
 #undef GRAPHICS_WINDOWS
+#define SHAPES_WINDOWS
+#include "shapes.inc"
+#undef SHAPES_WINDOWS
+#define FIELDS_WINDOWS
+#include "fields.inc"
+#undef FIELDS_WINDOWS
+#define OBJ3D_WINDOWS
+#include "obj3d.inc"
+#undef OBJ3D_WINDOWS
 #define SOUND_WINDOWS
 #include "sound_lib.inc"
 #undef SOUND_WINDOWS
@@ -377,6 +392,9 @@ enum Effect
 #include "frontend_glue.inc"
 #include "frontend_draw.inc"
 #undef FE_EFFECTS
+#define TEXT_EFFECTS
+#include "text.inc"
+#undef TEXT_EFFECTS
 #define RACESTART_EFFECTS
 #include "racestart.inc"
 #undef RACESTART_EFFECTS
@@ -416,6 +434,9 @@ enum Effect
 #define AIPLAN_EFFECTS
 #include "aiplan.inc"
 #undef AIPLAN_EFFECTS
+#define OBJ3D_EFFECTS
+#include "obj3d.inc"
+#undef OBJ3D_EFFECTS
 };
 
 struct StandIn
@@ -444,11 +465,10 @@ const StandIn kGameFunctions[] = {
     {0x4ff014, "vfprintf", kWatcom, 3, 0, kEax | kEdx | kEbx, 2, 1, kNothing, 1},
     // fprintf as graphics::warnTextureMemory calls it: the stream, the format and its three words.
     {0x4f4b80, "fprintf", kCdecl, 0, 5, kScratch, -1, 0, kNothing},
-    // graphics::shapeToPixels as the menus' art calls it -- held against its code on its own.
+    // port::shapes::shapeToPixels as the graphics' natives call it -- held against its code on its own.
     {0x4d37a0, "shapeToPixels", kWatcom, 4, 1, kEax, -1, 0, kNothing},
     // What the graphics' natives call that hands back a string or a record they read.
     {0x4b6520, "capture folder", kWatcom, 4, 0, kEax, -1, 0, kString},
-    {0x4d1850, "languageText", kWatcom, 4, 0, kEax, -1, 0, kString},
     {0x439520, "track name", kWatcom, 4, 0, kEax, -1, 0, kRecord},
     {0x422bd0, "car record", kWatcom, 4, 0, kEax, -1, 0, kRecord},
     {0x4f2460, "chunk", kWatcom, 4, 0, kEax, -1, 0, kRecord},
@@ -476,12 +496,11 @@ const StandIn kGameFunctions[] = {
     {0x439cc0, "a car known", kWatcom, 1, 0, kEax, -1, 0, kMainThread},
     {0x4396b0, "a police car", kWatcom, 1, 0, kEax, -1, 0, kMainThread},
     {0x439250, "a car's name", kWatcom, 1, 0, kEax, -1, 0, kNothing},
-    // What the menus' font and screens call (native_frontend_text.cpp,
-    // native_frontend_screen.cpp): a text on a 2D screen, a character's quads
-    // handed on, a shape by its name, the game's memory, the shown screen's
-    // name (the menu loop's, native whole: called by address on both sides).
+    // What the menus' text and screens call (port_text.cpp,
+    // native_frontend_screen.cpp): a text on a 2D screen, a shape by its
+    // name, the game's memory, the shown screen's name (the menu loop's,
+    // native whole: called by address on both sides).
     {0x4da4a0, "a 2D screen's text", kWatcom, 4, 0, kEax | kEbx | kEcx | kEdx, 0, 4, kNothing},
-    {0x49bd30, "quads drawn", kStdcall, 4, 1, kEax | kEbx | kEcx | kEdx, -1, 0, kNothing},
     {0x4d5db0, "a shape by its name", kWatcom, 1, 0, kEax, 0, 2, kNothing},
     {0x4e1620, "allocate", kWatcom, 3, 0, kEax, -1, 0, kBlock},
     {0x4e1890, "free", kWatcom, 1, 0, kEax, -1, 0, kNothing},
@@ -517,6 +536,9 @@ const StandIn kGameFunctions[] = {
 #include "frontend_glue.inc"
 #include "frontend_draw.inc"
 #undef FE_GAME_FUNCTIONS
+#define TEXT_GAME_FUNCTIONS
+#include "text.inc"
+#undef TEXT_GAME_FUNCTIONS
 // Before racestart's: its row for 0x4e06a0 is kept to by every other caller.
 #define DRIVETRAIN_GAME_FUNCTIONS
 #include "drivetrain.inc"
@@ -553,16 +575,18 @@ const StandIn kGameFunctions[] = {
 #undef AIPLAN_GAME_FUNCTIONS
 {0x4c9860, "the wait for the clock", kWatcom, 4, 0, kEax, -1, 0, kTickWait},
 {0x4beb20, "a rectangle copied out", kWatcom, 4, 1, kEdx, -1, 0, kRectangle},
-// A text drawn, its width onto the x87's stack; a text's width, onto it too;
-// a font's height in eax (frontend::drawText, textWidthWithOverhang,
-// characterWidth, native whole), as the graphics' natives call them: by
-// address, their arguments logged -- each held against its code on its own.
-{0x4d1000, "a text drawn", kWatcom, 3, 0, kEax, -1, 0, kFloatBack},
-{0x4d1480, "a text's width", kWatcom, 1, 0, kEax, -1, 0, kFloatBack},
-{0x4d1540, "a font's height", kWatcom, 1, 0, kEax, -1, 0, kNothing},
 #define SOUND_GAME_FUNCTIONS
 #include "sound_lib.inc"
 #undef SOUND_GAME_FUNCTIONS
+#define SHAPES_GAME_FUNCTIONS
+#include "shapes.inc"
+#undef SHAPES_GAME_FUNCTIONS
+#define FIELDS_GAME_FUNCTIONS
+#include "fields.inc"
+#undef FIELDS_GAME_FUNCTIONS
+#define OBJ3D_GAME_FUNCTIONS
+#include "obj3d.inc"
+#undef OBJ3D_GAME_FUNCTIONS
 // What the decompiled functions call that has no stand-in above (generate.py).
 #include "decompiled_standins.inc"
 };
@@ -699,6 +723,12 @@ const StandIn kPointers[] = {
 #include "frontend_glue.inc"
 #include "frontend_draw.inc"
 #undef FE_POINTERS
+#define TEXT_POINTERS
+#include "text.inc"
+#undef TEXT_POINTERS
+#define FIELDS_POINTERS
+#include "fields.inc"
+#undef FIELDS_POINTERS
 #define RACESTART_POINTERS
 #include "racestart.inc"
 #undef RACESTART_POINTERS
@@ -869,25 +899,13 @@ const Promise kPromises[] = {
     {"frontend::controllerName", true, true, 1},
     {"frontend::displayModeName", true, true, 1},
     {"frontend::nameValid", true, true, 1},
-    {"frontend::specialText", true, true, 1},
-    {"frontend::languageText", true, true, 1},
-    // The checks of a line typed in, the font, the screens (native_frontend_text.cpp,
+    // The checks of a line typed in, the screens (native_frontend_text.cpp,
     // native_frontend_screen.cpp): every register compared.
     {"frontend::shortNameCharacter", true, true, 0},
     {"frontend::shortNameValid", true, true, 0},
     {"frontend::languageNameValid", true, true, 0},
     {"frontend::languageFileNameValid", true, true, 0},
     {"frontend::lineAllowed", true, true, 0},
-    {"frontend::textWidth", true, true, 0, true, kNoHeap, true},
-    {"frontend::selectFont", true, true, 0},
-    {"frontend::measureText", true, true, 0, true, kNoHeap, true},
-    {"frontend::textWidthWithOverhang", true, true, 0, true, kNoHeap, true},
-    {"frontend::drawText", true, true, 0, true, kNoHeap, true},
-    {"frontend::drawCharacter", true, true, 0, true, kNoHeap, true},
-    {"frontend::takeQuad", true, true, 0},
-    {"frontend::viewport", true, true, 0},
-    {"frontend::toScreenX", true, true, 0},
-    {"frontend::toScreenY", true, true, 0},
     {"frontend::placePointer", true, true, 0},
     {"frontend::setPointer", true, true, 0},
     {"frontend::loadScreenArt", true, true, 0},
@@ -916,6 +934,12 @@ const Promise kPromises[] = {
 #include "frontend_glue.inc"
 #include "frontend_draw.inc"
 #undef FE_PROMISES
+#define DRAW2D_PROMISES
+#include "draw2d.inc"
+#undef DRAW2D_PROMISES
+#define TEXT_PROMISES
+#include "text.inc"
+#undef TEXT_PROMISES
 #define RACESTART_PROMISES
 #include "racestart.inc"
 #undef RACESTART_PROMISES
@@ -958,6 +982,15 @@ const Promise kPromises[] = {
 #define SOUND_PROMISES
 #include "sound_lib.inc"
 #undef SOUND_PROMISES
+#define SHAPES_PROMISES
+#include "shapes.inc"
+#undef SHAPES_PROMISES
+#define FIELDS_PROMISES
+#include "fields.inc"
+#undef FIELDS_PROMISES
+#define OBJ3D_PROMISES
+#include "obj3d.inc"
+#undef OBJ3D_PROMISES
     // The Watcom runtime's (native_watcom.cpp).
     {"watcom::CHP", true, false, 0, true},
     {"watcom::GetThreadPtr", true, true},
@@ -1756,6 +1789,9 @@ public:
 #include "frontend_glue.inc"
 #include "frontend_draw.inc"
 #undef FE_EFFECT_CASES
+#define TEXT_EFFECT_CASES
+#include "text.inc"
+#undef TEXT_EFFECT_CASES
 #define RACESTART_EFFECT_CASES
 #include "racestart.inc"
 #undef RACESTART_EFFECT_CASES
@@ -1795,6 +1831,9 @@ public:
 #define AIPLAN_EFFECT_CASES
 #include "aiplan.inc"
 #undef AIPLAN_EFFECT_CASES
+#define OBJ3D_EFFECT_CASES
+#include "obj3d.inc"
+#undef OBJ3D_EFFECT_CASES
         case kRectangle:
             // A screen's, mostly: 640 by 480 to 1600 by 1200, or any size.
             word(cpu.edx) = r % 64;
@@ -1994,6 +2033,10 @@ void MemMap::usedRanges(std::vector<std::pair<x86::reg32, x86::reg32>>& ranges)
 }
 
 }  // namespace win32
+
+#define TEXT_HOOKS
+#include "text.inc"
+#undef TEXT_HOOKS
 
 /* The game's functions the generated code calls by address: their stand-ins. */
 #define STAND_IN(a)                                                                      \
@@ -5006,6 +5049,9 @@ void makeMmxArguments(CheckApp& g, const std::string& name, x86::CPU& cpu, x86::
 #include "frontend_glue.inc"
 #include "frontend_draw.inc"
 #undef FE_ARGUMENTS
+#define DRAW2D_ARGUMENTS
+#include "draw2d.inc"
+#undef DRAW2D_ARGUMENTS
 #define RACESTART_ARGUMENTS
 #include "racestart.inc"
 #undef RACESTART_ARGUMENTS
@@ -5048,6 +5094,9 @@ void makeMmxArguments(CheckApp& g, const std::string& name, x86::CPU& cpu, x86::
 #define SOUND_ARGUMENTS
 #include "sound_lib.inc"
 #undef SOUND_ARGUMENTS
+#define TEXT_ARGUMENTS
+#include "text.inc"
+#undef TEXT_ARGUMENTS
 
 /* The function's arguments, on the stack at esp + 4 on, and its registers. */
 /* The decompiled functions' cases (native_decompiled.cpp): every global the
@@ -5094,6 +5143,20 @@ x86::reg32 decompiledValue()
 #define GRAPHICS_ARGUMENTS
 #include "graphics_world.inc"
 #undef GRAPHICS_ARGUMENTS
+
+/* The game's shapes' cases (shapes.inc). */
+#define SHAPES_ARGUMENTS
+#include "shapes.inc"
+#undef SHAPES_ARGUMENTS
+
+/* The menus' widgets that hold a value rewritten (fields.inc). */
+#define FIELDS_ARGUMENTS
+#include "fields.inc"
+#undef FIELDS_ARGUMENTS
+/* The menus' 3D object's cases (obj3d.inc). */
+#define OBJ3D_ARGUMENTS
+#include "obj3d.inc"
+#undef OBJ3D_ARGUMENTS
 
 void makeDecompiledArguments(CheckApp& g, const std::string& name, x86::CPU& cpu)
 {
@@ -5233,9 +5296,24 @@ void makeArguments(CheckApp& g, const Tested& t, x86::reg32 esp, x86::CPU& cpu)
         makeMmxArguments(g, name.substr(5), cpu, a);
     if (name.compare(0, 5, "snd::") == 0)
         makeSoundArguments(g, name.substr(5), cpu, a);
+    // The port's rewrites of the menus' text (text.inc).
+    if (name.compare(0, 12, "port::text::") == 0)
+        makeTextArguments(g, name.substr(12), cpu, a);
     // The port's rewrites of the sound's: the same world.
-    if (name.compare(0, 6, "port::") == 0)
+    else if (name.compare(0, 6, "port::") == 0)
         makeSoundArguments(g, name.substr(6), cpu, a);
+    // The port's 2D drawing: the menus' drawing world.
+    if (name.compare(0, 14, "port::draw2d::") == 0)
+        makeDraw2dArguments(g, name.substr(14), cpu, a);
+    // The game's shapes rewritten (shapes.inc): their own world, over the sound's.
+    if (name.compare(0, 14, "port::shapes::") == 0)
+        makeShapesArguments(g, name.substr(14), cpu, a);
+    // The menus' widgets that hold a value (fields.inc): the menus' drawing world.
+    if (name.compare(0, 14, "port::fields::") == 0)
+        makeFieldsArguments(g, name.substr(14), cpu, a);
+    // The menus' 3D object rewritten (obj3d.inc): its own world, over the sound's.
+    if (name.compare(0, 13, "port::obj3d::") == 0)
+        makeObj3dArguments(g, name.substr(13), cpu, a);
     for (x86::reg32 i = 0; i < 9; ++i)
         g.word(esp + 4 + 4 * i) = a[i];
 }

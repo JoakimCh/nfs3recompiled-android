@@ -36,11 +36,10 @@ final class TouchLayoutEditor {
         CheckBox snap=activity.findViewById(R.id.editor_snap);
         snap.setChecked(preferences.getBoolean(GamePreferences.TOUCH_SNAP,true));
         snap.setOnCheckedChangeListener((box,on)->preferences.edit().putBoolean(GamePreferences.TOUCH_SNAP,on).apply());
-        /* There is one layout to arrange now: the racing one.  A menu has no
-         * controls of ours on it at all -- the screen itself is what it is
-         * worked with, the system's back is Escape, and the keyboard comes up
-         * by itself -- so the editor has nothing to show for it and no longer
-         * asks which of the two is being edited. */
+        /* There is one layout to arrange: the racing one.  A menu has only the
+         * keyboard button on it, in its corner -- the screen itself is what it
+         * is worked with and the system's back is Escape -- so the editor does
+         * not ask which of the two is being edited. */
         overlay.setMenuMode(false);
         activity.findViewById(R.id.editor_done).setOnClickListener(v->done.run());
         activity.findViewById(R.id.editor_reset).setOnClickListener(v->new AlertDialog.Builder(activity)

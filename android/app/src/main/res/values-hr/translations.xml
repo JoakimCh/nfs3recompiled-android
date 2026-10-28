@@ -65,7 +65,7 @@
  <string name="size_label">Veličina gumba</string>
  <string name="auto_hide_label">Sakrij nakon 4 sekunde neaktivnosti</string>
  <string name="auto_hide_note">Na Java strani još nema signala izbornik/utrka, pa automatsko skrivanje broji neaktivnost i u izbornicima i u utrkama. Dodirni sloj da se ponovno prikaže.</string>
- <string name="orientation_label">Orijentacija igre</string>
+ <string name="orientation_label">Orijentacija zaslona</string>
  <string name="orientation_auto">Automatska rotacija — oba smjera</string>
  <string name="orientation_landscape">Fiksno — vodoravno</string>
  <string name="orientation_landscape_reverse">Fiksno — vodoravno, obrnuto</string>

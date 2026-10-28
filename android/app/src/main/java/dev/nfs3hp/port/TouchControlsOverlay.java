@@ -257,6 +257,10 @@ public final class TouchControlsOverlay extends View {
             controls.add(new Control(b.action,getContext().getString(label(b.action)),
                 new RectF(b.left(),b.top(),b.right(),b.bottom()),pulse(b.action),size));
         for(Control c:controls) {
+            /* The menu's keyboard stays where the layout puts it: the editor
+             * arranges only the racing layout, so a menu position saved by 0.74
+             * could not be dragged back. */
+            if(menuMode) { constrain(c);continue; }
             String k=layoutPrefix()+c.action;
             float x=savedX(k,c.box.centerX()),y=savedY(k,c.box.centerY());
             c.visualSize=preferences.getFloat(k+"_size",1);

@@ -1,5 +1,6 @@
 #include "native_controls_host.h"
 #include "native_guest.h"
+#include "port_text.h"
 
 #include <cstdint>
 #include <initializer_list>
@@ -37,8 +38,6 @@ using x86::reg32;
 constexpr reg32 kInRace = 0x559234;          // the menus are a race's pause screens
 // The pointer.
 constexpr reg32 kMouseX = 0x55e5e4, kMouseY = 0x55e5e8;   // where the menus have it, on a 640 by 480 screen
-constexpr reg32 kViewport = 0x7cda70;        // the screen's: left, top, width, height
-constexpr reg32 kMenuWidth = 0x280, kMenuHeight = 0x1e0;
 constexpr reg32 kMouse = 0x554ee8;           // the mouse's handle, or none
 constexpr reg32 kGetDeviceData = 0x28;       // GetDeviceData: what the mouse has buffered
 constexpr reg32 kPointerLeft = 0x5f38e0, kPointerTop = 0x5f38e4;
@@ -125,71 +124,7 @@ void leave(win32::WinApplication* app, x86::CPU& cpu, std::initializer_list<reg3
     cpu.esp += 4;
 }
 
-/* sub_451400 and sub_451440: eax on a 640 by 480 screen, on the screen's
- * own: eax times its width (the viewport's [ebp-0x10]) or its height
- * ([ebp-0xc]) over 640 or 480. */
-void toScreen(win32::WinApplication* app, x86::CPU& cpu, reg32 size, reg32 menuSize);
-
 }  // namespace
-
-/* 0x4beb80: the screen's viewport, its left to [eax], top to [edx], width to
- * [ebx], height to [ecx]. */
-void viewport(win32::WinApplication* app, x86::CPU& cpu)
-{
-    push(app, cpu, cpu.esi);
-    push(app, cpu, cpu.ebp);
-    cpu.ebp = cpu.esp;
-    cpu.esi = at(app, kViewport);
-    put(app, cpu.eax, cpu.esi);
-    cpu.eax = at(app, kViewport + 4);
-    put(app, cpu.edx, cpu.eax);
-    cpu.eax = at(app, kViewport + 8);
-    put(app, cpu.ebx, cpu.eax);
-    cpu.eax = at(app, kViewport + 0xc);
-    put(app, cpu.ecx, cpu.eax);
-    cpu.ebp = pop(app, cpu);
-    cpu.esi = pop(app, cpu);
-    cpu.esp += 4;
-}
-
-namespace
-{
-
-void toScreen(win32::WinApplication* app, x86::CPU& cpu, reg32 size, reg32 menuSize)
-{
-    enter(app, cpu, {&cpu.ebx, &cpu.ecx, &cpu.edx, &cpu.esi}, 0x10);
-    const reg32 ebp = cpu.ebp;
-    cpu.esi = cpu.eax;
-    cpu.ecx = ebp - 0xc;
-    cpu.ebx = ebp - 0x10;
-    cpu.edx = ebp - 4;
-    cpu.eax = ebp - 8;
-    if (!direct(app, cpu, viewport))
-        return;
-    cpu.esi *= at(app, ebp + size);  // imul: its low 32 bits
-    cpu.ecx = menuSize;
-    cpu.edx = cpu.esi;
-    cpu.eax = cpu.esi;
-    cpu.edx = reg32(x86::sreg32(cpu.edx) >> 31);
-    const std::int64_t dividend = std::int64_t(x86::sreg32(cpu.eax));
-    cpu.eax = reg32(x86::sreg32(dividend / x86::sreg32(cpu.ecx)));
-    cpu.edx = reg32(x86::sreg32(dividend % x86::sreg32(cpu.ecx)));
-    leave(app, cpu, {&cpu.ebx, &cpu.ecx, &cpu.edx, &cpu.esi});
-}
-
-}  // namespace
-
-/* 0x451400: x on a 640 wide screen, on the screen's own. */
-void toScreenX(win32::WinApplication* app, x86::CPU& cpu)
-{
-    toScreen(app, cpu, reg32(-0x10), kMenuWidth);
-}
-
-/* 0x451440: y on a 480 high screen, on the screen's own. */
-void toScreenY(win32::WinApplication* app, x86::CPU& cpu)
-{
-    toScreen(app, cpu, reg32(-0xc), kMenuHeight);
-}
 
 /* 0x435230: the pointer put at eax, edx, inside its bounds, what the mouse
  * has buffered taken first. */
@@ -249,11 +184,11 @@ void setPointer(win32::WinApplication* app, x86::CPU& cpu)
     put(app, kMouseX, cpu.eax);
     if (cpu.ebx != 0)
     {
-        if (!direct(app, cpu, toScreenX))
+        if (!direct(app, cpu, port::text::toScreenX))
             return;
         cpu.ecx = cpu.eax;
         cpu.eax = cpu.edx;
-        if (!direct(app, cpu, toScreenY))
+        if (!direct(app, cpu, port::text::toScreenY))
             return;
         cpu.edx = cpu.eax;
     }

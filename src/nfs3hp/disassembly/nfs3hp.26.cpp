@@ -16939,7 +16939,7 @@ L_0x004bd96a:
     cpu.eax = 1 /*0x1*/;
     // 004bd9ab  e8b03ff9ff             -call 0x451960
     cpu.esp -= 4;
-    sub_451960(app, cpu.sync());
+    nfs3hp::port::text::menuKey(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004bd9b0  e8cb730000             -call 0x4c4d80

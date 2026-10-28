@@ -65,7 +65,7 @@
  <string name="size_label">Величина дугмади</string>
  <string name="auto_hide_label">Сакриј после 4 секунде неактивности</string>
  <string name="auto_hide_note">На Јава страни још нема сигнала мени/трка, па аутоматско сакривање броји неактивност и у менијима и у тркама. Додирни слој да се поново прикаже.</string>
- <string name="orientation_label">Оријентација игре</string>
+ <string name="orientation_label">Оријентација екрана</string>
  <string name="orientation_auto">Аутоматска ротација — оба смера</string>
  <string name="orientation_landscape">Фиксно — водоравно</string>
  <string name="orientation_landscape_reverse">Фиксно — водоравно, обрнуто</string>
