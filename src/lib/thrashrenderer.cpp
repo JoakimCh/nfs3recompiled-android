@@ -673,14 +673,6 @@ void ThrashRenderer::snapshot(std::vector<x86::reg32>& out) const
         real(f);
 }
 
-/* No atlas to run out of: GL memory is the only limit. */
-void ThrashRenderer::atlasFreeSpace(x86::reg32& texels, x86::reg32& wholeTiles, x86::reg32& total) const
-{
-    total = 4096 * 4096;
-    texels = total;
-    wholeTiles = 256;
-}
-
 void ThrashRenderer::setZWrite(bool enable)
 {
     if (enable != m_zBuffer)

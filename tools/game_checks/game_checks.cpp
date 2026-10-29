@@ -278,6 +278,9 @@ const std::pair<x86::reg32, x86::reg32> kWindows[] = {
 #define OBJ3D_WINDOWS
 #include "obj3d.inc"
 #undef OBJ3D_WINDOWS
+#define BUTTONS_WINDOWS
+#include "buttons.inc"
+#undef BUTTONS_WINDOWS
 #define SOUND_WINDOWS
 #include "sound_lib.inc"
 #undef SOUND_WINDOWS
@@ -395,6 +398,9 @@ enum Effect
 #define TEXT_EFFECTS
 #include "text.inc"
 #undef TEXT_EFFECTS
+#define BUTTONS_EFFECTS
+#include "buttons.inc"
+#undef BUTTONS_EFFECTS
 #define RACESTART_EFFECTS
 #include "racestart.inc"
 #undef RACESTART_EFFECTS
@@ -587,6 +593,9 @@ const StandIn kGameFunctions[] = {
 #define OBJ3D_GAME_FUNCTIONS
 #include "obj3d.inc"
 #undef OBJ3D_GAME_FUNCTIONS
+#define BUTTONS_GAME_FUNCTIONS
+#include "buttons.inc"
+#undef BUTTONS_GAME_FUNCTIONS
 // What the decompiled functions call that has no stand-in above (generate.py).
 #include "decompiled_standins.inc"
 };
@@ -729,6 +738,9 @@ const StandIn kPointers[] = {
 #define FIELDS_POINTERS
 #include "fields.inc"
 #undef FIELDS_POINTERS
+#define BUTTONS_POINTERS
+#include "buttons.inc"
+#undef BUTTONS_POINTERS
 #define RACESTART_POINTERS
 #include "racestart.inc"
 #undef RACESTART_POINTERS
@@ -991,6 +1003,9 @@ const Promise kPromises[] = {
 #define OBJ3D_PROMISES
 #include "obj3d.inc"
 #undef OBJ3D_PROMISES
+#define BUTTONS_PROMISES
+#include "buttons.inc"
+#undef BUTTONS_PROMISES
     // The Watcom runtime's (native_watcom.cpp).
     {"watcom::CHP", true, false, 0, true},
     {"watcom::GetThreadPtr", true, true},
@@ -1792,6 +1807,9 @@ public:
 #define TEXT_EFFECT_CASES
 #include "text.inc"
 #undef TEXT_EFFECT_CASES
+#define BUTTONS_EFFECT_CASES
+#include "buttons.inc"
+#undef BUTTONS_EFFECT_CASES
 #define RACESTART_EFFECT_CASES
 #include "racestart.inc"
 #undef RACESTART_EFFECT_CASES
@@ -5148,6 +5166,9 @@ x86::reg32 decompiledValue()
 #define SHAPES_ARGUMENTS
 #include "shapes.inc"
 #undef SHAPES_ARGUMENTS
+#define BUTTONS_ARGUMENTS
+#include "buttons.inc"
+#undef BUTTONS_ARGUMENTS
 
 /* The menus' widgets that hold a value rewritten (fields.inc). */
 #define FIELDS_ARGUMENTS
@@ -5314,6 +5335,9 @@ void makeArguments(CheckApp& g, const Tested& t, x86::reg32 esp, x86::CPU& cpu)
     // The menus' 3D object rewritten (obj3d.inc): its own world, over the sound's.
     if (name.compare(0, 13, "port::obj3d::") == 0)
         makeObj3dArguments(g, name.substr(13), cpu, a);
+    // The menus' widgets rewritten (buttons.inc): their own world.
+    if (name.compare(0, 15, "port::buttons::") == 0)
+        makeButtonsArguments(g, name.substr(15), cpu, a);
     for (x86::reg32 i = 0; i < 9; ++i)
         g.word(esp + 4 + 4 * i) = a[i];
 }

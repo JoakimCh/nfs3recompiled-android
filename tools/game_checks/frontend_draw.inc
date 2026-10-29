@@ -34,7 +34,6 @@
 #elif defined(FE_PROMISES)
 // {"frontend::name", watcom, result, arguments, fpu, heap, liveOnly},
 // Every register compared; the x87's stack, its live registers and its words too.
-{"frontend::layoutMenuItem", true, true, 0, true, kNoHeap, true},
 {"frontend::sliderStoredValue", true, true, 0, true, kNoHeap, true},
 {"frontend::twoAxisValue", true, true, 0, true, kNoHeap, true},
 {"frontend::loadQfs", true, true, 0, true, kNoHeap, true},

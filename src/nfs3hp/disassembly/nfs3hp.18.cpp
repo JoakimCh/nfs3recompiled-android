@@ -9963,44 +9963,7 @@ void Application::sub_470a60(WinApplication* app, x86::CPU& cpu)
     return;
 }
 
-/* align: skip 0x8d 0x80 0x00 0x00 0x00 0x00 */
-void Application::sub_470a70(WinApplication* __restrict app, x86::CPU& cpu_)
-{
-  x86::Local cpu(cpu_);
-  NFS2_USE(cpu);
-  NFS2_USE(app);
-    // 00470a70  55                     -push ebp
-    app->getMemory<x86::reg32>(cpu.esp-4) = cpu.ebp;
-    cpu.esp -= 4;
-    // 00470a71  89e5                   -mov ebp, esp
-    cpu.ebp = cpu.esp;
-    // 00470a73  83ec04                 -sub esp, 4
-    (cpu.esp) -= x86::reg32(x86::sreg32(4 /*0x4*/));
-    // 00470a76  c645ffff               -mov byte ptr [ebp - 1], 0xff
-    app->getMemory<x86::reg8>(cpu.ebp + x86::reg32(-1) /* -0x1 */) = 255 /*0xff*/;
-    // 00470a7a  a1448b6700             -mov eax, dword ptr [0x678b44]
-    cpu.eax = app->getMemory<x86::reg32>(x86::reg32(6785860) /* 0x678b44 */);
-    // 00470a7f  c1f810                 -sar eax, 0x10
-    cpu.eax = x86::reg32(x86::sreg32(cpu.eax) >> (16 /*0x10*/ % 32));
-    // 00470a82  25ff000000             -and eax, 0xff
-    cpu.eax &= x86::reg32(x86::sreg32(255 /*0xff*/));
-    // 00470a87  8845fe                 -mov byte ptr [ebp - 2], al
-    app->getMemory<x86::reg8>(cpu.ebp + x86::reg32(-2) /* -0x2 */) = cpu.al;
-    // 00470a8a  8845fd                 -mov byte ptr [ebp - 3], al
-    app->getMemory<x86::reg8>(cpu.ebp + x86::reg32(-3) /* -0x3 */) = cpu.al;
-    // 00470a8d  8845fc                 -mov byte ptr [ebp - 4], al
-    app->getMemory<x86::reg8>(cpu.ebp + x86::reg32(-4) /* -0x4 */) = cpu.al;
-    // 00470a90  8b45fc                 -mov eax, dword ptr [ebp - 4]
-    cpu.eax = app->getMemory<x86::reg32>(cpu.ebp + x86::reg32(-4) /* -0x4 */);
-    // 00470a93  89ec                   -mov esp, ebp
-    cpu.esp = cpu.ebp;
-    // 00470a95  5d                     -pop ebp
-    cpu.ebp = app->getMemory<x86::reg32>(cpu.esp);
-    cpu.esp += 4;
-    // 00470a96  c3                     -ret 
-    cpu.esp += 4;
-    return;
-}
+/* sub_470a70: native, nfs3hp::dead::stub_0x470a70 */
 
 /* align: skip 0x8d 0x80 0x00 0x00 0x00 0x00 0x8d 0x52 0x00 */
 void Application::sub_470aa0(WinApplication* __restrict app, x86::CPU& cpu_)

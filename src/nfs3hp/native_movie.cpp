@@ -24,15 +24,12 @@ extern "C" {
  *   calls them.  The pointers it hands around are the game's, as host
  *   pointers into its memory.  Its waits let the game's other threads run.
  * - sub_4f3560 and sub_4f3600, the decoder's two entries, for when the player
- *   is left generated (NFS_MAD_PLAYER=0): the same C decoder, its state kept
- *   here -- nothing but the decoder reads it in the game -- and checked
- *   against the generated code with NFS_MAD_CHECK=1.
+ *   runs generated under the decoder's check (NFS_MAD_CHECK=1): the same C
+ *   decoder, its state kept here -- nothing but the decoder reads it in the
+ *   game -- and checked against the generated code.
  * - sub_4df2b0, the frame on the screen: not converted to the 16-bit surface
  *   by sub_4fdc90, but to full colour here and handed to the renderer, which
- *   scales it onto its place on the GPU (Renderer::presentMovieFrame).
- *
- * NFS_MAD=0 (launch extra mad false) leaves all of it generated, as does
- * NFS_NATIVES=0; NFS_MAD_PLAYER=0, NFS_MAD_GL=0 each part. */
+ *   scales it onto its place on the GPU (Renderer::presentMovieFrame). */
 
 namespace nfs3hp
 {
@@ -47,18 +44,6 @@ using u8 = uint8_t;
 using u32 = uint32_t;
 using i32 = int32_t;
 
-bool envOn(const char* name)
-{
-    const char* value = SDL_getenv(name);
-    return !value || SDL_strcmp(value, "0") != 0;
-}
-
-bool madOn()
-{
-    static const bool on = envOn("NFS_MAD");
-    return on && nativesEnabled();
-}
-
 bool madChecking()
 {
     static const bool on = []() {
@@ -72,14 +57,7 @@ bool madChecking()
  * does not use: it takes the generated player with it. */
 bool playerOn()
 {
-    static const bool on = envOn("NFS_MAD_PLAYER");
-    return on && madOn() && !madChecking();
-}
-
-bool glOn()
-{
-    static const bool on = envOn("NFS_MAD_GL");
-    return on && madOn();
+    return !madChecking();
 }
 
 /* The player, with the decoder in it, shared by the native player and the
@@ -540,7 +518,7 @@ void hostDisplayOpen(void* u, int32_t x, int32_t y, int32_t w, int32_t hgt, int3
 void hostDisplayFrame(void* u, const uint8_t* frame)
 {
     Game& G = game(u);
-    if (!glOn() || !showFrame(G.app, G.g(frame)))
+    if (!showFrame(G.app, G.g(frame)))
         G.call(0x4df2b0, G.g(frame));
 }
 
@@ -629,7 +607,7 @@ bool madPlay(win32::WinApplication* app, x86::CPU& cpu)
  * the quantiser in ebx. */
 bool madBeginFrame(win32::WinApplication* app, x86::CPU& cpu)
 {
-    if (!madOn() || s_original)
+    if (s_original)
         return false;
     u8* m = memoryOf(app);
     const u32 data = cpu.eax;
@@ -653,7 +631,7 @@ bool madBeginFrame(win32::WinApplication* app, x86::CPU& cpu)
  * the macroblock, the width in ebx. */
 bool madMacroblock(win32::WinApplication* app, x86::CPU& cpu)
 {
-    if (!madOn() || s_original)
+    if (s_original)
         return false;
     u8* m = memoryOf(app);
     const u32 ref = cpu.eax, cur = cpu.edx;
@@ -675,7 +653,7 @@ bool madMacroblock(win32::WinApplication* app, x86::CPU& cpu)
 /* sub_4df2b0: the frame at eax on the screen. */
 bool madShowFrame(win32::WinApplication* app, x86::CPU& cpu)
 {
-    if (!glOn() || !showFrame(app, cpu.eax))
+    if (!showFrame(app, cpu.eax))
         return false;
     cpu.esp += 4;
     return true;

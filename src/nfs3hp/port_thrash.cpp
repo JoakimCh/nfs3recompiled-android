@@ -1129,14 +1129,6 @@ bool screenRect(int& x, int& y, int& w, int& h, int& pictureWidth, int& pictureH
     return w > 0 && h > 0 && pictureWidth > 0 && pictureHeight > 0;
 }
 
-bool atlasFreeSpace(reg32& freeTexels, reg32& freeTiles, reg32& totalTexels)
-{
-    if (!s_renderer)
-        return false;
-    s_renderer->atlasFreeSpace(freeTexels, freeTiles, totalTexels);
-    return true;
-}
-
 void clearPicture(App* app, CPU& cpu)
 {
     if (!s_screen || !s_renderer)

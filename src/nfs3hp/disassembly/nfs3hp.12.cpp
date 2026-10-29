@@ -17165,7 +17165,7 @@ L_0x00449966:
     cpu.eax = cpu.edx;
     // 00449970  e88b93ffff             -call 0x442d00
     cpu.esp -= 4;
-    sub_442d00(app, cpu.sync());
+    nfs3hp::port::buttons::menuEdited(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00449975  85c0                   +test eax, eax

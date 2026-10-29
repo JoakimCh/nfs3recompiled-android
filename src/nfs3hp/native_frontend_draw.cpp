@@ -4,17 +4,13 @@
 #include <iterator>
 #include <utility>
 
-/* The menus' drawing: their 3D and 2D, text and shapes.  The sliders -- a
- * value of 0 to 1 dragged along a track, its thumb and the arrows either side
- * of it (0x469xxx) -- and the two-axis sliders (0x46axxx-0x46cxxx), each a
- * record of the menus' controls with its parts' rectangles, its values and
- * the function called when one changes: found under the pointer, moved by the
- * mouse, drawn from the art of their kind (the tables at 0x55a4de, 0x55a4ec,
- * 0x55a96c and 0x678aae).  A menu item's place and size worked out from its
- * text (0x4613e0).  A .qfs loaded by its name (0x4956f0).  What they draw
- * with is the port's own: the text and the fonts port_text.cpp's, the 2D
- * drawing -- rectangles, frames, the 640 by 480 quads, the 2D screens' text --
- * port_draw2d.cpp's, the menus' shapes port_shapes.cpp's.
+/* What is left here of the menus' drawing: a slider's value and a two-axis
+ * slider's, onto the x87's stack (0x469520, 0x46afd0), and a .qfs loaded by
+ * its name (0x4956f0).  The rest is the port's own: the sliders and the
+ * other widgets that hold a value port_fields.cpp's, the buttons, lists and
+ * the menu items' layout port_buttons.cpp's, the text and the fonts
+ * port_text.cpp's, the 2D drawing port_draw2d.cpp's, the menus' shapes
+ * port_shapes.cpp's.
  *
  * disassemble_nfs3hp.py binds each address to the function of that name here
  * (FRONTEND_DRAW_NATIVES), and the generated code calls it by name.  Written
@@ -52,15 +48,14 @@ constexpr reg32 kPartShapes = 0x678aae;
 // What the menus' code and the graphics' natives do.
 constexpr reg32 kChop = 0x4dfd56;            // __CHP: st(0) rounded toward 0
 constexpr reg32 kFloor = 0x4f1c30;           // floor of the double on the stack
-constexpr reg32 kStrcmp = 0x4ee310;
 constexpr reg32 kSprintf = 0x4df690;
 constexpr reg32 kViewport = 0x4beb80, kSetClip = 0x4bebe0;
-constexpr reg32 kTextWidth = 0x452020, kLanguageText = 0x4d1850, kSelectFont = 0x452100;
+constexpr reg32 kSelectFont = 0x452100;
 // The menus' code of frontend_glue's and the formats': a list's line, a text
 // scale for the 2D screens, a 2D screen's text, the quads of a font drawn,
 // whether the mouse holds a control, a shape of an .fsh by its name, a .qfs
 // file loaded.
-constexpr reg32 kListLine = 0x442c80, kScreenTextScale = 0x451530, kScreenText = 0x452190;
+constexpr reg32 kScreenText = 0x452190;
 constexpr reg32 kMouseHolds = 0x49c080;
 constexpr reg32 kLoadQfsFile = 0x4f2e20;
 // This file's functions with a stand-in of their own: called by address.
@@ -360,265 +355,6 @@ void loadQfs(win32::WinApplication* app, x86::CPU& cpu)
     cpu.ecx = pop(app, cpu);
     cpu.ebx = pop(app, cpu);
     cpu.esp += 4;
-}
-
-namespace
-{
-
-/* The height of a line of the fonts' text on the 3D card, from an 'A': its
- * width and its overhang each times [0x53a9f4] over the screen's height,
- * whole pixels toward 0, to the item at ebx's word 0x20. */
-bool fontLineHeight(win32::WinApplication* app, x86::CPU& cpu)
-{
-    const reg32 ebp = cpu.ebp;
-    cpu.eax = 0x41;
-    if (!direct(app, cpu, port::text::characterWidth))
-        return false;
-    put(app, ebp - 4, cpu.eax);
-    cpu.fpu.push(integer(app, ebp - 4));
-    cpu.fpu.st(0) = cpu.fpu.mul(cpu.fpu.st(0), loadDouble(app, 0x53a9f4));
-    cpu.fpu.push(integer(app, kScreenHeight));
-    divPop(cpu, 1);
-    cpu.eax = 0x41;
-    storeDouble(app, ebp - 0x14, cpu.fpu.pop());
-    if (!direct(app, cpu, port::text::characterOverhang))
-        return false;
-    put(app, ebp - 4, cpu.eax);
-    cpu.fpu.push(integer(app, ebp - 4));
-    cpu.fpu.st(0) = cpu.fpu.mul(cpu.fpu.st(0), loadDouble(app, 0x53a9f4));
-    cpu.fpu.push(integer(app, kScreenHeight));
-    divPop(cpu, 1);
-    cpu.fpu.st(0) = cpu.fpu.add(cpu.fpu.st(0), loadDouble(app, ebp - 0x14));
-    if (!byAddress(app, cpu, kChop))
-        return false;
-    storeInteger(app, cpu, ebp - 4);
-    cpu.eax = at(app, ebp - 4);
-    putHalf(app, cpu.ebx + 0x20, cpu.ax);
-    return true;
-}
-
-}  // namespace
-
-/* 0x4613e0: the place and size of the menu item at eax (its x and y at 0x1c
- * and 0x1a, its width and height at 0x1e and 0x20) from its kind's
- * (0x40 bytes a kind at 0x559fe8) and its own, and from its text: the text
- * at 0x3c -- with " ..." after it (0x53a9c0, or 0x53a9c8 in German) where it
- * opens a list (0x40, without 0x58) or names the controls' or the
- * graphics' screen (0x44, 0x53a5fc or 0x53a65c) -- measured in the 2D
- * screens' font, a line of the fonts high on the 3D card; a title (kind 3)
- * in their text scale 0.6, a list (kind 0xf) as wide as its line's text.
- * Then placed by its alignment (0x56): to the left of x, about it, or right
- * of it -- a title on the 3D card with a margin. */
-void layoutMenuItem(win32::WinApplication* app, x86::CPU& cpu)
-{
-    enter(app, cpu, {&cpu.ebx, &cpu.ecx, &cpu.edx, &cpu.esi, &cpu.edi}, 0x114);
-    const reg32 ebp = cpu.ebp;
-    const reg32 text = ebp - 0x114;
-    auto done = [&] { leave(app, cpu, {&cpu.ebx, &cpu.ecx, &cpu.edx, &cpu.esi, &cpu.edi}); };
-    cpu.edx = cpu.eax;
-    cpu.ecx = 0x40;
-    cpu.edi = text;
-    cpu.esi = 0x45ccd0;
-    copyDwords(app, cpu);
-    cpu.ecx = 0;
-    put(app, ebp - 0xc, cpu.ecx);
-    cpu.esi = high(app, cpu.eax + 0x46);
-    cpu.ebx = cpu.eax;
-    put(app, ebp - 8, cpu.ecx);
-    cpu.esi <<= 6;
-    cpu.edi = at(app, cpu.edx + 0x46);
-    cpu.ax = half(app, cpu.esi + 0x559fe8);
-    cpu.cx = half(app, cpu.esi + 0x55a014);
-    cpu.si = half(app, cpu.edx + 6);
-    cpu.eax += cpu.ecx;
-    cpu.edi = reg32(sreg32(cpu.edi) >> 16);
-    cpu.eax += cpu.esi;
-    cpu.edi <<= 6;
-    putHalf(app, cpu.edx + 0x1c, cpu.ax);
-    cpu.ax = x86::reg16(half(app, cpu.edi + 0x559fec) + half(app, cpu.edi + 0x55a018));
-    cpu.si = half(app, cpu.edx + 8);
-    cpu.eax += cpu.esi;
-    putHalf(app, cpu.edx + 0x1a, cpu.ax);
-    cpu.eax = high(app, cpu.edx + 0x46) << 6;
-    cpu.ax = half(app, cpu.eax + 0x55a01c);
-    putHalf(app, cpu.edx + 0x1e, cpu.ax);
-    cpu.eax = high(app, cpu.edx + 0x46) << 6;
-    cpu.ax = half(app, cpu.eax + 0x55a020);
-    cpu.esi = at(app, cpu.edx + 0x3c);
-    putHalf(app, cpu.edx + 0x20, cpu.ax);
-    if (cpu.esi != 0)
-    {
-        cpu.edi = text;
-        inlineCopy(app, cpu);
-        bool more = false;
-        if (at(app, cpu.edx + 0x40) != 0 && at(app, cpu.edx + 0x58) == 0)
-        {
-            more = true;
-        }
-        else
-        {
-            cpu.ecx = at(app, cpu.ebx + 0x44);
-            if (cpu.ecx != 0)
-            {
-                cpu.edx = 0x53a5fc;
-                cpu.eax = cpu.ecx;
-                if (!byAddress(app, cpu, kStrcmp))
-                    return;
-                if (cpu.eax == 0)
-                {
-                    more = true;
-                }
-                else
-                {
-                    cpu.edx = 0x53a65c;
-                    cpu.eax = at(app, cpu.ebx + 0x44);
-                    if (!byAddress(app, cpu, kStrcmp))
-                        return;
-                    more = cpu.eax == 0;
-                }
-            }
-        }
-        if (more)
-        {
-            cpu.esi = at(app, 0x6fbb4c) == 1 ? 0x53a9c0 : 0x53a9c8;
-            cpu.edi = text;
-            inlineAppend(app, cpu);
-        }
-    }
-    else
-    {
-        cpu.ah = 0;
-        putByte(app, text, cpu.ah);
-    }
-    // Its size, by its kind.
-    cpu.ax = half(app, cpu.ebx + 0x48);
-    if (cpu.ax == 3)
-    {
-        if (at(app, kMenu3d) != 0)
-        {
-            if (!direct(app, cpu, port::text::keepTextScale))
-                return;
-            push(app, cpu, 0x3f19999a);
-            if (!byAddress(app, cpu, kScreenTextScale))
-                return;
-            cpu.di = half(app, cpu.ebx + 0x1a);
-            cpu.edx = 0x12;
-            cpu.edi -= 1;
-            cpu.eax = text;
-            putHalf(app, cpu.ebx + 0x1a, cpu.di);
-            if (!byAddress(app, cpu, kTextWidth))
-                return;
-            cpu.eax += 0xa;
-            put(app, ebp - 4, cpu.eax);
-            cpu.fpu.push(integer(app, ebp - 4));
-            cpu.fpu.st(0) = cpu.fpu.add(cpu.fpu.st(0), loadFloat(app, 0x53a9f0));
-            putHalf(app, cpu.ebx + 0x20, 0x16);
-            if (!byAddress(app, cpu, kChop))
-                return;
-            storeInteger(app, cpu, ebp - 4);
-            cpu.eax = at(app, ebp - 4);
-            putHalf(app, cpu.ebx + 0x1e, cpu.ax);
-            if (!direct(app, cpu, port::text::restoreTextScale))
-                return;
-        }
-    }
-    else if (cpu.ax <= 2 || cpu.ax == 0xf)
-    {
-        if (cpu.ax == 0)
-        {
-            cpu.edx = 0x12;
-            cpu.eax = text;
-            if (!byAddress(app, cpu, kTextWidth))
-                return;
-            putHalf(app, cpu.ebx + 0x1e, cpu.ax);
-        }
-        if (at(app, kMenu3d) != 0 && !fontLineHeight(app, cpu))
-            return;
-    }
-    // Its place.
-    if (half(app, cpu.ebx + 0x48) == 0xf)
-    {
-        cpu.esi = high(app, cpu.ebx + 0x1c);
-        cpu.edx = at(app, cpu.ebx + 0x58);
-        if (cpu.edx == 0)
-            return done();
-        cpu.eax = cpu.edx;
-        if (byte(app, cpu.edx) == 0)
-            return done();
-        cpu.edx = ebp - 0xc;
-        if (!byAddress(app, cpu, kListLine))
-            return;
-        if (cpu.eax != 0)
-        {
-            cpu.edx = at(app, at(app, ebp - 0xc));
-            cpu.eax = reg32(x86::sreg16(half(app, cpu.eax + cpu.edx * 2)));
-            if (!byAddress(app, cpu, kLanguageText))
-                return;
-            if (cpu.eax != 0)
-            {
-                cpu.edx = 0x12;
-                if (!byAddress(app, cpu, kTextWidth))
-                    return;
-                put(app, ebp - 8, cpu.eax);
-            }
-        }
-        cpu.edx = x86::sreg16(half(app, cpu.ebx + 0x5e)) > 0 ? high(app, cpu.ebx + 0x5c) : 0x32;
-        cpu.al = byte(app, cpu.ebx + 0x5c);
-        if (cpu.al == 1)
-        {
-            cpu.eax = at(app, ebp - 8) + cpu.edx;
-            putHalf(app, cpu.ebx + 0x1e, cpu.ax);
-        }
-        else if (cpu.al != 2)
-        {
-            cpu.ax = half(app, cpu.ebx + 6);
-            cpu.eax -= cpu.edx;
-            cpu.edx += cpu.esi;
-            putHalf(app, cpu.ebx + 0x1c, cpu.ax);
-            putHalf(app, cpu.ebx + 0x1e, cpu.dx);
-        }
-        return done();
-    }
-    cpu.ax = half(app, cpu.ebx + 0x56);
-    if (cpu.ax == 1)
-    {
-        if (half(app, cpu.ebx + 0x48) != 3 || at(app, kMenu3d) == 0)
-        {
-            cpu.cx = half(app, cpu.ebx + 0x1c);
-            cpu.ax = half(app, cpu.ebx + 0x1e);
-            cpu.ecx -= cpu.eax;
-            putHalf(app, cpu.ebx + 0x1c, cpu.cx);
-            return done();
-        }
-        cpu.eax = high(app, cpu.ebx + 0x1a);
-        cpu.edx = high(app, cpu.ebx + 0x1c);
-        cpu.eax = cpu.eax - cpu.edx + 5;
-        put(app, ebp - 4, cpu.eax);
-        cpu.fpu.push(integer(app, ebp - 4));
-        cpu.fpu.st(0) = cpu.fpu.add(cpu.fpu.st(0), loadFloat(app, 0x53a9fc));
-    }
-    else if (cpu.ax == 2)
-    {
-        halve(cpu, high(app, cpu.ebx + 0x1c));
-        cpu.edx = high(app, cpu.ebx + 0x1a) - cpu.eax;
-        putHalf(app, cpu.ebx + 0x1c, cpu.dx);
-        return done();
-    }
-    else
-    {
-        if (half(app, cpu.ebx + 0x48) != 3 || at(app, kMenu3d) == 0)
-            return done();
-        cpu.eax = high(app, cpu.ebx + 0x1a) - 5;
-        put(app, ebp - 4, cpu.eax);
-        cpu.fpu.push(integer(app, ebp - 4));
-        cpu.fpu.st(0) = cpu.fpu.add(cpu.fpu.st(0), loadFloat(app, 0x53aa00));
-    }
-    if (!byAddress(app, cpu, kChop))
-        return;
-    storeInteger(app, cpu, ebp - 4);
-    cpu.eax = at(app, ebp - 4);
-    putHalf(app, cpu.ebx + 0x1c, cpu.ax);
-    done();
 }
 
 }  // namespace frontend

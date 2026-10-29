@@ -62,10 +62,6 @@ void setSwapObserver(SwapObserver observer);
  * window is open. */
 bool screenRect(int& x, int& y, int& w, int& h, int& pictureWidth, int& pictureHeight);
 
-/* What the renderer has of texture room (ThrashRenderer::atlasFreeSpace), for
- * the car detail trace.  False while no window is open. */
-bool atlasFreeSpace(reg32& freeTexels, reg32& freeTiles, reg32& totalTexels);
-
 /* 4:3 in the middle of a wider picture: while on, everything the game draws is
  * squeezed sideways into the 4:3 rectangle centred on the picture, as it would
  * have been drawn on a 4:3 screen.  For a screen the game only knows how to

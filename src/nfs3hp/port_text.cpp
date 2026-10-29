@@ -50,8 +50,11 @@ void hudQueueQuad(win32::WinApplication* app, x86::reg32 list, x86::reg32 a, x86
 
 namespace port
 {
-/* port_sound_effects.cpp's menu effect (0x4181d0). */
-void playMenuEffect(App* app, CPU& cpu);
+/* port_sound_effects.cpp's menu effect (0x4181d0), declared by its type:
+ * tools/game_checks/generate.py would take `void playMenuEffect(` for its
+ * definition. */
+using Adapter = void(App* app, CPU& cpu);
+Adapter playMenuEffect;
 
 namespace text
 {

@@ -31,23 +31,13 @@
  * to the rest of the game (the file opened, the game's heap) are made the same
  * way, through dynamic_call.
  *
- * NFS_NATIVE_LOAD=0 (or NFS_NATIVES=0) leaves all of them to the generated
- * code; NFS_NATIVE_CHECK=load (or =1) runs each call both ways and logs any
+ * NFS_NATIVE_CHECK=load (or =1) runs each call both ways and logs any
  * difference ([NATIVE]). */
 namespace nfs3hp
 {
 
 namespace
 {
-
-bool loadNativesOn()
-{
-    static const bool on = []() {
-        const char* value = SDL_getenv("NFS_NATIVE_LOAD");
-        return !value || SDL_strcmp(value, "0") != 0;
-    }();
-    return on && nativesEnabled();
-}
 
 bool loadChecking()
 {
@@ -61,12 +51,10 @@ bool loadChecking()
 /* Set while a check runs the generated code, which must not come back here. */
 thread_local bool t_loadOriginal = false;
 
-/* Whether the generated code is to run: the stand-ins switched off, or a check
- * (here or in native_vertices.cpp) running the generated code. */
+/* Whether the generated code is to run: a check (here or in
+ * native_vertices.cpp) running it. */
 bool stepAside()
 {
-    if (!loadNativesOn())
-        return true;
     if (loadChecking() && t_loadOriginal)
         return true;
     return nativeOriginalRunning();

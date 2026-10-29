@@ -951,13 +951,6 @@ for group in LOAD_GROUPS:
 FRONTEND_GLUE_NATIVES = {
     0x43c000: "frontend::bindingIsDigital",
     0x43c040: "frontend::noteDigitalControls",
-    0x442bf0: "frontend::listAllowed",
-    0x442c50: "frontend::listLength",
-    0x442c80: "frontend::findList",
-    0x44ac90: "frontend::loadShapes",
-    0x461270: "frontend::buttonKey",
-    0x463ff0: "frontend::listKey",
-    0x464560: "frontend::layoutList",
     0x46c9b0: "frontend::sliderValue",
     0x46cac0: "frontend::sliderSetOnMove",
     0x46cca0: "frontend::sliderSetColour",
@@ -971,7 +964,6 @@ FRONTEND_GLUE_NATIVES = {
     0x4cc970: "frontend::nextKey",
 }
 FRONTEND_DRAW_NATIVES = {
-    0x4613e0: "frontend::layoutMenuItem",
     0x469520: "frontend::sliderStoredValue",
     0x46afd0: "frontend::twoAxisValue",
     0x4956f0: "frontend::loadQfs",
@@ -2082,6 +2074,78 @@ PORT_OBJ3D_NATIVES = {
     0x4d79b0: "port::obj3d::drawLogo",
 }
 GAME_NATIVES.update(PORT_OBJ3D_NATIVES)
+# The menus' widgets rewritten (port::buttons, src/nfs3hp/port_buttons.cpp):
+# what a screen's text, image, button, cascade, drop list, select list, check
+# box, box overlay, speech, rectangle and text box do as they are shown,
+# drawn, keyed, laid out and hidden, and what those call of their own -- the
+# lists by name, the HUD's art loaded, a network race's ready marks, the
+# track's map, a shape drawn turned.  No generated code behind them;
+# tools/game_checks holds each against it (buttons.inc).
+PORT_BUTTONS_NATIVES = {
+    0x43fdd0: "port::buttons::joinListedGame",
+    0x440c40: "port::buttons::drawReadyMarks",
+    0x440d20: "port::buttons::networkLeft",
+    0x442450: "port::buttons::drawLicence",
+    0x442b90: "port::buttons::listColours",
+    0x442bf0: "port::buttons::listAllowed",
+    0x442c50: "port::buttons::listLength",
+    0x442c80: "port::buttons::findList",
+    0x442d00: "port::buttons::menuEdited",
+    0x442d20: "port::buttons::menuRecordEdited",
+    0x44ac90: "port::buttons::loadShapes",
+    0x44b170: "port::buttons::redrawMenu",
+    0x455e30: "port::buttons::textBoxDraw",
+    0x456020: "port::buttons::textBoxKey",
+    0x456110: "port::buttons::textBoxUp",
+    0x456170: "port::buttons::textBoxShown",
+    0x4561d0: "port::buttons::textBoxHidden",
+    0x456320: "port::buttons::slideTrackMap",
+    0x456590: "port::buttons::drawTrackFacts",
+    0x456670: "port::buttons::drawGlow",
+    0x456800: "port::buttons::trackMapShape",
+    0x45fae0: "port::buttons::rectDraw",
+    0x45fc90: "port::buttons::speechDraw",
+    0x45fca0: "port::buttons::speechShown",
+    0x45fcb0: "port::buttons::speechHidden",
+    0x45fcd0: "port::buttons::textDraw",
+    0x460070: "port::buttons::textUp",
+    0x4600b0: "port::buttons::textShown",
+    0x460100: "port::buttons::imageDraw",
+    0x460410: "port::buttons::imageUp",
+    0x460440: "port::buttons::imageShown",
+    0x460700: "port::buttons::pulseOn",
+    0x460770: "port::buttons::pulseColour",
+    0x4607c0: "port::buttons::buttonDraw",
+    0x461270: "port::buttons::buttonKey",
+    0x4613e0: "port::buttons::layoutMenuItem",
+    0x461900: "port::buttons::buttonShown",
+    0x461a70: "port::buttons::cascadeLayoutClosed",
+    0x461aa0: "port::buttons::cascadeLineText",
+    0x461d00: "port::buttons::cascadeDraw",
+    0x462320: "port::buttons::cascadePass",
+    0x4623a0: "port::buttons::cascadeShown",
+    0x4624a0: "port::buttons::cascadeKey",
+    0x4628d0: "port::buttons::cascadeUp",
+    0x4629c0: "port::buttons::checkboxDraw",
+    0x462ad0: "port::buttons::checkboxKey",
+    0x462b20: "port::buttons::checkboxShown",
+    0x462b30: "port::buttons::checkboxUp",
+    0x462b90: "port::buttons::boxOverlayDraw",
+    0x462c30: "port::buttons::selectListShown",
+    0x462ce0: "port::buttons::selectListHidden",
+    0x462d20: "port::buttons::selectListDraw",
+    0x462f90: "port::buttons::selectListPass",
+    0x462fa0: "port::buttons::selectListKey",
+    0x4633d0: "port::buttons::selectListUp",
+    0x4634d0: "port::buttons::dropListDraw",
+    0x463de0: "port::buttons::dropListPass",
+    0x463e60: "port::buttons::dropListShown",
+    0x463ff0: "port::buttons::listKey",
+    0x464560: "port::buttons::layoutList",
+    0x4d6730: "port::buttons::drawTurnedShape",
+    0x4d88f0: "port::buttons::drawColouredRectangle",
+}
+GAME_NATIVES.update(PORT_BUTTONS_NATIVES)
 
 
 
@@ -2705,6 +2769,17 @@ for _line in open(__import__("os").path.join(__import__("os").path.dirname(__imp
     if _line.startswith("DEAD("):
         GRAPHICS_DEAD[int(_line[5:-1], 16)] = "graphics::dead_%s" % _line[5:-1]
 GAME_NATIVES.update(GRAPHICS_DEAD)
+
+# The code nothing can reach -- no call, jump, pointer or address of it
+# anywhere that runs, proved by tools/audit_dead.py: a stub each that stops
+# the game (src/nfs3hp/native_dead.inc, native_dead.cpp), no code generated.
+GAME_DEAD = {}
+for _line in open(__import__("os").path.join(__import__("os").path.dirname(__import__("os").path.abspath(__file__)),
+                                     "src/nfs3hp/native_dead.inc")).read().splitlines():
+    if _line.startswith("DEAD("):
+        _address = _line[5:_line.index(")")]
+        GAME_DEAD[int(_address, 16)] = "dead::stub_%s" % _address
+GAME_NATIVES.update(GAME_DEAD)
 
 # Functions decompiled one at a time (src/nfs3hp/native_decompiled.cpp, and
 # native_graphics.cpp for the graphics'): each

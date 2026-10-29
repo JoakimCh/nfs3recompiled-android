@@ -1317,6 +1317,11 @@ int main(int argc, char** argv)
     loadImage(argc > 1 ? argv[1] : "nfs3hp/nfs3.exe");
     g_image.assign(g_memory + 0x534000, g_memory + 0x56e000);
     const unsigned rounds = argc > 2 ? unsigned(std::atoi(argv[2])) : 1000;
+    // A share of the functions, "k/n" -- every n-th from the k-th -- for
+    // windows/run.py to check them side by side.
+    unsigned share = 0, shares = 1;
+    if (argc > 3)
+        std::sscanf(argv[3], "%u/%u", &share, &shares);
 
     const Case cases[] = {
         CASE(optionsOnEnter, 442aa0, Menu),
@@ -1468,8 +1473,11 @@ int main(int argc, char** argv)
 
     for (unsigned round = 0; round < rounds; ++round)
     {
-        for (const Case& c : cases)
+        for (std::size_t i = 0; i < std::size(cases); ++i)
         {
+            if (shares > 1 && i % shares != share)
+                continue;
+            const Case& c = cases[i];
             makeWorld();
             compare(app, c.name, c.address, c.native, caseEntry(c.entry, c.address));
         }
@@ -1482,7 +1490,8 @@ int main(int argc, char** argv)
                         entry.second.failures);
         failures += entry.second.failures;
     }
-    std::printf("%zu functions, %u cases each: %s\n", std::size(cases), rounds,
+    const std::size_t checked = shares > 1 ? (std::size(cases) + shares - 1 - share) / shares : std::size(cases);
+    std::printf("%zu functions, %u cases each: %s\n", checked, rounds,
                 failures ? "FAILED" : "all match");
     return failures ? 1 : 0;
 }

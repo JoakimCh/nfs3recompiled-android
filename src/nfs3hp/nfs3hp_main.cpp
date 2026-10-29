@@ -1160,76 +1160,6 @@ x86::reg32 takeArenaPeak();
 
 namespace
 {
-/* NFS_CAR_DETAIL_TRACE: once a second while a race is drawn, what car detail
- * the game settled on, read back from its own state after each swap.
- *  - The level every car was last drawn at (car+0x8b4, -1 when it was not
- *    drawn) and what that costs against the budget in sub_4bbad0: 4 minus the
- *    level per car, capped per Car Detail setting by the table at 0x4b7a50.
- *  - The transform buffer behind Render_GetTm (sub_4bbde0), a bump allocator:
- *    base 0x55fe34, cursor 0x55fe38, limit 0x7a3d04.  It starts over for every
- *    3D pass and does not take a failed allocation back, so a cursor past the
- *    limit at swap time means the last pass ran out and left something undrawn.
- *  - The texture atlas's free space.
- * Levels and the buffer describe the frame's last 3D pass, which with the
- * rear-view mirror on need not be the main view. */
-struct CarDetailTrace
-{
-    Uint64 lastLog = 0;
-    x86::reg32 peakBuffer = 0;
-    x86::reg32 overflowFrames = 0;
-    x86::reg32 frames = 0;
-};
-CarDetailTrace s_carDetailTrace;
-
-void traceCarDetail(win32::WinApplication* app)
-{
-    CarDetailTrace& trace = s_carDetailTrace;
-    const x86::reg32 limit = app->getMemory<x86::reg32>(0x7a3d04);
-    const x86::reg32 base = app->getMemory<x86::reg32>(0x55fe34);
-    const x86::reg32 cursor = app->getMemory<x86::reg32>(0x55fe38);
-    if (base && cursor >= base)
-    {
-        trace.peakBuffer = SDL_max(trace.peakBuffer, cursor - base);
-        if (cursor - base > limit)
-            ++trace.overflowFrames;
-    }
-    ++trace.frames;
-    const Uint64 now = SDL_GetTicks();
-    if (now - trace.lastLog < 1000)
-        return;
-    trace.lastLog = now;
-
-    const x86::reg32 count = app->getMemory<x86::reg32>(0x5efd9c);
-    int levels[4] = {};
-    int hidden = 0;
-    int points = 0;
-    for (x86::reg32 i = 0; i < count && i < 64; ++i)
-    {
-        const x86::reg32 car = app->getMemory<x86::reg32>(0x5efac8 + i * 4);
-        const x86::sreg32 level = car ? x86::sreg32(app->getMemory<x86::reg32>(car + 0x8b4)) : -1;
-        if (level < 0 || level > 3)
-        {
-            ++hidden;
-            continue;
-        }
-        ++levels[level];
-        points += 4 - level;
-    }
-    const x86::reg32 detail = app->getMemory<x86::reg32>(0x6fbc1c);
-    const x86::sreg32 budget = detail < 3 ? x86::sreg32(app->getMemory<x86::reg32>(0x4b7a50 + detail * 4)) : 0;
-    x86::reg32 freeTexels = 0, freeTiles = 0, totalTexels = 0;
-    nfs3hp::port::driver::atlasFreeSpace(freeTexels, freeTiles, totalTexels);
-    SDL_Log("[CARDETAIL] detail=%u cars=%u L0=%d L1=%d L2=%d L3=%d hidden=%d points=%d budget=%d"
-            " buffer peak=%u/%u overflow=%u/%u frames atlas=%u free=%u%% tiles256=%u",
-            unsigned(detail), unsigned(count), levels[0], levels[1], levels[2], levels[3], hidden,
-            points, int(budget), unsigned(trace.peakBuffer), unsigned(limit),
-            unsigned(trace.overflowFrames), unsigned(trace.frames), unsigned(SDL_sqrt(double(totalTexels))),
-            totalTexels ? unsigned(100ull * freeTexels / totalTexels) : 0u, unsigned(freeTiles));
-    trace.peakBuffer = 0;
-    trace.overflowFrames = 0;
-    trace.frames = 0;
-}
-
 /* How hard player one's car corners, for the phone's own vibration, about every
  * 40 ms while a race is drawn.  It is the load the game's Body Roll force
  * feedback is made of (sub_4716e0): [car+0x924] against the scale at 0x5efde4,
@@ -1316,7 +1246,6 @@ void steeringTick(win32::WinApplication* app)
     }
 }
 
-bool s_traceCarDetail = false;
 bool s_tracePointer = false;
 bool s_traceTicks = false;
 bool s_traceInput = false;
@@ -2333,8 +2262,7 @@ void botForceTick(win32::WinApplication* app)
 
 /* Every buffer swap: the finger and the mouse on the picture, which layout the
  * controls should be showing and which of the race's buttons, whether the pads'
- * keys go out, the phone's cornering, how the touch buttons steer, and the car
- * detail trace when asked for (NFS_CAR_DETAIL_TRACE). */
+ * keys go out, the phone's cornering and how the touch buttons steer. */
 void onSwap(win32::WinApplication* app)
 {
     ++nfs3hp::s_swaps;
@@ -2350,8 +2278,6 @@ void onSwap(win32::WinApplication* app)
     steeringTick(app);
     viewTick(app);
     botForceTick(app);
-    if (s_traceCarDetail)
-        traceCarDetail(app);
     if (s_traceTicks)
         traceTicks(app);
     if (s_traceInput)
@@ -2589,8 +2515,6 @@ int main(int argc, char* argv[])
             const x86::reg32 budgetTable = 0x4b7a50;
             app.getMemory<x86::reg32>(budgetTable) = 0x7fffffff;
         }
-        const char* detailTrace = SDL_getenv("NFS_CAR_DETAIL_TRACE");
-        s_traceCarDetail = detailTrace && *detailTrace && *detailTrace != '0';
         const char* pointerTrace = SDL_getenv("NFS_POINTER_TRACE");
         s_tracePointer = pointerTrace && *pointerTrace && *pointerTrace != '0';
         const char* tickTrace = SDL_getenv("NFS_TICK_TRACE");

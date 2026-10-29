@@ -141,62 +141,7 @@ L_0x00401000:
 
 /* sub_4042b0: native, nfs3hp::airace::dropCop */
 
-/* align: skip 0x8d 0x80 0x00 0x00 0x00 0x00 0x8d 0x92 0x00 0x00 0x00 0x00 0x8b 0xc0 */
-void Application::sub_404310(WinApplication* __restrict app, x86::CPU& cpu_)
-{
-  x86::Local cpu(cpu_);
-  NFS2_USE(cpu);
-  NFS2_USE(app);
-    // 00404310  53                     -push ebx
-    app->getMemory<x86::reg32>(cpu.esp-4) = cpu.ebx;
-    cpu.esp -= 4;
-    // 00404311  51                     -push ecx
-    app->getMemory<x86::reg32>(cpu.esp-4) = cpu.ecx;
-    cpu.esp -= 4;
-    // 00404312  52                     -push edx
-    app->getMemory<x86::reg32>(cpu.esp-4) = cpu.edx;
-    cpu.esp -= 4;
-    // 00404313  55                     -push ebp
-    app->getMemory<x86::reg32>(cpu.esp-4) = cpu.ebp;
-    cpu.esp -= 4;
-    // 00404314  89e5                   -mov ebp, esp
-    cpu.ebp = cpu.esp;
-    // 00404316  6a00                   -push 0
-    app->getMemory<x86::reg32>(cpu.esp-4) = 0 /*0x0*/;
-    cpu.esp -= 4;
-    // 00404318  6a00                   -push 0
-    app->getMemory<x86::reg32>(cpu.esp-4) = 0 /*0x0*/;
-    cpu.esp -= 4;
-    // 0040431a  bb02000000             -mov ebx, 2
-    cpu.ebx = 2 /*0x2*/;
-    // 0040431f  6a00                   -push 0
-    app->getMemory<x86::reg32>(cpu.esp-4) = 0 /*0x0*/;
-    cpu.esp -= 4;
-    // 00404321  8b9030070000           -mov edx, dword ptr [eax + 0x730]
-    cpu.edx = app->getMemory<x86::reg32>(cpu.eax + x86::reg32(1840) /* 0x730 */);
-    // 00404327  31c9                   -xor ecx, ecx
-    cpu.ecx ^= x86::reg32(x86::sreg32(cpu.ecx));
-    // 00404329  e802f5ffff             -call 0x403830
-    cpu.esp -= 4;
-    nfs3hp::airace::giveOrder(app, cpu.sync());
-    cpu.reload();
-    if (cpu.terminate) return;
-    // 0040432e  5d                     -pop ebp
-    cpu.ebp = app->getMemory<x86::reg32>(cpu.esp);
-    cpu.esp += 4;
-    // 0040432f  5a                     -pop edx
-    cpu.edx = app->getMemory<x86::reg32>(cpu.esp);
-    cpu.esp += 4;
-    // 00404330  59                     -pop ecx
-    cpu.ecx = app->getMemory<x86::reg32>(cpu.esp);
-    cpu.esp += 4;
-    // 00404331  5b                     -pop ebx
-    cpu.ebx = app->getMemory<x86::reg32>(cpu.esp);
-    cpu.esp += 4;
-    // 00404332  c3                     -ret 
-    cpu.esp += 4;
-    return;
-}
+/* sub_404310: native, nfs3hp::dead::stub_0x404310 */
 
 /* sub_404340: native, nfs3hp::airace::sendCopAhead */
 
@@ -206,149 +151,21 @@ void Application::sub_404310(WinApplication* __restrict app, x86::CPU& cpu_)
 
 /* sub_404580: native, nfs3hp::airace::nothingForCop */
 
-/* align: skip 0x8d 0x80 0x00 0x00 0x00 0x00 0x8d 0x52 0x00 0x8b 0xdb */
-void Application::sub_404590(WinApplication* app, x86::CPU& cpu)
-{
-  NFS2_USE(cpu);
-  NFS2_USE(app);
-    // 00404590  55                     -push ebp
-    app->getMemory<x86::reg32>(cpu.esp-4) = cpu.ebp;
-    cpu.esp -= 4;
-    // 00404591  89e5                   -mov ebp, esp
-    cpu.ebp = cpu.esp;
-    // 00404593  5d                     -pop ebp
-    cpu.ebp = app->getMemory<x86::reg32>(cpu.esp);
-    cpu.esp += 4;
-    // 00404594  c3                     -ret 
-    cpu.esp += 4;
-    return;
-}
+/* sub_404590: native, nfs3hp::dead::stub_0x404590 */
 
-/* align: skip 0x8d 0x80 0x00 0x00 0x00 0x00 0x8d 0x52 0x00 0x8b 0xdb */
-void Application::sub_4045a0(WinApplication* app, x86::CPU& cpu)
-{
-  NFS2_USE(cpu);
-  NFS2_USE(app);
-    // 004045a0  55                     -push ebp
-    app->getMemory<x86::reg32>(cpu.esp-4) = cpu.ebp;
-    cpu.esp -= 4;
-    // 004045a1  89e5                   -mov ebp, esp
-    cpu.ebp = cpu.esp;
-    // 004045a3  5d                     -pop ebp
-    cpu.ebp = app->getMemory<x86::reg32>(cpu.esp);
-    cpu.esp += 4;
-    // 004045a4  c3                     -ret 
-    cpu.esp += 4;
-    return;
-}
+/* sub_4045a0: native, nfs3hp::dead::stub_0x4045a0 */
 
-/* align: skip 0x8d 0x80 0x00 0x00 0x00 0x00 0x8d 0x52 0x00 0x8b 0xdb */
-void Application::sub_4045b0(WinApplication* app, x86::CPU& cpu)
-{
-  NFS2_USE(cpu);
-  NFS2_USE(app);
-    // 004045b0  55                     -push ebp
-    app->getMemory<x86::reg32>(cpu.esp-4) = cpu.ebp;
-    cpu.esp -= 4;
-    // 004045b1  89e5                   -mov ebp, esp
-    cpu.ebp = cpu.esp;
-    // 004045b3  5d                     -pop ebp
-    cpu.ebp = app->getMemory<x86::reg32>(cpu.esp);
-    cpu.esp += 4;
-    // 004045b4  c3                     -ret 
-    cpu.esp += 4;
-    return;
-}
+/* sub_4045b0: native, nfs3hp::dead::stub_0x4045b0 */
 
-/* align: skip 0x8d 0x80 0x00 0x00 0x00 0x00 0x8d 0x52 0x00 0x8b 0xdb */
-void Application::sub_4045c0(WinApplication* app, x86::CPU& cpu)
-{
-  NFS2_USE(cpu);
-  NFS2_USE(app);
-    // 004045c0  55                     -push ebp
-    app->getMemory<x86::reg32>(cpu.esp-4) = cpu.ebp;
-    cpu.esp -= 4;
-    // 004045c1  89e5                   -mov ebp, esp
-    cpu.ebp = cpu.esp;
-    // 004045c3  5d                     -pop ebp
-    cpu.ebp = app->getMemory<x86::reg32>(cpu.esp);
-    cpu.esp += 4;
-    // 004045c4  c3                     -ret 
-    cpu.esp += 4;
-    return;
-}
+/* sub_4045c0: native, nfs3hp::dead::stub_0x4045c0 */
 
-/* align: skip 0x8d 0x80 0x00 0x00 0x00 0x00 0x8d 0x52 0x00 0x8b 0xdb */
-void Application::sub_4045d0(WinApplication* app, x86::CPU& cpu)
-{
-  NFS2_USE(cpu);
-  NFS2_USE(app);
-    // 004045d0  55                     -push ebp
-    app->getMemory<x86::reg32>(cpu.esp-4) = cpu.ebp;
-    cpu.esp -= 4;
-    // 004045d1  89e5                   -mov ebp, esp
-    cpu.ebp = cpu.esp;
-    // 004045d3  5d                     -pop ebp
-    cpu.ebp = app->getMemory<x86::reg32>(cpu.esp);
-    cpu.esp += 4;
-    // 004045d4  c3                     -ret 
-    cpu.esp += 4;
-    return;
-}
+/* sub_4045d0: native, nfs3hp::dead::stub_0x4045d0 */
 
-/* align: skip 0x8d 0x80 0x00 0x00 0x00 0x00 0x8d 0x52 0x00 0x8b 0xdb */
-void Application::sub_4045e0(WinApplication* app, x86::CPU& cpu)
-{
-  NFS2_USE(cpu);
-  NFS2_USE(app);
-    // 004045e0  55                     -push ebp
-    app->getMemory<x86::reg32>(cpu.esp-4) = cpu.ebp;
-    cpu.esp -= 4;
-    // 004045e1  89e5                   -mov ebp, esp
-    cpu.ebp = cpu.esp;
-    // 004045e3  5d                     -pop ebp
-    cpu.ebp = app->getMemory<x86::reg32>(cpu.esp);
-    cpu.esp += 4;
-    // 004045e4  c3                     -ret 
-    cpu.esp += 4;
-    return;
-}
+/* sub_4045e0: native, nfs3hp::dead::stub_0x4045e0 */
 
-/* align: skip 0x8d 0x80 0x00 0x00 0x00 0x00 0x8d 0x52 0x00 0x8b 0xdb */
-void Application::sub_4045f0(WinApplication* app, x86::CPU& cpu)
-{
-  NFS2_USE(cpu);
-  NFS2_USE(app);
-    // 004045f0  55                     -push ebp
-    app->getMemory<x86::reg32>(cpu.esp-4) = cpu.ebp;
-    cpu.esp -= 4;
-    // 004045f1  89e5                   -mov ebp, esp
-    cpu.ebp = cpu.esp;
-    // 004045f3  5d                     -pop ebp
-    cpu.ebp = app->getMemory<x86::reg32>(cpu.esp);
-    cpu.esp += 4;
-    // 004045f4  c3                     -ret 
-    cpu.esp += 4;
-    return;
-}
+/* sub_4045f0: native, nfs3hp::dead::stub_0x4045f0 */
 
-/* align: skip 0x8d 0x80 0x00 0x00 0x00 0x00 0x8d 0x52 0x00 0x8b 0xdb */
-void Application::sub_404600(WinApplication* app, x86::CPU& cpu)
-{
-  NFS2_USE(cpu);
-  NFS2_USE(app);
-    // 00404600  55                     -push ebp
-    app->getMemory<x86::reg32>(cpu.esp-4) = cpu.ebp;
-    cpu.esp -= 4;
-    // 00404601  89e5                   -mov ebp, esp
-    cpu.ebp = cpu.esp;
-    // 00404603  5d                     -pop ebp
-    cpu.ebp = app->getMemory<x86::reg32>(cpu.esp);
-    cpu.esp += 4;
-    // 00404604  c3                     -ret 
-    cpu.esp += 4;
-    return;
-}
+/* sub_404600: native, nfs3hp::dead::stub_0x404600 */
 
 /* sub_404610: native, nfs3hp::airace::classRule */
 

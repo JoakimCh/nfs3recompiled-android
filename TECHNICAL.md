@@ -386,6 +386,15 @@ go through it:
   game's reads after the call (by liveness on the original code), which are
   left uncompared. `tools/frontend_checks/windows/run.py [rounds]` builds and
   runs `tools/frontend_checks` the same way.
+  Both make the game's code again only when what their generators read has
+  changed (a key of it in the build directory: for game_checks the
+  generators, nfs3.exe, the stand-in rows, and of the port's sources only the
+  addresses, functions and namespaces they name), compile only what changed
+  since (game_checks' generated code in 16 parts), and check side by side on
+  every thread (`GAME_CHECKS_JOBS`): game_checks a function a process,
+  frontend_checks a share of the functions a process (`frontend_checks.exe
+  nfs3.exe rounds k/n`). frontend_checks copies the whole 16 MB memory three
+  times a case, so its shares are bound by the memory's bandwidth.
 - The C runtime the game was linked with, Watcom's, goes native family by
   family (`src/nfs3hp/native_watcom.cpp`, in `nfs3hp::watcom`, bound as the
   game's own are, `WATCOM_NATIVES`). `src/nfs3hp/watcom.md` maps all of it in
@@ -591,6 +600,18 @@ go through it:
   go is from the way it points. They come out as the generated code to the
   bit in every precision and both builds (`tools/native_ai_checks.py`);
   `NFS_NATIVE_AI=0` runs the generated code instead.
+- The code nothing can reach has no generated code: 904 functions, a stub
+  each that stops the game with its address (`nfs3hp::dead`,
+  `src/nfs3hp/native_dead.inc`, `native_dead.cpp`). Most of it the linker
+  brought in with the libraries' objects -- the modem and serial links (TAPI,
+  RAS, the COM ports), the C runtime's and EA's unused functions, import
+  thunks the game calls past. `tools/audit_dead.py` proves each and writes the
+  list (`--write`): no call, jump, immediate or displacement of it in any
+  instruction that can run, the natives' original code included; no pointer
+  to it or into it anywhere in the image outside instructions, every
+  relocation and every 4-byte window of the data; no address of it in the
+  port's own source; no running on into it. Every run proves the list again
+  and fails if one of it can be reached.
 
 Each was compared with the generated code bit for bit before it was switched
 on — memory, registers, flags, the FPU and the triangles drawn. The vertex,
@@ -667,6 +688,25 @@ them too). Their x87 arithmetic is the x87's to the bit, through the
 emulated FPU in the game's order. `PORT_TEXT_NATIVES`, `PORT_DRAW2D_NATIVES`
 and `PORT_SHAPES_NATIVES` bind them; `tools/game_checks` holds each against
 its code (`text.inc`, `draw2d.inc`, `shapes.inc`).
+
+Then the menus' widgets, the second layer: what each widget of the registry
+at 0x557a84 does as its item is shown, drawn, keyed, laid out and hidden.
+The text and image items, buttons, cascades, drop and select lists, check
+boxes, overlays, the speech and rectangle items and the text box
+(`port_buttons.h`, `port_buttons.cpp`, 62 functions); the fields typed into
+(a string, a number, a character, a float, a fixed point), the sliders and
+two-axis sliders, the list of lines and the car's colour chooser
+(`port_fields.h`, `port_fields.cpp`, 108); a 3D object on a menu screen, the
+car shown with its lights (`port_obj3d.h`, `port_obj3d.cpp`, 33). They call
+the menu loop and the dialogs, which are not rewritten yet, by address.
+`PORT_BUTTONS_NATIVES`, `PORT_FIELDS_NATIVES` and `PORT_OBJ3D_NATIVES` bind
+them; `tools/game_checks` holds each against its code (`buttons.inc`,
+`fields.inc`, `obj3d.inc`). Where one rewrite calls another's address, the
+call is stood in on both sides (`STOOD_IN` in `generate.py`): a rewrite's
+call into a rewrite runs the real code on the generated side, which a
+made-up world cannot always feed. The widgets that belong to one screen
+(controls, colour wheel, records, tournament, pursuit, summary, compare,
+performance, the HUD editor's) come later with their screens.
 
 A test showed the whole game playing normally in single precision
 (`NFS_FPU_FLOAT=1`), the menus too: the port's own C++ can use the host's
@@ -874,9 +914,8 @@ from the phone; the rest matter for a desktop run.
 | `NFS_TEXTURES32` | on | `0` has the Voodoo2 driver refuse 32-bit textures again, so the game shrinks them to 16 bits as it used to. |
 | `NFS_TEXCOORD_REBASE` | on | `0` leaves far-out texture coordinates as the game sends them (see Projected headlights), to compare. |
 | `NFS_DEPTH16` | auto | On where the depth buffer has more than 16 bits and the GPU is not an Adreno 5xx. `0` keeps the GPU's own depth precision, `1` forces the Voodoo's 16-bit steps (see Projected headlights); the `[GPU]` lines count the frames drawn in them. |
-| `NFS_NATIVES` | on | `0` runs the generated code instead of the loading, movie and car-specs natives (`NFS_NATIVE_LOAD`, `NFS_MAD`), to compare speeds. The vertex, polygon and drawing natives always run. |
-| `NFS_NATIVE_LOAD` | on | `0` leaves the loading of the game's data to the generated code: RefPack, FCE models and FRD tracks (`src/nfs3hp/native_loading.cpp`). `NFS_NATIVE_CHECK=load` checks only these, every call. |
-| `NFS_MAD` | on | `0` plays the movies with the generated MAD player, decoder and display instead of `src/nfs3hp/native_movie.cpp`; `NFS_MAD_PLAYER=0` and `NFS_MAD_GL=0` leave just the player or the full-colour output generated. `NFS_MAD_CHECK=1` (debug) runs the generated player and checks the native decoder against the generated one ([MAD]). |
+| `NFS_NATIVES` | on | `0` runs the generated code instead of the car-specs native, to compare speeds. The loading, movie, vertex, polygon and drawing natives always run. |
+| `NFS_MAD_CHECK` | off | `1` (debug) runs the generated MAD player and checks the native decoder (`src/nfs3hp/native_movie.cpp`) against the generated one ([MAD]). |
 | `NFS_LOG` | on | `0` (debug mode off, the launcher's Advanced screen) writes nothing to the log: log priority critical, and SDL's direct Android logging held back (`android/app/jni/sdl_quiet.h`). With debug mode off the launcher sets none of the diagnostic variables. |
 | `NFS_FPU_EXTENDED` | on | Races at the x87's extended precision, as the Modern Patch runs them; `0` races in single precision, as the original (see The x87's precision). Every player of a network race needs the same. Debug mode takes it from its screen or a launch: `adb shell am start -n dev.nfs3hp.port/.SplashActivity --ez fpu_single_races true`. |
 | `NFS_FPU_FLOAT` | off | `1` rounds every x87 operation of the whole game to a float's 24 bits, the menus too, and races in single precision (`NFS_FPU_EXTENDED=0`): the game as it would run on the host's float. An experiment. Debug mode takes it from its screen or a launch: `--ez fpu_float true`. |

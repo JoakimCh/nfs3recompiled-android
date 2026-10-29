@@ -57,7 +57,6 @@ final class DebugOptions
         new Option("trace_ticks", false, "The game's clock against real time [TICKS]", "NFS_TICK_TRACE", "1"),
         new Option("trace_input", false, "What player one's car is driven with [INPUT]", "NFS_INPUT_TRACE", "1"),
         new Option("trace_pointer", false, "The game's cursor and the touch pointer", "NFS_POINTER_TRACE", "1"),
-        new Option("trace_car_detail", false, "Car detail against the game's budget [CARDETAIL]", "NFS_CAR_DETAIL_TRACE", "1"),
         // Every car's memory once a second of a race, to cars.bin (with trace_ticks).
         new Option("trace_cars", false, "Every car's memory to cars.bin (with ticks)", "NFS_CAR_TRACE", "1"),
         new Option("net_trace", false, "EA's comm library, for network races [COMM]", "NFS_NET_TRACE", "1"),
@@ -70,13 +69,9 @@ final class DebugOptions
 
     /* The natives against the generated code, and the experiments. */
     static final Option[] CODE = {
-        new Option("natives", true, "Loading, movie and specs natives (off: generated code)", "NFS_NATIVES", "0"),
-        new Option("load_native", true, "Native loading: RefPack, FSH, FCE, FRD", "NFS_NATIVE_LOAD", "0"),
+        new Option("natives", true, "Car specs native (off: generated code)", "NFS_NATIVES", "0"),
         new Option("fe_native", true, "Native front end", "NFS_FE_NATIVE", "0"),
         new Option("native_ai_off", false, "Opponents on their generated code", "NFS_NATIVE_AI", "0"),
-        new Option("mad", true, "Native movies: player, decoder, display", "NFS_MAD", "0"),
-        new Option("mad_player", true, "Native movie player", "NFS_MAD_PLAYER", "0"),
-        new Option("mad_gl", true, "Movies in full colour through GL", "NFS_MAD_GL", "0"),
         // Listed before native_check, which sets the same variable and wins.
         new Option("load_check", false, "Check the loading natives [NATIVE]", "NFS_NATIVE_CHECK", "load"),
         new Option("native_check", false, "Check every checked native [NATIVE]", "NFS_NATIVE_CHECK", "1"),

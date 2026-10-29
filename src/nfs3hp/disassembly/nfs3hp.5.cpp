@@ -46,37 +46,7 @@ namespace nfs3hp
 
 /* sub_41ffa0: native, nfs3hp::trackdata::setLaneOffsets */
 
-/* align: skip  */
-void Application::sub_41ffb0(WinApplication* __restrict app, x86::CPU& cpu_)
-{
-  x86::Local cpu(cpu_);
-  NFS2_USE(cpu);
-  NFS2_USE(app);
-    // 0041ffb0  53                     -push ebx
-    app->getMemory<x86::reg32>(cpu.esp-4) = cpu.ebx;
-    cpu.esp -= 4;
-    // 0041ffb1  55                     -push ebp
-    app->getMemory<x86::reg32>(cpu.esp-4) = cpu.ebp;
-    cpu.esp -= 4;
-    // 0041ffb2  89e5                   -mov ebp, esp
-    cpu.ebp = cpu.esp;
-    // 0041ffb4  bb01000000             -mov ebx, 1
-    cpu.ebx = 1 /*0x1*/;
-    // 0041ffb9  e812000000             -call 0x41ffd0
-    cpu.esp -= 4;
-    nfs3hp::trackdata::lanePosition(app, cpu.sync());
-    cpu.reload();
-    if (cpu.terminate) return;
-    // 0041ffbe  5d                     -pop ebp
-    cpu.ebp = app->getMemory<x86::reg32>(cpu.esp);
-    cpu.esp += 4;
-    // 0041ffbf  5b                     -pop ebx
-    cpu.ebx = app->getMemory<x86::reg32>(cpu.esp);
-    cpu.esp += 4;
-    // 0041ffc0  c3                     -ret 
-    cpu.esp += 4;
-    return;
-}
+/* sub_41ffb0: native, nfs3hp::dead::stub_0x41ffb0 */
 
 /* sub_41ffd0: native, nfs3hp::trackdata::lanePosition */
 
@@ -667,23 +637,7 @@ L_0x004211b5:
 
 /* sub_421360: native, nfs3hp::carstate::idleHook */
 
-/* align: skip 0x8d 0x80 0x00 0x00 0x00 0x00 0x8d 0x52 0x00 0x8b 0xdb */
-void Application::sub_421370(WinApplication* app, x86::CPU& cpu)
-{
-  NFS2_USE(cpu);
-  NFS2_USE(app);
-    // 00421370  55                     -push ebp
-    app->getMemory<x86::reg32>(cpu.esp-4) = cpu.ebp;
-    cpu.esp -= 4;
-    // 00421371  89e5                   -mov ebp, esp
-    cpu.ebp = cpu.esp;
-    // 00421373  5d                     -pop ebp
-    cpu.ebp = app->getMemory<x86::reg32>(cpu.esp);
-    cpu.esp += 4;
-    // 00421374  c3                     -ret 
-    cpu.esp += 4;
-    return;
-}
+/* sub_421370: native, nfs3hp::dead::stub_0x421370 */
 
 /* sub_421380: native, nfs3hp::carstate::viewFromCamera */
 
@@ -735,61 +689,7 @@ void Application::sub_421370(WinApplication* app, x86::CPU& cpu)
 
 /* sub_422aa0: native, nfs3hp::carstate::cockpitShown */
 
-/* align: skip 0x8d 0x80 0x00 0x00 0x00 0x00 0x8d 0x52 0x00 0x8b 0xdb */
-void Application::sub_422b70(WinApplication* __restrict app, x86::CPU& cpu_)
-{
-  x86::Local cpu(cpu_);
-  NFS2_USE(cpu);
-  NFS2_USE(app);
-    // 00422b70  52                     -push edx
-    app->getMemory<x86::reg32>(cpu.esp-4) = cpu.edx;
-    cpu.esp -= 4;
-    // 00422b71  55                     -push ebp
-    app->getMemory<x86::reg32>(cpu.esp-4) = cpu.ebp;
-    cpu.esp -= 4;
-    // 00422b72  89e5                   -mov ebp, esp
-    cpu.ebp = cpu.esp;
-    // 00422b74  8b15b0d36f00           -mov edx, dword ptr [0x6fd3b0]
-    cpu.edx = app->getMemory<x86::reg32>(x86::reg32(7328688) /* 0x6fd3b0 */);
-    // 00422b7a  83fa01                 +cmp edx, 1
-    {
-        x86::reg32 tmp1 = cpu.edx;
-        x86::reg32 tmp2 = x86::reg32(x86::sreg32(1 /*0x1*/));
-        x86::reg32 result = tmp1 - tmp2;
-        cpu.flags.cf = tmp1 < tmp2;
-        cpu.flags.of = 1 & (tmp1 >> 31);
-        cpu.flags.of ^= 1 & (result >> 31);
-        cpu.flags.of &= (1 & (tmp1 >> 31)) != (1 & (tmp2 >> 31));
-        cpu.set_szp(result);
-    }
-    // 00422b7d  7504                   -jne 0x422b83
-    if (!cpu.flags.zf)
-    {
-        goto L_0x00422b83;
-    }
-    // 00422b7f  21d0                   +and eax, edx
-    cpu.clear_co();
-    cpu.set_szp((cpu.eax &= x86::reg32(x86::sreg32(cpu.edx))));
-    // 00422b81  eb02                   -jmp 0x422b85
-    goto L_0x00422b85;
-L_0x00422b83:
-    // 00422b83  31c0                   -xor eax, eax
-    cpu.eax ^= x86::reg32(x86::sreg32(cpu.eax));
-L_0x00422b85:
-    // 00422b85  8b0485b0105e00         -mov eax, dword ptr [eax*4 + 0x5e10b0]
-    cpu.eax = app->getMemory<x86::reg32>(x86::reg32(6164656) /* 0x5e10b0 */ + cpu.eax * 4);
-    // 00422b8c  8b8014010000           -mov eax, dword ptr [eax + 0x114]
-    cpu.eax = app->getMemory<x86::reg32>(cpu.eax + x86::reg32(276) /* 0x114 */);
-    // 00422b92  5d                     -pop ebp
-    cpu.ebp = app->getMemory<x86::reg32>(cpu.esp);
-    cpu.esp += 4;
-    // 00422b93  5a                     -pop edx
-    cpu.edx = app->getMemory<x86::reg32>(cpu.esp);
-    cpu.esp += 4;
-    // 00422b94  c3                     -ret 
-    cpu.esp += 4;
-    return;
-}
+/* sub_422b70: native, nfs3hp::dead::stub_0x422b70 */
 
 /* sub_422ba0: native, nfs3hp::carstate::cameraCar */
 
@@ -880,108 +780,9 @@ L_0x00422c32:
     return;
 }
 
-/* align: skip  */
-void Application::sub_422c40(WinApplication* __restrict app, x86::CPU& cpu_)
-{
-  x86::Local cpu(cpu_);
-  NFS2_USE(cpu);
-  NFS2_USE(app);
-    // 00422c40  53                     -push ebx
-    app->getMemory<x86::reg32>(cpu.esp-4) = cpu.ebx;
-    cpu.esp -= 4;
-    // 00422c41  51                     -push ecx
-    app->getMemory<x86::reg32>(cpu.esp-4) = cpu.ecx;
-    cpu.esp -= 4;
-    // 00422c42  55                     -push ebp
-    app->getMemory<x86::reg32>(cpu.esp-4) = cpu.ebp;
-    cpu.esp -= 4;
-    // 00422c43  89e5                   -mov ebp, esp
-    cpu.ebp = cpu.esp;
-    // 00422c45  8b0db0d36f00           -mov ecx, dword ptr [0x6fd3b0]
-    cpu.ecx = app->getMemory<x86::reg32>(x86::reg32(7328688) /* 0x6fd3b0 */);
-    // 00422c4b  83f901                 +cmp ecx, 1
-    {
-        x86::reg32 tmp1 = cpu.ecx;
-        x86::reg32 tmp2 = x86::reg32(x86::sreg32(1 /*0x1*/));
-        x86::reg32 result = tmp1 - tmp2;
-        cpu.flags.cf = tmp1 < tmp2;
-        cpu.flags.of = 1 & (tmp1 >> 31);
-        cpu.flags.of ^= 1 & (result >> 31);
-        cpu.flags.of &= (1 & (tmp1 >> 31)) != (1 & (tmp2 >> 31));
-        cpu.set_szp(result);
-    }
-    // 00422c4e  7504                   -jne 0x422c54
-    if (!cpu.flags.zf)
-    {
-        goto L_0x00422c54;
-    }
-    // 00422c50  21c8                   +and eax, ecx
-    cpu.clear_co();
-    cpu.set_szp((cpu.eax &= x86::reg32(x86::sreg32(cpu.ecx))));
-    // 00422c52  eb02                   -jmp 0x422c56
-    goto L_0x00422c56;
-L_0x00422c54:
-    // 00422c54  31c0                   -xor eax, eax
-    cpu.eax ^= x86::reg32(x86::sreg32(cpu.eax));
-L_0x00422c56:
-    // 00422c56  8d0c8500000000         -lea ecx, [eax*4]
-    cpu.ecx = x86::reg32(cpu.eax * 4);
-    // 00422c5d  8b99b0105e00           -mov ebx, dword ptr [ecx + 0x5e10b0]
-    cpu.ebx = app->getMemory<x86::reg32>(cpu.ecx + x86::reg32(6164656) /* 0x5e10b0 */);
-    // 00422c63  3b5308                 +cmp edx, dword ptr [ebx + 8]
-    {
-        x86::reg32 tmp1 = cpu.edx;
-        x86::reg32 tmp2 = x86::reg32(x86::sreg32(app->getMemory<x86::reg32>(cpu.ebx + x86::reg32(8) /* 0x8 */)));
-        x86::reg32 result = tmp1 - tmp2;
-        cpu.flags.cf = tmp1 < tmp2;
-        cpu.flags.of = 1 & (tmp1 >> 31);
-        cpu.flags.of ^= 1 & (result >> 31);
-        cpu.flags.of &= (1 & (tmp1 >> 31)) != (1 & (tmp2 >> 31));
-        cpu.set_szp(result);
-    }
-    // 00422c66  740a                   -je 0x422c72
-    if (cpu.flags.zf)
-    {
-        goto L_0x00422c72;
-    }
-    // 00422c68  c781f42f550001000000   -mov dword ptr [ecx + 0x552ff4], 1
-    app->getMemory<x86::reg32>(cpu.ecx + x86::reg32(5582836) /* 0x552ff4 */) = 1 /*0x1*/;
-L_0x00422c72:
-    // 00422c72  8b0485b0105e00         -mov eax, dword ptr [eax*4 + 0x5e10b0]
-    cpu.eax = app->getMemory<x86::reg32>(x86::reg32(6164656) /* 0x5e10b0 */ + cpu.eax * 4);
-    // 00422c79  895008                 -mov dword ptr [eax + 8], edx
-    app->getMemory<x86::reg32>(cpu.eax + x86::reg32(8) /* 0x8 */) = cpu.edx;
-    // 00422c7c  5d                     -pop ebp
-    cpu.ebp = app->getMemory<x86::reg32>(cpu.esp);
-    cpu.esp += 4;
-    // 00422c7d  59                     -pop ecx
-    cpu.ecx = app->getMemory<x86::reg32>(cpu.esp);
-    cpu.esp += 4;
-    // 00422c7e  5b                     -pop ebx
-    cpu.ebx = app->getMemory<x86::reg32>(cpu.esp);
-    cpu.esp += 4;
-    // 00422c7f  c3                     -ret 
-    cpu.esp += 4;
-    return;
-}
+/* sub_422c40: native, nfs3hp::dead::stub_0x422c40 */
 
-/* align: skip  */
-void Application::sub_422c80(WinApplication* app, x86::CPU& cpu)
-{
-  NFS2_USE(cpu);
-  NFS2_USE(app);
-    // 00422c80  55                     -push ebp
-    app->getMemory<x86::reg32>(cpu.esp-4) = cpu.ebp;
-    cpu.esp -= 4;
-    // 00422c81  89e5                   -mov ebp, esp
-    cpu.ebp = cpu.esp;
-    // 00422c83  5d                     -pop ebp
-    cpu.ebp = app->getMemory<x86::reg32>(cpu.esp);
-    cpu.esp += 4;
-    // 00422c84  c3                     -ret 
-    cpu.esp += 4;
-    return;
-}
+/* sub_422c80: native, nfs3hp::dead::stub_0x422c80 */
 
 /* sub_422cf0: native, nfs3hp::carstate::initCameras */
 

@@ -40,6 +40,11 @@ case kObj3dVivEntry:
     }
     break;
 #elif defined(OBJ3D_GAME_FUNCTIONS)
+// The car's colour chosen and its bytes (0x439790, 0x439810: port_fields'),
+// as the object calls them: stood in on both sides (generate.py's STOOD_IN),
+// each held against its code on its own.
+{0x439790, "a player's car colour", kWatcom, 2, 0, kEax, -1, 0, kNothing},
+{0x439810, "a car colour's bytes", kStdcall, 4, 3, kEax, -1, 0, kNothing},
 // {address, "name", convention, registers, words, clobbers, through, deref, effect},
 // What the object calls of the renderer that hands back through a pointer:
 // the lists' pairs (taken in esi), a light turned, a model drawn (its float

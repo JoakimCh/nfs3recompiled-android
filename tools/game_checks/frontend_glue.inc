@@ -65,13 +65,6 @@ case kFeMouseKey:
 // Every register compared; the x87's stack too where a float goes through it.
 {"frontend::bindingIsDigital", true, true, 0},
 {"frontend::noteDigitalControls", true, true, 0},
-{"frontend::listAllowed", true, true, 0},
-{"frontend::listLength", true, true, 0},
-{"frontend::findList", true, true, 0},
-{"frontend::loadShapes", true, true, 0},
-{"frontend::buttonKey", true, true, 0},
-{"frontend::listKey", true, true, 0},
-{"frontend::layoutList", true, true, 0},
 {"frontend::sliderValue", true, true, 0, true, kNoHeap, true},
 {"frontend::sliderSetOnMove", true, true, 0},
 {"frontend::sliderSetColour", true, true, 0},

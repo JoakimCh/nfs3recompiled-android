@@ -5463,9 +5463,8 @@ bool nativeChecking()
     return check;
 }
 
-/* NFS_NATIVES=0: what the other files' natives (native_loading.cpp,
- * native_movie.cpp, native_specs_file.cpp) ask, to leave theirs to the
- * generated code.  The ones here have no generated code to leave theirs to. */
+/* NFS_NATIVES=0: what native_specs_file.cpp asks, to leave the car specs to
+ * the generated code.  The ones here have no generated code to leave theirs to. */
 bool nativesEnabled()
 {
     static const bool on = []() {

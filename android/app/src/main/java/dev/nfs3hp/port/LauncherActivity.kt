@@ -147,15 +147,14 @@ class LauncherActivity : ComponentActivity() {
         activeSet = manager?.active()
     }
 
-    /** Which build this is, under the menu: v0.78, or v0.78 DEBUG while debug
-     *  mode is on (the Advanced screen). */
+    /** Which build this is, under the menu: v0.78. */
     fun versionLabel(): String {
         val name = try {
             packageManager.getPackageInfo(packageName, 0).versionName ?: ""
         } catch (ignored: PackageManager.NameNotFoundException) {
             ""
         }
-        return "v" + name + if (debugMode) " DEBUG" else ""
+        return "v$name"
     }
 
     fun go(next: Screen) {

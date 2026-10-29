@@ -74,8 +74,6 @@ public:
     void clear(x86::reg32 color);
     void swap();
     void render(x86::reg32 buffer);
-    /* No atlas to run out of: what the game layer's car detail asks. */
-    void atlasFreeSpace(x86::reg32& texels, x86::reg32& wholeTiles, x86::reg32& total) const;
     void setZWrite(bool enable);
     void setZTest(bool enable);
     /* The depth compared ALWAYS rather than LEQUAL while the test is on: it

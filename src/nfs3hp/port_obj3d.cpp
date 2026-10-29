@@ -46,8 +46,11 @@ namespace port
 {
 
 /* EA's random number (port_snd_voices.cpp, 0x4e0d88): another rewrite's
- * adapter, called as the game's code calls its address. */
-void eaRandom(App* app, CPU& cpu);
+ * adapter, called as the game's code calls its address -- declared by its
+ * type, as tools/game_checks/generate.py would take `void eaRandom(` for
+ * its definition. */
+using Adapter = void(App* app, CPU& cpu);
+Adapter eaRandom;
 
 namespace obj3d
 {

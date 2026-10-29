@@ -56,6 +56,16 @@ STOOD_IN = {
     0x4d5840: (),
     0x4d6070: (),
     0x4d5c40: (),
+    # port_obj3d's calls of port_fields' car colour and its bytes, by address;
+    # port_fields' own call them as C++ (the colour list, the custom colours,
+    # a colour's line, the wheel).
+    0x439790: (0x456a20, 0x472360),
+    0x439810: (0x43dbe0, 0x456a20, 0x456b50, 0x472360),
+    # port_buttons' calls of port_shapes' art's textures (the track's map's
+    # tile, the images' pictures): by address to its stand-in, as its
+    # graphics are the shapes' cases' -- but shapeByName's, which calls it as
+    # C++, and port_fields' sliderShape, which does the same.
+    0x4d6390: (0x4d5db0, 0x4d5e40),
 }
 
 
@@ -323,7 +333,7 @@ def main():
     # the game), and the mix and a channel's ramp, whose native mixer was held
     # against the game's mix by mix on the phone (0.77's snd_check).
     natives = {address: name for address, name in nfs3hp.GAME_NATIVES.items()
-               if address not in nfs3hp.MENU_NATIVES and not name.startswith(("snd::dead_", "graphics::dead_"))
+               if address not in nfs3hp.MENU_NATIVES and not name.startswith(("snd::dead_", "graphics::dead_", "dead::"))
                and name not in ("snd::mixerServe", "snd::mixerRamp")}
     # native_render.cpp's are tools/game_checks/render's: here, as before they
     # were native whole, stand-ins for the natives that call them.

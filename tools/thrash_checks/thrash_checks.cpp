@@ -1012,13 +1012,11 @@ bool runCall(const std::string& name, Session& s, CheckApp& r, CheckApp& n, Coun
         return report(counts, what);
     }
     {
-        x86::reg32 rt = 0, rf = 0, rx = 0, nt = 0, nf = 0, nx = 0;
-        const bool ra = win32::glide2x::atlasFreeSpace(rt, rf, rx), na = driver::atlasFreeSpace(nt, nf, nx);
         int a[6], b[6];
         const bool rr = win32::glide2x::screenRect(a[0], a[1], a[2], a[3], a[4], a[5]);
         const bool nr = driver::screenRect(b[0], b[1], b[2], b[3], b[4], b[5]);
-        if (ra != na || rt != nt || rf != nf || rx != nx || rr != nr || (rr && std::memcmp(a, b, sizeof a) != 0))
-            return report(counts, "atlasFreeSpace or screenRect");
+        if (rr != nr || (rr && std::memcmp(a, b, sizeof a) != 0))
+            return report(counts, "screenRect");
     }
     if (stopped)
     {
