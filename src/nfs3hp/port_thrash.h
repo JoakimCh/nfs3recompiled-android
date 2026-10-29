@@ -96,6 +96,43 @@ void setDynamicResolution(reg32 width, reg32 height);
 constexpr reg32 kTexFmtArgb8888 = 0x12;
 bool fullColourTextures();
 
+/* A texture side the Voodoo2 never had: 512, past Glide 2's GR_LOD_256 (0).
+ * THRASH_about offers it, its LOD is one less than 256's (-1), and the
+ * renderer takes a negative LOD as a side of 256 doubled.  A track's
+ * textures are asked for at 512, not the game's 128 (native_track.cpp), so
+ * each keeps its own size up to it.  The game's other limits (256 for a car)
+ * stand for art of up to 256; a shape or picture of 512 a side or more is
+ * made a texture of 512 (texture512Side). */
+constexpr reg32 kMaxTextureSide = 0x200;
+inline int32_t texture512Side(int32_t limit, int32_t side)
+{
+    return limit != 0 && limit < int32_t(kMaxTextureSide) && side >= int32_t(kMaxTextureSide)
+               ? int32_t(kMaxTextureSide) : limit;
+}
+/* A texture record, Glide's GrTexInfo and voodoo2a's three words after it. */
+constexpr reg32 kRecordSmallLod = 0x00, kRecordLargeLod = 0x04, kRecordAspect = 0x08, kRecordFormat = 0x0c;
+constexpr reg32 kRecordTexels = 0x10, kRecordStart = 0x14, kRecordHalves = 0x18, kRecordBefore = 0x1c;
+constexpr reg32 kRecordBytes = 0x20;
+/* voodoo2a's maps to Glide's numbers: an LOD by a size's log2, an aspect by
+ * the two logs' difference (from -3, at kAspects - 3). */
+constexpr reg32 kLods = 0xa92338;
+constexpr reg32 kAspects = 0xa92344;
+
+/* What of the textures touches only the game's memory, in
+ * port_thrash_records.cpp, without the renderer, so that tools/game_checks
+ * builds it with the natives that call it. */
+
+/* log2 of a power of two, from the exponent of the float it converts to. */
+int32_t exponentOf(reg32 value);
+/* Glide's LOD of a side of 2 to the `log`: voodoo2a's table, and the port's
+ * 512 (log 9) past it, one LOD under 256's. */
+reg32 lodOf(App* app, int32_t log);
+/* THRASH texture record `record`, of one level, made `side` a side: a
+ * texture allocated before its picture was fitted (the car screens' one,
+ * 256 a side, which a .tga of 512 fills at 512).  A record of more levels is
+ * left as it is. */
+void resizeTexture(App* app, reg32 record, reg32 side);
+
 }  // namespace driver
 }  // namespace port
 }  // namespace nfs3hp

@@ -1,4 +1,5 @@
 #include "native_guest.h"
+#include "port_thrash.h"
 
 #include <cstdint>
 #include <utility>
@@ -3857,7 +3858,7 @@ void freeTrackKinds(App* app, CPU& cpu)
 
 /* 0x41db10: the textures of the .qfs at eax taken by the driver, each into
  * its record at edx (0x2c bytes apart) -- a grey driver's one way
- * (0x4d41a0), else the other (0x4d4080) -- the loading bar moved on from 43
+ * (0x4d41a0), else the other (0x4d4080, at 128; the port's 512) -- the loading bar moved on from 43
  * per cent by its share of 15 (0x536d1c) a texture (0x495230), until the
  * loading stops ([0x55e88c]). */
 void loadTextures(App* app, CPU& cpu)
@@ -3909,7 +3910,8 @@ void loadTextures(App* app, CPU& cpu)
         else
         {
             push(app, cpu, 3);
-            cpu.ebx = 0x80;
+            // port: each texture at its own size up to 512, not 128 (port_thrash.h)
+            cpu.ebx = port::driver::kMaxTextureSide;
             cpu.ecx = cpu.edi;
             cpu.edx = cpu.eax;
             cpu.eax = 0;

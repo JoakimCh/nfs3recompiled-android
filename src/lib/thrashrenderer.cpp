@@ -856,8 +856,12 @@ void ThrashRenderer::setTexture(x86::reg32, x86::reg32 address)
 void ThrashRenderer::setTextureData(x86::reg32, x86::reg32 address, const void* data, x86::reg32 largeMipmap,
                                     x86::reg32 smallMipmap, TextureFormat format)
 {
-    const x86::reg32 size = 256 >> largeMipmap;
-    const x86::reg32 smallest = 256 >> smallMipmap;
+    // A LOD under Glide's 0 (the port's 512, port_thrash.h) a side of 256 doubled.
+    const auto sideOf = [](x86::reg32 lod) {
+        return x86::sreg32(lod) < 0 ? x86::reg32(256) << (0 - lod) : x86::reg32(256) >> lod;
+    };
+    const x86::reg32 size = sideOf(largeMipmap);
+    const x86::reg32 smallest = sideOf(smallMipmap);
     const x86::reg32 texelBytes = format == TF_ARGB_8888 ? 4 : 2;
     x86::reg32 levels = 0;
     std::size_t texels = 0;

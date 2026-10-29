@@ -1907,7 +1907,7 @@ L_0x00459d09:
 L_0x00459d23:
     // 00459d23  e88811ffff             -call 0x44aeb0
     cpu.esp -= 4;
-    sub_44aeb0(app, cpu.sync());
+    nfs3hp::port::loop::currentMenu(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00459d28  83fb02                 +cmp ebx, 2
@@ -10624,12 +10624,12 @@ L_0x0045bef9:
     if (cpu.terminate) return;
     // 0045bf3f  e86ceffeff             -call 0x44aeb0
     cpu.esp -= 4;
-    sub_44aeb0(app, cpu.sync());
+    nfs3hp::port::loop::currentMenu(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045bf44  e857dffeff             -call 0x449ea0
     cpu.esp -= 4;
-    sub_449ea0(app, cpu.sync());
+    nfs3hp::port::loop::pointAtSelected(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045bf49  b802000000             -mov eax, 2
@@ -10990,12 +10990,12 @@ L_0x0045bffd:
 L_0x0045c045:
     // 0045c045  e866eefeff             -call 0x44aeb0
     cpu.esp -= 4;
-    sub_44aeb0(app, cpu.sync());
+    nfs3hp::port::loop::currentMenu(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045c04a  e851defeff             -call 0x449ea0
     cpu.esp -= 4;
-    sub_449ea0(app, cpu.sync());
+    nfs3hp::port::loop::pointAtSelected(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
 L_0x0045c04f:
@@ -11238,12 +11238,12 @@ L_0x0045c0f2:
 L_0x0045c13a:
     // 0045c13a  e871edfeff             -call 0x44aeb0
     cpu.esp -= 4;
-    sub_44aeb0(app, cpu.sync());
+    nfs3hp::port::loop::currentMenu(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045c13f  e85cddfeff             -call 0x449ea0
     cpu.esp -= 4;
-    sub_449ea0(app, cpu.sync());
+    nfs3hp::port::loop::pointAtSelected(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
 L_0x0045c144:
@@ -11407,12 +11407,12 @@ L_0x0045c17a:
 L_0x0045c1c2:
     // 0045c1c2  e8e9ecfeff             -call 0x44aeb0
     cpu.esp -= 4;
-    sub_44aeb0(app, cpu.sync());
+    nfs3hp::port::loop::currentMenu(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045c1c7  e8d4dcfeff             -call 0x449ea0
     cpu.esp -= 4;
-    sub_449ea0(app, cpu.sync());
+    nfs3hp::port::loop::pointAtSelected(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
 L_0x0045c1cc:
@@ -11655,12 +11655,12 @@ L_0x0045c277:
 L_0x0045c2bf:
     // 0045c2bf  e8ecebfeff             -call 0x44aeb0
     cpu.esp -= 4;
-    sub_44aeb0(app, cpu.sync());
+    nfs3hp::port::loop::currentMenu(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045c2c4  e8d7dbfeff             -call 0x449ea0
     cpu.esp -= 4;
-    sub_449ea0(app, cpu.sync());
+    nfs3hp::port::loop::pointAtSelected(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
 L_0x0045c2c9:
@@ -15293,7 +15293,7 @@ void Application::sub_45d9e0(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.eax = app->getMemory<x86::reg32>(cpu.eax + x86::reg32(16) /* 0x10 */);
     // 0045da16  e8a54ffeff             -call 0x4429c0
     cpu.esp -= 4;
-    sub_4429c0(app, cpu.sync());
+    nfs3hp::port::menus::codelinkMatches(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045da1b  85c0                   +test eax, eax
@@ -23040,7 +23040,7 @@ void Application::sub_45f160(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.eax = app->getMemory<x86::reg32>(cpu.eax + x86::reg32(16) /* 0x10 */);
     // 0045f19c  e81f38feff             -call 0x4429c0
     cpu.esp -= 4;
-    sub_4429c0(app, cpu.sync());
+    nfs3hp::port::menus::codelinkMatches(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0045f1a1  85c0                   +test eax, eax

@@ -393,100 +393,15 @@ void runWhole(win32::WinApplication* app, x86::CPU& cpu, Site& site, Body body)
 
 }
 
-/* The menu files and the screens they make (native_frontend_menus.cpp). */
-bool menuCodelinkMatches(win32::WinApplication* app, x86::CPU& cpu);
-bool menuAssignHandlers(win32::WinApplication* app, x86::CPU& cpu);
-bool menuKeywordIndex(win32::WinApplication* app, x86::CPU& cpu);
-bool menuStoreString(win32::WinApplication* app, x86::CPU& cpu);
-bool menuWidgetType(win32::WinApplication* app, x86::CPU& cpu);
-bool menuWidgetName(win32::WinApplication* app, x86::CPU& cpu);
-bool menuInitItem(win32::WinApplication* app, x86::CPU& cpu);
-bool menuSectionType(win32::WinApplication* app, x86::CPU& cpu);
-bool menuParseInt(win32::WinApplication* app, x86::CPU& cpu);
-bool menuParseLong(win32::WinApplication* app, x86::CPU& cpu);
-bool menuParseFloat(win32::WinApplication* app, x86::CPU& cpu);
-bool menuSetField(win32::WinApplication* app, x86::CPU& cpu);
-bool menuReadEntry(win32::WinApplication* app, x86::CPU& cpu);
-bool menuLoadMenus(win32::WinApplication* app, x86::CPU& cpu);
-bool menuCheckMenuFile(win32::WinApplication* app, x86::CPU& cpu);
-bool menuCheckMenuFiles(win32::WinApplication* app, x86::CPU& cpu);
-bool menuCallOnLoad(win32::WinApplication* app, x86::CPU& cpu);
-
-/* The menu loop and moving through the screens (native_frontend_loop.cpp). */
-bool menuItemUsable(win32::WinApplication* app, x86::CPU& cpu);
-bool menuKeyAllowed(win32::WinApplication* app, x86::CPU& cpu);
-bool menuDrawHelp(win32::WinApplication* app, x86::CPU& cpu);
-bool menuKeysTaken(win32::WinApplication* app, x86::CPU& cpu);
-bool menuSelectable(win32::WinApplication* app, x86::CPU& cpu);
-bool menuPointAtSelected(win32::WinApplication* app, x86::CPU& cpu);
-bool menuSelectPrevious(win32::WinApplication* app, x86::CPU& cpu);
-bool menuSelectNext(win32::WinApplication* app, x86::CPU& cpu);
-bool menuEscapeButton(win32::WinApplication* app, x86::CPU& cpu);
-bool menuHandleKey(win32::WinApplication* app, x86::CPU& cpu);
-bool menuSelectedIndex(win32::WinApplication* app, x86::CPU& cpu);
-bool menuSelectItem(win32::WinApplication* app, x86::CPU& cpu);
-bool menuDrawItems(win32::WinApplication* app, x86::CPU& cpu);
-bool menuReleaseMouse(win32::WinApplication* app, x86::CPU& cpu);
-bool menuItemUnderMouse(win32::WinApplication* app, x86::CPU& cpu);
-bool menuItemsShown(win32::WinApplication* app, x86::CPU& cpu);
-bool menuPassItems(win32::WinApplication* app, x86::CPU& cpu);
-bool menuHideItems(win32::WinApplication* app, x86::CPU& cpu);
-bool menuLeaveScreen(win32::WinApplication* app, x86::CPU& cpu);
-bool menuResetItems(win32::WinApplication* app, x86::CPU& cpu);
-bool menuEnterScreen(win32::WinApplication* app, x86::CPU& cpu);
-bool menuByNameStandIn(win32::WinApplication* app, x86::CPU& cpu);
-bool menuCurrent(win32::WinApplication* app, x86::CPU& cpu);
-bool menuPop(win32::WinApplication* app, x86::CPU& cpu);
-bool menuPush(win32::WinApplication* app, x86::CPU& cpu);
-bool menuSetHistory(win32::WinApplication* app, x86::CPU& cpu);
-bool menuPlayer1NameAnswer(win32::WinApplication* app, x86::CPU& cpu);
-bool menuPlayer2NameAnswer(win32::WinApplication* app, x86::CPU& cpu);
-bool menuQuitAnswer(win32::WinApplication* app, x86::CPU& cpu);
-bool menuWaitWhileSuspended(win32::WinApplication* app, x86::CPU& cpu);
-bool menuLoopStandIn(win32::WinApplication* app, x86::CPU& cpu);
-bool menuFitRaceSettings(win32::WinApplication* app, x86::CPU& cpu);
-
-/* The dialogs over the screens (native_frontend_dialogs.cpp): what is up, */
-bool dialogShownStandIn(win32::WinApplication* app, x86::CPU& cpu);
-bool dialogKindStandIn(win32::WinApplication* app, x86::CPU& cpu);
-bool dialogListFocus(win32::WinApplication* app, x86::CPU& cpu);
-bool dialogClose(win32::WinApplication* app, x86::CPU& cpu);
-/* the layout, */
-bool dialogPlaceEntries(win32::WinApplication* app, x86::CPU& cpu);
-/* drawing, */
-bool dialogDrawBox(win32::WinApplication* app, x86::CPU& cpu);
-bool dialogDrawLines(win32::WinApplication* app, x86::CPU& cpu);
-bool dialogDrawButtons(win32::WinApplication* app, x86::CPU& cpu);
-bool dialogDrawEditField(win32::WinApplication* app, x86::CPU& cpu);
-bool dialogDrawList(win32::WinApplication* app, x86::CPU& cpu);
-bool dialogDrawHelp(win32::WinApplication* app, x86::CPU& cpu);
-bool dialogLoadArt(win32::WinApplication* app, x86::CPU& cpu);
-/* the pointer, */
-bool dialogButtonUnderMouse(win32::WinApplication* app, x86::CPU& cpu);
-bool dialogPointAtEntry(win32::WinApplication* app, x86::CPU& cpu);
-bool dialogEntryUnderMouse(win32::WinApplication* app, x86::CPU& cpu);
-/* each kind opened, its keys and its pass, */
-bool dialogQuestionKey(win32::WinApplication* app, x86::CPU& cpu);
-bool dialogQuestionPass(win32::WinApplication* app, x86::CPU& cpu);
-bool dialogEndMessage(win32::WinApplication* app, x86::CPU& cpu);
-bool dialogMessageKey(win32::WinApplication* app, x86::CPU& cpu);
-bool dialogMessagePass(win32::WinApplication* app, x86::CPU& cpu);
-bool dialogEditKey(win32::WinApplication* app, x86::CPU& cpu);
-bool dialogEditPass(win32::WinApplication* app, x86::CPU& cpu);
-bool dialogOpenList(win32::WinApplication* app, x86::CPU& cpu);
-bool dialogListKey(win32::WinApplication* app, x86::CPU& cpu);
-bool dialogListPass(win32::WinApplication* app, x86::CPU& cpu);
-/* and the dialog up, whatever its kind. */
-bool dialogKeyStandIn(win32::WinApplication* app, x86::CPU& cpu);
-bool dialogPassStandIn(win32::WinApplication* app, x86::CPU& cpu);
-
 /* The main menu in its three forms (native_frontend_main.cpp) -- MAIN.MNU,
  * MAINSPLT.MNU, MAINMULT.MNU -- is native whole: its handlers are
  * disassemble_nfs3hp.py's MENU_NATIVES, in nfs3hp::frontend, declared with
- * the game's (nfs3hp.h).  So is what it calls of the menu loop and the
- * dialogs above: a screen's items shown, the shown screen's name; a question,
- * a message and a line to type in opened, their layout and the pointer on
- * their button. */
+ * the game's (nfs3hp.h).  So is what it calls of the menu loop (a screen's
+ * items shown, the shown screen's name: native_frontend_loop.cpp; the loop
+ * itself is port::loop, port_loop.cpp) and of the dialogs (the dialogs
+ * themselves are port::dialogs, port_dialogs.cpp): a question, a message and a
+ * line to type in opened, their layout and the pointer on their button
+ * (native_frontend_dialogs.cpp). */
 
 /* The options screens (native_frontend_options.cpp): the options screen and
  * the audio feed's keys (audfeed), */

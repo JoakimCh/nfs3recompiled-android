@@ -69,10 +69,8 @@ constexpr reg32 kTextureFormats = 0xa91fd4;  // the descriptor's formats, a dwor
 constexpr reg32 kUnknownList = 0xa92000;     // the descriptor's 4 of what is not known
 constexpr reg32 kModes = 0xa92018;           // 17 modes of thrash::kModeBytes, the first unused
 constexpr reg32 kResolutions = 0xa922e8;     // each mode's resolution: Glide's id, or the port's
-/* voodoo2a's maps to Glide's numbers: an LOD by a size's log2, an aspect by
- * the two logs' difference (from -3, at kAspects - 3), a format by THRASH's. */
-constexpr reg32 kLods = 0xa92338;
-constexpr reg32 kAspects = 0xa92344;
+/* voodoo2a's map of THRASH's formats to Glide's (its LOD and aspect maps,
+ * kLods and kAspects, in port_thrash.h). */
 constexpr reg32 kFormats = 0xa92348;
 /* The card as Glide described it, GrHwConfiguration: the boards, then the
  * first one's type, frame buffer megabytes, revision, texture units, SLI and
@@ -486,20 +484,6 @@ reg32 meshVertex(App* app, reg32 vertices, reg32 index)
 
 /* ---- Textures ---- */
 
-/* log2 of a power of two, from the exponent of the float it converts to. */
-int32_t exponentOf(reg32 value)
-{
-    const float converted = float(double(int32_t(value)));
-    reg32 bits;
-    std::memcpy(&bits, &converted, sizeof bits);
-    return int32_t(bits - 0x3f800000) >> 23;
-}
-
-/* A texture record, Glide's GrTexInfo and voodoo2a's three words after it. */
-constexpr reg32 kRecordSmallLod = 0x00, kRecordLargeLod = 0x04, kRecordAspect = 0x08, kRecordFormat = 0x0c;
-constexpr reg32 kRecordTexels = 0x10, kRecordStart = 0x14, kRecordHalves = 0x18, kRecordBefore = 0x1c;
-constexpr reg32 kRecordBytes = 0x20;
-
 /* THRASH_talloc(width, height, format, palette, levels): a record of Glide's
  * LODs, aspect and format, where it lies in texture memory, 3 (both halves
  * of the mipmap) and the record before -- from voodoo2a's own malloc, which
@@ -514,8 +498,8 @@ Result allocateTexture(App* app, CPU& cpu, reg32 width, reg32 height, reg32 form
     int32_t smallest = largest - levels;
     if (smallest < 0)
         smallest = 0;
-    const reg32 largeLod = byte(app, kLods + reg32(largest));
-    const reg32 smallLod = byte(app, kLods + reg32(smallest));
+    const reg32 largeLod = lodOf(app, largest);
+    const reg32 smallLod = lodOf(app, smallest);
     const reg32 aspect = byte(app, kAspects + reg32(widthLog - heightLog));
     const reg32 size = kTextureSlot;
     reg32 start = kTextureNext(app);
@@ -1516,11 +1500,11 @@ void THRASH_about(App* app, CPU& cpu)
                                   thrash::kAboutClipAlign})
             put(app, kInfo + field, 1);
         put(app, kInfo + thrash::kAboutSize, thrash::kAboutBytes);
-        put(app, kInfo + thrash::kAboutMaxTextureWidth, 0x100);
+        put(app, kInfo + thrash::kAboutMaxTextureWidth, kMaxTextureSide);  // port: voodoo2a 0x100
         put(app, kInfo + thrash::kAboutUnknownCount, 4);
         put(app, kInfo + thrash::kAboutModeCount, 0x10);
         put(app, kInfo + thrash::kAboutModes, kModes);
-        put(app, kInfo + thrash::kAboutMaxTextureHeight, 0x100);
+        put(app, kInfo + thrash::kAboutMaxTextureHeight, kMaxTextureSide);  // port: voodoo2a 0x100
         app->getMemory<x86::reg8>(kInfo + thrash::kAboutCaps) =
             x86::reg8((app->getMemory<x86::reg8>(kInfo + thrash::kAboutCaps) | 0xe) & 0xfe);
         put(app, kInfo + thrash::kAboutUnknown, kUnknownList);

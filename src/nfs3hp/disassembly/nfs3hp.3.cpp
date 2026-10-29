@@ -6,9 +6,9 @@ namespace nfs3hp
 // Port (tools/apply_native_frontend.py): defined in native_frontend_cars.cpp.
 bool carMenuMusicBack(win32::WinApplication* app, x86::CPU& cpu);
 
-/* sub_4103a0: native, nfs3hp::snd::musicAfterSetting */
+/* sub_4103a0: native, nfs3hp::port::musicAfterSetting */
 
-/* sub_410460: native, nfs3hp::snd::musicMenuSix */
+/* sub_410460: native, nfs3hp::port::musicMenuSix */
 
 /* align: skip 0x8d 0x80 0x00 0x00 0x00 0x00 0x8d 0x92 0x00 0x00 0x00 0x00 0x8d 0x40 0x00 */
 void Application::sub_4104b0(WinApplication* __restrict app, x86::CPU& cpu_)
@@ -75,7 +75,7 @@ void Application::sub_4104b0(WinApplication* __restrict app, x86::CPU& cpu_)
     }
     // 004104d2  e8f9040000             -call 0x4109d0
     cpu.esp -= 4;
-    nfs3hp::snd::musicStop(app, cpu.sync());
+    nfs3hp::port::musicStop(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004104d7  b816000000             -mov eax, 0x16
@@ -86,7 +86,7 @@ void Application::sub_4104b0(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.ebx ^= x86::reg32(x86::sreg32(cpu.ebx));
     // 004104e4  e807000000             -call 0x4104f0
     cpu.esp -= 4;
-    nfs3hp::snd::musicStart(app, cpu.sync());
+    nfs3hp::port::musicStart(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
 L_0x004104e9:
@@ -107,117 +107,117 @@ L_0x004104e9:
     return;
 }
 
-/* sub_4104f0: native, nfs3hp::snd::musicStart */
+/* sub_4104f0: native, nfs3hp::port::musicStart */
 
-/* sub_4107c0: native, nfs3hp::snd::raceMusicStart */
+/* sub_4107c0: native, nfs3hp::port::raceMusicStart */
 
-/* sub_4109d0: native, nfs3hp::snd::musicStop */
+/* sub_4109d0: native, nfs3hp::port::musicStop */
 
 /* sub_410a40: native, nfs3hp::dead::stub_0x410a40 */
 
-/* sub_410aa0: native, nfs3hp::snd::musicStreamEnd */
+/* sub_410aa0: native, nfs3hp::port::musicStreamEnd */
 
-/* sub_410ad0: native, nfs3hp::snd::banksFree */
+/* sub_410ad0: native, nfs3hp::port::banksFree */
 
-/* sub_410b20: native, nfs3hp::snd::banksRemove */
+/* sub_410b20: native, nfs3hp::port::banksRemove */
 
-/* sub_410b50: native, nfs3hp::snd::bankLoad */
+/* sub_410b50: native, nfs3hp::port::bankLoad */
 
 /* sub_410c30: native, nfs3hp::dead::stub_0x410c30 */
 
-/* sub_410c40: native, nfs3hp::snd::listenerMove */
+/* sub_410c40: native, nfs3hp::port::listenerMove */
 
-/* sub_410cb0: native, nfs3hp::snd::sourceDistance */
+/* sub_410cb0: native, nfs3hp::port::sourceDistance */
 
-/* sub_410d30: native, nfs3hp::snd::sourceAngle */
+/* sub_410d30: native, nfs3hp::port::sourceAngle */
 
-/* sub_410dc0: native, nfs3hp::snd::carAngle */
+/* sub_410dc0: native, nfs3hp::port::carAngle */
 
-/* sub_410e30: native, nfs3hp::snd::trackSounds */
+/* sub_410e30: native, nfs3hp::port::trackSounds */
 
-/* sub_411410: native, nfs3hp::snd::raceSoundTick */
+/* sub_411410: native, nfs3hp::port::raceSoundTick */
 
-/* sub_411620: native, nfs3hp::snd::sourceReset */
+/* sub_411620: native, nfs3hp::port::sourceReset */
 
-/* sub_411680: native, nfs3hp::snd::sourcesReset */
+/* sub_411680: native, nfs3hp::port::sourcesReset */
 
-/* sub_411750: native, nfs3hp::snd::copChaseSet */
+/* sub_411750: native, nfs3hp::port::copChaseSet */
 
-/* sub_4117a0: native, nfs3hp::snd::playerCarSound */
+/* sub_4117a0: native, nfs3hp::port::playerCarSound */
 
-/* sub_411c50: native, nfs3hp::snd::copSiren */
+/* sub_411c50: native, nfs3hp::port::copSiren */
 
-/* sub_411ca0: native, nfs3hp::snd::copSirenStop */
+/* sub_411ca0: native, nfs3hp::port::copSirenStop */
 
-/* sub_411cb0: native, nfs3hp::snd::copEngine */
+/* sub_411cb0: native, nfs3hp::port::copEngine */
 
-/* sub_411da0: native, nfs3hp::snd::copEngineStop */
+/* sub_411da0: native, nfs3hp::port::copEngineStop */
 
-/* sub_411db0: native, nfs3hp::snd::copDistance */
+/* sub_411db0: native, nfs3hp::port::copDistance */
 
-/* sub_411e20: native, nfs3hp::snd::copsCloseness */
+/* sub_411e20: native, nfs3hp::port::copsCloseness */
 
-/* sub_411e60: native, nfs3hp::snd::copCarSound */
+/* sub_411e60: native, nfs3hp::port::copCarSound */
 
-/* sub_4121b0: native, nfs3hp::snd::copRemove */
+/* sub_4121b0: native, nfs3hp::port::copRemove */
 
-/* sub_412220: native, nfs3hp::snd::copSourcesPick */
+/* sub_412220: native, nfs3hp::port::copSourcesPick */
 
-/* sub_4124d0: native, nfs3hp::snd::placeAhead */
+/* sub_4124d0: native, nfs3hp::port::placeAhead */
 
-/* sub_412620: native, nfs3hp::snd::placeAcross */
+/* sub_412620: native, nfs3hp::port::placeAcross */
 
-/* sub_4127b0: native, nfs3hp::snd::carFlagTest */
+/* sub_4127b0: native, nfs3hp::port::carFlagTest */
 
-/* sub_4127c0: native, nfs3hp::snd::carRadio */
+/* sub_4127c0: native, nfs3hp::port::carRadio */
 
-/* sub_412880: native, nfs3hp::snd::playerCopRadio */
+/* sub_412880: native, nfs3hp::port::playerCopRadio */
 
-/* sub_4129a0: native, nfs3hp::snd::raceValue */
+/* sub_4129a0: native, nfs3hp::port::raceValue */
 
-/* sub_4129b0: native, nfs3hp::snd::soundNothing */
+/* sub_4129b0: native, nfs3hp::port::soundNothing */
 
-/* sub_4129c0: native, nfs3hp::snd::raceSoundInit */
+/* sub_4129c0: native, nfs3hp::port::raceSoundInit */
 
-/* sub_412b50: native, nfs3hp::snd::raceSoundEnd */
+/* sub_412b50: native, nfs3hp::port::raceSoundEnd */
 
-/* sub_412be0: native, nfs3hp::snd::copLineFor */
+/* sub_412be0: native, nfs3hp::port::copLineFor */
 
-/* sub_412d60: native, nfs3hp::snd::raceAnnouncer */
+/* sub_412d60: native, nfs3hp::port::raceAnnouncer */
 
-/* sub_4136e0: native, nfs3hp::snd::raceBankLoad */
+/* sub_4136e0: native, nfs3hp::port::raceBankLoad */
 
-/* sub_413750: native, nfs3hp::snd::voiceBankLoad */
+/* sub_413750: native, nfs3hp::port::voiceBankLoad */
 
-/* sub_4138e0: native, nfs3hp::snd::carBankLoad */
+/* sub_4138e0: native, nfs3hp::port::carBankLoad */
 
-/* sub_413bc0: native, nfs3hp::snd::raceBanksLoad */
+/* sub_413bc0: native, nfs3hp::port::raceBanksLoad */
 
-/* sub_414800: native, nfs3hp::snd::slotsEmpty */
+/* sub_414800: native, nfs3hp::port::slotsEmpty */
 
-/* sub_414830: native, nfs3hp::snd::engineSoundsStart */
+/* sub_414830: native, nfs3hp::port::engineSoundsStart */
 
-/* sub_414940: native, nfs3hp::snd::crashPitch */
+/* sub_414940: native, nfs3hp::port::crashPitch */
 
-/* sub_4149e0: native, nfs3hp::snd::crashEffect */
+/* sub_4149e0: native, nfs3hp::port::crashEffect */
 
-/* sub_414d70: native, nfs3hp::snd::scrapeEffect */
+/* sub_414d70: native, nfs3hp::port::scrapeEffect */
 
-/* sub_414e10: native, nfs3hp::snd::farEffectAim */
+/* sub_414e10: native, nfs3hp::port::farEffectAim */
 
-/* sub_414ef0: native, nfs3hp::snd::farEffectPlay */
+/* sub_414ef0: native, nfs3hp::port::farEffectPlay */
 
-/* sub_414f60: native, nfs3hp::snd::farEffectTick */
+/* sub_414f60: native, nfs3hp::port::farEffectTick */
 
-/* sub_414f90: native, nfs3hp::snd::crowdEffect */
+/* sub_414f90: native, nfs3hp::port::crowdEffect */
 
-/* sub_415010: native, nfs3hp::snd::carEffectFifteen */
+/* sub_415010: native, nfs3hp::port::carEffectFifteen */
 
-/* sub_415050: native, nfs3hp::snd::zoneSound */
+/* sub_415050: native, nfs3hp::port::zoneSound */
 
-/* sub_415210: native, nfs3hp::snd::scenerySounds */
+/* sub_415210: native, nfs3hp::port::scenerySounds */
 
-/* sub_416d90: native, nfs3hp::snd::carKnock */
+/* sub_416d90: native, nfs3hp::port::carKnock */
 
 /* sub_416f60: native, nfs3hp::port::slotStop */
 
@@ -225,35 +225,35 @@ L_0x004104e9:
 
 /* sub_417080: native, nfs3hp::port::slotPlay */
 
-/* sub_417390: native, nfs3hp::snd::carEngine */
+/* sub_417390: native, nfs3hp::port::carEngine */
 
-/* sub_4179d0: native, nfs3hp::snd::noiseBySpeed */
+/* sub_4179d0: native, nfs3hp::port::noiseBySpeed */
 
-/* sub_417b80: native, nfs3hp::snd::noiseByDistance */
+/* sub_417b80: native, nfs3hp::port::noiseByDistance */
 
-/* sub_417c00: native, nfs3hp::snd::playerNoise */
+/* sub_417c00: native, nfs3hp::port::playerNoise */
 
-/* sub_417c70: native, nfs3hp::snd::playerNoiseStop */
+/* sub_417c70: native, nfs3hp::port::playerNoiseStop */
 
-/* sub_417ca0: native, nfs3hp::snd::sirenIsOn */
+/* sub_417ca0: native, nfs3hp::port::sirenIsOn */
 
-/* sub_417cb0: native, nfs3hp::snd::sirenFirstTone */
+/* sub_417cb0: native, nfs3hp::port::sirenFirstTone */
 
-/* sub_417d00: native, nfs3hp::snd::sirenFirstDone */
+/* sub_417d00: native, nfs3hp::port::sirenFirstDone */
 
 /* sub_417d50: native, nfs3hp::dead::stub_0x417d50 */
 
-/* sub_417db0: native, nfs3hp::snd::sirenSecondTone */
+/* sub_417db0: native, nfs3hp::port::sirenSecondTone */
 
-/* sub_417e00: native, nfs3hp::snd::sirenSteadyTone */
+/* sub_417e00: native, nfs3hp::port::sirenSteadyTone */
 
-/* sub_417e60: native, nfs3hp::snd::sirenSecondDone */
+/* sub_417e60: native, nfs3hp::port::sirenSecondDone */
 
-/* sub_417eb0: native, nfs3hp::snd::sirenStart */
+/* sub_417eb0: native, nfs3hp::port::sirenStart */
 
-/* sub_417f60: native, nfs3hp::snd::sirenStop */
+/* sub_417f60: native, nfs3hp::port::sirenStop */
 
-/* sub_417fd0: native, nfs3hp::snd::sirenTick */
+/* sub_417fd0: native, nfs3hp::port::sirenTick */
 
 /* sub_4181d0: native, nfs3hp::port::playMenuEffect */
 
@@ -287,15 +287,15 @@ L_0x004104e9:
 
 /* sub_418840: native, nfs3hp::decompiled::swapRaceVolumes */
 
-/* sub_4188a0: native, nfs3hp::snd::copBeepTick */
+/* sub_4188a0: native, nfs3hp::port::copBeepTick */
 
-/* sub_418930: native, nfs3hp::snd::copBeepStart */
+/* sub_418930: native, nfs3hp::port::copBeepStart */
 
-/* sub_418990: native, nfs3hp::snd::chaseLevel */
+/* sub_418990: native, nfs3hp::port::chaseLevel */
 
-/* sub_418c30: native, nfs3hp::snd::copEffect */
+/* sub_418c30: native, nfs3hp::port::copEffect */
 
-/* sub_418c60: native, nfs3hp::snd::musicEventResume */
+/* sub_418c60: native, nfs3hp::port::musicEventResume */
 
 /* sub_418cc0: native, nfs3hp::track::shellOpen */
 

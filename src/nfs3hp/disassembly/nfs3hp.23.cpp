@@ -3527,7 +3527,7 @@ L_0x0049e46c:
     cpu.ebx ^= x86::reg32(x86::sreg32(cpu.ebx));
     // 0049e487  e894900400             -call 0x4e7520
     cpu.esp -= 4;
-    nfs3hp::snd::addSystemTask(app, cpu.sync());
+    nfs3hp::port::addSystemTask(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
 L_0x0049e48c:
@@ -3566,7 +3566,7 @@ L_0x0049e48c:
     cpu.eax = cpu.ecx;
     // 0049e4b2  e829910400             -call 0x4e75e0
     cpu.esp -= 4;
-    nfs3hp::snd::removeSystemTask(app, cpu.sync());
+    nfs3hp::port::removeSystemTask(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0049e4b7  e927010000             -jmp 0x49e5e3
@@ -3586,7 +3586,7 @@ L_0x0049e4bc:
     cpu.eax = cpu.ebx;
     // 0049e4c5  e816910400             -call 0x4e75e0
     cpu.esp -= 4;
-    nfs3hp::snd::removeSystemTask(app, cpu.sync());
+    nfs3hp::port::removeSystemTask(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
 L_0x0049e4ca:
@@ -6579,7 +6579,7 @@ void Application::sub_49f030(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.eax ^= x86::reg32(x86::sreg32(cpu.eax));
     // 0049f03a  e8f1850400             -call 0x4e7630
     cpu.esp -= 4;
-    nfs3hp::snd::runSystemTasks(app, cpu.sync());
+    nfs3hp::port::runSystemTasks(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0049f03f  31c9                   -xor ecx, ecx
@@ -6944,7 +6944,7 @@ void Application::sub_49f200(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.eax ^= x86::reg32(x86::sreg32(cpu.eax));
     // 0049f20b  e820840400             -call 0x4e7630
     cpu.esp -= 4;
-    nfs3hp::snd::runSystemTasks(app, cpu.sync());
+    nfs3hp::port::runSystemTasks(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0049f210  833d18e7550007         +cmp dword ptr [0x55e718], 7

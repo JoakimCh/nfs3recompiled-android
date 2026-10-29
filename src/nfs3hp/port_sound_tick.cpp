@@ -1,0 +1,480 @@
+#include "port_snd_3d.h"
+
+#include <algorithm>
+#include <array>
+#include <cstdint>
+
+/* The race's sound tick, rewritten (port.h says how): the listener put where
+ * the player's camera is (0x4229c0) and its move worked out, then each kind of
+ * the race's sounds updated in turn -- the cars about, the player's own car,
+ * the cop cars' closeness, their sirens and engines -- for each player in the
+ * split screen, or from the replay's camera (0x55fe30) where one is used.
+ *
+ * The game's state: 0x570a78 the listener (its place, then its axes), 0x570ae4
+ * and 0x570b34 each player's last place, 0x570af0 and 0x570b40 each player's
+ * car, 0x570dcc the listener's direction, 0x55260c the cop cars' closeness,
+ * 0x570b78 the cop sources (0x38 bytes each).  The arithmetic is the x87's as
+ * the game's code has it (port_snd_3d.h). */
+namespace nfs3hp
+{
+namespace port
+{
+namespace world
+{
+
+namespace
+{
+
+#pragma pack(push, 1)
+// A cop source (0x570b78 on): the car it follows and what its sounds keep.
+struct CopSource
+{
+    reg32 car;             // 0 none, -1 let go
+    reg32 other4[2];
+    int32_t speed;         // the noise of its speed
+    reg32 other10;
+    int32_t nearDistance;  // its distance, kept to 0x15f9
+    int32_t volume;
+    reg32 other1c;
+    int32_t ticks;         // a horn: > 0 sounding, < 0 waiting; 0 none
+    int32_t soundLength;
+    int32_t waitLength;
+    int32_t times;
+    reg32 other30[2];
+};
+static_assert(sizeof(CopSource) == 0x38, "a cop source");
+#pragma pack(pop)
+
+constexpr Records<CopSource> kSources{0x570b78};
+constexpr Table<reg32> kRoadCars{0x5efac8};
+constexpr Var<int32_t> kRoadCarCount{0x5efd9c}, kSplitScreen{0x6fd3b0}, kCameraKind{0x6fd3a0};
+constexpr Var<reg32> kViewedPlayer{0x6fd4f4};
+constexpr Var<int32_t> kReplayCamera{0x55fe30}, kCopsCloseness{0x55260c};
+constexpr Table<reg32> kPlayerCars{0x570af0, 0x50};
+constexpr Var<double> kRoadScale{0x536958}, kSpeedScale{0x536950};
+constexpr reg32 kMoved = 0x570dc0, kReplayListener = 0x7a3d1c, kLastPlaces = 0x570ae4;
+// What it calls of the game's.
+constexpr reg32 kCameraView = 0x4229c0, kCopRemove = 0x4121b0, kPlayerCarSound = 0x4117a0;
+constexpr reg32 kCopsClosenessAt = 0x411e20, kCopDistance = 0x411db0, kNoiseBySpeed = 0x4179d0;
+constexpr reg32 kNoiseByDistance = 0x417b80, kCopSiren = 0x411c50, kCopSirenStop = 0x411ca0;
+constexpr reg32 kCopEngine = 0x411cb0, kCopEngineStop = 0x411da0, kRadioTick = 0x4c8810;
+
+int32_t absolute(int32_t v) { return v > 0 ? v : negated(v); }
+int32_t sum(int32_t a, int32_t b) { return int32_t(uint32_t(a) + uint32_t(b)); }
+
+/* movsd, `count` times. */
+void moveWords(App* app, reg32& esi, reg32& edi, reg32 count)
+{
+    for (; count > 0; --count, esi += 4, edi += 4)
+        guest::put(app, edi, guest::at(app, esi));
+}
+
+/* 0x412220: the `count` cop cars nearest the listener (of the cars on the
+ * road, 0x5efac8's, the cops' only -- in the split screen those of player
+ * `player` -- within 0x4b0000) kept in cop sources `first` on: those no longer
+ * near let go, the new ones taken where a source is free.  eax as the code
+ * leaves it. */
+template <class Real>
+Result copSourcesIn(App* app, CPU& cpu, reg32 entryEsp, int32_t player, int32_t first, int32_t count)
+{
+    // Four pushes, and the nearest pairs and the rest on a frame of 0x54.
+    const reg32 frame = entryEsp - 4 * 4, below = frame - 0x54;
+    const HeldEbp ebp(cpu, frame);
+    // The code's registers esi and edi.
+    Calls game{app, cpu, below, kSources.address(first), 0};
+    struct Near
+    {
+        reg32 car;
+        int32_t distance;
+    };
+    std::array<Near, 4> nearest;
+    const int32_t n = std::min(count, 4);
+    for (int32_t i = 0; i < n; ++i)
+        nearest[i] = {0, 0x4b0000};
+    const int32_t cars = kRoadCarCount(app);
+    reg32 eax = cars > 0 ? reg32(cars) : 0;
+    for (int32_t i = 0; i < cars; ++i)
+    {
+        if (n <= 0)
+            break;
+        const reg32 car = kRoadCars(app, i);
+        if ((app->getMemory<uint8_t>(car + 0x200) & 4) != 0)
+        {
+            if (kSplitScreen(app) <= 1)
+                continue;
+            if (kViewedPlayer(app) == guest::at(app, car + 0x1f0))
+                continue;
+        }
+        if ((app->getMemory<uint8_t>(car + 0x200) & 0x40) != 0 || app->getMemory<uint8_t>(car + 0x89) == 0)
+            continue;
+        const double scale = kRoadScale(app);
+        const Vec3 place = vectorAt(app, car + 0x98), listener = vectorAt(app, kListener);
+        const int32_t dx = scaledInteger<Real>(Real(place.x) - Real(listener.x), scale);
+        const int32_t dy = scaledInteger<Real>(Real(place.y) - Real(listener.y), scale);
+        const int32_t dz = scaledInteger<Real>(Real(place.z) - Real(listener.z), scale);
+        int32_t x = dx <= 0 ? negated(dx) : dx;
+        int32_t y = absolute(dy);
+        int32_t z = dz <= 0 ? negated(dz) : dz;
+        if (z < x)
+            z >>= 2;
+        else
+            x >>= 2;
+        int32_t distance = sum(z, x);
+        if (distance >= 0x4b0000)
+            continue;
+        if (y > distance)
+            distance >>= 2;
+        else
+            y >>= 2;
+        distance = sum(distance, y);
+        if (distance >= 0x4b0000)
+            continue;
+        for (int32_t k = 0; k < n; ++k)
+        {
+            if (distance >= nearest[k].distance)
+                continue;
+            // Moved down one to make room.
+            for (int32_t at = n - 1; at > k; --at)
+                nearest[at] = nearest[at - 1];
+            nearest[k] = {car, distance};
+            break;
+        }
+    }
+    if (n <= 0)
+        return eax;
+    // Sources whose car is not among the nearest: let go (-1); the nearest a
+    // source has already: off the list.
+    for (int32_t s = 0; s < n; ++s)
+    {
+        CopSource& source = kSources(app, first + s);
+        if (source.car == 0)
+            continue;
+        int32_t k = 0;
+        for (; k < n; ++k)
+            if (nearest[k].car == source.car)
+            {
+                nearest[k].car = 0;
+                break;
+            }
+        if (k == n)
+            source.car = 0xffffffff;
+    }
+    // The new ones into the free sources.
+    for (int32_t k = 0; k < n; ++k)
+    {
+        if (nearest[k].car == 0)
+            continue;
+        for (int32_t s = 0; s < n; ++s)
+        {
+            const reg32 held = kSources(app, first + s).car;
+            if (held != 0 && held != 0xffffffff)
+                continue;
+            game.edi = reg32(k);
+            if (!game(kCopRemove, {reg32(first + s), nearest[k].car, reg32(player)}))
+                return {};
+            break;
+        }
+    }
+    // The ones let go and not taken: reset.
+    for (int32_t s = 0; s < n; ++s)
+    {
+        if (kSources(app, first + s).car != 0xffffffff)
+        {
+            eax = reg32(s) * 56;
+            continue;
+        }
+        game.edi = reg32(s);
+        if (!game(kCopRemove, {reg32(first + s), 0, reg32(player)}, {}, eax))
+            return {};
+    }
+    return int32_t(eax);
+}
+
+/* 0x411e60: cop source `index`'s sounds for player `player`: from its car's
+ * place, angle and distance -- the noise of its speed (by the gap in their
+ * +0x7c0 with the player's car, or its own +0x7c4), its knocks and scrapes,
+ * and then its siren and radio (a cop), its engine (a racer), or a car's horn
+ * now and then.  eax as the code leaves it. */
+template <class Real>
+Result copSoundIn(App* app, CPU& cpu, reg32 entryEsp, int32_t player, int32_t index)
+{
+    // Five pushes, and a frame of 0x30.
+    const reg32 frame = entryEsp - 5 * 4, below = frame - 0x30;
+    const HeldEbp ebp(cpu, frame);
+    CopSource& source = kSources(app, index);
+    const reg32 car = source.car;
+    if (car == 0)
+        return int32_t(reg32(index) * 56);
+    Calls game{app, cpu, below, kSources.address(index), car};
+    const Vec3 place = vectorAt(app, car + 0x98);
+    const Result ahead = aheadAlongTrack(app, cpu, below - 4, arithmeticFor<Real>(), place, car + 0xa4);
+    if (!ahead)
+        return {};
+    if (*ahead < 0)
+        return *ahead;
+    int32_t angle;
+    if (kSplitScreen(app) == 1)
+        angle = player != 0 ? 0xc000 : 0x3fff;
+    else
+    {
+        const Result r = angleToPlace(app, cpu, below - 4, arithmeticFor<Real>(), kListener, place);
+        if (!r)
+            return {};
+        angle = *r;
+    }
+    reg32 distanceNow;
+    if (!game(kCopDistance, {reg32(index)}, {}, distanceNow))
+        return {};
+    const int32_t distance = int32_t(distanceNow);
+    const int32_t nearDistance = distance < 0x15f9 ? distance : 0x15f9;
+    // The noise of its speed: by the gap between the two cars' +0x7c0 when the
+    // listener has a direction, else its own +0x7c4.
+    float noise;
+    if (kListenerDirection(app) != 0)
+    {
+        const reg32 playerCar = kPlayerCars(app, player);
+        const float gap = float(Real(floatAt(app, car + 0x7c0)) - Real(floatAt(app, playerCar + 0x7c0)));
+        // fldz; fcomp: the gap as it is where 0 is below it (or unordered).
+        noise = gap <= 0.0f ? -gap : gap;
+    }
+    else
+        noise = floatAt(app, car + 0x7c4);
+    source.speed = scaledInteger<Real>(Real(noise), kSpeedScale(app));
+    int32_t topSpeed = int32_t(guest::at(app, car + 0x590));
+    if (topSpeed > 0x1770)
+        topSpeed = 0x1770;
+    const uint8_t flags = app->getMemory<uint8_t>(car + 0x200);
+    int32_t volume;
+    if ((flags & 0x10) != 0)
+        volume = 0x54;
+    else
+    {
+        const int32_t limit = sum(int32_t(guest::at(app, guest::at(app, car + 0x528) + 0x1c4)), 0x7d0);
+        volume = limit == 0 ? 0 : idiv(imul(topSpeed, 127), limit);
+    }
+    volume = volume - 0xa;
+    if (volume < 0)
+        volume = 0;
+    source.nearDistance = nearDistance;
+    source.volume = volume;
+    if (!game(kNoiseBySpeed, {reg32(index) + 4, (flags & 0x10) != 0 ? 1u : 0u, reg32(volume), reg32(*ahead)},
+              {reg32(distance), reg32(angle), reg32(source.speed)}))
+        return {};
+    // The car's knocks and scrapes, from the last.
+    for (int32_t k = int32_t(guest::at(app, car + 0x7dc)) - 1; k >= 0; --k)
+    {
+        const reg32 knock = car + reg32(k) * 24;
+        const reg32 who = int32_t(guest::at(app, knock + 0x7e4)) > -1 ? reg32(index) + 0x16 : 0xffffffff;
+        if (!game(kNoiseByDistance,
+                  {who, guest::at(app, knock + 0x7e8), guest::at(app, knock + 0x7ec), guest::at(app, knock + 0x7f0)},
+                  {reg32(distance), reg32(angle)}))
+            return {};
+    }
+    const reg32 current = source.car;
+    const uint8_t kind = app->getMemory<uint8_t>(current + 0x200);
+    const Args sound{reg32(index), reg32(angle), reg32(*ahead), reg32(distance)};
+    reg32 r;
+    if ((kind & 0x20) != 0)
+    {
+        if ((app->getMemory<uint8_t>(current + 0x710) & 0x10) != 0)
+        {
+            if (!game(kCopSiren, sound, {}))
+                return {};
+            source.ticks = 1;
+        }
+        else if (source.ticks != 0)
+        {
+            if (!game(kCopSirenStop, {reg32(index)}))
+                return {};
+            source.ticks = 0;
+        }
+        if (!game(kRadioTick, {car, reg32(angle), reg32(*ahead), reg32(distance)}, {reg32(player)}, r))
+            return {};
+        return int32_t(r);
+    }
+    if ((kind & 4) != 0)
+    {
+        r = current;
+        if (app->getMemory<uint8_t>(car + 0x50e) != 0)
+        {
+            if (!game(kCopEngine, sound, {}, r))
+                return {};
+            source.ticks = 1;
+        }
+        else if (source.ticks != 0)
+        {
+            if (!game(kCopEngineStop, {reg32(index)}, {}, r))
+                return {};
+            source.ticks = 0;
+        }
+        return int32_t(r);
+    }
+    // A car's horn: sounding while it counts down, then waiting.
+    const int32_t ticks = source.ticks;
+    if (ticks > 0)
+    {
+        if (source.soundLength > 0)
+            source.ticks = ticks - 1;
+        if (source.ticks == 0)
+        {
+            app->getMemory<uint8_t>(car + 0x50e) = 0;
+            if (!game(kCopEngineStop, {reg32(index)}, {}, r))
+                return {};
+            const int32_t left = source.times - 1;
+            source.times = left;
+            if (left != 0)
+            {
+                source.ticks = source.waitLength;
+                return source.waitLength;
+            }
+            return int32_t(r);
+        }
+        app->getMemory<uint8_t>(car + 0x50e) = 1;
+        if (!game(kCopEngine, sound, {}, r))
+            return {};
+        return int32_t(r);
+    }
+    if (ticks < 0)
+    {
+        source.ticks = ticks + 1;
+        if (source.ticks == 0)
+        {
+            source.ticks = source.soundLength;
+            return source.soundLength;
+        }
+    }
+    return int32_t(current);
+}
+
+}  // namespace
+
+Result copSourcesNearest(App* app, CPU& cpu, reg32 esp, Arithmetic a, int32_t player, int32_t first, int32_t count)
+{
+    return withArithmetic(a, [&](auto real) { return copSourcesIn<decltype(real)>(app, cpu, esp, player, first, count); });
+}
+
+Result copSourceSound(App* app, CPU& cpu, reg32 esp, Arithmetic a, int32_t player, int32_t index)
+{
+    return withArithmetic(a, [&](auto real) { return copSoundIn<decltype(real)>(app, cpu, esp, player, index); });
+}
+
+namespace
+{
+
+/* The listener at player `player`'s camera, and its move since; its direction
+ * that of the car at `carSlot`'s (+0xa4), or the moved one's with the camera
+ * off it (0x6fd3a0 2 and on). */
+bool listenerAt(Calls& game, Arithmetic a, int32_t player, reg32 carSlot)
+{
+    App* app = game.app;
+    if (!game(kCameraView, {reg32(player), kListener}))
+        return false;
+    const reg32 car = guest::at(app, carSlot);
+    moveListener(app, a, player, kListener);
+    guest::put(app, reg32(kListenerDirection.at), kCameraKind(app) >= 2 ? kMoved : car + 0xa4);
+    return true;
+}
+
+}  // namespace
+
+}  // namespace world
+
+using namespace world;
+
+/* 0x412220: the ebx cop cars nearest the listener kept in cop sources edx on,
+ * for player eax. */
+void copSourcesPick(App* app, CPU& cpu)
+{
+    const Entry e(cpu);
+    e.finish(cpu, copSourcesNearest(app, cpu, e.esp, arithmeticOf(cpu), int32_t(e.eax), int32_t(e.edx),
+                                    int32_t(e.ebx)));
+}
+
+/* 0x411e60: cop source edx's sounds for player eax. */
+void copCarSound(App* app, CPU& cpu)
+{
+    const Entry e(cpu);
+    e.finish(cpu, copSourceSound(app, cpu, e.esp, arithmeticOf(cpu), int32_t(e.eax), int32_t(e.edx)));
+}
+
+/* 0x411410: the race's sound tick. */
+void raceSoundTick(App* app, CPU& cpu)
+{
+    const Entry e(cpu);
+    const Arithmetic a = arithmeticOf(cpu);
+    // Six pushes, no frame: the code's esp and ebp both.
+    const reg32 frame = e.frame(6);
+    const HeldEbp ebp(cpu, frame);
+    Calls game{app, cpu, frame, e.esi, e.edi};
+    const auto done = [&](const Result& r) { e.finish(cpu, r); };
+    const auto cops = [&](int32_t player, int32_t first, int32_t count) {
+        return copSourcesNearest(app, cpu, frame - 4, a, player, first, count);
+    };
+    const auto track = [&](int32_t player) { return trackSoundsFor(app, cpu, frame - 4, game.esi, game.edi, a, player); };
+    const auto closeness = [&](reg32 eax, reg32 edx) {
+        reg32 r;
+        if (!game(kCopsClosenessAt, {eax, edx}, {}, r))
+            return false;
+        kCopsCloseness.set(app, int32_t(r));
+        return true;
+    };
+    Result r;
+    if (kSplitScreen(app) == 1)
+    {
+        if (!listenerAt(game, a, 0, 0x570af0) || !cops(0, 0, 1))
+            return;
+        game.edi = kLastPlaces;
+        if (!track(0) || !game(kPlayerCarSound, {0, 0}))
+            return;
+        game.esi = kListener;
+        if (!closeness(1, 0))
+            return;
+        if (!(r = copSourceSound(app, cpu, frame - 4, a, 0, 0)))
+            return;
+        // The listener kept as player 0's last place.
+        moveWords(app, game.esi, game.edi, 3);
+        if (!listenerAt(game, a, 1, 0x570b40))
+            return;
+        if (!game(kPlayerCarSound, {1, kListener}))
+            return;
+        if (!track(1) || !cops(1, 1, 1))
+            return;
+        game.edi = 0x570b34;
+        if (!closeness(1, 1))
+            return;
+        game.esi = kListener;
+        if (!(r = copSourceSound(app, cpu, frame - 4, a, 1, 1)))
+            return;
+        moveWords(app, game.esi, game.edi, 3);
+        return done(r);
+    }
+    if (kReplayCamera(app) == 0)
+    {
+        if (!listenerAt(game, a, 0, 0x570af0))
+            return;
+    }
+    else
+    {
+        game.esi = kReplayListener;
+        game.edi = kListener;
+        moveWords(app, game.esi, game.edi, 0x18);
+        game.edi = 0;
+        kListenerDirection.set(app, 0);
+    }
+    if (!cops(0, 0, 4) || !track(0) || !closeness(4, 0) || !game(kPlayerCarSound, {0, 0}))
+        return;
+    for (int32_t cop = 0; cop < 4; ++cop)
+    {
+        if (cop == 2)
+            game.edi = kLastPlaces;
+        if (cop == 3)
+            game.esi = kListener;
+        if (!(r = copSourceSound(app, cpu, frame - 4, a, 0, cop)))
+            return;
+    }
+    moveWords(app, game.esi, game.edi, 3);
+    done(r);
+}
+
+}  // namespace port
+}  // namespace nfs3hp

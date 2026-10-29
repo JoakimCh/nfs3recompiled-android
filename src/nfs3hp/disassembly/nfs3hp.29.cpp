@@ -3093,7 +3093,7 @@ L_0x004cd5fe:
     cpu.eax = 5032048 /*0x4cc870*/;
     // 004cd60d  e80e9f0100             -call 0x4e7520
     cpu.esp -= 4;
-    nfs3hp::snd::addSystemTask(app, cpu.sync());
+    nfs3hp::port::addSystemTask(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
 L_0x004cd612:
@@ -3943,7 +3943,7 @@ L_0x004cd9a9:
     cpu.eax ^= x86::reg32(x86::sreg32(cpu.eax));
     // 004cd9b4  e8779c0100             -call 0x4e7630
     cpu.esp -= 4;
-    nfs3hp::snd::runSystemTasks(app, cpu.sync());
+    nfs3hp::port::runSystemTasks(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004cd9b9  31c0                   +xor eax, eax
@@ -4018,7 +4018,7 @@ L_0x004cd9de:
     cpu.set_szp((cpu.eax ^= x86::reg32(x86::sreg32(cpu.eax))));
     // 004cd9f0  e83b9c0100             -call 0x4e7630
     cpu.esp -= 4;
-    nfs3hp::snd::runSystemTasks(app, cpu.sync());
+    nfs3hp::port::runSystemTasks(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004cd9f5  ebe7                   -jmp 0x4cd9de
@@ -4395,7 +4395,7 @@ L_0x004cdaf0:
     cpu.set_szp((cpu.eax ^= x86::reg32(x86::sreg32(cpu.eax))));
     // 004cdb02  e8299b0100             -call 0x4e7630
     cpu.esp -= 4;
-    nfs3hp::snd::runSystemTasks(app, cpu.sync());
+    nfs3hp::port::runSystemTasks(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004cdb07  ebe7                   -jmp 0x4cdaf0
@@ -14266,7 +14266,7 @@ L_0x004cfd51:
     cpu.eax ^= x86::reg32(x86::sreg32(cpu.eax));
     // 004cfd67  e8c4780100             -call 0x4e7630
     cpu.esp -= 4;
-    nfs3hp::snd::runSystemTasks(app, cpu.sync());
+    nfs3hp::port::runSystemTasks(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
 L_0x004cfd6c:

@@ -17,6 +17,9 @@ kThreadsPages,         // 0x501110: the pages at 0x61d000 (the size rounded up t
 kThreadsSineCosine,    // 0x4ea970: an angle's sine to [edx], its cosine to [ebx]
 kThreadsNormal,        // 0x4e01c0: the vector at eax normalized into [edx]
 kThreadsMemoryStatus,  // GlobalMemoryStatus: the MEMORYSTATUS past its length made up
+kThreadsClock,         // timeGetTime: near the time the timer's next tick is due (0x79c178), mostly, else any
+kThreadsMmResult,      // timeBeginPeriod, timeGetDevCaps: 0 (TIMERR_NOERROR) mostly, else 97
+kThreadsMessageSent,   // the game's message to its message thread (0x4cc7c0): answered now and then (the driver's flag 0x9ef607 set), 0 or not
 #elif defined(EA_EFFECT_CASES)
 // case kSomething: ... break;
 case kThreadsWait:
@@ -97,6 +100,21 @@ case kThreadsNormal:
     }
     break;
 }
+case kThreadsClock:
+    // Within a second and a half either side of the next tick's time, so that the timer's callback
+    // takes each way (late by a millisecond or more, a little late, very late); now and then any time.
+    result = r % 8 != 0 ? word(0x79c178) + (r >> 8) % 3001 - 1500 : random(id + 1);
+    break;
+case kThreadsMessageSent:
+    // The message thread's answer: the driver's message done (0x9ef607) mostly, and the call's result 0
+    // (no message thread) or not.
+    if (r % 4 != 0)
+        getMemory<x86::reg8>(0x9ef607) = 1;
+    result = (r >> 4) % 4 == 0 ? 0 : r | 1;
+    break;
+case kThreadsMmResult:
+    result = r % 6 != 0 ? 0 : 97;
+    break;
 case kThreadsMemoryStatus:
     for (x86::reg32 i = 1; i < 8 && words[0] < kMemory - 0x20; ++i)
         word(words[0] + 4 * i) = random(id + i);

@@ -33,6 +33,9 @@
 #include <lib/thread.h>
 #include <SDL3/SDL.h>
 #include <algorithm>
+#include <atomic>
+#include <chrono>
+#include <thread>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -281,6 +284,15 @@ const std::pair<x86::reg32, x86::reg32> kWindows[] = {
 #define BUTTONS_WINDOWS
 #include "buttons.inc"
 #undef BUTTONS_WINDOWS
+#define MENUS_WINDOWS
+#include "menus.inc"
+#undef MENUS_WINDOWS
+#define LOOP_WINDOWS
+#include "loop.inc"
+#undef LOOP_WINDOWS
+#define DIALOGS_WINDOWS
+#include "dialogs.inc"
+#undef DIALOGS_WINDOWS
 #define SOUND_WINDOWS
 #include "sound_lib.inc"
 #undef SOUND_WINDOWS
@@ -401,6 +413,15 @@ enum Effect
 #define BUTTONS_EFFECTS
 #include "buttons.inc"
 #undef BUTTONS_EFFECTS
+#define MENUS_EFFECTS
+#include "menus.inc"
+#undef MENUS_EFFECTS
+#define LOOP_EFFECTS
+#include "loop.inc"
+#undef LOOP_EFFECTS
+#define DIALOGS_EFFECTS
+#include "dialogs.inc"
+#undef DIALOGS_EFFECTS
 #define RACESTART_EFFECTS
 #include "racestart.inc"
 #undef RACESTART_EFFECTS
@@ -579,7 +600,8 @@ const StandIn kGameFunctions[] = {
 #define AIPLAN_GAME_FUNCTIONS
 #include "aiplan.inc"
 #undef AIPLAN_GAME_FUNCTIONS
-{0x4c9860, "the wait for the clock", kWatcom, 4, 0, kEax, -1, 0, kTickWait},
+// (No register: the callee reads none, and the menu loop calls it with whatever its own hold.)
+{0x4c9860, "the wait for the clock", kWatcom, 0, 0, kEax, -1, 0, kTickWait},
 {0x4beb20, "a rectangle copied out", kWatcom, 4, 1, kEdx, -1, 0, kRectangle},
 #define SOUND_GAME_FUNCTIONS
 #include "sound_lib.inc"
@@ -596,6 +618,15 @@ const StandIn kGameFunctions[] = {
 #define BUTTONS_GAME_FUNCTIONS
 #include "buttons.inc"
 #undef BUTTONS_GAME_FUNCTIONS
+#define MENUS_GAME_FUNCTIONS
+#include "menus.inc"
+#undef MENUS_GAME_FUNCTIONS
+#define LOOP_GAME_FUNCTIONS
+#include "loop.inc"
+#undef LOOP_GAME_FUNCTIONS
+#define DIALOGS_GAME_FUNCTIONS
+#include "dialogs.inc"
+#undef DIALOGS_GAME_FUNCTIONS
 // What the decompiled functions call that has no stand-in above (generate.py).
 #include "decompiled_standins.inc"
 };
@@ -741,6 +772,15 @@ const StandIn kPointers[] = {
 #define BUTTONS_POINTERS
 #include "buttons.inc"
 #undef BUTTONS_POINTERS
+#define MENUS_POINTERS
+#include "menus.inc"
+#undef MENUS_POINTERS
+#define LOOP_POINTERS
+#include "loop.inc"
+#undef LOOP_POINTERS
+#define DIALOGS_POINTERS
+#include "dialogs.inc"
+#undef DIALOGS_POINTERS
 #define RACESTART_POINTERS
 #include "racestart.inc"
 #undef RACESTART_POINTERS
@@ -1006,6 +1046,15 @@ const Promise kPromises[] = {
 #define BUTTONS_PROMISES
 #include "buttons.inc"
 #undef BUTTONS_PROMISES
+#define MENUS_PROMISES
+#include "menus.inc"
+#undef MENUS_PROMISES
+#define LOOP_PROMISES
+#include "loop.inc"
+#undef LOOP_PROMISES
+#define DIALOGS_PROMISES
+#include "dialogs.inc"
+#undef DIALOGS_PROMISES
     // The Watcom runtime's (native_watcom.cpp).
     {"watcom::CHP", true, false, 0, true},
     {"watcom::GetThreadPtr", true, true},
@@ -1810,6 +1859,15 @@ public:
 #define BUTTONS_EFFECT_CASES
 #include "buttons.inc"
 #undef BUTTONS_EFFECT_CASES
+#define MENUS_EFFECT_CASES
+#include "menus.inc"
+#undef MENUS_EFFECT_CASES
+#define LOOP_EFFECT_CASES
+#include "loop.inc"
+#undef LOOP_EFFECT_CASES
+#define DIALOGS_EFFECT_CASES
+#include "dialogs.inc"
+#undef DIALOGS_EFFECT_CASES
 #define RACESTART_EFFECT_CASES
 #include "racestart.inc"
 #undef RACESTART_EFFECT_CASES
@@ -1865,11 +1923,15 @@ public:
             break;
         case kTickWait:
             word(0x79c1a4) += 1 + r % 2;
+            // (The menu loop waits out a window sent to the background by this: it comes back now and then.)
+            if (word(0x559444) != 0 && r % 5 == 0)
+                word(0x559444) = 0;
             break;
         case kScreenName:
         {
-            static const x86::reg32 names[] = {0, 0x53793c, 0x537944, 0x537950, 0x53795c};
-            result = names[r % 5];
+            // (And the car screens' the menu loop's settings look for: showcase, interior, history, compare.)
+            static const x86::reg32 names[] = {0, 0x53793c, 0x537944, 0x537950, 0x53795c, 0x539084, 0x539090, 0x53909c, 0x5390a4};
+            result = names[r % 9];
             break;
         }
         case kConsoleMode:
@@ -2008,6 +2070,14 @@ void WinApplication::lockContext(const x86::CPU&) {}
 void WinApplication::unlockContext(const x86::CPU&) {}
 void Thread::sleep(x86::reg32) {}
 
+/* Whether the function under test is a rewrite (port::): the generated side then runs the
+ * game's code of another rewrite it calls, so the native side runs that rewrite's adapter, not
+ * the stand-in a call by address would find. */
+bool g_testedPort = false;
+const x86::reg32 kStoodInBoth[] = {
+#include "game_stood_in.inc"
+    0};
+
 void WinApplication::dynamicCallElsewhere(x86::reg32 address, x86::CPU& cpu)
 {
     CheckApp* app = static_cast<CheckApp*>(this);
@@ -2018,6 +2088,19 @@ void WinApplication::dynamicCallElsewhere(x86::reg32 address, x86::CPU& cpu)
         cpu.terminate = true;
         return;
     }
+    const auto stoodInBoth = [](x86::reg32 a) {
+        for (const x86::reg32 s : kStoodInBoth)
+            if (s == a)
+                return true;
+        return false;
+    };
+    if (g_testedPort && !app->generated)
+        for (const Tested& t : kTested)
+            if (t.address == address && std::strncmp(t.name, "port::", 6) == 0 && !stoodInBoth(address))
+            {
+                t.native(this, cpu);
+                return;
+            }
     for (const StandIn& s : kGameFunctions)
         if (s.address == address)
         {
@@ -2055,6 +2138,9 @@ void MemMap::usedRanges(std::vector<std::pair<x86::reg32, x86::reg32>>& ranges)
 #define TEXT_HOOKS
 #include "text.inc"
 #undef TEXT_HOOKS
+#define DIALOGS_HOOKS
+#include "dialogs.inc"
+#undef DIALOGS_HOOKS
 
 /* The game's functions the generated code calls by address: their stand-ins. */
 #define STAND_IN(a)                                                                      \
@@ -5169,6 +5255,15 @@ x86::reg32 decompiledValue()
 #define BUTTONS_ARGUMENTS
 #include "buttons.inc"
 #undef BUTTONS_ARGUMENTS
+#define MENUS_ARGUMENTS
+#include "menus.inc"
+#undef MENUS_ARGUMENTS
+#define LOOP_ARGUMENTS
+#include "loop.inc"
+#undef LOOP_ARGUMENTS
+#define DIALOGS_ARGUMENTS
+#include "dialogs.inc"
+#undef DIALOGS_ARGUMENTS
 
 /* The menus' widgets that hold a value rewritten (fields.inc). */
 #define FIELDS_ARGUMENTS
@@ -5338,6 +5433,15 @@ void makeArguments(CheckApp& g, const Tested& t, x86::reg32 esp, x86::CPU& cpu)
     // The menus' widgets rewritten (buttons.inc): their own world.
     if (name.compare(0, 15, "port::buttons::") == 0)
         makeButtonsArguments(g, name.substr(15), cpu, a);
+    // The menu files rewritten (menus.inc): their own world.
+    if (name.compare(0, 13, "port::menus::") == 0)
+        makeMenuFilesArguments(g, name.substr(13), cpu, a);
+    // The menu loop rewritten (loop.inc): its own world.
+    if (name.compare(0, 12, "port::loop::") == 0)
+        makeLoopArguments(g, name.substr(12), cpu, a);
+    // The dialogs rewritten (dialogs.inc): their own world.
+    if (name.compare(0, 15, "port::dialogs::") == 0)
+        makeDialogsArguments(g, name.substr(15), cpu, a);
     for (x86::reg32 i = 0; i < 9; ++i)
         g.word(esp + 4 + 4 * i) = a[i];
 }
@@ -5347,11 +5451,38 @@ bool compareRuns(const Tested& t, CheckApp& g, CheckApp& n, const x86::CPU& gene
 
 /* One case of one function: the state made up on `g`, copied to `n`, then
  * both run and compared. */
+/* Cases the generated side of a function never finishes (a loop on a world no game has):
+ * GAME_CHECKS_SKIP="name:case,name:case" runs everything of such a case but the two runs
+ * themselves, so the cases after it are the cases they always were.  GAME_CHECKS_WATCHDOG=seconds
+ * makes a case that takes longer say which it is, and end the process (so that run.py can list
+ * them for the skip). */
+std::vector<std::pair<std::string, unsigned>> g_skipCases;
+std::atomic<long long> g_caseStarted{0};
+const char* g_watchName = "";
+std::atomic<unsigned> g_watchCase{0};
+
+bool caseSkipped(const char* name, unsigned c)
+{
+    for (const auto& s : g_skipCases)
+        if (s.second == c && s.first == name)
+            return true;
+    return false;
+}
+
 bool runCase(const Tested& t, CheckApp& g, CheckApp& n, Counts& counts)
 {
     ++counts.cases;
     const Promise& p = *promiseOf(t.name);
     g_seed = mix(random32() | std::uint64_t(random32()) << 32);
+    if (caseSkipped(t.name, g_case))
+    {
+        // As the case would draw: the stack's words and the registers.
+        for (x86::reg32 at = kStackLow; at < kStackHigh; at += 4)
+            random32();
+        for (int i = 0; i < 7; ++i)
+            random32();
+        return true;
+    }
     g_stopAt = -1;
     g_mostCalls = -1;
     makeState(g);
@@ -5394,6 +5525,7 @@ bool runCase(const Tested& t, CheckApp& g, CheckApp& n, Counts& counts)
     n.calls.clear();
 
     x86::CPU nativeCpu = cpu, generatedCpu = cpu;
+    win32::g_testedPort = std::strncmp(t.name, "port::", 6) == 0;
     win32::g_running = &n;
     t.native(&n, nativeCpu);
     win32::g_running = &g;
@@ -5548,6 +5680,40 @@ int main(int argc, char** argv)
     // mutations.py's: stop at the first case that fails, and check one function.
     const bool stopAtFirst = argc > 2 && std::strcmp(argv[2], "--first") == 0;
     const char* only = argc > 3 ? argv[3] : nullptr;
+    if (const char* skip = std::getenv("GAME_CHECKS_SKIP"))
+    {
+        std::string list(skip);
+        for (size_t at = 0; at < list.size();)
+        {
+            size_t end = list.find(',', at);
+            if (end == std::string::npos)
+                end = list.size();
+            const std::string item = list.substr(at, end - at);
+            const size_t colon = item.rfind(':');
+            if (colon != std::string::npos && colon + 1 < item.size())
+                g_skipCases.push_back({item.substr(0, colon), unsigned(std::strtoul(item.c_str() + colon + 1, nullptr, 10))});
+            at = end + 1;
+        }
+    }
+    if (const char* watchdog = std::getenv("GAME_CHECKS_WATCHDOG"))
+    {
+        const long long limit = std::strtoll(watchdog, nullptr, 10) * 1000;
+        std::thread([limit] {
+            for (;;)
+            {
+                std::this_thread::sleep_for(std::chrono::milliseconds(500));
+                const long long started = g_caseStarted.load();
+                const long long now = std::chrono::duration_cast<std::chrono::milliseconds>(
+                                          std::chrono::steady_clock::now().time_since_epoch()).count();
+                if (started != 0 && now - started > limit)
+                {
+                    std::printf("HANG %s:%u\n", g_watchName, g_watchCase.load());
+                    std::fflush(stdout);
+                    std::_Exit(3);
+                }
+            }
+        }).detach();
+    }
     CheckApp g(true), n(false);
     for (CheckApp* app : {&g, &n})
     {
@@ -5592,6 +5758,10 @@ int main(int argc, char** argv)
         g_name = t.name;
         for (g_case = 0; g_case < cases; ++g_case)
         {
+            g_watchName = t.name;
+            g_watchCase = g_case;
+            g_caseStarted = std::chrono::duration_cast<std::chrono::milliseconds>(
+                                std::chrono::steady_clock::now().time_since_epoch()).count();
             if (!runCase(t, g, n, counts) && stopAtFirst)
                 return 1;
             // Both memories alike again, the dead stack included, for the next case.
@@ -5609,6 +5779,7 @@ int main(int argc, char** argv)
         }
         std::printf("%-34s %7u cases, %5u stopped the game -- %u failed\n", t.name, counts.cases, counts.stopped,
                     counts.failed);
+        g_caseStarted = 0;
         failed = failed || counts.failed != 0;
     }
     std::printf(failed ? "FAILED\n" : "all alike\n");

@@ -9135,7 +9135,7 @@ void Application::sub_4a33b0(WinApplication* __restrict app, x86::CPU& cpu_)
     if (cpu.terminate) return;
     // 004a33c7  e8b4e2f6ff             -call 0x411680
     cpu.esp -= 4;
-    nfs3hp::snd::sourcesReset(app, cpu.sync());
+    nfs3hp::port::sourcesReset(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004a33cc  5d                     -pop ebp
@@ -10099,7 +10099,7 @@ L_0x004a37bc:
     cpu.eax = app->getMemory<x86::reg32>(x86::reg32(7328940) /* 0x6fd4ac */);
     // 004a37c1  e8facff6ff             -call 0x4107c0
     cpu.esp -= 4;
-    nfs3hp::snd::raceMusicStart(app, cpu.sync());
+    nfs3hp::port::raceMusicStart(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004a37c6  c60590e8550001         -mov byte ptr [0x55e890], 1
@@ -10117,7 +10117,7 @@ L_0x004a37d7:
     cpu.set_szp((cpu.eax ^= x86::reg32(x86::sreg32(cpu.eax))));
     // 004a37d9  e8523e0400             -call 0x4e7630
     cpu.esp -= 4;
-    nfs3hp::snd::runSystemTasks(app, cpu.sync());
+    nfs3hp::port::runSystemTasks(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004a37de  e80d2c0200             -call 0x4c63f0
@@ -10219,12 +10219,12 @@ L_0x004a3815:
 L_0x004a381f:
     // 004a381f  e82cf3f6ff             -call 0x412b50
     cpu.esp -= 4;
-    nfs3hp::snd::raceSoundEnd(app, cpu.sync());
+    nfs3hp::port::raceSoundEnd(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004a3824  e8a7d1f6ff             -call 0x4109d0
     cpu.esp -= 4;
-    nfs3hp::snd::musicStop(app, cpu.sync());
+    nfs3hp::port::musicStop(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004a3829  833db4367d0001         +cmp dword ptr [0x7d36b4], 1
@@ -10258,7 +10258,7 @@ L_0x004a383b:
     if (cpu.terminate) return;
     // 004a3840  e85bd2f6ff             -call 0x410aa0
     cpu.esp -= 4;
-    nfs3hp::snd::musicStreamEnd(app, cpu.sync());
+    nfs3hp::port::musicStreamEnd(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004a3845  b82c010000             -mov eax, 0x12c
@@ -10267,7 +10267,7 @@ L_0x004a383b:
     cpu.ecx = app->getMemory<x86::reg32>(cpu.ebp + x86::reg32(-4) /* -0x4 */);
     // 004a384d  e81ecbf6ff             -call 0x410370
     cpu.esp -= 4;
-    nfs3hp::snd::musicStreamMakeOf(app, cpu.sync());
+    nfs3hp::port::musicStreamMakeOf(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004a3852  85c9                   +test ecx, ecx
@@ -18915,7 +18915,7 @@ void Application::sub_4a65b0(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.eax ^= x86::reg32(x86::sreg32(cpu.eax));
     // 004a65b6  e875100400             -call 0x4e7630
     cpu.esp -= 4;
-    nfs3hp::snd::runSystemTasks(app, cpu.sync());
+    nfs3hp::port::runSystemTasks(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004a65bb  31c0                   -xor eax, eax
@@ -20116,7 +20116,7 @@ L_0x004a6ab0:
     cpu.eax ^= x86::reg32(x86::sreg32(cpu.eax));
     // 004a6ac9  e8620b0400             -call 0x4e7630
     cpu.esp -= 4;
-    nfs3hp::snd::runSystemTasks(app, cpu.sync());
+    nfs3hp::port::runSystemTasks(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004a6ace  66833ddc227a0000       +cmp word ptr [0x7a22dc], 0
@@ -20346,7 +20346,7 @@ L_0x004a6b87:
     cpu.eax ^= x86::reg32(x86::sreg32(cpu.eax));
     // 004a6b98  e8930a0400             -call 0x4e7630
     cpu.esp -= 4;
-    nfs3hp::snd::runSystemTasks(app, cpu.sync());
+    nfs3hp::port::runSystemTasks(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004a6b9d  668b0ddc227a00         -mov cx, word ptr [0x7a22dc]
@@ -20850,7 +20850,7 @@ L_0x004a6d37:
     cpu.eax ^= x86::reg32(x86::sreg32(cpu.eax));
     // 004a6d42  e8e9080400             -call 0x4e7630
     cpu.esp -= 4;
-    nfs3hp::snd::runSystemTasks(app, cpu.sync());
+    nfs3hp::port::runSystemTasks(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004a6d47  803d1948560000         +cmp byte ptr [0x564819], 0

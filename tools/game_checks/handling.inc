@@ -54,7 +54,7 @@ case kHandlingTurn:
 // row has it elsewhere; vectors added (n, a, b, the result at ecx) and
 // scaled (n, a; the scale, the result, ret 8), the vector logged; a 2D turn
 // by an angle (ret 0x14); a square root of a stack float.
-{0x4e01f0, "a dot product", kWatcom, 4, 0, kEax, 0, 3, kHandlingDot},
+{0x4e01f0, "a dot product", kWatcom, 2, 0, kEax, 0, 3, kHandlingDot},
 {0x4dffb0, "vectors added", kWatcom, 4, 0, kEax | kEbx | kEcx | kEdx, 1, 3, kHandlingVectors},
 {0x4e0050, "vectors scaled", kStdcall, 2, 2, kEax | kEdx, 1, 3, kHandlingVectors},
 {0x496bf0, "a 2D turn", kStdcall, 0, 5, kEax, -1, 0, kHandlingTurn},

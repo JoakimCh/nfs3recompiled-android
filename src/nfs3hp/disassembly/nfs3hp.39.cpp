@@ -3927,7 +3927,7 @@ L_0x004f6ced:
     cpu.eax = cpu.ebx;
     // 004f6d0c  e81f09ffff             -call 0x4e7630
     cpu.esp -= 4;
-    nfs3hp::snd::runSystemTasks(app, cpu.sync());
+    nfs3hp::port::runSystemTasks(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004f6d11  85c0                   +test eax, eax
@@ -4348,7 +4348,7 @@ L_0x004f6e84:
     cpu.eax ^= x86::reg32(x86::sreg32(cpu.eax));
     // 004f6e86  e8a507ffff             -call 0x4e7630
     cpu.esp -= 4;
-    nfs3hp::snd::runSystemTasks(app, cpu.sync());
+    nfs3hp::port::runSystemTasks(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004f6e8b  85c0                   +test eax, eax
@@ -4502,7 +4502,7 @@ L_0x004f6ee3:
     cpu.eax ^= x86::reg32(x86::sreg32(cpu.eax));
     // 004f6efb  e83007ffff             -call 0x4e7630
     cpu.esp -= 4;
-    nfs3hp::snd::runSystemTasks(app, cpu.sync());
+    nfs3hp::port::runSystemTasks(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004f6f00  85c0                   +test eax, eax
@@ -6435,7 +6435,7 @@ L_0x004f7536:
     cpu.eax = cpu.edx;
     // 004f754f  e8dc00ffff             -call 0x4e7630
     cpu.esp -= 4;
-    nfs3hp::snd::runSystemTasks(app, cpu.sync());
+    nfs3hp::port::runSystemTasks(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
 L_0x004f7554:
@@ -6659,7 +6659,7 @@ L_0x004f75ef:
     cpu.eax ^= x86::reg32(x86::sreg32(cpu.eax));
     // 004f75fc  e82f00ffff             -call 0x4e7630
     cpu.esp -= 4;
-    nfs3hp::snd::runSystemTasks(app, cpu.sync());
+    nfs3hp::port::runSystemTasks(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
 L_0x004f7601:
@@ -8672,7 +8672,7 @@ L_0x004f8a7d:
     cpu.eax = app->getMemory<x86::reg32>(x86::reg32(5653464) /* 0x5643d8 */);
     // 004f8a93  e85865f9ff             -call 0x48eff0
     cpu.esp -= 4;
-    sub_48eff0(app, cpu.sync());
+    nfs3hp::port::startTimer(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004f8a98  e8d391ffff             -call 0x4f1c70

@@ -4,31 +4,31 @@
 namespace nfs3hp
 {
 
-/* sub_5200ec: native, nfs3hp::snd::resample16MonoDown */
+/* sub_5200ec: native, nfs3hp::port::resample16MonoDown */
 
-/* sub_5201d8: native, nfs3hp::snd::resample16MonoSame */
+/* sub_5201d8: native, nfs3hp::port::resample16MonoSame */
 
-/* sub_5201e4: native, nfs3hp::snd::resample16MonoUp */
+/* sub_5201e4: native, nfs3hp::port::resample16MonoUp */
 
-/* sub_5202fc: native, nfs3hp::snd::resampleMonoStep */
+/* sub_5202fc: native, nfs3hp::port::resampleMonoStep */
 
-/* sub_5203a0: native, nfs3hp::snd::resampleMonoSetup */
+/* sub_5203a0: native, nfs3hp::port::resampleMonoSetup */
 
-/* sub_5203f0: native, nfs3hp::snd::resample16StereoNeededDown */
+/* sub_5203f0: native, nfs3hp::port::resample16StereoNeededDown */
 
-/* sub_520438: native, nfs3hp::snd::resample16StereoNeededSame */
+/* sub_520438: native, nfs3hp::port::resample16StereoNeededSame */
 
-/* sub_520440: native, nfs3hp::snd::resample16StereoNeededUp */
+/* sub_520440: native, nfs3hp::port::resample16StereoNeededUp */
 
-/* sub_52046c: native, nfs3hp::snd::resample16StereoDown */
+/* sub_52046c: native, nfs3hp::port::resample16StereoDown */
 
-/* sub_5205b0: native, nfs3hp::snd::resample16StereoSame */
+/* sub_5205b0: native, nfs3hp::port::resample16StereoSame */
 
-/* sub_5205bc: native, nfs3hp::snd::resample16StereoUp */
+/* sub_5205bc: native, nfs3hp::port::resample16StereoUp */
 
-/* sub_520740: native, nfs3hp::snd::resampleStereoStep */
+/* sub_520740: native, nfs3hp::port::resampleStereoStep */
 
-/* sub_5207e4: native, nfs3hp::snd::resampleStereoSetup */
+/* sub_5207e4: native, nfs3hp::port::resampleStereoSetup */
 
 /* sub_520830: native, nfs3hp::mmx::outputMono8 */
 
@@ -134,17 +134,17 @@ namespace nfs3hp
 
 /* sub_521d00: native, nfs3hp::snd::dead_0x521d00 */
 
-/* sub_521d80: native, nfs3hp::snd::pcmTablesFirst */
+/* sub_521d80: native, nfs3hp::port::pcmTablesFirst */
 
-/* sub_521e60: native, nfs3hp::snd::pcmTablesSecond */
+/* sub_521e60: native, nfs3hp::port::pcmTablesSecond */
 
-/* sub_521f30: native, nfs3hp::snd::xaFloatTable */
+/* sub_521f30: native, nfs3hp::port::xaFloatTable */
 
-/* sub_521f7c: native, nfs3hp::snd::xaIntTable */
+/* sub_521f7c: native, nfs3hp::port::xaIntTable */
 
-/* sub_521fc0: native, nfs3hp::snd::xaTables */
+/* sub_521fc0: native, nfs3hp::port::xaTables */
 
-/* sub_5220a0: native, nfs3hp::snd::lastTables */
+/* sub_5220a0: native, nfs3hp::port::lastTables */
 
 /* sub_522100: native, nfs3hp::snd::dead_0x522100 */
 
@@ -190,15 +190,15 @@ namespace nfs3hp
 
 /* sub_522fd4: native, nfs3hp::snd::dead_0x522fd4 */
 
-/* sub_5230b8: native, nfs3hp::snd::reverbStart */
+/* sub_5230b8: native, nfs3hp::port::reverbStart */
 
 /* sub_5230dc: native, nfs3hp::snd::dead_0x5230dc */
 
 /* sub_523118: native, nfs3hp::snd::dead_0x523118 */
 
-/* sub_523200: native, nfs3hp::snd::reverbLength */
+/* sub_523200: native, nfs3hp::port::reverbLength */
 
-/* sub_52325c: native, nfs3hp::snd::reverbInit */
+/* sub_52325c: native, nfs3hp::port::reverbInit */
 
 /* sub_523310: native, nfs3hp::port::setVoiceSend */
 

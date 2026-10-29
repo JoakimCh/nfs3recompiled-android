@@ -1,5 +1,6 @@
 #include <nfs3hp.h>
 #include "dynamic_fullscreen.h"
+#include "port_thrash.h"
 #include <cmath>
 #include <cstring>
 
@@ -14091,6 +14092,8 @@ void squareTexture(win32::WinApplication* app, x86::CPU& cpu)
     };
     m.word(ebp - 0x14, r.eax);
     m.word(ebp - 0x10, r.edx);
+    // port: a picture of 512 a side or more at 512 (port_thrash.h)
+    r.ecx = x86::reg32(port::driver::texture512Side(x86::sreg32(r.ecx), x86::sreg16(app->getMemory<x86::reg16>(r.eax + 4))));
     m.word(ebp - 4, r.ecx);
     if (!callTo(m.word(0x9ef980)))
         return;

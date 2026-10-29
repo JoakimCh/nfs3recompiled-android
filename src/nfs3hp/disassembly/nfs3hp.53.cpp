@@ -8,27 +8,27 @@ namespace nfs3hp
 
 /* sub_52d110: native, nfs3hp::snd::dead_0x52d110 */
 
-/* sub_52d160: native, nfs3hp::snd::packetPlayerOf */
+/* sub_52d160: native, nfs3hp::port::packetPlayerOf */
 
 /* sub_52d1a0: native, nfs3hp::mmx::xaMono */
 
 /* sub_52d250: native, nfs3hp::mmx::xaStereo */
 
-/* sub_52d370: native, nfs3hp::snd::codedBits */
+/* sub_52d370: native, nfs3hp::port::codedBits */
 
-/* sub_52d3cc: native, nfs3hp::snd::codedSkip */
+/* sub_52d3cc: native, nfs3hp::port::codedSkip */
 
-/* sub_52d428: native, nfs3hp::snd::codedPulses */
+/* sub_52d428: native, nfs3hp::port::codedPulses */
 
-/* sub_52d5cc: native, nfs3hp::snd::codedInterpolate */
+/* sub_52d5cc: native, nfs3hp::port::codedInterpolate */
 
-/* sub_52d618: native, nfs3hp::snd::codedFilter */
+/* sub_52d618: native, nfs3hp::port::codedFilter */
 
-/* sub_52d6d8: native, nfs3hp::snd::codedSynthesis */
+/* sub_52d6d8: native, nfs3hp::port::codedSynthesis */
 
-/* sub_52de94: native, nfs3hp::snd::codedStart */
+/* sub_52de94: native, nfs3hp::port::codedStart */
 
-/* sub_52df80: native, nfs3hp::snd::codedFrame */
+/* sub_52df80: native, nfs3hp::port::codedFrame */
 
 /* sub_52e310: native, nfs3hp::watcom::mbccpy */
 

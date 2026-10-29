@@ -17950,7 +17950,7 @@ L_0x0049adfa:
 L_0x0049ae1b:
     // 0049ae1b  e8f0b0faff             -call 0x445f10
     cpu.esp -= 4;
-    sub_445f10(app, cpu.sync());
+    nfs3hp::port::dialogs::closeDialog(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0049ae20  89ec                   -mov esp, ebp
@@ -20141,7 +20141,7 @@ L_0x0049b9fb:
     cpu.edx = app->getMemory<x86::reg32>(cpu.ebp + x86::reg32(-16) /* -0x10 */);
     // 0049ba00  e82bbc0400             -call 0x4e7630
     cpu.esp -= 4;
-    nfs3hp::snd::runSystemTasks(app, cpu.sync());
+    nfs3hp::port::runSystemTasks(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0049ba05  8d5e01                 -lea ebx, [esi + 1]
@@ -20290,7 +20290,7 @@ L_0x0049ba43:
     app->getMemory<x86::reg32>(cpu.ebp + x86::reg32(-20) /* -0x14 */) = cpu.ebx;
     // 0049ba74  e8b7bb0400             -call 0x4e7630
     cpu.esp -= 4;
-    nfs3hp::snd::runSystemTasks(app, cpu.sync());
+    nfs3hp::port::runSystemTasks(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0049ba79  8b5df8                 -mov ebx, dword ptr [ebp - 8]

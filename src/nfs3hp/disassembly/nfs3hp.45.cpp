@@ -3413,7 +3413,7 @@ L_0x00510400:
 
 /* sub_510870: native, nfs3hp::ea::pairUnpack */
 
-/* sub_510a10: native, nfs3hp::snd::findRequest */
+/* sub_510a10: native, nfs3hp::port::findRequest */
 
 /* align: skip 0x00 0x00 */
 void Application::sub_510a50(WinApplication* __restrict app, x86::CPU& cpu_)
@@ -4847,39 +4847,39 @@ void Application::sub_510ff8(WinApplication* __restrict app, x86::CPU& cpu_)
 
 /* sub_511200: native, nfs3hp::dead::stub_0x511200 */
 
-/* sub_511210: native, nfs3hp::snd::playerMemory */
+/* sub_511210: native, nfs3hp::port::playerMemory */
 
-/* sub_511228: native, nfs3hp::snd::SNDPKTPLAY_create */
+/* sub_511228: native, nfs3hp::port::SNDPKTPLAY_create */
 
-/* sub_5112d0: native, nfs3hp::snd::SNDPKTPLAY_start */
+/* sub_5112d0: native, nfs3hp::port::SNDPKTPLAY_start */
 
-/* sub_5114d4: native, nfs3hp::snd::SNDPKTPLAY_submit */
+/* sub_5114d4: native, nfs3hp::port::SNDPKTPLAY_submit */
 
-/* sub_5115b8: native, nfs3hp::snd::SNDPKTPLAY_submitspace */
+/* sub_5115b8: native, nfs3hp::port::SNDPKTPLAY_submitspace */
 
-/* sub_51162c: native, nfs3hp::snd::framesOutstanding */
+/* sub_51162c: native, nfs3hp::port::framesOutstanding */
 
-/* sub_511680: native, nfs3hp::snd::SNDPKTPLAY_framesoutstanding */
+/* sub_511680: native, nfs3hp::port::SNDPKTPLAY_framesoutstanding */
 
 /* sub_5116ac: native, nfs3hp::dead::stub_0x5116ac */
 
-/* sub_511718: native, nfs3hp::snd::SNDPKTPLAY_purge */
+/* sub_511718: native, nfs3hp::port::SNDPKTPLAY_purge */
 
-/* sub_51181c: native, nfs3hp::snd::SNDPKTPLAY_stop */
+/* sub_51181c: native, nfs3hp::port::SNDPKTPLAY_stop */
 
-/* sub_5118d0: native, nfs3hp::snd::SNDPKTPLAY_destroy */
+/* sub_5118d0: native, nfs3hp::port::SNDPKTPLAY_destroy */
 
-/* sub_5118fc: native, nfs3hp::snd::nextPacket */
+/* sub_5118fc: native, nfs3hp::port::nextPacket */
 
-/* sub_511998: native, nfs3hp::snd::packetFramesPlayed */
+/* sub_511998: native, nfs3hp::port::packetFramesPlayed */
 
-/* sub_5119b0: native, nfs3hp::snd::patchDefaults */
+/* sub_5119b0: native, nfs3hp::port::patchDefaults */
 
-/* sub_5119d8: native, nfs3hp::snd::iSNDpatchtohdr */
+/* sub_5119d8: native, nfs3hp::port::iSNDpatchtohdr */
 
-/* sub_511bf0: native, nfs3hp::snd::iSNDplatformcalcdatarate */
+/* sub_511bf0: native, nfs3hp::port::iSNDplatformcalcdatarate */
 
-/* sub_511ca0: native, nfs3hp::snd::streamChunksAtOnce */
+/* sub_511ca0: native, nfs3hp::port::streamChunksAtOnce */
 
 /* sub_511cd0: native, nfs3hp::watcom::fatalWrite */
 
@@ -9644,7 +9644,7 @@ L_0x0051328c:
     cpu.eax = cpu.esi;
     // 0051328e  e88d44fdff             -call 0x4e7720
     cpu.esp -= 4;
-    nfs3hp::snd::waitSystemTasks(app, cpu.sync());
+    nfs3hp::port::waitSystemTasks(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00513293  85c0                   +test eax, eax
@@ -14030,7 +14030,7 @@ L_0x0051435f:
     cpu.eax ^= x86::reg32(x86::sreg32(cpu.eax));
     // 0051436c  e8bf32fdff             -call 0x4e7630
     cpu.esp -= 4;
-    nfs3hp::snd::runSystemTasks(app, cpu.sync());
+    nfs3hp::port::runSystemTasks(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
 L_0x00514371:
@@ -14319,7 +14319,7 @@ L_0x0051446d:
     cpu.eax = cpu.esi;
     // 0051446f  e8ac32fdff             -call 0x4e7720
     cpu.esp -= 4;
-    nfs3hp::snd::waitSystemTasks(app, cpu.sync());
+    nfs3hp::port::waitSystemTasks(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00514474  85c0                   +test eax, eax

@@ -1485,7 +1485,7 @@ L_0x004f0e60:
     cpu.ecx = 4294967295 /*0xffffffff*/;
     // 004f0e89  e89266ffff             -call 0x4e7520
     cpu.esp -= 4;
-    nfs3hp::snd::addSystemTask(app, cpu.sync());
+    nfs3hp::port::addSystemTask(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004f0e8e  68e40b9f00             -push 0x9f0be4
@@ -2082,7 +2082,7 @@ L_0x004f10a0:
     cpu.eax = 5180704 /*0x4f0d20*/;
     // 004f10a5  e83665ffff             -call 0x4e75e0
     cpu.esp -= 4;
-    nfs3hp::snd::removeSystemTask(app, cpu.sync());
+    nfs3hp::port::removeSystemTask(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004f10aa  a1e00b9f00             -mov eax, dword ptr [0x9f0be0]
@@ -3111,7 +3111,7 @@ L_0x004f18ea:
     cpu.eax ^= x86::reg32(x86::sreg32(cpu.eax));
     // 004f1932  e8e9de0000             -call 0x4ff820
     cpu.esp -= 4;
-    nfs3hp::snd::loadBlockSize(app, cpu.sync());
+    nfs3hp::port::loadBlockSize(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004f1937  01c1                   -add ecx, eax
@@ -3165,12 +3165,12 @@ L_0x004f1977:
     cpu.eax = cpu.ecx;
     // 004f1979  e8f2dc0000             -call 0x4ff670
     cpu.esp -= 4;
-    nfs3hp::snd::topUpStream(app, cpu.sync());
+    nfs3hp::port::topUpStream(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004f197e  e86dde0000             -call 0x4ff7f0
     cpu.esp -= 4;
-    nfs3hp::snd::waitTopupStream(app, cpu.sync());
+    nfs3hp::port::waitTopupStream(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004f1983  8b842400010000         -mov eax, dword ptr [esp + 0x100]
@@ -3427,17 +3427,17 @@ L_0x004f1aa2:
     cpu.eax ^= x86::reg32(x86::sreg32(cpu.eax));
     // 004f1abf  e85cdd0000             -call 0x4ff820
     cpu.esp -= 4;
-    nfs3hp::snd::loadBlockSize(app, cpu.sync());
+    nfs3hp::port::loadBlockSize(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004f1ac4  e8a7db0000             -call 0x4ff670
     cpu.esp -= 4;
-    nfs3hp::snd::topUpStream(app, cpu.sync());
+    nfs3hp::port::topUpStream(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004f1ac9  e822dd0000             -call 0x4ff7f0
     cpu.esp -= 4;
-    nfs3hp::snd::waitTopupStream(app, cpu.sync());
+    nfs3hp::port::waitTopupStream(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004f1ace  a1e00b9f00             -mov eax, dword ptr [0x9f0be0]
@@ -3558,19 +3558,19 @@ L_0x004f1b48:
     cpu.eax ^= x86::reg32(x86::sreg32(cpu.eax));
     // 004f1b5d  e8bedc0000             -call 0x4ff820
     cpu.esp -= 4;
-    nfs3hp::snd::loadBlockSize(app, cpu.sync());
+    nfs3hp::port::loadBlockSize(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004f1b62  01d8                   -add eax, ebx
     (cpu.eax) += x86::reg32(x86::sreg32(cpu.ebx));
     // 004f1b64  e807db0000             -call 0x4ff670
     cpu.esp -= 4;
-    nfs3hp::snd::topUpStream(app, cpu.sync());
+    nfs3hp::port::topUpStream(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004f1b69  e882dc0000             -call 0x4ff7f0
     cpu.esp -= 4;
-    nfs3hp::snd::waitTopupStream(app, cpu.sync());
+    nfs3hp::port::waitTopupStream(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004f1b6e  a1e00b9f00             -mov eax, dword ptr [0x9f0be0]
@@ -5479,7 +5479,7 @@ void Application::sub_4f22e0(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.edx = x86::reg32(cpu.esp + x86::reg32(8) /* 0x8 */);
     // 004f22fa  e8c1d40000             -call 0x4ff7c0
     cpu.esp -= 4;
-    nfs3hp::snd::topUpBeforeLoad(app, cpu.sync());
+    nfs3hp::port::topUpBeforeLoad(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004f22ff  89f8                   -mov eax, edi
@@ -5538,7 +5538,7 @@ L_0x004f2319:
     (cpu.eax) += x86::reg32(x86::sreg32(400 /*0x190*/));
     // 004f232a  e891d40000             -call 0x4ff7c0
     cpu.esp -= 4;
-    nfs3hp::snd::topUpBeforeLoad(app, cpu.sync());
+    nfs3hp::port::topUpBeforeLoad(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004f232f  89f2                   -mov edx, esi
@@ -7833,7 +7833,7 @@ void Application::sub_4f2cb0(WinApplication* __restrict app, x86::CPU& cpu_)
 
 /* sub_4f2f30: native, nfs3hp::dead::stub_0x4f2f30 */
 
-/* sub_4f2f50: native, nfs3hp::snd::SNDSTRM_requeststatus */
+/* sub_4f2f50: native, nfs3hp::port::SNDSTRM_requeststatus */
 
 /* align: skip 0x00 */
 void Application::sub_4f30d0(WinApplication* __restrict app, x86::CPU& cpu_)
@@ -10060,6 +10060,6 @@ L_0x004f39e9:
     goto L_0x004f3721;
 }
 
-/* sub_4f3a10: native, nfs3hp::snd::streamMemory */
+/* sub_4f3a10: native, nfs3hp::port::streamMemory */
 
 }

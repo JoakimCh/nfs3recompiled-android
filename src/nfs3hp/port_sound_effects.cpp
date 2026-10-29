@@ -149,6 +149,8 @@ Result play(App* app, CPU& cpu, reg32 at, Fill fill)
     return handle;
 }
 
+}  // namespace
+
 /* 0x4182b0's: effect `effect` of bank `bank` at `volume`, pan `pan`, pitch
  * `pitch` -- the volume scaled by its kind's (the engine's for bank 0's
  * effect 2, the speech's for the speech's banks, the effects' else).  -1 with
@@ -177,6 +179,9 @@ Result bankEffect(App* app, CPU& cpu, reg32 esp, int32_t bank, int32_t effect, i
         place(app, o, pan);
     });
 }
+
+namespace
+{
 
 /* 0x418790's: the effect bus's level down (0). */
 Result busLevelDown(App* app, CPU& cpu, reg32 esp)

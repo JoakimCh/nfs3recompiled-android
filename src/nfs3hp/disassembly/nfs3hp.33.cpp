@@ -56,37 +56,37 @@ namespace nfs3hp
 
 /* sub_4e1ae4: native, nfs3hp::iSNDconvertsample */
 
-/* sub_4e1d1c: native, nfs3hp::snd::leaveAudioLocks */
+/* sub_4e1d1c: native, nfs3hp::port::leaveAudioLocks */
 
 /* sub_4e1d48: native, nfs3hp::audiofocushandler */
 
 /* sub_4e1dd4: native, nfs3hp::iSNDloaddll */
 
-/* sub_4e217c: native, nfs3hp::snd::iSNDunloaddll */
+/* sub_4e217c: native, nfs3hp::port::iSNDunloaddll */
 
 /* sub_4e21b0: native, nfs3hp::SNDcaps */
 
 /* sub_4e2224: native, nfs3hp::dead::stub_0x4e2224 */
 
-/* sub_4e2228: native, nfs3hp::snd::SNDsetrate */
+/* sub_4e2228: native, nfs3hp::port::SNDsetrate */
 
 /* sub_4e2234: native, nfs3hp::SoundServeHandler */
 
-/* sub_4e225c: native, nfs3hp::snd::iSNDmessageinit */
+/* sub_4e225c: native, nfs3hp::port::iSNDmessageinit */
 
-/* sub_4e2450: native, nfs3hp::snd::iSNDinit */
+/* sub_4e2450: native, nfs3hp::port::iSNDinit */
 
-/* sub_4e253c: native, nfs3hp::snd::iSNDrestore */
+/* sub_4e253c: native, nfs3hp::port::iSNDrestore */
 
 /* sub_4e257c: native, nfs3hp::port::soundIdle */
 
 /* sub_4e25c0: native, nfs3hp::port::iSNDstop */
 
-/* sub_4e2630: native, nfs3hp::snd::SNDinit */
+/* sub_4e2630: native, nfs3hp::port::SNDinit */
 
-/* sub_4e26b4: native, nfs3hp::snd::SNDrestore */
+/* sub_4e26b4: native, nfs3hp::port::SNDrestore */
 
-/* sub_4e2754: native, nfs3hp::snd::iSNDverifymode */
+/* sub_4e2754: native, nfs3hp::port::iSNDverifymode */
 
 /* sub_4e28a0: native, nfs3hp::watcom::unlink */
 
@@ -577,17 +577,17 @@ void Application::sub_4e43a0(WinApplication* app, x86::CPU& cpu)
 
 /* sub_4e43d0: native, nfs3hp::dead::stub_0x4e43d0 */
 
-/* sub_4e4420: native, nfs3hp::snd::initStreamStruct */
+/* sub_4e4420: native, nfs3hp::port::initStreamStruct */
 
-/* sub_4e45d0: native, nfs3hp::snd::initStreamStructSecond */
+/* sub_4e45d0: native, nfs3hp::port::initStreamStructSecond */
 
-/* sub_4e45e0: native, nfs3hp::snd::initStreamStructFirst */
+/* sub_4e45e0: native, nfs3hp::port::initStreamStructFirst */
 
-/* sub_4e45f0: native, nfs3hp::snd::initStream */
+/* sub_4e45f0: native, nfs3hp::port::initStream */
 
-/* sub_4e4780: native, nfs3hp::snd::initStreamSecond */
+/* sub_4e4780: native, nfs3hp::port::initStreamSecond */
 
-/* sub_4e4790: native, nfs3hp::snd::initStreamFirst */
+/* sub_4e4790: native, nfs3hp::port::initStreamFirst */
 
 /* align: skip 0x8d 0x40 0x00 */
 void Application::sub_4e47a0(WinApplication* __restrict app, x86::CPU& cpu_)
@@ -798,7 +798,7 @@ L_0x004e487b:
     cpu.eax = cpu.ebp;
     // 004e488d  e89e2d0000             -call 0x4e7630
     cpu.esp -= 4;
-    nfs3hp::snd::runSystemTasks(app, cpu.sync());
+    nfs3hp::port::runSystemTasks(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004e4892  ebe7                   -jmp 0x4e487b
@@ -930,7 +930,7 @@ L_0x004e490d:
     cpu.eax = cpu.ebp;
     // 004e4920  e80b2d0000             -call 0x4e7630
     cpu.esp -= 4;
-    nfs3hp::snd::runSystemTasks(app, cpu.sync());
+    nfs3hp::port::runSystemTasks(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004e4925  ebe6                   -jmp 0x4e490d
@@ -1161,14 +1161,14 @@ L_0x004e49f2:
 
 /* sub_4e4a10: native, nfs3hp::dead::stub_0x4e4a10 */
 
-/* sub_4e4a30: native, nfs3hp::snd::deleteStreamStruct */
+/* sub_4e4a30: native, nfs3hp::port::deleteStreamStruct */
 
-/* sub_4e4b50: native, nfs3hp::snd::deleteStream */
+/* sub_4e4b50: native, nfs3hp::port::deleteStream */
 
-/* sub_4e4c60: native, nfs3hp::snd::streamCommand */
+/* sub_4e4c60: native, nfs3hp::port::streamCommand */
 
-/* sub_4e4d70: native, nfs3hp::snd::purgeStreamCommand */
+/* sub_4e4d70: native, nfs3hp::port::purgeStreamCommand */
 
-/* sub_4e4ea0: native, nfs3hp::snd::streamOpen */
+/* sub_4e4ea0: native, nfs3hp::port::streamOpen */
 
 }

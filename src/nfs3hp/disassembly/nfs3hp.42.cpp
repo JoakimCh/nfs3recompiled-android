@@ -4,19 +4,19 @@
 namespace nfs3hp
 {
 
-/* sub_4ffce0: native, nfs3hp::snd::bufferPosition */
+/* sub_4ffce0: native, nfs3hp::port::bufferPosition */
 
 /* sub_4ffd80: native, nfs3hp::snd::dead_0x4ffd80 */
 
-/* sub_4ffd84: native, nfs3hp::snd::mixFunctions */
+/* sub_4ffd84: native, nfs3hp::port::mixFunctions */
 
-/* sub_4fff18: native, nfs3hp::snd::iSNDmixinit */
+/* sub_4fff18: native, nfs3hp::port::iSNDmixinit */
 
-/* sub_500008: native, nfs3hp::snd::iSNDmixreinit */
+/* sub_500008: native, nfs3hp::port::iSNDmixreinit */
 
 /* sub_5000b8: native, nfs3hp::port::iSNDmixstart */
 
-/* sub_5004c8: native, nfs3hp::snd::mixerRamp */
+/* sub_5004c8: native, nfs3hp::port::mixerRamp */
 
 /* sub_500604: native, nfs3hp::port::iSNDmixstop */
 
@@ -26,17 +26,17 @@ namespace nfs3hp
 
 /* sub_5006f8: native, nfs3hp::snd::dead_0x5006f8 */
 
-/* sub_500864: native, nfs3hp::snd::mixerServe */
+/* sub_500864: native, nfs3hp::port::mixerServe */
 
-/* sub_5008a0: native, nfs3hp::snd::convert16 */
+/* sub_5008a0: native, nfs3hp::port::convert16 */
 
-/* sub_500910: native, nfs3hp::snd::convertToWords */
+/* sub_500910: native, nfs3hp::port::convertToWords */
 
-/* sub_500990: native, nfs3hp::snd::convertXaStereo */
+/* sub_500990: native, nfs3hp::port::convertXaStereo */
 
-/* sub_500b10: native, nfs3hp::snd::convert8 */
+/* sub_500b10: native, nfs3hp::port::convert8 */
 
-/* sub_500b90: native, nfs3hp::snd::convertXaMono */
+/* sub_500b90: native, nfs3hp::port::convertXaMono */
 
 /* sub_500c80: native, nfs3hp::port::soundTick */
 
@@ -80,9 +80,9 @@ namespace nfs3hp
 
 /* sub_501670: native, nfs3hp::port::soundVolume */
 
-/* sub_5016c0: native, nfs3hp::snd::iSNDclearchunk */
+/* sub_5016c0: native, nfs3hp::port::iSNDclearchunk */
 
-/* sub_5017b4: native, nfs3hp::snd::platformChunks */
+/* sub_5017b4: native, nfs3hp::port::platformChunks */
 
 /* sub_5017c0: native, nfs3hp::port::timbreDefaults */
 
@@ -144,13 +144,13 @@ namespace nfs3hp
 
 /* sub_502ef0: native, nfs3hp::port::iSNDpan */
 
-/* sub_502ff0: native, nfs3hp::snd::iSNDwinsetfx */
+/* sub_502ff0: native, nfs3hp::port::iSNDwinsetfx */
 
-/* sub_5030ac: native, nfs3hp::snd::setBusFx */
+/* sub_5030ac: native, nfs3hp::port::setBusFx */
 
-/* sub_5030c4: native, nfs3hp::snd::busLevelSet */
+/* sub_5030c4: native, nfs3hp::port::busLevelSet */
 
-/* sub_5030d0: native, nfs3hp::snd::SNDfxlevel */
+/* sub_5030d0: native, nfs3hp::port::SNDfxlevel */
 
 /* sub_503280: native, nfs3hp::ea::fpuCopySwapped */
 
@@ -164,11 +164,11 @@ namespace nfs3hp
 
 /* sub_50356d: native, nfs3hp::ea::dwordCopy */
 
-/* sub_503670: native, nfs3hp::snd::mul64 */
+/* sub_503670: native, nfs3hp::port::mul64 */
 
 /* sub_503700: native, nfs3hp::dead::stub_0x503700 */
 
-/* sub_503760: native, nfs3hp::snd::div64 */
+/* sub_503760: native, nfs3hp::port::div64 */
 
 /* sub_5037a0: native, nfs3hp::dead::stub_0x5037a0 */
 

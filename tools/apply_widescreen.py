@@ -139,10 +139,11 @@ NAMESPACE = "namespace nfs3hp\n{\n"
 # Sites in functions that are native now, the change made in the native
 # (src/nfs3hp/native_graphics.cpp): the Screen Size list (sub_4bed90,
 # graphics::listScreenModes) and the saved size found again (sub_4bee80,
-# graphics::findScreenMode), and a HUD element's rectangle (sub_480910,
-# native_render.cpp's render::hudRect).  tools/game_checks/generate.py still
+# graphics::findScreenMode), a HUD element's rectangle (sub_480910,
+# native_render.cpp's render::hudRect), and a dialog box's emblem (sub_4438d0,
+# port_dialogs.cpp's port::dialogs::drawBox).  tools/game_checks/generate.py still
 # makes them to the game's code the natives are held against.
-NATIVE_SITES = {0x4bedf8, 0x4beee6, 0x4bef35, 0x4809eb}
+NATIVE_SITES = {0x4bedf8, 0x4beee6, 0x4bef35, 0x4809eb, 0x443a44}
 
 # What an earlier version of this tool put after the stored vertical angle.  A
 # tree patched by it goes back to the generated code first, so that one site

@@ -408,11 +408,11 @@ bool makeLoadCarmodelsArguments(CheckApp& g, const std::string& name, x86::CPU& 
         {
             cpu.eax = kCmTexture - 8;
             stack[0] = cmMost();
-            // Now and then a texture up to 256 each way, for the larger powers of two.
+            // Now and then a texture up to 512 each way, for the larger powers of two.
             if (chance(5))
             {
-                stack[0] = 0x80 + below(0x100);
-                cpu.ebx = 0x80 + below(0x100);
+                stack[0] = 0x80 + below(0x200);
+                cpu.ebx = 0x80 + below(0x200);
                 cpu.ecx = 1 + below(8);
             }
             stack[1] = aColor();
@@ -448,6 +448,9 @@ bool makeLoadCarmodelsArguments(CheckApp& g, const std::string& name, x86::CPU& 
     {
         cmModel(g, kCmModel, chance(80) ? 1 : below(3));
         cmTga(g, kCmPixels, chance(80) ? 16 : 40);
+        // Now and then a .tga that says 512 wide or more: the port's 512 (texture512Side).
+        if (chance(10))
+            g.getMemory<x86::reg16>(kCmPixels + 0xc) = x86::reg16(0x200 + below(0x100));
         cmBlockAtZero(g, 0);
         // One texture only: the driver taking 4444 now and then, or neither.
         if (chance(40))
@@ -455,7 +458,16 @@ bool makeLoadCarmodelsArguments(CheckApp& g, const std::string& name, x86::CPU& 
         cpu.eax = kCmModel;
         cpu.edx = kCmPixels;
         cpu.ebx = cmMost();
-        cpu.ecx = chance(50) ? 0 : random32();
+        // A texture given: a record of one level, which the port makes the
+        // size fitted (port_thrash.h's resizeTexture), or of more.
+        cpu.ecx = 0;
+        if (chance(50))
+        {
+            cpu.ecx = kCmTexture - 0x20;
+            g.word(cpu.ecx) = below(9);
+            g.word(cpu.ecx + 4) = chance(70) ? g.word(cpu.ecx) : below(9);
+            g.word(cpu.ecx + 8) = below(7);
+        }
         stack[0] = aColor();
         stack[1] = chance(30) ? 0 : chance(80) ? 1 : random32();
         stack[2] = chance(40) ? 0 : kCmCopy;

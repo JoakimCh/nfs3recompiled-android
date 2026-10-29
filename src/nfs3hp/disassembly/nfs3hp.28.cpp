@@ -1160,7 +1160,7 @@ L_0x004c7f25:
     cpu.edx = x86::reg32(cpu.ebp + x86::reg32(122) /* 0x7a */);
     // 004c7f5e  e8cdf60100             -call 0x4e7630
     cpu.esp -= 4;
-    nfs3hp::snd::runSystemTasks(app, cpu.sync());
+    nfs3hp::port::runSystemTasks(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004c7f63  31c0                   +xor eax, eax
@@ -2197,9 +2197,9 @@ void Application::sub_4c8350(WinApplication* __restrict app, x86::CPU& cpu_)
     return;
 }
 
-/* sub_4c8370: native, nfs3hp::snd::speechInit */
+/* sub_4c8370: native, nfs3hp::port::speechInit */
 
-/* sub_4c8440: native, nfs3hp::snd::speechFree */
+/* sub_4c8440: native, nfs3hp::port::speechFree */
 
 /* align: skip 0x8b 0xc0 */
 void Application::sub_4c8470(WinApplication* __restrict app, x86::CPU& cpu_)
@@ -2678,37 +2678,37 @@ L_0x004c858d:
     return;
 }
 
-/* sub_4c85a0: native, nfs3hp::snd::speechLine */
+/* sub_4c85a0: native, nfs3hp::port::speechLine */
 
-/* sub_4c86d0: native, nfs3hp::snd::speechTick */
+/* sub_4c86d0: native, nfs3hp::port::speechTick */
 
-/* sub_4c8810: native, nfs3hp::snd::radioTick */
+/* sub_4c8810: native, nfs3hp::port::radioTick */
 
-/* sub_4c89b0: native, nfs3hp::snd::radioStart */
+/* sub_4c89b0: native, nfs3hp::port::radioStart */
 
-/* sub_4c8ac0: native, nfs3hp::snd::speechSaid */
+/* sub_4c8ac0: native, nfs3hp::port::speechSaid */
 
-/* sub_4c8b30: native, nfs3hp::snd::copRadio */
+/* sub_4c8b30: native, nfs3hp::port::copRadio */
 
-/* sub_4c8ca0: native, nfs3hp::snd::queueSpeechLine */
+/* sub_4c8ca0: native, nfs3hp::port::queueSpeechLine */
 
-/* sub_4c8d10: native, nfs3hp::snd::coDriverTick */
+/* sub_4c8d10: native, nfs3hp::port::coDriverTick */
 
-/* sub_4c8f90: native, nfs3hp::snd::queueRaceLine */
+/* sub_4c8f90: native, nfs3hp::port::queueRaceLine */
 
-/* sub_4c9010: native, nfs3hp::snd::raceEventLine */
+/* sub_4c9010: native, nfs3hp::port::raceEventLine */
 
-/* sub_4c9090: native, nfs3hp::snd::gapLine */
+/* sub_4c9090: native, nfs3hp::port::gapLine */
 
-/* sub_4c91a0: native, nfs3hp::snd::lapTimeLine */
+/* sub_4c91a0: native, nfs3hp::port::lapTimeLine */
 
 /* sub_4c9240: native, nfs3hp::snd::descriptionLoad */
 
-/* sub_4c9340: native, nfs3hp::snd::descriptionSpeak */
+/* sub_4c9340: native, nfs3hp::port::descriptionSpeak */
 
-/* sub_4c9380: native, nfs3hp::snd::descriptionTick */
+/* sub_4c9380: native, nfs3hp::port::descriptionTick */
 
-/* sub_4c9490: native, nfs3hp::snd::descriptionStop */
+/* sub_4c9490: native, nfs3hp::port::descriptionStop */
 
 /* align: skip 0x8d 0x80 0x00 0x00 0x00 0x00 0x8b 0xd2 */
 void Application::sub_4c94e0(WinApplication* __restrict app, x86::CPU& cpu_)
@@ -2957,7 +2957,7 @@ void Application::sub_4c9590(WinApplication* __restrict app, x86::CPU& cpu_)
     }
     // 004c959f  e8ecfeffff             -call 0x4c9490
     cpu.esp -= 4;
-    nfs3hp::snd::descriptionStop(app, cpu.sync());
+    nfs3hp::port::descriptionStop(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004c95a4  a144d87d00             -mov eax, dword ptr [0x7dd844]
@@ -3011,21 +3011,21 @@ L_0x004c95cf:
     return;
 }
 
-/* sub_4c95e0: native, nfs3hp::snd::spokenStatus */
+/* sub_4c95e0: native, nfs3hp::port::spokenStatus */
 
-/* sub_4c95f0: native, nfs3hp::snd::descriptionStart */
+/* sub_4c95f0: native, nfs3hp::port::descriptionStart */
 
-/* sub_4c9860: native, nfs3hp::snd::descriptionService */
+/* sub_4c9860: native, nfs3hp::port::descriptionService */
 
-/* sub_4c9890: native, nfs3hp::snd::raceVoiceLoad */
+/* sub_4c9890: native, nfs3hp::port::raceVoiceLoad */
 
-/* sub_4c9990: native, nfs3hp::snd::carLineSpeak */
+/* sub_4c9990: native, nfs3hp::port::carLineSpeak */
 
-/* sub_4c99d0: native, nfs3hp::snd::spokenStop */
+/* sub_4c99d0: native, nfs3hp::port::spokenStop */
 
-/* sub_4c99f0: native, nfs3hp::snd::spokenStatus */
+/* sub_4c99f0: native, nfs3hp::port::spokenStatus */
 
-/* sub_4c9a00: native, nfs3hp::snd::raceVoiceFree */
+/* sub_4c9a00: native, nfs3hp::port::raceVoiceFree */
 
 /* align: skip 0x00 0x00 0x00 */
 /* data blob: 000000000000803f000000008d442000 */
@@ -6940,7 +6940,7 @@ L_0x004ca720:
     cpu.eax = cpu.ebx;
     // 004ca833  e8d8a7f4ff             -call 0x415010
     cpu.esp -= 4;
-    nfs3hp::snd::carEffectFifteen(app, cpu.sync());
+    nfs3hp::port::carEffectFifteen(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
 L_0x004ca838:
@@ -11256,7 +11256,7 @@ void Application::sub_4cc870(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.eax = 5032048 /*0x4cc870*/;
     // 004cc87d  e85ead0100             -call 0x4e75e0
     cpu.esp -= 4;
-    nfs3hp::snd::removeSystemTask(app, cpu.sync());
+    nfs3hp::port::removeSystemTask(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004cc882  e8f6610200             -call 0x4f2a7d

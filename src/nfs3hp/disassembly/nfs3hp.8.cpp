@@ -1648,7 +1648,7 @@ void Application::sub_437590(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.eax = app->getMemory<x86::reg32>(cpu.eax + x86::reg32(16) /* 0x10 */);
     // 004375c5  e8f6b30000             -call 0x4429c0
     cpu.esp -= 4;
-    sub_4429c0(app, cpu.sync());
+    nfs3hp::port::menus::codelinkMatches(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004375ca  85c0                   +test eax, eax

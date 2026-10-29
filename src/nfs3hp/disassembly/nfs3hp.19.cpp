@@ -3207,7 +3207,7 @@ void Application::sub_477fd0(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.eax = app->getMemory<x86::reg32>(x86::reg32(7328940) /* 0x6fd4ac */);
     // 00477fe1  e84a80f9ff             -call 0x410030
     cpu.esp -= 4;
-    nfs3hp::snd::raceMusicPrepare(app, cpu.sync());
+    nfs3hp::port::raceMusicPrepare(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00477fe6  e8e5b30200             -call 0x4a33d0
@@ -14240,7 +14240,7 @@ L_0x0047b5cb:
     cpu.eax <<= 16 /*0x10*/ % 32;
     // 0047b699  e87297f9ff             -call 0x414e10
     cpu.esp -= 4;
-    nfs3hp::snd::farEffectAim(app, cpu.sync());
+    nfs3hp::port::farEffectAim(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
 L_0x0047b69e:

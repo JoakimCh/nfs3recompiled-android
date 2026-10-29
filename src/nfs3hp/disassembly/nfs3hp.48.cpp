@@ -4508,68 +4508,68 @@ L_0x0051f317:
 
 /* sub_51f320: native, nfs3hp::watcom::atanSafe */
 
-/* sub_51f520: native, nfs3hp::snd::panSides */
+/* sub_51f520: native, nfs3hp::port::panSides */
 
-/* sub_51f580: native, nfs3hp::snd::volumeMonoPair */
+/* sub_51f580: native, nfs3hp::port::volumeMonoPair */
 
-/* sub_51f5a4: native, nfs3hp::snd::volumeMonoLevels */
+/* sub_51f5a4: native, nfs3hp::port::volumeMonoLevels */
 
 /* sub_51f5dd: native, nfs3hp::mmx::addMono8 */
 
-/* sub_51f680: native, nfs3hp::snd::volumeStereoPair */
+/* sub_51f680: native, nfs3hp::port::volumeStereoPair */
 
-/* sub_51f6a4: native, nfs3hp::snd::volumeStereoLevels */
+/* sub_51f6a4: native, nfs3hp::port::volumeStereoLevels */
 
 /* sub_51f6c7: native, nfs3hp::mmx::addStereo8 */
 
-/* sub_51f750: native, nfs3hp::snd::volumeMonoSetup */
+/* sub_51f750: native, nfs3hp::port::volumeMonoSetup */
 
-/* sub_51f774: native, nfs3hp::snd::volumeMonoLevelsMmx */
+/* sub_51f774: native, nfs3hp::port::volumeMonoLevelsMmx */
 
 /* sub_51f7ad: native, nfs3hp::mmx::addMono16 */
 
-/* sub_51f850: native, nfs3hp::snd::volumeStereoSetup */
+/* sub_51f850: native, nfs3hp::port::volumeStereoSetup */
 
-/* sub_51f874: native, nfs3hp::snd::volumeStereoLevelsMmx */
+/* sub_51f874: native, nfs3hp::port::volumeStereoLevelsMmx */
 
 /* sub_51f897: native, nfs3hp::mmx::addStereo16 */
 
-/* sub_51f930: native, nfs3hp::snd::resample8MonoNeededDown */
+/* sub_51f930: native, nfs3hp::port::resample8MonoNeededDown */
 
-/* sub_51f978: native, nfs3hp::snd::resample8MonoNeededSame */
+/* sub_51f978: native, nfs3hp::port::resample8MonoNeededSame */
 
-/* sub_51f980: native, nfs3hp::snd::resample8MonoNeededUp */
+/* sub_51f980: native, nfs3hp::port::resample8MonoNeededUp */
 
-/* sub_51f9ac: native, nfs3hp::snd::resample8MonoDown */
+/* sub_51f9ac: native, nfs3hp::port::resample8MonoDown */
 
-/* sub_51fa80: native, nfs3hp::snd::resample8MonoSame */
+/* sub_51fa80: native, nfs3hp::port::resample8MonoSame */
 
-/* sub_51fa8c: native, nfs3hp::snd::resample8MonoUp */
+/* sub_51fa8c: native, nfs3hp::port::resample8MonoUp */
 
-/* sub_51fb94: native, nfs3hp::snd::resample8MonoStep */
+/* sub_51fb94: native, nfs3hp::port::resample8MonoStep */
 
-/* sub_51fc38: native, nfs3hp::snd::resample8MonoSetup */
+/* sub_51fc38: native, nfs3hp::port::resample8MonoSetup */
 
-/* sub_51fc80: native, nfs3hp::snd::resample8StereoNeededDown */
+/* sub_51fc80: native, nfs3hp::port::resample8StereoNeededDown */
 
-/* sub_51fcc8: native, nfs3hp::snd::resample8StereoNeededSame */
+/* sub_51fcc8: native, nfs3hp::port::resample8StereoNeededSame */
 
-/* sub_51fcd0: native, nfs3hp::snd::resample8StereoNeededUp */
+/* sub_51fcd0: native, nfs3hp::port::resample8StereoNeededUp */
 
-/* sub_51fcfc: native, nfs3hp::snd::resample8StereoDown */
+/* sub_51fcfc: native, nfs3hp::port::resample8StereoDown */
 
-/* sub_51fe24: native, nfs3hp::snd::resample8StereoSame */
+/* sub_51fe24: native, nfs3hp::port::resample8StereoSame */
 
-/* sub_51fe30: native, nfs3hp::snd::resample8StereoUp */
+/* sub_51fe30: native, nfs3hp::port::resample8StereoUp */
 
-/* sub_51ff88: native, nfs3hp::snd::resample8StereoStep */
+/* sub_51ff88: native, nfs3hp::port::resample8StereoStep */
 
-/* sub_52002c: native, nfs3hp::snd::resample8StereoSetup */
+/* sub_52002c: native, nfs3hp::port::resample8StereoSetup */
 
-/* sub_520070: native, nfs3hp::snd::resample16MonoNeededDown */
+/* sub_520070: native, nfs3hp::port::resample16MonoNeededDown */
 
-/* sub_5200b8: native, nfs3hp::snd::resample16MonoNeededSame */
+/* sub_5200b8: native, nfs3hp::port::resample16MonoNeededSame */
 
-/* sub_5200c0: native, nfs3hp::snd::resample16MonoNeededUp */
+/* sub_5200c0: native, nfs3hp::port::resample16MonoNeededUp */
 
 }

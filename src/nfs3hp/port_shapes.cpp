@@ -1,4 +1,5 @@
 #include "port_shapes.h"
+#include "port_thrash.h"
 
 #include <cstdint>
 
@@ -1047,6 +1048,8 @@ Result textureOf(App* app, CPU& cpu, reg32 esp, reg32 out, reg32 shape, int32_t 
     const reg32 frame = esp - 0xc - 0x14;
     const reg32 formatAt = frame, flagAt = frame + 4;
     putDword(app, formatAt, format);
+    // port: a shape of 512 a side or more at 512 (port_thrash.h)
+    size = driver::texture512Side(size, sword(app, shape + kShapeWidth));
     reg32 pixels;
     if (!callGame(app, cpu, frame, kAllocate, {kShapeBufferTag, reg32(times(size, size)) * 4 + 0x14, 0x10, reg32(size)},
                   {}, pixels))

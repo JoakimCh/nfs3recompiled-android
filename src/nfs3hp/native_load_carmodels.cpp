@@ -1,4 +1,5 @@
 #include "native_guest.h"
+#include "port_thrash.h"
 
 #include <utility>
 
@@ -1292,7 +1293,8 @@ void fitTexture(win32::WinApplication* app, x86::CPU& cpu)
     else
     {
         size = 1;
-        for (const reg32 power : {0x100u, 0x80u, 0x40u, 0x20u, 0x10u, 8u, 4u, 2u})
+        // port: 0x200 first, reached only where the size asked for is 512 (port_thrash.h)
+        for (const reg32 power : {0x200u, 0x100u, 0x80u, 0x40u, 0x20u, 0x10u, 8u, 4u, 2u})
             if (sreg32(cpu.ebx) >= sreg32(power))
             {
                 size = power;
@@ -1536,6 +1538,10 @@ void loadTgaTexture(win32::WinApplication* app, x86::CPU& cpu)
     const reg32 upload = cpu.ebp + 0x14, copyTo = cpu.ebp + 0x18;
     cpu.edi = cpu.eax;
     put(app, tga, cpu.edx);
+    // port: a .tga of 512 a side or more at 512 (port_thrash.h), for a model of the one picture it is read for
+    if (at(app, cpu.edi + 0xc) == 1)
+        cpu.ebx = reg32(port::driver::texture512Side(sreg32(cpu.ebx),
+                                                     int32_t(byte(app, cpu.edx + 0xc) | byte(app, cpu.edx + 0xd) << 8)));
     put(app, most, cpu.ebx);
     put(app, texture, cpu.ecx);
     cpu.ecx = at(app, cpu.ebp + 0x10);
@@ -1611,6 +1617,11 @@ void loadTgaTexture(win32::WinApplication* app, x86::CPU& cpu)
                 if (!byAddress(app, cpu, kAllocTexture))
                     return;
                 put(app, texture, cpu.eax);
+            }
+            else
+            {
+                // port: the texture given made the fitted size, 256 or 512 (port_thrash.h)
+                port::driver::resizeTexture(app, at(app, texture), at(app, cpu.esi));
             }
             cpu.eax = at(app, texture);
             put(app, cpu.edi + 0x1e04, cpu.eax);

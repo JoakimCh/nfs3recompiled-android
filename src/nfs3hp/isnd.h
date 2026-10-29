@@ -7,7 +7,7 @@
  * feeds the mix to the card.  eacsnd has no generated code: its exports are
  * the port's functions of the same names (disassemble_nfs3hp.py), in
  * native_sound.cpp (the driver proper: caps, start, stop, serve) and
- * native_isnd.cpp (the rest).
+ * port_snd_isnd.cpp (the rest).
  *
  * Each name is checked against eacsnd's generated code.  eacsnd's start
  * (sub_a33150) tries 22050 first, then 16000, 32000, 44100 and 11025, and so

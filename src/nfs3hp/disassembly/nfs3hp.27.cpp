@@ -2274,7 +2274,7 @@ L_0x004c4039:
     }
     // 004c4043  e888c9f4ff             -call 0x4109d0
     cpu.esp -= 4;
-    nfs3hp::snd::musicStop(app, cpu.sync());
+    nfs3hp::port::musicStop(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
 L_0x004c4048:
@@ -2310,7 +2310,7 @@ L_0x004c4048:
     cpu.set_szp((cpu.ebx ^= x86::reg32(x86::sreg32(cpu.ebx))));
     // 004c4077  e874c4f4ff             -call 0x4104f0
     cpu.esp -= 4;
-    nfs3hp::snd::musicStart(app, cpu.sync());
+    nfs3hp::port::musicStart(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004c407c  eb16                   -jmp 0x4c4094
@@ -2418,7 +2418,7 @@ L_0x004c40d7:
     cpu.eax ^= x86::reg32(x86::sreg32(cpu.eax));
     // 004c40e3  e848350200             -call 0x4e7630
     cpu.esp -= 4;
-    nfs3hp::snd::runSystemTasks(app, cpu.sync());
+    nfs3hp::port::runSystemTasks(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004c40e8  e8c324feff             -call 0x4a65b0
@@ -2550,7 +2550,7 @@ L_0x004c4160:
     cpu.set_szp((cpu.eax ^= x86::reg32(x86::sreg32(cpu.eax))));
     // 004c416b  e8c0340200             -call 0x4e7630
     cpu.esp -= 4;
-    nfs3hp::snd::runSystemTasks(app, cpu.sync());
+    nfs3hp::port::runSystemTasks(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004c4170  ebee                   -jmp 0x4c4160
@@ -3752,7 +3752,7 @@ void Application::sub_4c45f0(WinApplication* __restrict app, x86::CPU& cpu_)
     if (cpu.terminate) return;
     // 004c471d  e89ee2f4ff             -call 0x4129c0
     cpu.esp -= 4;
-    nfs3hp::snd::raceSoundInit(app, cpu.sync());
+    nfs3hp::port::raceSoundInit(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004c4722  e82972f8ff             -call 0x44b950
@@ -4544,7 +4544,7 @@ L_0x004c4a65:
     cpu.eax ^= x86::reg32(x86::sreg32(cpu.eax));
     // 004c4a75  e8b62b0200             -call 0x4e7630
     cpu.esp -= 4;
-    nfs3hp::snd::runSystemTasks(app, cpu.sync());
+    nfs3hp::port::runSystemTasks(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004c4a7a  a190367d00             -mov eax, dword ptr [0x7d3690]
@@ -4600,7 +4600,7 @@ L_0x004c4a92:
     }
     // 004c4ab0  e85bc9f4ff             -call 0x411410
     cpu.esp -= 4;
-    nfs3hp::snd::raceSoundTick(app, cpu.sync());
+    nfs3hp::port::raceSoundTick(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
 L_0x004c4ab5:
@@ -5699,7 +5699,7 @@ void Application::sub_4c4e40(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.edi ^= x86::reg32(x86::sreg32(cpu.edi));
     // 004c4e5e  e8cd270200             -call 0x4e7630
     cpu.esp -= 4;
-    nfs3hp::snd::runSystemTasks(app, cpu.sync());
+    nfs3hp::port::runSystemTasks(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004c4e63  8b0df8fd5e00           -mov ecx, dword ptr [0x5efdf8]
@@ -5754,7 +5754,7 @@ L_0x004c4e84:
     cpu.eax ^= x86::reg32(x86::sreg32(cpu.eax));
     // 004c4e93  e898270200             -call 0x4e7630
     cpu.esp -= 4;
-    nfs3hp::snd::runSystemTasks(app, cpu.sync());
+    nfs3hp::port::runSystemTasks(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004c4e98  a104015600             -mov eax, dword ptr [0x560104]
@@ -7971,7 +7971,7 @@ L_0x004c56dd:
     cpu.set_szp((cpu.eax ^= x86::reg32(x86::sreg32(cpu.eax))));
     // 004c56e8  e8431f0200             -call 0x4e7630
     cpu.esp -= 4;
-    nfs3hp::snd::runSystemTasks(app, cpu.sync());
+    nfs3hp::port::runSystemTasks(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004c56ed  ebee                   -jmp 0x4c56dd
@@ -10176,7 +10176,7 @@ void Application::sub_4c62a0(WinApplication* __restrict app, x86::CPU& cpu_)
 L_0x004c62cf:
     // 004c62cf  e8cca7f4ff             -call 0x410aa0
     cpu.esp -= 4;
-    nfs3hp::snd::musicStreamEnd(app, cpu.sync());
+    nfs3hp::port::musicStreamEnd(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004c62d4  e8f7d0fdff             -call 0x4a33d0
@@ -10188,7 +10188,7 @@ L_0x004c62cf:
     cpu.eax = 100 /*0x64*/;
     // 004c62de  e88da0f4ff             -call 0x410370
     cpu.esp -= 4;
-    nfs3hp::snd::musicStreamMakeOf(app, cpu.sync());
+    nfs3hp::port::musicStreamMakeOf(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004c62e3  e8e8d0fdff             -call 0x4a33d0
@@ -10270,7 +10270,7 @@ L_0x004c62fa:
 L_0x004c6316:
     // 004c6316  e8a5d8f4ff             -call 0x413bc0
     cpu.esp -= 4;
-    nfs3hp::snd::raceBanksLoad(app, cpu.sync());
+    nfs3hp::port::raceBanksLoad(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004c631b  e8b0d0fdff             -call 0x4a33d0

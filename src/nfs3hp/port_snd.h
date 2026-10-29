@@ -283,6 +283,13 @@ struct Where
 Result fail(App* app, CPU& cpu, reg32 esp, Where where, reg32 line, std::initializer_list<reg32> arguments,
             reg32 eax = 0);
 
+/* The game's sound effect (port_sound_effects.cpp): effect `effect` of bank
+ * `bank` (a handle) at `volume`, pan `pan`, pitch `pitch`; `esp` as the
+ * game's code has it on entering 0x4182b0.  The sound's handle, -1 with the
+ * effects off. */
+Result bankEffect(App* app, CPU& cpu, reg32 esp, int32_t bank, int32_t effect, int32_t volume, uint32_t pan,
+                  uint8_t pitch);
+
 /* The voices, their volume, pan and pitch (port_snd_voices.cpp). */
 
 reg32 nextRandom(App* app);

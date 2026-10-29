@@ -10,9 +10,9 @@ namespace nfs3hp
 
 /* sub_4e9bf8: native, nfs3hp::port::playOptions */
 
-/* sub_4e9c70: native, nfs3hp::snd::SNDfxinitbus */
+/* sub_4e9c70: native, nfs3hp::port::SNDfxinitbus */
 
-/* sub_4e9dfc: native, nfs3hp::snd::SNDfxmasterlevel */
+/* sub_4e9dfc: native, nfs3hp::port::SNDfxmasterlevel */
 
 /* sub_4e9ec0: native, nfs3hp::watcom::stricmp */
 
@@ -469,7 +469,7 @@ L_0x004ea5b7:
     cpu.esp -= 4;
     // 004ea5d1  e88a910100             -call 0x503760
     cpu.esp -= 4;
-    nfs3hp::snd::div64(app, cpu.sync());
+    nfs3hp::port::div64(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004ea5d6  89c6                   -mov esi, eax

@@ -6126,7 +6126,7 @@ L_0x004f06f7:
     cpu.eax ^= x86::reg32(x86::sreg32(cpu.eax));
     // 004f06f9  e8326fffff             -call 0x4e7630
     cpu.esp -= 4;
-    nfs3hp::snd::runSystemTasks(app, cpu.sync());
+    nfs3hp::port::runSystemTasks(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004f06fe  e82dffffff             -call 0x4f0630

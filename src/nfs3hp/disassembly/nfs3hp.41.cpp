@@ -4471,29 +4471,29 @@ void Application::sub_4ff620(WinApplication* app, x86::CPU& cpu)
 
 /* sub_4ff624: native, nfs3hp::watcom::fpatan_wrap */
 
-/* sub_4ff660: native, nfs3hp::snd::setTopupFunction */
+/* sub_4ff660: native, nfs3hp::port::setTopupFunction */
 
-/* sub_4ff670: native, nfs3hp::snd::topUpStream */
+/* sub_4ff670: native, nfs3hp::port::topUpStream */
 
-/* sub_4ff700: native, nfs3hp::snd::waitTopupMain */
+/* sub_4ff700: native, nfs3hp::port::waitTopupMain */
 
-/* sub_4ff76e: native, nfs3hp::snd::waitTopupEvent */
+/* sub_4ff76e: native, nfs3hp::port::waitTopupEvent */
 
-/* sub_4ff780: native, nfs3hp::snd::topupDone */
+/* sub_4ff780: native, nfs3hp::port::topupDone */
 
-/* sub_4ff7b0: native, nfs3hp::snd::toppedUp */
+/* sub_4ff7b0: native, nfs3hp::port::toppedUp */
 
-/* sub_4ff7c0: native, nfs3hp::snd::topUpBeforeLoad */
+/* sub_4ff7c0: native, nfs3hp::port::topUpBeforeLoad */
 
-/* sub_4ff7f0: native, nfs3hp::snd::waitTopupStream */
+/* sub_4ff7f0: native, nfs3hp::port::waitTopupStream */
 
-/* sub_4ff7e0: native, nfs3hp::snd::topupReturn */
+/* sub_4ff7e0: native, nfs3hp::port::topupReturn */
 
-/* sub_4ff80f: native, nfs3hp::snd::waitTopupDone */
+/* sub_4ff80f: native, nfs3hp::port::waitTopupDone */
 
-/* sub_4ff820: native, nfs3hp::snd::loadBlockSize */
+/* sub_4ff820: native, nfs3hp::port::loadBlockSize */
 
-/* sub_4ff830: native, nfs3hp::snd::loadFlags */
+/* sub_4ff830: native, nfs3hp::port::loadFlags */
 
 /* sub_4ff840: native, nfs3hp::port::voicePicked */
 

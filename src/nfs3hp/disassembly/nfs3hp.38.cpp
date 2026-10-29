@@ -8,51 +8,51 @@ bool commOpenTrace(win32::WinApplication* app, x86::CPU& cpu);
 
 /* sub_4f3a30: native, nfs3hp::dead::stub_0x4f3a30 */
 
-/* sub_4f3a60: native, nfs3hp::snd::SNDSTRM_createqueued */
+/* sub_4f3a60: native, nfs3hp::port::SNDSTRM_createqueued */
 
-/* sub_4f3a80: native, nfs3hp::snd::SNDSTRM_requestdata */
+/* sub_4f3a80: native, nfs3hp::port::SNDSTRM_requestdata */
 
-/* sub_4f3a90: native, nfs3hp::snd::SNDSTRM_restore */
+/* sub_4f3a90: native, nfs3hp::port::SNDSTRM_restore */
 
-/* sub_4f3aa4: native, nfs3hp::snd::findStream */
+/* sub_4f3aa4: native, nfs3hp::port::findStream */
 
-/* sub_4f3ab5: native, nfs3hp::snd::streamTaskSkipped */
+/* sub_4f3ab5: native, nfs3hp::port::streamTaskSkipped */
 
-/* sub_4f3ab8: native, nfs3hp::snd::removeRequest */
+/* sub_4f3ab8: native, nfs3hp::port::removeRequest */
 
-/* sub_4f3b31: native, nfs3hp::snd::framesPlayedDone */
+/* sub_4f3b31: native, nfs3hp::port::framesPlayedDone */
 
-/* sub_4f3b44: native, nfs3hp::snd::packetFreed */
+/* sub_4f3b44: native, nfs3hp::port::packetFreed */
 
-/* sub_4f3b60: native, nfs3hp::snd::framesPlayed */
+/* sub_4f3b60: native, nfs3hp::port::framesPlayed */
 
-/* sub_4f3ba4: native, nfs3hp::snd::iSNDstreamparseheader */
+/* sub_4f3ba4: native, nfs3hp::port::iSNDstreamparseheader */
 
-/* sub_4f3cc8: native, nfs3hp::snd::iSNDstreamparseloop */
+/* sub_4f3cc8: native, nfs3hp::port::iSNDstreamparseloop */
 
-/* sub_4f3d00: native, nfs3hp::snd::iSNDstreamparsedata */
+/* sub_4f3d00: native, nfs3hp::port::iSNDstreamparsedata */
 
-/* sub_4f3dac: native, nfs3hp::snd::iSNDstreamparseend */
+/* sub_4f3dac: native, nfs3hp::port::iSNDstreamparseend */
 
-/* sub_4f3dc4: native, nfs3hp::snd::iSNDstreamparsechunk */
+/* sub_4f3dc4: native, nfs3hp::port::iSNDstreamparsechunk */
 
-/* sub_4f3e1c: native, nfs3hp::snd::streamWaits */
+/* sub_4f3e1c: native, nfs3hp::port::streamWaits */
 
-/* sub_4f3ebc: native, nfs3hp::snd::iSNDstreamsystemtask */
+/* sub_4f3ebc: native, nfs3hp::port::iSNDstreamsystemtask */
 
-/* sub_4f3fd0: native, nfs3hp::snd::streamCount */
+/* sub_4f3fd0: native, nfs3hp::port::streamCount */
 
-/* sub_4f3fec: native, nfs3hp::snd::iSNDstreamcreate */
+/* sub_4f3fec: native, nfs3hp::port::iSNDstreamcreate */
 
-/* sub_4f4258: native, nfs3hp::snd::iSNDstreamrequest */
+/* sub_4f4258: native, nfs3hp::port::iSNDstreamrequest */
 
 /* sub_4f43ac: native, nfs3hp::dead::stub_0x4f43ac */
 
-/* sub_4f43c0: native, nfs3hp::snd::SNDSTRM_destroy */
+/* sub_4f43c0: native, nfs3hp::port::SNDSTRM_destroy */
 
 /* sub_4f4438: native, nfs3hp::dead::stub_0x4f4438 */
 
-/* sub_4f4440: native, nfs3hp::snd::SNDSTRM_purge */
+/* sub_4f4440: native, nfs3hp::port::SNDSTRM_purge */
 
 /* align: skip 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 */
 void Application::sub_4f44e0(WinApplication* __restrict app, x86::CPU& cpu_)

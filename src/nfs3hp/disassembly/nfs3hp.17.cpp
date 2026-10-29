@@ -3719,7 +3719,7 @@ L_0x0046d465:
     if (cpu.terminate) return;
     // 0046d47d  e86ec9fdff             -call 0x449df0
     cpu.esp -= 4;
-    sub_449df0(app, cpu.sync());
+    nfs3hp::port::loop::keysTaken(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 0046d482  8945dc                 -mov dword ptr [ebp - 0x24], eax

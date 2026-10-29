@@ -234,9 +234,9 @@ void Application::sub_40de30(WinApplication* __restrict app, x86::CPU& cpu_)
 
 /* sub_40fcf0: native, nfs3hp::aiplan::restartSound */
 
-/* sub_40feb0: native, nfs3hp::snd::soundExit */
+/* sub_40feb0: native, nfs3hp::port::soundExit */
 
-/* sub_40fed0: native, nfs3hp::snd::deleteMusicCopy */
+/* sub_40fed0: native, nfs3hp::port::deleteMusicCopy */
 
 /* align: skip 0x8d 0x80 0x00 0x00 0x00 0x00 0x8b 0xd2 */
 void Application::sub_40ff20(WinApplication* __restrict app, x86::CPU& cpu_)
@@ -377,12 +377,12 @@ L_0x0040ff6f:
     return;
 }
 
-/* sub_40ffd0: native, nfs3hp::snd::raceTuneOf */
+/* sub_40ffd0: native, nfs3hp::port::raceTuneOf */
 
-/* sub_410030: native, nfs3hp::snd::raceMusicPrepare */
+/* sub_410030: native, nfs3hp::port::raceMusicPrepare */
 
-/* sub_410330: native, nfs3hp::snd::musicStreamMake */
+/* sub_410330: native, nfs3hp::port::musicStreamMake */
 
-/* sub_410370: native, nfs3hp::snd::musicStreamMakeOf */
+/* sub_410370: native, nfs3hp::port::musicStreamMakeOf */
 
 }

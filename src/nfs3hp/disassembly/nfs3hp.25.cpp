@@ -28572,7 +28572,7 @@ L_0x004b60f8:
     app->getMemory<x86::reg32>(x86::reg32(5654544) /* 0x564810 */) = cpu.esi;
     // 004b6160  e88b8efdff             -call 0x48eff0
     cpu.esp -= 4;
-    sub_48eff0(app, cpu.sync());
+    nfs3hp::port::startTimer(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004b6165  b880000000             -mov eax, 0x80
@@ -28686,7 +28686,7 @@ L_0x004b61d6:
     if (cpu.terminate) return;
     // 004b61e0  e84ba1f5ff             -call 0x410330
     cpu.esp -= 4;
-    nfs3hp::snd::musicStreamMake(app, cpu.sync());
+    nfs3hp::port::musicStreamMake(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004b61e5  b801000000             -mov eax, 1

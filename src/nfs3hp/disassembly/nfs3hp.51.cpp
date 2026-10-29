@@ -4799,21 +4799,21 @@ L_0x00527050:
 
 /* sub_5273c0: native, nfs3hp::snd::dead_0x5273c0 */
 
-/* sub_5274b0: native, nfs3hp::snd::pcmOnceMono */
+/* sub_5274b0: native, nfs3hp::port::pcmOnceMono */
 
-/* sub_5274d0: native, nfs3hp::snd::pcmLoopedMono */
+/* sub_5274d0: native, nfs3hp::port::pcmLoopedMono */
 
-/* sub_527500: native, nfs3hp::snd::pcmStreamedMono */
+/* sub_527500: native, nfs3hp::port::pcmStreamedMono */
 
-/* sub_527520: native, nfs3hp::snd::pcmFileMono */
+/* sub_527520: native, nfs3hp::port::pcmFileMono */
 
-/* sub_527540: native, nfs3hp::snd::pcmOnceStereo */
+/* sub_527540: native, nfs3hp::port::pcmOnceStereo */
 
-/* sub_527560: native, nfs3hp::snd::pcmLoopedStereo */
+/* sub_527560: native, nfs3hp::port::pcmLoopedStereo */
 
-/* sub_527590: native, nfs3hp::snd::pcmStreamedStereo */
+/* sub_527590: native, nfs3hp::port::pcmStreamedStereo */
 
-/* sub_5275b0: native, nfs3hp::snd::pcmFileStereo */
+/* sub_5275b0: native, nfs3hp::port::pcmFileStereo */
 
 /* sub_5275d0: native, nfs3hp::snd::dead_0x5275d0 */
 
@@ -4831,21 +4831,21 @@ L_0x00527050:
 
 /* sub_5276d0: native, nfs3hp::snd::dead_0x5276d0 */
 
-/* sub_5276f0: native, nfs3hp::snd::pcmOnceStereo2 */
+/* sub_5276f0: native, nfs3hp::port::pcmOnceStereo2 */
 
-/* sub_527710: native, nfs3hp::snd::pcmLoopedStereo2 */
+/* sub_527710: native, nfs3hp::port::pcmLoopedStereo2 */
 
-/* sub_527740: native, nfs3hp::snd::pcmStreamedStereo2 */
+/* sub_527740: native, nfs3hp::port::pcmStreamedStereo2 */
 
-/* sub_527760: native, nfs3hp::snd::pcmFileStereo2 */
+/* sub_527760: native, nfs3hp::port::pcmFileStereo2 */
 
-/* sub_527780: native, nfs3hp::snd::pcmOnceQuad */
+/* sub_527780: native, nfs3hp::port::pcmOnceQuad */
 
-/* sub_5277a0: native, nfs3hp::snd::pcmLoopedQuad */
+/* sub_5277a0: native, nfs3hp::port::pcmLoopedQuad */
 
-/* sub_5277d0: native, nfs3hp::snd::pcmStreamedQuad */
+/* sub_5277d0: native, nfs3hp::port::pcmStreamedQuad */
 
-/* sub_5277f0: native, nfs3hp::snd::pcmFileQuad */
+/* sub_5277f0: native, nfs3hp::port::pcmFileQuad */
 
 /* sub_527810: native, nfs3hp::snd::dead_0x527810 */
 
@@ -4907,38 +4907,38 @@ L_0x00527050:
 
 /* sub_528f0c: native, nfs3hp::snd::dead_0x528f0c */
 
-/* sub_528f70: native, nfs3hp::snd::xaPlayed */
+/* sub_528f70: native, nfs3hp::port::xaPlayed */
 
-/* sub_528f74: native, nfs3hp::snd::xaOnceDecode */
+/* sub_528f74: native, nfs3hp::port::xaOnceDecode */
 
-/* sub_529104: native, nfs3hp::snd::xaOnceSetup */
+/* sub_529104: native, nfs3hp::port::xaOnceSetup */
 
-/* sub_529140: native, nfs3hp::snd::xaKeptCopy */
+/* sub_529140: native, nfs3hp::port::xaKeptCopy */
 
-/* sub_5291a8: native, nfs3hp::snd::xaLoopDecode */
+/* sub_5291a8: native, nfs3hp::port::xaLoopDecode */
 
-/* sub_529384: native, nfs3hp::snd::xaIntroDecode */
+/* sub_529384: native, nfs3hp::port::xaIntroDecode */
 
-/* sub_529534: native, nfs3hp::snd::xaIntroSetup */
+/* sub_529534: native, nfs3hp::port::xaIntroSetup */
 
-/* sub_529590: native, nfs3hp::snd::xaStreamDecode */
+/* sub_529590: native, nfs3hp::port::xaStreamDecode */
 
-/* sub_529778: native, nfs3hp::snd::xaStreamSetup */
+/* sub_529778: native, nfs3hp::port::xaStreamSetup */
 
-/* sub_5297c0: native, nfs3hp::snd::xaPacketDecode */
+/* sub_5297c0: native, nfs3hp::port::xaPacketDecode */
 
-/* sub_5299f4: native, nfs3hp::snd::xaPacketSetup */
+/* sub_5299f4: native, nfs3hp::port::xaPacketSetup */
 
-/* sub_529a50: native, nfs3hp::snd::xaStereoPlayed */
+/* sub_529a50: native, nfs3hp::port::xaStereoPlayed */
 
-/* sub_529a54: native, nfs3hp::snd::xaStereoOnceDecode */
+/* sub_529a54: native, nfs3hp::port::xaStereoOnceDecode */
 
-/* sub_529c2c: native, nfs3hp::snd::xaStereoOnceSetup */
+/* sub_529c2c: native, nfs3hp::port::xaStereoOnceSetup */
 
-/* sub_529c80: native, nfs3hp::snd::xaStereoKeptCopy */
+/* sub_529c80: native, nfs3hp::port::xaStereoKeptCopy */
 
-/* sub_529cfc: native, nfs3hp::snd::xaStereoLoopDecode */
+/* sub_529cfc: native, nfs3hp::port::xaStereoLoopDecode */
 
-/* sub_529f24: native, nfs3hp::snd::xaStereoIntroDecode */
+/* sub_529f24: native, nfs3hp::port::xaStereoIntroDecode */
 
 }

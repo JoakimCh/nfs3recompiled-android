@@ -4,31 +4,31 @@
 namespace nfs3hp
 {
 
-/* sub_52a144: native, nfs3hp::snd::xaStereoIntroSetup */
+/* sub_52a144: native, nfs3hp::port::xaStereoIntroSetup */
 
-/* sub_52a1a0: native, nfs3hp::snd::xaStereoStreamDecode */
+/* sub_52a1a0: native, nfs3hp::port::xaStereoStreamDecode */
 
-/* sub_52a354: native, nfs3hp::snd::xaStereoStreamSetup */
+/* sub_52a354: native, nfs3hp::port::xaStereoStreamSetup */
 
-/* sub_52a3a0: native, nfs3hp::snd::xaStereoPacketDecode */
+/* sub_52a3a0: native, nfs3hp::port::xaStereoPacketDecode */
 
-/* sub_52a5b4: native, nfs3hp::snd::xaStereoFileSetup */
+/* sub_52a5b4: native, nfs3hp::port::xaStereoFileSetup */
 
-/* sub_52a610: native, nfs3hp::snd::framesPlayedCoded */
+/* sub_52a610: native, nfs3hp::port::framesPlayedCoded */
 
-/* sub_52a618: native, nfs3hp::snd::codedToWords */
+/* sub_52a618: native, nfs3hp::port::codedToWords */
 
-/* sub_52a668: native, nfs3hp::snd::codedDecode */
+/* sub_52a668: native, nfs3hp::port::codedDecode */
 
-/* sub_52a790: native, nfs3hp::snd::codedSetup */
+/* sub_52a790: native, nfs3hp::port::codedSetup */
 
-/* sub_52a7e0: native, nfs3hp::snd::codedStreamDecode */
+/* sub_52a7e0: native, nfs3hp::port::codedStreamDecode */
 
-/* sub_52a970: native, nfs3hp::snd::codedStreamSetup */
+/* sub_52a970: native, nfs3hp::port::codedStreamSetup */
 
-/* sub_52a9c0: native, nfs3hp::snd::codedPacketDecode */
+/* sub_52a9c0: native, nfs3hp::port::codedPacketDecode */
 
-/* sub_52ab70: native, nfs3hp::snd::codedPacketSetup */
+/* sub_52ab70: native, nfs3hp::port::codedPacketSetup */
 
 /* sub_52abd0: native, nfs3hp::snd::dead_0x52abd0 */
 
@@ -2951,23 +2951,23 @@ L_0x0052c8b8:
 
 /* sub_52c8c7: native, nfs3hp::dead::stub_0x52c8c7 */
 
-/* sub_52c8f0: native, nfs3hp::snd::pcmPlayed */
+/* sub_52c8f0: native, nfs3hp::port::pcmPlayed */
 
-/* sub_52c8f4: native, nfs3hp::snd::pcmOnceDecode */
+/* sub_52c8f4: native, nfs3hp::port::pcmOnceDecode */
 
-/* sub_52c9a0: native, nfs3hp::snd::pcmOnceSetup */
+/* sub_52c9a0: native, nfs3hp::port::pcmOnceSetup */
 
-/* sub_52c9d0: native, nfs3hp::snd::pcmLoopedDecode */
+/* sub_52c9d0: native, nfs3hp::port::pcmLoopedDecode */
 
-/* sub_52ca48: native, nfs3hp::snd::pcmLoopedSetup */
+/* sub_52ca48: native, nfs3hp::port::pcmLoopedSetup */
 
-/* sub_52ca80: native, nfs3hp::snd::pcmStreamedDecode */
+/* sub_52ca80: native, nfs3hp::port::pcmStreamedDecode */
 
-/* sub_52cb74: native, nfs3hp::snd::pcmStreamedSetup */
+/* sub_52cb74: native, nfs3hp::port::pcmStreamedSetup */
 
-/* sub_52cba0: native, nfs3hp::snd::pcmFileDecode */
+/* sub_52cba0: native, nfs3hp::port::pcmFileDecode */
 
-/* sub_52ccb8: native, nfs3hp::snd::pcmFileSetup */
+/* sub_52ccb8: native, nfs3hp::port::pcmFileSetup */
 
 /* sub_52ccf0: native, nfs3hp::snd::dead_0x52ccf0 */
 

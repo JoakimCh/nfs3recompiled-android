@@ -56,6 +56,31 @@ STOOD_IN = {
     0x4d5840: (),
     0x4d6070: (),
     0x4d5c40: (),
+    # SND's bank add and header size and copy, which port_sound_banks/music/racebanks call by
+    # address: the checks' random bank images would crash the real ones.
+    0x4e8d20: (),
+    0x4e8db0: (0x4e8e20,),  # SNDbankheadercopy calls the size as C++, like the real one
+    0x4e8e20: (),
+    # The CD stream delete the music's stream end calls, a random stream's: by address too.
+    0x4e4b50: (),
+    # The reverb's start, which the mixer's init calls by address (iSNDmixinit's check).
+    0x5230b8: (),
+    # SND's restore, which waits for threads and the message thread, none of which the checks have
+    # (soundExit's check): by address on both sides.
+    0x4e26b4: (),
+    # The music started and stopped, which the menu loop, the attract mode and the race's sound
+    # call by address: the real ones start streams the checks' random worlds have not.
+    # musicAfterSetting and musicMenuSix (port_sound_music), and raceSoundEnd the stop, call them
+    # as C++.
+    # The path ended with a backslash (port::menus), which the car files, the cops' speech and
+    # the race banks call by address: on both sides, as before it was a rewrite.  The .MNU
+    # loader's own call it as C++.
+    0x4529a0: (0x449510, 0x4498a0, 0x449960),
+    # A shape into pixels (port::shapes), which the object's textures reach by address; the
+    # shapes' own textures (by name, one, an art's) call it as C++.
+    0x4d37a0: (0x4d5db0, 0x4d6070, 0x4d6390),
+    0x4104f0: (0x4103a0, 0x410460),
+    0x4109d0: (0x4103a0, 0x410460, 0x412b50),
     # port_obj3d's calls of port_fields' car colour and its bytes, by address;
     # port_fields' own call them as C++ (the colour list, the custom colours,
     # a colour's line, the wheel).
@@ -66,6 +91,72 @@ STOOD_IN = {
     # graphics are the shapes' cases' -- but shapeByName's, which calls it as
     # C++, and port_fields' sliderShape, which does the same.
     0x4d6390: (0x4d5db0, 0x4d5e40),
+    # port_menus' codelink match (0x4429c0), which port_buttons calls by
+    # address: to its stand-in (frontend_glue.inc's) on both sides, as before
+    # it was rewritten -- port_menus holds it on its own.
+    0x4429c0: (),
+    # port_loop's calls of the port's own, held against their code on their
+    # own: by address, to their stand-ins (loop.inc's), on both sides.  The
+    # menu key, the text boxes, the menus' end, the pointer, the screens
+    # started, the network's leaving, the .MNU files and the language's text
+    # (the game's main calls it by address, so it is stood in there too): no
+    # other part calls them as C++.
+    0x451960: (), 0x451b20: (), 0x451fc0: (), 0x451ff0: (), 0x452110: (), 0x4dab90: (), 0x4daf80: (),
+    0x440d20: (), 0x449510: (), 0x449960: (), 0x4d1750: (),
+    # And those other parts call as C++, which they keep doing: the menu
+    # click (port_text's key, the fields' colour list key, the cascade, the
+    # check box, the drop list, the lists' key), the menu text (the fields'
+    # and the widgets' drawing), the gradient and the frame (the 2D drawing's
+    # own, the list box, the slider, the text box).
+    0x4181d0: (0x451960, 0x457030, 0x461d00, 0x4624a0, 0x462ad0, 0x4634d0, 0x463ff0),
+    0x452190: (0x456590, 0x456b50, 0x456ce0, 0x457c40, 0x4580b0, 0x458480, 0x458940, 0x458e30, 0x45fcd0, 0x4607c0,
+               0x461d00, 0x4629c0, 0x462b90, 0x462d20, 0x4634d0, 0x465500, 0x469680, 0x46b3a0),
+    0x4d8550: (0x465500, 0x4d8910, 0x4d8930, 0x4d89f0),
+    0x4d8930: (0x455e30, 0x469680, 0x4d8aa0),
+    # The menu loop's own (port::loop) that the widgets and the fields call by
+    # address: stood in for them (loop.inc's rows and buttons.inc's), but for
+    # the loop's entries that call each as C++ (the help box asks whether the
+    # keys are taken and for the screen shown; leaving a screen and the loop
+    # draw the items).
+    0x449df0: (0x449aa0,),
+    0x44a470: (),
+    0x44a4f0: (0x44aa30, 0x44b230),
+    0x44aeb0: (0x449aa0,),
+    # port_dialogs' calls of the port's own, held on their own: by address,
+    # to their stand-ins (dialogs.inc's), but for the entries that keep
+    # calling each as C++ -- the text's font and width, the 2D drawing and the
+    # shapes (the fields' and the widgets' drawing, the text's own, the
+    # sliders, the shapes').
+    0x452100: (0x451cd0, 0x452020, 0x452190, 0x452220, 0x4522c0, 0x455e30, 0x457c40, 0x4580b0, 0x458480, 0x458940,
+               0x458e30, 0x45fcd0, 0x4607c0, 0x462b90, 0x4634d0, 0x469680, 0x46b3a0),
+    0x452020: (0x452190, 0x452220, 0x4522c0, 0x4569a0, 0x457c40, 0x457f70, 0x4580b0, 0x458340, 0x458480, 0x4587e0,
+               0x458940, 0x458ce0, 0x458e30, 0x459210, 0x460070, 0x4607c0, 0x4613e0, 0x4628d0, 0x4629c0, 0x462b30,
+               0x462b90, 0x4634d0, 0x464560),
+    0x4d8860: (0x455e30, 0x45fae0, 0x4607c0),
+    0x4d8ac0: (0x456ce0, 0x45fae0, 0x460100, 0x461d00, 0x462b90, 0x462d20, 0x4634d0),
+    0x4d8910: (0x456b50, 0x466cf0, 0x469680),
+    0x4db000: (0x4607c0, 0x469680, 0x46b3a0),
+    0x4d7160: (0x440c40, 0x456670, 0x460100, 0x4607c0, 0x462d20, 0x4634d0, 0x469680, 0x4d7990),
+    0x4d66f0: (0x455e30, 0x456020, 0x456110, 0x460100, 0x469080),
+    0x4d5db0: (0x456170, 0x456ea0, 0x460440, 0x461900, 0x4623a0, 0x462c30, 0x463e60),
+    # The dialogs' own (port::dialogs) that the menu loop, the widgets and the
+    # screens call by address: stood in for them (frontend_glue.inc's and
+    # loop.inc's rows, dialogs.inc's), and the dialogs' cores each called as
+    # C++ by the entries that call them.
+    0x4438b0: (), 0x444a60: (), 0x445de0: (), 0x445e60: (), 0x445f50: (),
+    0x445f10: (0x445e60, 0x445f50),
+    0x4438d0: (0x4449d0, 0x444b60, 0x4450c0, 0x445680),
+    0x443f40: (0x4449d0, 0x444b60, 0x4450c0, 0x445680),
+    0x444000: (0x4449d0, 0x4450c0, 0x445680),
+    0x444350: (0x4450c0,),
+    0x445380: (0x445680,),
+    0x4445d0: (0x4449d0, 0x4450c0, 0x445680, 0x445ac0),
+    0x4451d0: (0x445680, 0x445ac0),
+    0x445160: (0x445520,),
+    0x4452d0: (0x445750,),
+    0x444910: (0x445e60,), 0x444b20: (0x445e60,), 0x444f50: (0x445e60,), 0x445520: (0x445e60,),
+    0x4449d0: (0x445f50,), 0x444b60: (0x445f50,), 0x4450c0: (0x445f50,), 0x445680: (0x445f50,),
+    0x445ac0: (0x445f50,),
 }
 
 
@@ -211,6 +302,34 @@ def hud_editor(text):
     return port_sites(SITES)(text)
 
 
+def textures_512(text):
+    """The port's textures of 512 a side (port_thrash.h), which the natives
+    have as edits of their own, no tools/apply_*.py: track::loadTextures asks
+    for 512, not 128; load::loadTgaTexture makes a .tga of 512 or more 512
+    (texture512Side) and a texture it is given the size fitted
+    (resizeTexture)."""
+    side_512 = ("if (app->getMemory<x86::reg32>(cpu.edi + 0xc) == 1)\n"
+                "    {\n"
+                "        const x86::sreg32 side = x86::sreg32(app->getMemory<x86::reg8>(cpu.edx + 0xc)"
+                " | app->getMemory<x86::reg8>(cpu.edx + 0xd) << 8);\n"
+                "        if (cpu.ebx != 0 && x86::sreg32(cpu.ebx) < 0x200 && side >= 0x200)\n"
+                "            cpu.ebx = 0x200;\n"
+                "    }\n    ")
+    resize = ("port::driver::resizeTexture(app, app->getMemory<x86::reg32>(cpu.ebp + x86::reg32(-8) /* -0x8 */),"
+              " app->getMemory<x86::reg32>(cpu.esi));\n        ")
+    text = port_sites([
+        (None, "0041db7b", "cpu.ebx = 128 /*0x80*/;", "cpu.ebx = 512 /*0x200*/;"),
+        (None, "0049d32d", "app->getMemory<x86::reg32>(cpu.ebp + x86::reg32(-12) /* -0xc */) = cpu.ebx;",
+         side_512 + "app->getMemory<x86::reg32>(cpu.ebp + x86::reg32(-12) /* -0xc */) = cpu.ebx;"),
+        (None, "0049d3e7", "goto L_0x0049d3f6;", resize + "goto L_0x0049d3f6;"),
+    ])(text)
+    if "resizeTexture" in text:
+        text = ("namespace port { namespace driver {\n"
+                "void resizeTexture(win32::WinApplication* app, x86::reg32 record, x86::reg32 side);\n"
+                "} }\n\n" + text)
+    return text
+
+
 def loading_screen(text):
     """tools/apply_loading_screen.py's change, which render::loadingScreen
     has: the loading screen at 4:3."""
@@ -245,6 +364,21 @@ def dynamic_fullscreen_memory(text):
                                        "004b5e2e")])(text)
 
 
+def dialog_emblem(text):
+    """tools/apply_widescreen.py's change at 0x443a44, which port::dialogs::
+    drawBox has: over a race the box's art is drawn with the emblem narrowed
+    on a wide screen (dialogEmblem).  The art's quad is drawn by address here,
+    as the generator writes the game's calls."""
+    anchor = "    // 00443a44  e8b7750900"
+    start = text.index(anchor)
+    stop = text.index("\n    // 00", start + 1)
+    block = text[start:stop]
+    call = "    sub_4db000(app, cpu.sync());"
+    assert block.count(call) == 1
+    block = block.replace(call, "    dialogEmblem(true);\n" + call + "\n    dialogEmblem(false);", 1)
+    return "void dialogEmblem(bool drawing);\n\n" + text[:start] + block + text[stop:]
+
+
 def coll_file_strncmp(text):
     """collide::openCollFile's strncmp of the COLL header as the port runs it,
     native (watcom::strncmp): the game's own leaves edx otherwise (an argument
@@ -259,7 +393,8 @@ PORT_CHANGES = {0x4710f0: force_feedback_car, 0x410030: music_stream, 0x4107c0: 
                 0x494fa0: race_precision, 0x495230: race_precision, 0x4a39f0: race_precision,
                 0x4723f0: track_detail,
                 0x41a120: alpha_intensity, 0x41aa60: mirror_detail, 0x41c310: mirror_detail,
-                0x41cdc0: mirror_detail, 0x431320: coll_file_strncmp}
+                0x41cdc0: mirror_detail, 0x431320: coll_file_strncmp,
+                0x4438d0: dialog_emblem}
 # native_render.cpp's, for tools/game_checks/render (gen_render.py).
 PORT_CHANGES.update({
     0x41b9b0: alpha_intensity, 0x41d620: lambda text: mirror_detail(track_detail(text)),
@@ -276,6 +411,7 @@ PORT_CHANGES.update({
 # native_vertices.cpp's, for tools/game_checks/vertices (gen_vertices.py).
 PORT_CHANGES.update({0x492370: alpha_intensity, 0x492980: alpha_intensity, 0x4cb750: alpha_intensity,
                      0x4cbc90: alpha_intensity, 0x41ae90: mirror_detail, 0x4bb5d0: mirror_detail})
+PORT_CHANGES.update({0x41db10: textures_512, 0x49d320: textures_512})
 
 
 def stand_ins():
@@ -334,7 +470,7 @@ def main():
     # against the game's mix by mix on the phone (0.77's snd_check).
     natives = {address: name for address, name in nfs3hp.GAME_NATIVES.items()
                if address not in nfs3hp.MENU_NATIVES and not name.startswith(("snd::dead_", "graphics::dead_", "dead::"))
-               and name not in ("snd::mixerServe", "snd::mixerRamp")}
+               and name not in ("port::mixerServe", "port::mixerRamp")}
     # native_render.cpp's are tools/game_checks/render's: here, as before they
     # were native whole, stand-ins for the natives that call them.
     natives = {address: name for address, name in natives.items() if address not in nfs3hp.RENDER_NATIVES}
@@ -452,6 +588,11 @@ def main():
     with open(out / "game_tested.inc", "w") as f:
         for address, name in sorted(natives.items()):
             f.write('{0x%x, "%s", &nfs3hp::Application::sub_%x, &nfs3hp::%s},\n' % (address, name, address, name))
+    with open(out / "game_stood_in.inc", "w") as f:
+        # Called by address on both sides, to stand-ins (STOOD_IN): the native side keeps them
+        # even when the callee is another rewrite (game_checks.cpp, dynamicCallElsewhere).
+        for address in sorted(STOOD_IN):
+            f.write("0x%x,\n" % address)
     with open(out / "game_called.inc", "w") as f:
         for address in called:
             f.write("STAND_IN(%x)\n" % address)

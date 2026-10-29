@@ -4140,7 +4140,7 @@ L_0x004fa38d:
     cpu.eax = cpu.ebp;
     // 004fa3ad  e87ed2feff             -call 0x4e7630
     cpu.esp -= 4;
-    nfs3hp::snd::runSystemTasks(app, cpu.sync());
+    nfs3hp::port::runSystemTasks(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004fa3b2  85c0                   +test eax, eax
@@ -12959,7 +12959,7 @@ L_0x004fc7f6:
     cpu.eax ^= x86::reg32(x86::sreg32(cpu.eax));
     // 004fc80a  e821aefeff             -call 0x4e7630
     cpu.esp -= 4;
-    nfs3hp::snd::runSystemTasks(app, cpu.sync());
+    nfs3hp::port::runSystemTasks(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004fc80f  b801000000             -mov eax, 1

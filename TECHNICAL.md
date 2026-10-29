@@ -361,7 +361,7 @@ go through it:
   (`src/nfs3hp/native_sound.cpp`) puts what the game mixes straight onto an SDL
   audio stream, with no DirectSound and no ring buffer in between; the other
   twelve exports -- the version, the game's functions, recording and the 3D
-  buffers -- are in `src/nfs3hp/native_isnd.cpp`, which
+  buffers -- are in `src/nfs3hp/port_snd_isnd.cpp`, which
   `tools/sound_checks/run.sh` compares with eacsnd's generated code, made afresh
   from the DLL, on random states, to the byte.
 - The game's side of the two drivers, and the logger they report through, is
@@ -566,11 +566,11 @@ go through it:
   held against the generated code by `tools/game_checks`.
 - The game's sound, native whole but for the game's clock (`sub_48ed30`):
   EA's SND library -- its voices, banks and playing rewritten as the port's
-  own C++ (below), the mixer (`src/nfs3hp/native_mixer.cpp`), the
+  own C++ (below), the mixer (`src/nfs3hp/port_snd_mixer.cpp`), the
   channels' set-ups, volumes, resamplers and decoders (PCM, XA ADPCM mono and
   stereo, once, looped, with an intro, streamed from memory or a packet
   player, and EA's frame-coded speech with its x87 synthesis filter;
-  `native_snd_mixsetup.cpp`, `native_snd_mixfuncs.cpp`, `native_mmx.cpp`), the
+  `port_snd_mixsetup.cpp`, `native_snd_mixfuncs.cpp`, `native_mmx.cpp`), the
   sample converter, streams and the reverb -- and the game's own use of it,
   every function the game reaches: music, effects, engines, sirens, cops,
   the announcer, the co-driver and the radio, the track's description, 3D
@@ -708,6 +708,31 @@ made-up world cannot always feed. The widgets that belong to one screen
 (controls, colour wheel, records, tournament, pursuit, summary, compare,
 performance, the HUD editor's) come later with their screens.
 
+The third layer is the menu files: the loader that reads `FeData\Menus\*.mnu`
+into the tables of screens and items, the parser's lookups it reads with, the
+item lookup's codelink match, a screen's handlers by its name, the editor's
+checks of the files and the path function the file's name is built with
+(`port_menus.h`, `port_menus.cpp`, 18 functions, `PORT_MENUS_NATIVES`; held
+by `menus.inc`). These were hooks into generated bodies
+(`native_frontend_menus.cpp`); no generated code stays behind them now.
+
+The fourth layer is the menu loop: the screen shown and the screens gone
+through, the items shown, drawn and passed, the selection moved by the keys and
+the mouse, a key handed to the item that has it, the race settings kept
+consistent, the help box, the loop itself and the answers of the dialogs it
+opens (`port_loop.h`, `port_loop.cpp`, 32 functions, `PORT_LOOP_NATIVES`; held
+by `loop.inc`). The item and screen handlers it calls through the tables, the
+drawing, the text and the dialogs are stand-ins on both sides of the check.
+
+The dialogs over the screens are rewritten too (`port_dialogs.h`,
+`port_dialogs.cpp`, 27 functions, `PORT_DIALOGS_NATIVES`; held by `dialogs.inc`):
+which dialog is up and of what kind, what it draws (its box, lines, buttons, the
+field typed in, a list's entries, the help box) in the x87's own arithmetic,
+the pointer on its buttons and entries, each kind's keys and pass, a list
+opened, and the dialog's own key and pass, which hand an answer to its
+callback. What opens a question, a message and a line to type in and lays out
+their boxes stays native whole (`native_frontend_dialogs.cpp`, `MENU_NATIVES`).
+
 A test showed the whole game playing normally in single precision
 (`NFS_FPU_FLOAT=1`), the menus too: the port's own C++ can use the host's
 floats.
@@ -748,10 +773,10 @@ player's name — is native whole too (`native_frontend_text.cpp`,
 `FRONTEND_NATIVES`; the language's lines themselves `port_text.cpp`'s),
 compared by `tools/game_checks`. So is all the rest of
 what the main menu calls of the menus' own: of the menu loop, a screen's
-items shown and the shown screen's name (`native_frontend_loop.cpp`); of the
+items shown and the shown screen's name (`native_frontend_loop.cpp`; the loop itself is `port_loop.cpp`'s); of the
 dialogs, a question, a message and a line to type in as it opens them, their
 boxes and buttons laid out and the pointer put on the button highlighted
-(`native_frontend_dialogs.cpp`) — these in `MENU_NATIVES`, compared by
+(`native_frontend_dialogs.cpp`; the rest of them is `port_dialogs.cpp`'s) — these in `MENU_NATIVES`, compared by
 `tools/frontend_checks` — and under them, in `FRONTEND_NATIVES`, compared by
 `tools/game_checks`: the checks of a line typed in
 (`native_frontend_text.cpp`; the font a text is measured and drawn in, a
@@ -793,7 +818,7 @@ keyboard comes up while the game waits for a typed name
 (`tools/apply_text_entry.py`).
 
 The engine goes the same way, a layer at a time. First
-(`native_frontend_menus.cpp`), what reads `FeData\Menus\*.mnu` into the table
+(`port_menus.cpp` now; once `native_frontend_menus.cpp`), what reads `FeData\Menus\*.mnu` into the table
 of screens (`0x6040d0`) and the table of items (`0x604ee0`): opening a screen
 reads its file and, by its buttons' `nextmenu`, every screen reachable from
 it; a section (`[button]`) starts an item from its widget's template, a key
@@ -805,7 +830,7 @@ neither a section nor a key with a value stops the game. With the loader came
 the item lookup the screens use (an item by a name in its codelink) and the
 screen's handlers found by its name.
 
-Then the menu loop (`native_frontend_loop.cpp`), from the first screen until
+Then the menu loop (`port_loop.cpp` now; once `native_frontend_loop.cpp`), from the first screen until
 the player leaves the menus. Each screen is opened (the art, the items' states
 from their widgets', its onEnter) and passed over and over — its onFrame, the
 items drawn layer by layer and given their own pass, the help box, the item
@@ -816,7 +841,7 @@ screens the history keeps, on to a button's `nextmenu` (asking for the
 players' names first when they have none), into the race, or out (asked
 first). The race settings are kept consistent on every pass.
 
-Then the dialogs over the screens (`native_frontend_dialogs.cpp`): a question
+Then the dialogs over the screens (`port_dialogs.cpp` now; once `native_frontend_dialogs.cpp`): a question
 and its buttons, a message that goes away by itself after its time, a line to
 type a name in, a list of entries to tick. One is up at a time; the menu loop
 hands it each pass and each key, and an answer — Enter, Escape, the message's

@@ -1766,7 +1766,7 @@ L_0x00523be6:
 
 /* sub_523d10: native, nfs3hp::watcom::mbsnicmp */
 
-/* sub_523d90: native, nfs3hp::snd::platformPacketSize */
+/* sub_523d90: native, nfs3hp::port::platformPacketSize */
 
 /* sub_523d94: native, nfs3hp::port::iSNDplatformpacketplay */
 
@@ -1946,7 +1946,7 @@ void Application::sub_5244f0(WinApplication* app, x86::CPU& cpu)
     cpu.clear_co();
     cpu.set_szp((cpu.eax ^= x86::reg32(x86::sreg32(cpu.eax))));
     // 005244f2  e93931fcff             -jmp 0x4e7630
-    return nfs3hp::snd::runSystemTasks(app, cpu.handOver());
+    return nfs3hp::port::runSystemTasks(app, cpu.handOver());
 }
 
 /* align: skip 0x8d 0x80 0x00 0x00 0x00 0x00 0x8d 0x52 0x00 */
@@ -2345,7 +2345,7 @@ void Application::sub_52468f(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.eax = 5391584 /*0x5244e0*/;
     // 0052466f  e86c2ffcff             -call 0x4e75e0
     cpu.esp -= 4;
-    nfs3hp::snd::removeSystemTask(app, cpu.sync());
+    nfs3hp::port::removeSystemTask(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
 L_0x00524674:

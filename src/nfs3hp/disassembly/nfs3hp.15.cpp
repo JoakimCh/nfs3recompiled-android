@@ -24,7 +24,7 @@ void Application::sub_4543e0(WinApplication* app, x86::CPU& cpu)
     cpu.ebp = cpu.esp;
     // 004543e3  e8a8500700             -call 0x4c9490
     cpu.esp -= 4;
-    nfs3hp::snd::descriptionStop(app, cpu.sync());
+    nfs3hp::port::descriptionStop(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 004543e8  31c0                   -xor eax, eax
@@ -1011,7 +1011,7 @@ void Application::sub_454780(WinApplication* __restrict app, x86::CPU& cpu_)
     (cpu.esp) -= x86::reg32(x86::sreg32(12 /*0xc*/));
     // 0045478b  e86056ffff             -call 0x449df0
     cpu.esp -= 4;
-    sub_449df0(app, cpu.sync());
+    nfs3hp::port::loop::keysTaken(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00454790  85c0                   +test eax, eax
@@ -2460,7 +2460,7 @@ void Application::sub_454d60(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.edx = 5478624 /*0x5398e0*/;
     // 00454d6f  e83c61ffff             -call 0x44aeb0
     cpu.esp -= 4;
-    sub_44aeb0(app, cpu.sync());
+    nfs3hp::port::loop::currentMenu(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
     // 00454d74  e8c7dcfeff             -call 0x442a40
@@ -7431,7 +7431,7 @@ void Application::sub_456890(WinApplication* __restrict app, x86::CPU& cpu_)
     cpu.eax ^= x86::reg32(x86::sreg32(cpu.eax));
     // 004568c4  e8272d0700             -call 0x4c95f0
     cpu.esp -= 4;
-    nfs3hp::snd::descriptionStart(app, cpu.sync());
+    nfs3hp::port::descriptionStart(app, cpu.sync());
     cpu.reload();
     if (cpu.terminate) return;
 L_0x004568c9:
