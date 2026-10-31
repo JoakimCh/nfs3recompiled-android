@@ -1,0 +1,64 @@
+name: Manual ARMv7 release
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: armv7-release
+  cancel-in-progress: false
+jobs:
+  release:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Require signing identity
+        env:
+          KEY: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          test -n "$KEY" && test -n "$PASSWORD" || { echo "Configure the two Android signing secrets first."; exit 1; }
+      - name: Install pinned Android tools
+        run: |
+          yes | sdkmanager --licenses > /dev/null || true
+          sdkmanager "platforms;android-36" "build-tools;36.0.0" "ndk;28.2.13676358" "cmake;3.22.1"
+          git clone --depth 1 --branch release-3.4.2 https://github.com/libsdl-org/SDL.git third_party/SDL
+      - name: Build and check launcher
+        working-directory: android
+        run: |
+          bash ./gradlew assembleRelease testReleaseUnitTest -Parmv7Tv -PprofileNative -Pkotlin.incremental=false --no-daemon --max-workers=2
+      - name: Sign and verify finished APK
+        env:
+          KEY: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          umask 077
+          key="$RUNNER_TEMP/nfs3-release.p12"
+          pass="$RUNNER_TEMP/nfs3-release-password.txt"
+          trap 'rm -f "$key" "$pass"' EXIT
+          printf '%s' "$KEY" | base64 --decode > "$key"
+          printf '%s' "$PASSWORD" > "$pass"
+          python3 tools/release/sign_android.py --apk android/app/build/outputs/apk/release/app-release-unsigned.apk --sdk "$ANDROID_HOME" --keystore "$key" --password-file "$pass" --output-dir out
+      - name: Save APK and verification
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: armv7-apk
+          path: |
+            out/*.apk
+            out/*.json
+          if-no-files-found: error
+          retention-days: 90
+      - name: Save exact native symbols separately
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: armv7-native-symbols
+          path: out/*-symbols.zip
+          if-no-files-found: error
+          retention-days: 90

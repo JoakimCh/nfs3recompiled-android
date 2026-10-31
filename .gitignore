@@ -47,3 +47,6 @@ private-signing/
 *.p12
 *.jks
 *.keystore
+
+# Private signing recovery (never source history).
+*signing-recovery*.zip
