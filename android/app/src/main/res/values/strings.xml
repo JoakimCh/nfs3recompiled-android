@@ -99,7 +99,7 @@
          screen is in English everywhere (it is for the people testing). -->
     <string name="advanced_title" translatable="false">Advanced</string>
     <string name="debug_mode" translatable="false">Debug mode</string>
-    <string name="debug_mode_note" translatable="false">Off: nothing is written to the log and the game starts as a player has it. On: the log is open and the switches below reach the game when it next starts. Launch extras (adb, the names under each switch) still win for that one start.</string>
+    <string name="debug_mode_note" translatable="false">Off: nothing is written to the log and the game starts as a player has it. On: logging and the debug options below are enabled. Launch extras (adb, the names under each switch) still win for that one start.</string>
     <string name="debug_traces" translatable="false">Traces</string>
     <string name="debug_code" translatable="false">Natives and experiments</string>
     <string name="debug_picture" translatable="false">Picture and renderer</string>

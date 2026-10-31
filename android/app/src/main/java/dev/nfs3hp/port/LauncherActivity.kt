@@ -174,13 +174,19 @@ class LauncherActivity : ComponentActivity() {
         }
     }
 
-    fun setBonusContent(cars: Boolean? = null, track: Boolean? = null) {
+    fun setBonusContent(cars: Boolean? = null, track: Boolean? = null) =
+        writeBonusContent { BonusContent.update(it, cars, track) }
+
+    fun setBonusCar(index: Int, unlocked: Boolean) =
+        writeBonusContent { BonusContent.updateCar(it, index, unlocked) }
+
+    private fun writeBonusContent(change: (File?) -> BonusContent.State) {
         if (busy || GameProcess.running(this)) {
             refreshBonusContent()
             return
         }
         try {
-            bonusContent = BonusContent.update(ControlProfile.settingsFile(dataRoot()), cars, track)
+            bonusContent = change(ControlProfile.settingsFile(dataRoot()))
             bonusContentMessage = ""
         } catch (e: IOException) {
             refreshBonusContent()

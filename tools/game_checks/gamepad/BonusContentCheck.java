@@ -26,6 +26,18 @@ public final class BonusContentCheck {
             Files.write(config.toPath(), original);
             BonusContent.State state = BonusContent.read(config);
             require(!state.cars && state.unlockedCars == 2 && !state.track, "partial unlock display");
+            for (int car = 0; car < 5; ++car) {
+                for (boolean unlocked : new boolean[]{false, true}) {
+                    Files.write(config.toPath(), original);
+                    state = BonusContent.updateCar(config, car, unlocked);
+                    byte[] expected = original.clone();
+                    int bit = 1 << car;
+                    expected[0x1768] = (byte)(unlocked ? expected[0x1768] | bit : expected[0x1768] & ~bit);
+                    require(state.car(car) == unlocked, "individual car state");
+                    require(Arrays.equals(expected, Files.readAllBytes(config.toPath())), "individual car preserves all other flags/settings");
+                }
+            }
+            Files.write(config.toPath(), original);
             state = BonusContent.update(config, true, null);
             byte[] cars = original.clone();
             cars[0x1768] = (byte)0xbf;

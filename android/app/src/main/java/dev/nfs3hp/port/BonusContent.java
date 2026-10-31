@@ -16,13 +16,25 @@ public final class BonusContent {
     public static final class State {
         public final boolean cars, track;
         public final int unlockedCars;
+        private final int carFlags;
 
         private State(byte[] bytes) {
             int flags = bytes[CARS] & CAR_MASK;
+            carFlags = flags;
             cars = flags == CAR_MASK;
             unlockedCars = Integer.bitCount(flags);
             track = buffer(bytes).getInt(TRACK) != 0;
         }
+
+        /** Index order: El Niño, CLK-GTR, XJR-15, Pursuit Diablo SV, Pursuit El Niño. */
+        public boolean car(int index) {
+            return (carFlags & carBit(index)) != 0;
+        }
+    }
+
+    private static int carBit(int index) {
+        if (index < 0 || index >= 5) throw new IllegalArgumentException("Unknown bonus car");
+        return 1 << index;
     }
 
     private static ByteBuffer buffer(byte[] bytes) {
@@ -46,10 +58,18 @@ public final class BonusContent {
 
     /** Null leaves that group alone. Caller must ensure the game is stopped. */
     public static State update(File file, Boolean cars, Boolean track) throws IOException {
+        return updateFlags(file, cars == null ? 0 : CAR_MASK, Boolean.TRUE.equals(cars) ? CAR_MASK : 0, track);
+    }
+
+    public static State updateCar(File file, int index, boolean unlocked) throws IOException {
+        int mask = carBit(index);
+        return updateFlags(file, mask, unlocked ? mask : 0, null);
+    }
+
+    private static State updateFlags(File file, int mask, int flags, Boolean track) throws IOException {
         byte[] original = load(file);
         byte[] changed = original.clone();
-        if (cars != null)
-            changed[CARS] = (byte)(cars ? changed[CARS] | CAR_MASK : changed[CARS] & ~CAR_MASK);
+        changed[CARS] = (byte)((changed[CARS] & ~mask) | flags);
         if (track != null)
             buffer(changed).putInt(TRACK, track ? 1 : 0);
         if (Arrays.equals(original, changed))
@@ -65,12 +85,12 @@ public final class BonusContent {
             if (!Arrays.equals(changed, verified))
                 throw new IOException("Could not verify updated settings; no changes made.");
             for (int i = 0; i < SIZE; ++i) {
-                boolean allowed = (cars != null && i == CARS)
+                boolean allowed = (mask != 0 && i == CARS)
                     || (track != null && i >= TRACK && i < TRACK + 4);
                 if (!allowed && verified[i] != original[i])
                     throw new IOException("Unexpected settings change; no changes made.");
             }
-            if ((verified[CARS] & ~CAR_MASK) != (original[CARS] & ~CAR_MASK)
+            if ((verified[CARS] & ~mask) != (original[CARS] & ~mask)
                     || !Arrays.equals(original, load(file)))
                 throw new IOException("Game settings changed; reopen this page and try again.");
             // No non-atomic fallback: a failed move must leave the original intact.

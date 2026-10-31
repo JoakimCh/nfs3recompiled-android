@@ -60,3 +60,21 @@ This follow-up commit adds only tests/docs/release metadata; application source
 is identical to the tested APK. No phone/TV run or GPU render comparison has been
 performed on this merged revision. Keep the PR unmerged pending the owner's test;
 the previous hardware-tested release remains tv21.
+
+## Advanced UI update (tv23)
+
+The owner confirmed tv22 works. Advanced now has pinned Unlocks, Performance and
+Debug tabs; each tab's body scrolls separately and starts at the top. Each of the
+five bonus cars has an independent compact toggle. The row wraps on narrower
+screens. Unlock explanation is above the controls. Opaque shader optimization is
+in Performance and labeled Experimental. Restart reminders were removed from
+Advanced. Performance defaults and all existing saved choices remain unchanged.
+
+BonusContent.updateCar changes only the selected car's bit and verifies all other
+bits/fields before atomic replacement. Expanded host checks passed for every car
+on/off while preserving unrelated bytes. The launcher lifecycle check verifies
+independent car state, track independence and reread on resume. All seven Android
+launcher checks passed against the final layout. A clean ARMv7/Compose build
+passed after discarding stale incremental ART/native packaging intermediates;
+no game/native/controller routing changes were required for that build issue.
+VersionCode 100 / tv23 remains a test build, pending physical device validation.

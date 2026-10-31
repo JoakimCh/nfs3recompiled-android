@@ -34,10 +34,14 @@ public class LauncherAdvancedTest {
             assertTrue(activity.getBonusContent().cars);
             assertTrue(activity.getBonusContent().track);
             assertTrue(BonusContent.read(file).cars);
+            activity.setBonusCar(3, false);
+            for (int i = 0; i < 5; ++i) assertEquals(i != 3, activity.getBonusContent().car(i));
+            assertTrue(activity.getBonusContent().track);
             controller.pause().stop();
             BonusContent.update(file, null, false);
             controller.restart().start().resume().visible();
-            assertTrue(activity.getBonusContent().cars);
+            assertFalse(activity.getBonusContent().car(3));
+            assertTrue(activity.getBonusContent().car(0));
             assertFalse(activity.getBonusContent().track);
             assertEquals("", activity.getBonusContentMessage());
         }

@@ -1,10 +1,10 @@
 # ARMv7 TV fork
 
 The integrated source includes the original project's alphaG0.78 changes plus
-our ARMv7 and controller work. A signed ARMv7 test APK, versionCode 99 / tv22, has been built and passed
-Android compilation, seven launcher checks and final package verification. It
-awaits physical phone/TV testing.
-The last hardware-tested release was tv21 (versionCode 98).
+our ARMv7 and controller work. The owner confirmed tv22 works. The current test
+build is versionCode 100 / tv23: Advanced now has Unlocks, Performance and Debug
+tabs, independent bonus-car toggles, and pinned tabs above scrolling options.
+The clean Android build and seven launcher checks pass; tv23 awaits device testing.
 
 ## Build
 
@@ -49,8 +49,10 @@ button-only gamepads, sticks and wheels. Remotes navigate as keyboard inputs.
 Per-device menu directions/confirm/back and explicit player assignment are in
 Gamepad setup, with a capability report there. Touch follows in-game remapping;
 stable virtual devices preserve custom bindings. No device-specific Zero2 fix.
-Advanced offers bonus-car and Empire City switches, optional performance tools,
-opaque shader selection and crash/debug options. Controller event recording and
+Advanced groups independent bonus-car/Empire City toggles, performance tools
+and debug/crash options in three tabs. Unlock information appears above the
+compact car toggles. Opaque shader selection is under Performance, labeled
+Experimental. Redundant restart reminders are removed. Controller event recording and
 its duplicate report buttons have been removed.
 
 ## Integration and verification

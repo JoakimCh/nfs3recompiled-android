@@ -45,6 +45,10 @@ import androidx.compose.foundation.text.InlineTextContent
 import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.foundation.text.appendInlineContent
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
@@ -59,6 +63,7 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -1013,94 +1018,124 @@ private fun AdjustmentScreen(a: LauncherActivity) {
 
 // ---- Advanced ----
 
-/** One build for players and for testing: debug mode off is a release in all
- *  but name -- nothing in the log, the game as a player has it.  On, the log
- *  is open and the switches below reach the game when it next starts
- *  (DebugOptions, NFS3Activity).  In English in every language: it is for
- *  the people testing the port. */
+/** Advanced tools grouped for players and troubleshooting. */
 @Composable
 private fun AdvancedScreen(a: LauncherActivity) {
     val preferences = remember { GamePreferences.get(a) }
-    /* Bumped by Reset, so every switch below is read again. */
     var generation by remember { mutableIntStateOf(0) }
+    var tab by rememberSaveable { mutableIntStateOf(0) }
     val width = Modifier.widthIn(max = 720.dp).fillMaxWidth()
-    ScreenFrame(stringResource(R.string.advanced_title), onBack = { a.go(LauncherActivity.Screen.Main) }) {
-        Panel(width) {
-            Label("Bonus content")
-            val bonus = a.bonusContent
-            if (bonus != null) {
-                SwitchRow("Bonus cars", bonus.cars, { a.setBonusContent(cars = it) },
-                    "${bonus.unlockedCars} of 5 unlocked: El Niño, CLK-GTR, XJR-15 and the two bonus pursuit cars.")
-                SwitchRow("Empire City", bonus.track, { a.setBonusContent(track = it) },
-                    "Unlock the bonus track.")
-                Hint("Changes the active data set's saved unlocks. Turning a switch off relocks that content, including earned unlocks. Race results and controls stay unchanged.")
-            }
-            if (a.bonusContentMessage.isNotEmpty()) Hint(a.bonusContentMessage)
-        }
-        MenuButton("Crash report", { CrashReports.showLast(a) })
-        key(generation) {
-            Panel(width) {
-                Label("Performance")
-                BooleanSetting(preferences, PerformanceSession.COLLECT, false,
-                    "Collect performance statistics", "Saves frame, game/GL timing and batch-boundary statistics once per second. Applies next game launch; works with Debug mode off.") {}
-                BooleanSetting(preferences, PerformanceSession.OVERLAY, false,
-                    "Show performance overlay", "FPS, frame interval, GL draws and opaque-shader coverage. Applies next game launch; works without saving statistics.") {}
-                Label("Frame intervals measure presentation pacing; they are not GPU execution times.")
-            }
-            Panel(width) {
-                Label("Rendering experiments — restart game after changes")
-                BooleanSetting(preferences, PerformanceSession.OPAQUE, true,
-                    "Opaque shader optimization", "Default on. Uses a discard-free shader only for proven opaque draws; uncertain draws use the original shader.") {}
+    ScreenFrame(stringResource(R.string.advanced_title), onBack = { a.go(LauncherActivity.Screen.Main) }, scroll = false) {
+        TabRow(tab, modifier = width, containerColor = GameColors.Deep, contentColor = GameColors.Gold) {
+            listOf("Unlocks", "Performance", "Debug").forEachIndexed { index, title ->
+                Tab(selected = tab == index, onClick = { tab = index }, text = { Text(title) })
             }
         }
-        MenuButton("Share performance report", { PerformanceSession.showReport(a) })
-        MenuButton("Reset performance settings to defaults", {
-            preferences.edit().remove(PerformanceSession.COLLECT)
-                .remove(PerformanceSession.OVERLAY).remove(PerformanceSession.OPAQUE).apply()
-            generation++
-        }, width)
-        Panel(width) {
-            SwitchRow(stringResource(R.string.debug_mode), a.debugMode, { on ->
-                preferences.edit().putBoolean(DebugOptions.ENABLED, on).apply()
-                AppLog.setEnabled(on)
-                a.debugMode = on
-            }, stringResource(R.string.debug_mode_note))
-        }
-        if (a.debugMode) {
-            key(generation) {
-                val groups = listOf(
-                    R.string.debug_traces to DebugOptions.TRACES,
-                    R.string.debug_code to DebugOptions.CODE,
-                    R.string.debug_picture to DebugOptions.PICTURE,
-                )
-                for ((title, options) in groups) {
-                    Panel(width) {
-                        Label(stringResource(title))
-                        for (option in options)
-                            BooleanSetting(preferences, option.preference(), option.byDefault,
-                                option.description, option.name) {}
+        key(tab) {
+            Column(Modifier.fillMaxWidth().weight(1f).verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                when (tab) {
+                    0 -> Panel(width) {
+                        Hint("Change the active data set's saved unlocks. Turning a toggle off relocks that content, including earned unlocks. Race results and controls stay unchanged.")
+                        val bonus = a.bonusContent
+                        if (bonus != null) {
+                            Label("Bonus cars")
+                            BoxWithConstraints(Modifier.fillMaxWidth()) {
+                                val columns = if (maxWidth >= 620.dp) 5 else if (maxWidth >= 400.dp) 3 else 2
+                                val cars = listOf("El Niño", "CLK-GTR", "XJR-15", "Pursuit Diablo SV", "Pursuit El Niño")
+                                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    cars.indices.toList().chunked(columns).forEach { row ->
+                                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                            row.forEach { index ->
+                                                FilterChip(
+                                                    selected = bonus.car(index),
+                                                    onClick = { a.setBonusCar(index, !bonus.car(index)) },
+                                                    modifier = Modifier.weight(1f).height(64.dp),
+                                                    label = { Text(cars[index], style = MaterialTheme.typography.bodySmall) },
+                                                    leadingIcon = if (bonus.car(index)) ({ Text("✓") }) else null,
+                                                    colors = FilterChipDefaults.filterChipColors(
+                                                        selectedContainerColor = GameColors.Gold,
+                                                        selectedLabelColor = GameColors.Night,
+                                                        selectedLeadingIconColor = GameColors.Night,
+                                                        labelColor = GameColors.Silver),
+                                                )
+                                            }
+                                            repeat(columns - row.size) { Spacer(Modifier.weight(1f)) }
+                                        }
+                                    }
+                                }
+                            }
+                            SwitchRow("Empire City", bonus.track, { a.setBonusContent(track = it) })
+                        }
+                        if (a.bonusContentMessage.isNotEmpty()) Hint(a.bonusContentMessage)
+                    }
+                    1 -> {
+                        key(generation) {
+                            Panel(width) {
+                                BooleanSetting(preferences, PerformanceSession.OVERLAY, false,
+                                    "Performance overlay", "FPS, frame intervals, draw calls and opaque-shader coverage.") {}
+                                BooleanSetting(preferences, PerformanceSession.COLLECT, false,
+                                    "Collect performance statistics", "Saves timing and rendering statistics once per second. Works with Debug mode off.") {}
+                                BooleanSetting(preferences, PerformanceSession.OPAQUE, true,
+                                    "Opaque shader optimization · Experimental", "Default on. Uses a faster shader for proven opaque draws, with the original shader as fallback.") {}
+                                Hint("Frame intervals measure presentation pacing, not GPU execution time.")
+                            }
+                        }
+                        MenuButton("Share performance report", { PerformanceSession.showReport(a) }, width)
+                        MenuButton("Reset performance settings", {
+                            preferences.edit().remove(PerformanceSession.COLLECT)
+                                .remove(PerformanceSession.OVERLAY).remove(PerformanceSession.OPAQUE).apply()
+                            generation++
+                        }, width)
+                    }
+                    2 -> {
+                        MenuButton("Crash report", { CrashReports.showLast(a) }, width)
+                        Panel(width) {
+                            SwitchRow(stringResource(R.string.debug_mode), a.debugMode, { on ->
+                                preferences.edit().putBoolean(DebugOptions.ENABLED, on).apply()
+                                AppLog.setEnabled(on)
+                                a.debugMode = on
+                            }, stringResource(R.string.debug_mode_note))
+                        }
+                        if (a.debugMode) {
+                            key(generation) {
+                                val groups = listOf(
+                                    R.string.debug_traces to DebugOptions.TRACES,
+                                    R.string.debug_code to DebugOptions.CODE,
+                                    R.string.debug_picture to DebugOptions.PICTURE,
+                                )
+                                for ((title, options) in groups) {
+                                    Panel(width) {
+                                        Label(stringResource(title))
+                                        for (option in options)
+                                            BooleanSetting(preferences, option.preference(), option.byDefault,
+                                                option.description, option.name) {}
+                                    }
+                                }
+                                Panel(width) {
+                                    Label(stringResource(R.string.debug_depth16))
+                                    var depth by remember {
+                                        mutableIntStateOf(DebugOptions.DEPTH16_VALUES.indexOf(
+                                            preferences.getString("debug_" + DebugOptions.DEPTH16, "")).coerceAtLeast(0))
+                                    }
+                                    ChoiceList(
+                                        listOf(stringResource(R.string.debug_depth16_auto), stringResource(R.string.debug_depth16_off),
+                                            stringResource(R.string.debug_depth16_on), stringResource(R.string.debug_depth16_ab)),
+                                        depth,
+                                    ) { index ->
+                                        depth = index
+                                        preferences.edit().putString("debug_" + DebugOptions.DEPTH16, DebugOptions.DEPTH16_VALUES[index]).apply()
+                                    }
+                                }
+                            }
+                            MenuButton(stringResource(R.string.debug_reset), {
+                                DebugOptions.reset(preferences)
+                                generation++
+                            }, width)
+                        }
                     }
                 }
-                Panel(width) {
-                    Label(stringResource(R.string.debug_depth16))
-                    var depth by remember {
-                        mutableIntStateOf(DebugOptions.DEPTH16_VALUES.indexOf(
-                            preferences.getString("debug_" + DebugOptions.DEPTH16, "")).coerceAtLeast(0))
-                    }
-                    ChoiceList(
-                        listOf(stringResource(R.string.debug_depth16_auto), stringResource(R.string.debug_depth16_off),
-                            stringResource(R.string.debug_depth16_on), stringResource(R.string.debug_depth16_ab)),
-                        depth,
-                    ) { index ->
-                        depth = index
-                        preferences.edit().putString("debug_" + DebugOptions.DEPTH16, DebugOptions.DEPTH16_VALUES[index]).apply()
-                    }
-                }
             }
-            MenuButton(stringResource(R.string.debug_reset), {
-                DebugOptions.reset(preferences)
-                generation++
-            }, width)
         }
     }
 }
