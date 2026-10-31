@@ -1,0 +1,38 @@
+{
+  "version": "0.78-armv7-tv24-profile",
+  "versionCode": 101,
+  "source_commit": "e32ea0ee87aab21111109706291d63a264752d7c",
+  "uncommitted_changes": false,
+  "apk": "nfs3-0.78-armv7-tv24-profile-release.apk",
+  "apk_sha256": "c0ca5567cda6295298b58785618589153be711c50f335d546cc771ad09baecc1",
+  "native_build_id": "3081ae6db34aa27c64ba5d1f0464fd83a75fbb78",
+  "certificate_sha256": "464eab8f658b68c234e80e85f5bcb6c5a79771600ac04c0f9d5458769c27b60e",
+  "native_files": [
+    "lib/armeabi-v7a/libSDL3.so",
+    "lib/armeabi-v7a/libandroidx.graphics.path.so",
+    "lib/armeabi-v7a/libc++_shared.so",
+    "lib/armeabi-v7a/libmain.so"
+  ],
+  "debuggable": false,
+  "shell_profileable": true,
+  "zip_alignment_bytes": 16384,
+  "device_tested": false,
+  "resource_check": {
+    "apk": "nfs3-0.78-armv7-tv24-profile-release.apk",
+    "app_resources_checked": 296,
+    "packaged_app_int_fields": 296,
+    "mismatches": [],
+    "duplicate_fields": [],
+    "passed": true
+  },
+  "ui_tests": [
+    {
+      "name": "dev.nfs3hp.port.ControllerSetupActivityTest",
+      "tests": "6",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    }
+  ],
+  "notes": "Shared launcher frame and report-button spacing. Six controller-page checks and native input regression passed; device test pending."
+}
