@@ -104,13 +104,10 @@ public:
      * player one, slot 1 is the second pad for split screen.  The game itself
      * has room for sixteen (its device table at 0x5f1fb8 is indexed 0..15). */
     static const x86::reg32 kSlotCount = 2;
-    /* A slot is two axes and nothing else: X steers, Y carries both pedals --
-     * up accelerates, down brakes -- the classic joystick layout the game binds
-     * on its own.  A pad's buttons never reach the game as buttons: each one
-     * sends a key, chosen per slot in the launcher, and the control profile the
-     * launcher writes into config.dat binds those keys.  Slot 0 also carries
-     * the touch overlay's steering and pedals, so the overlay and the first pad
-     * are one player as far as the game is concerned. */
+    /* Two axes: X steers and Y carries the combined pedals. Sixteen stable
+     * button identities can be bound in the game's Controls screen. Until a
+     * button has a native binding it keeps its launcher key/axis assignment.
+     * Slot 0 also carries the touch overlay's steering and pedals. */
     static const x86::reg32 kAxisSteer = 0;
     static const x86::reg32 kAxisPedals = 1;
 
@@ -173,6 +170,8 @@ public:
      * their buttons into the keys the launcher assigned, and runs the
      * force-feedback mixer. */
     static void update();
+    static void inputDiagnostics(bool enabled);
+    static std::string inputReport(std::uint64_t previous);
     /* While set, a pad's buttons send no key but Escape, and keys they already
      * hold are let go.  Set from the game layer, once a frame, for the time the
      * pads' keys would work somebody else's car (nfs3hp_main.cpp). */
@@ -186,7 +185,10 @@ public:
      *  the game layer once a frame (nfs3hp_main.cpp).  Pause is the menu over a
      *  race: the menu's buttons, except that the button which opened it -- the
      *  racing set's Escape, Start out of the box -- closes it again. */
-    enum class Context { Race, Menu, Pause };
+    enum class Context { Race, Menu, Pause, Capture };
+    static void androidButton(unsigned slot, int button, bool down);
+    static void controllerProfile(unsigned slot, std::uint64_t state);
+    static void nativeButtons(unsigned slot, x86::reg32 mask);
     static void context(Context context);
     /* Whether the touch overlay's steering buttons are what steers player
      * one: true from the moment one is held, false once the first pad steers

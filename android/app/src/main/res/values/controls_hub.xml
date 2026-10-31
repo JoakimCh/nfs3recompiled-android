@@ -16,7 +16,7 @@
  <string name="touch_keys_hint">The keyboard key each on-screen control sends. It must match the key set in the game.</string>
  <string name="gamepad_buttons">Buttons</string>
  <string name="gamepad_buttons_title">Gamepad %1$d buttons</string>
- <string name="gamepad_buttons_hint">What each button on this pad does while you drive. The left stick steers, the right trigger accelerates and the left trigger brakes. In the menus and in replays the buttons are fixed and need no setting: Cross / A and Options / Menu confirm, Circle / B and Create / View go back, the D-pad moves the selection. Button actions reach the game once the gamepad controls have been written into it.</string>
+ <string name="gamepad_buttons_hint">These are the default driving actions. You can also assign buttons and X/Y axis directions in the game Controls screen; in-game button assignments take priority. In menus, Cross / A and Options / Menu confirm, Circle / B and Create / View go back. The D-pad or left X/Y axes move the selection. Menu actions stay separate from driving assignments.</string>
  <string name="gamepad_buttons_reset">Defaults</string>
  <string name="controls_write_gamepads">Gamepad ON</string>
  <string name="controls_write_keyboard">Default in game</string>

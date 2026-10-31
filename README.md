@@ -2,6 +2,9 @@
 I'm using AI to add my own improvements.
 I focus on ARMv7 support and better controller support.
 
+Fork build and current behavior: [ARMV7_TV_BUILD.md](ARMV7_TV_BUILD.md).
+Integration and validation: [INTEGRATION.md](INTEGRATION.md).
+
 Original readme below:
 
 # NFS III: Hot Pursuit — Android

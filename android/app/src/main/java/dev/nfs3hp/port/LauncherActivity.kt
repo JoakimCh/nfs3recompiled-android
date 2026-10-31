@@ -5,12 +5,10 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.content.pm.PackageManager
-import android.hardware.input.InputManager
 import android.net.Uri
 import android.os.Bundle
 import android.provider.OpenableColumns
 import android.util.Log
-import android.view.KeyEvent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
@@ -39,7 +37,7 @@ class LauncherActivity : ComponentActivity() {
 
     enum class Screen {
         Main, Language, Data, GameData, DataSets, Saves, LauncherSettings,
-        Controls, Touch, TouchKeys, Editor, Gamepads, GamepadButtons, ControlsHelp,
+        Controls, Touch, Editor, ControlsHelp,
         ForceFeedback, Faq, Display, Adjustment, Network, Advanced,
     }
 
@@ -55,15 +53,6 @@ class LauncherActivity : ComponentActivity() {
 
     var screen by mutableStateOf(Screen.Main)
         private set
-    /** Which pad's buttons the GamepadButtons screen shows. */
-    var buttonsSlot by mutableIntStateOf(0)
-        private set
-    /** The Gamepads slot waiting for a button press, or -1.  While it waits,
-     *  the next press on any gamepad answers it (dispatchKeyEvent). */
-    var capturingSlot by mutableIntStateOf(-1)
-    /** Counts pads coming and going, so the Gamepads screen reads them anew. */
-    var padsChanged by mutableIntStateOf(0)
-        private set
     /** An import, export or restore is running: the screens hold still. */
     var busy by mutableStateOf(false)
         private set
@@ -78,19 +67,10 @@ class LauncherActivity : ComponentActivity() {
         private set
     var dialog by mutableStateOf<Dialog?>(null)
 
-    /* The press that answered a waiting slot is swallowed on its way back up
-     * as well: otherwise its key-up would click whatever had focus. */
-    private var swallowKeyUp = KeyEvent.KEYCODE_UNKNOWN
     private var worker: Thread? = null
     private var dataSetManager: DataSetManager? = null
     /** The overlay drawn on the Touch screen or in the editor, while one is. */
     var touchPreview: TouchControlsOverlay? = null
-
-    private val gamepadListener = object : InputManager.InputDeviceListener {
-        override fun onInputDeviceAdded(deviceId: Int) { padsChanged++ }
-        override fun onInputDeviceRemoved(deviceId: Int) { padsChanged++ }
-        override fun onInputDeviceChanged(deviceId: Int) { padsChanged++ }
-    }
 
     /* Language of the launcher, chosen on its own screen.  LocaleHelper
      * returns the context unchanged while the setting is "system". */
@@ -109,14 +89,13 @@ class LauncherActivity : ComponentActivity() {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         hideStatusBar(this)
+        InputDeviceRoles.initialize(this)
         val preferences = GamePreferences.get(this)
         // Removed in 0.75: fixed/editable positions supersede this global offset.
         preferences.edit().remove("touch_raise_controls").apply()
         // 0.75: the pads' buttons mean one thing in a race and another in the
         // menus, and their racing set moved with it.
-        GamepadButtons.migrateDefaults(preferences)
         TouchControlsOverlay.anchorLegacyPositions(this)
-        (getSystemService(INPUT_SERVICE) as InputManager).registerInputDeviceListener(gamepadListener, null)
         try {
             dataSetManager = DataSetManager(this, dataRoot())
         } catch (e: IOException) {
@@ -126,6 +105,12 @@ class LauncherActivity : ComponentActivity() {
         debugMode = DebugOptions.enabled(this)
         refreshDataSets()
         showScreens()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        CrashReports.check(this)
+        if (screen == Screen.Advanced) refreshBonusContent()
     }
 
     fun launcherOrientation(): Int = orientationFor(this)
@@ -158,8 +143,7 @@ class LauncherActivity : ComponentActivity() {
     }
 
     fun go(next: Screen) {
-        if (next == Screen.Gamepads || next == Screen.GamepadButtons)
-            capturingSlot = -1
+        if (next == Screen.Advanced) refreshBonusContent()
         if (next == Screen.GameData || next == Screen.DataSets || next == Screen.Main)
             refreshDataSets()
         if (next != Screen.GameData && next != Screen.Saves && next != Screen.LauncherSettings && next != Screen.DataSets)
@@ -171,9 +155,37 @@ class LauncherActivity : ComponentActivity() {
         screen = next
     }
 
-    fun openGamepadButtons(slot: Int) {
-        buttonsSlot = slot
-        go(Screen.GamepadButtons)
+    var bonusContent by mutableStateOf<BonusContent.State?>(null)
+        private set
+    var bonusContentMessage by mutableStateOf("")
+        private set
+
+    private fun refreshBonusContent() {
+        bonusContent = null
+        bonusContentMessage = ""
+        if (busy || GameProcess.running(this)) {
+            bonusContentMessage = "Close the game before changing bonus content."
+            return
+        }
+        try {
+            bonusContent = BonusContent.read(ControlProfile.settingsFile(dataRoot()))
+        } catch (e: IOException) {
+            bonusContentMessage = e.message ?: "Could not read game settings."
+        }
+    }
+
+    fun setBonusContent(cars: Boolean? = null, track: Boolean? = null) {
+        if (busy || GameProcess.running(this)) {
+            refreshBonusContent()
+            return
+        }
+        try {
+            bonusContent = BonusContent.update(ControlProfile.settingsFile(dataRoot()), cars, track)
+            bonusContentMessage = ""
+        } catch (e: IOException) {
+            refreshBonusContent()
+            bonusContentMessage = e.message ?: "Could not update bonus content."
+        }
     }
 
     /* The editor is the overlay itself, laid out in a View: the screens step
@@ -203,44 +215,6 @@ class LauncherActivity : ComponentActivity() {
     fun releasePreview() {
         touchPreview?.releaseAll()
         touchPreview = null
-    }
-
-    /* Only while the game is not running: the game keeps config.dat in memory
-     * and writes the whole file back, which would quietly undo this. */
-    fun confirmWriteControls(kind: ControlProfile.Kind) {
-        val gamepads = kind == ControlProfile.Kind.GAMEPADS
-        dialog = Dialog(
-            getString(if (gamepads) R.string.controls_write_gamepads else R.string.controls_write_keyboard),
-            getString(if (gamepads) R.string.controls_write_gamepads_message else R.string.controls_write_keyboard_message),
-            getString(android.R.string.ok),
-            { writeControls(kind) },
-        )
-    }
-
-    private fun writeControls(kind: ControlProfile.Kind) {
-        if (GameProcess.running(this)) {
-            Toast.makeText(this, R.string.controls_write_game_running, Toast.LENGTH_LONG).show()
-            return
-        }
-        try {
-            val backup = ControlProfile.writeToGame(dataRoot(), kind)
-            Toast.makeText(this, getString(R.string.controls_write_done, backup), Toast.LENGTH_LONG).show()
-            padsChanged++
-        } catch (missing: ControlProfile.NoSettingsException) {
-            Toast.makeText(this, R.string.controls_write_no_config, Toast.LENGTH_LONG).show()
-        } catch (e: IOException) {
-            AppLog.e(TAG, "Writing controls failed", e)
-            Toast.makeText(this, getString(R.string.controls_write_failed, e.message), Toast.LENGTH_LONG).show()
-        }
-    }
-
-    /** The game's own keyboard controls keep the pads quiet in a split-screen
-     *  race, where their keys would work the other player's car -- said on the
-     *  Gamepads screen, where Gamepad ON is. */
-    fun keyboardControlsInstalled(): Boolean = try {
-        ControlProfile.installedKind(dataRoot()) == ControlProfile.Kind.KEYBOARD
-    } catch (e: IOException) {
-        false
     }
 
     fun switchDataSet(set: DataSetManager.DataSet) {
@@ -504,37 +478,11 @@ class LauncherActivity : ComponentActivity() {
         startActivity(intent)
     }
 
-    /* While a Gamepads slot waits for its pad, the next button pressed on any
-     * gamepad answers it.  Only gamepad presses count, and only then; the rest
-     * of the time the launcher stays navigable with a pad as usual. */
-    override fun dispatchKeyEvent(event: KeyEvent): Boolean {
-        if (event.action == KeyEvent.ACTION_UP && event.keyCode == swallowKeyUp) {
-            swallowKeyUp = KeyEvent.KEYCODE_UNKNOWN
-            return true
-        }
-        if (capturingSlot >= 0 && event.action == KeyEvent.ACTION_DOWN) {
-            val device = event.device
-            if (GamepadSlots.isGamepad(device)) {
-                GamepadSlots.assign(GamePreferences.get(this), capturingSlot, device.descriptor, device.name)
-                capturingSlot = -1
-                swallowKeyUp = event.keyCode
-                padsChanged++
-                return true
-            }
-        }
-        return super.dispatchKeyEvent(event)
-    }
-
     @Deprecated("Deprecated in Java")
     override fun onBackPressed() {
         if (busy) return
         if (dialog != null) {
             dialog = null
-            return
-        }
-        // Waiting for a pad is cancelled, not the screen it waits on.
-        if (capturingSlot >= 0) {
-            capturingSlot = -1
             return
         }
         when (screen) {
@@ -543,10 +491,7 @@ class LauncherActivity : ComponentActivity() {
                 super.onBackPressed()
             }
             Screen.Editor -> closeEditor()
-            Screen.TouchKeys -> go(Screen.Touch)
-            Screen.Touch, Screen.Gamepads, Screen.ForceFeedback -> go(Screen.Controls)
-            // Split screen help and a pad's buttons both open from the Gamepads screen.
-            Screen.GamepadButtons, Screen.ControlsHelp -> go(Screen.Gamepads)
+            Screen.Touch, Screen.ForceFeedback, Screen.ControlsHelp -> go(Screen.Controls)
             // The Data screens are a level deeper than the rest.
             Screen.GameData, Screen.Saves, Screen.LauncherSettings -> go(Screen.Data)
             Screen.DataSets -> go(Screen.GameData)
@@ -557,7 +502,6 @@ class LauncherActivity : ComponentActivity() {
     }
 
     override fun onDestroy() {
-        (getSystemService(INPUT_SERVICE) as InputManager).unregisterInputDeviceListener(gamepadListener)
         val running = worker
         worker = null
         running?.interrupt()

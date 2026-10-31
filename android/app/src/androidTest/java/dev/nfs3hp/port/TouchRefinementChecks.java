@@ -327,7 +327,7 @@ final class TouchRefinementChecks {
                                  {GamepadSlots.assigned(prefs,1),GamepadSlots.assignedName(prefs,1)}};
                 GamepadSlots.assign(prefs,1,"alpha","Pad A");
                 GamepadSlots.assign(prefs,0,"alpha","Pad A");
-                check(GamepadSlots.assigned(prefs,0).equals("alpha")&&GamepadSlots.assigned(prefs,1).isEmpty(),"pinning a pad to one slot frees it from the other");
+                check(GamepadSlots.assigned(prefs,0).isEmpty()&&GamepadSlots.assigned(prefs,1).isEmpty(),"obsolete launcher pins are ignored");
                 for(int slot=0;slot<GamepadSlots.COUNT;slot++){
                     if(kept[slot][0].isEmpty())GamepadSlots.useAutomatic(prefs,slot);
                     else GamepadSlots.assign(prefs,slot,kept[slot][0],kept[slot][1]);
@@ -398,62 +398,25 @@ final class TouchRefinementChecks {
                 check(GamepadButtons.DEFAULT_ACTIONS.length==GamepadButtons.BUTTON_IDS.length,"every button has a default");
                 check(GamepadButtons.environmentName(1,"dpad_up").equals("NFS_GAMEPAD2_DPAD_UP"),"environment names match the native table");
                 check(GamepadButtons.environmentName(0,"right_trigger").equals("NFS_GAMEPAD1_RIGHT_TRIGGER"),"trigger names match the native table");
-                /* Analog or Digital, per pad.  Digital drives a race on keys: the
-                 * D-pad and the triggers send the player's driving keys, which the
-                 * profile binds -- player one's are the touch controls' own, so the
-                 * first pad and the screen stay one player.  Split screen's two
-                 * players never share a key either way. */
-                boolean[] digitalKept={GamepadButtons.digital(prefs,0),GamepadButtons.digital(prefs,1)};
-                try{
-                    for(int slot=0;slot<2;slot++){
-                        GamepadButtons.setDigital(prefs,slot,false);
+                /* The removed launcher mode must not change native input, even
+                 * when an old launcher export contains Digital=true. */
+                for(int slot=0;slot<2;slot++){
+                    boolean existed=prefs.contains(GamePreferences.GAMEPAD_DIGITAL[slot]);
+                    boolean old=prefs.getBoolean(GamePreferences.GAMEPAD_DIGITAL[slot],false);
+                    try {
+                        GamepadButtons.setDigital(prefs,slot,true);
+                        check(!GamepadButtons.digital(prefs,slot),"obsolete digital mode ignored");
                         for(int trigger=0;trigger<2;trigger++)
-                            check(GamepadButtons.triggerRaceValue(prefs,slot,trigger).isEmpty(),"analog triggers are the pedals' axis alone");
-                    }
-                    check(ControlProfile.wantedKind(prefs,true)==ControlProfile.Kind.GAMEPADS
-                        &&ControlProfile.wantedKind(prefs,false)==ControlProfile.Kind.TOUCH,"an analog first pad drives on its axes");
-                    for(int slot=0;slot<2;slot++)GamepadButtons.setDigital(prefs,slot,true);
-                    check(ControlProfile.wantedKind(prefs,true)==ControlProfile.Kind.TOUCH,"a digital first pad drives on keys");
-                    ControlProfile.Key[] firstKeys=ControlProfile.touchDriving(prefs);
-                    int dUp=Arrays.asList(GamepadButtons.BUTTON_IDS).indexOf("dpad_up"),dDown=dUp+1,dLeft=dUp+2,dRight=dUp+3;
-                    check(GamepadButtons.raceValue(prefs,0,dLeft).equals(firstKeys[1].sdlName)
-                        &&GamepadButtons.raceValue(prefs,0,dRight).equals(firstKeys[0].sdlName)
-                        &&GamepadButtons.raceValue(prefs,0,dUp).equals(firstKeys[2].sdlName)
-                        &&GamepadButtons.raceValue(prefs,0,dDown).equals(firstKeys[3].sdlName),"the first pad's D-pad drives on the touch keys");
-                    check(GamepadButtons.triggerRaceValue(prefs,0,0).equals(firstKeys[3].sdlName)
-                        &&GamepadButtons.triggerRaceValue(prefs,0,1).equals(firstKeys[2].sdlName),"the first pad's triggers brake and accelerate");
-                    check(GamepadButtons.raceValue(prefs,1,dRight).equals("PageDown")&&GamepadButtons.raceValue(prefs,1,dLeft).equals("End")
-                        &&GamepadButtons.raceValue(prefs,1,dUp).equals("PageUp")&&GamepadButtons.raceValue(prefs,1,dDown).equals("Home")
-                        &&GamepadButtons.triggerRaceValue(prefs,1,1).equals("PageUp")&&GamepadButtons.triggerRaceValue(prefs,1,0).equals("Home"),
-                        "the second pad drives on keys of its own");
-                    check(GamepadButtons.menuEnvironmentValue(dLeft).equals("Left"),"the menus are the same either way");
-                    /* Whatever the second pad's buttons are set to, analog or
-                     * digital, none of them sends a key player one drives with or
-                     * any other key of player one's. */
-                    Set<String> firstPlayer=new HashSet<>();
-                    for(ControlProfile.Key key:firstKeys)firstPlayer.add(key.sdlName);
-                    for(int function=ControlProfile.HANDBRAKE;function<ControlProfile.FUNCTIONS;function++)
-                        firstPlayer.add(ControlProfile.playerKey(0,function).sdlName);
-                    for(boolean digital:new boolean[]{false,true}){
-                        GamepadButtons.setDigital(prefs,1,digital);
+                            check(GamepadButtons.triggerRaceValue(prefs,slot,trigger).isEmpty(),"triggers retain their native axes");
                         for(int button=0;button<GamepadButtons.BUTTON_IDS.length;button++)
-                            check(!firstPlayer.contains(GamepadButtons.raceValue(prefs,1,button)),"the second pad never sends player one's keys");
-                        for(int trigger=0;trigger<2;trigger++)
-                            check(!firstPlayer.contains(GamepadButtons.triggerRaceValue(prefs,1,trigger)),"nor do its triggers");
+                            check(GamepadButtons.action(prefs,slot,button).equals(GamepadButtons.DEFAULT_ACTIONS[button]),"fixed fallback defaults");
+                    } finally {
+                        if(existed)GamepadButtons.setDigital(prefs,slot,old);
+                        else prefs.edit().remove(GamePreferences.GAMEPAD_DIGITAL[slot]).apply();
                     }
-                    for(ControlProfile.Kind kind:new ControlProfile.Kind[]{ControlProfile.Kind.GAMEPADS,ControlProfile.Kind.TOUCH})
-                        for(boolean secondDigital:new boolean[]{false,true}){
-                            int[][] tables=ControlProfile.tables(kind,firstKeys,secondDigital);
-                            Set<Integer> splitOne=new HashSet<>();
-                            for(int record:tables[1])if((record&0xFF)==4)splitOne.add((record>>8)&0xFF);
-                            for(int record:tables[2])
-                                check((record&0xFF)!=4||!splitOne.contains((record>>8)&0xFF),"split screen's players share no key: "+kind+" "+secondDigital);
-                            check(secondDigital==((tables[2][ControlProfile.STEER_LEFT]&0xFF)==4),"the second player steers on keys only when digital");
-                            check(Arrays.equals(tables[0],ControlProfile.tables(kind,firstKeys,false)[0]),"the second pad's setting leaves player one alone");
-                        }
-                }finally{
-                    for(int slot=0;slot<2;slot++)GamepadButtons.setDigital(prefs,slot,digitalKept[slot]);
                 }
+                check(ControlProfile.wantedKind(prefs,true)==ControlProfile.Kind.GAMEPADS
+                    &&ControlProfile.wantedKind(prefs,false)==ControlProfile.Kind.TOUCH,"automatic driving defaults");
             }catch(Throwable e){failure[0]=e;}});
             if(failure[0]!=null)throw new AssertionError(failure[0]);
             Thread.sleep(1500);

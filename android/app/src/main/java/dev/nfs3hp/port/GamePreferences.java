@@ -247,7 +247,8 @@ final class GamePreferences
         int index = actionIndex(actionId);
         if (index < 0)
             return KeyEvent.KEYCODE_UNKNOWN;
-        return preferences.getInt(touchKey(actionId), DEFAULT_KEYS[index]);
+        // Racing uses live game bindings; the remaining menu actions use fixed defaults.
+        return DEFAULT_KEYS[index];
     }
 
     static String keyName(int keyCode)

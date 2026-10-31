@@ -8,6 +8,7 @@ import android.os.Bundle;
 import android.system.Os;
 import android.util.Log;
 import android.view.SurfaceHolder;
+import android.view.InputDevice;
 import android.view.ViewGroup;
 import android.widget.RelativeLayout;
 
@@ -41,6 +42,7 @@ public class NFS3Activity extends SDLActivity
     private TouchControlsOverlay touchControlsOverlay;
     private GameSurface gameSurface;
     private GameHaptics haptics;
+    private PerformanceSession performance;
     /* Off, the screen does nothing in the game: no on-screen controls and no
      * touch mouse (GamePreferences.TOUCH_ENABLED).  Read once in onCreate --
      * only the launcher changes it. */
@@ -75,6 +77,7 @@ public class NFS3Activity extends SDLActivity
     @Override
     protected void onCreate(Bundle savedInstanceState)
     {
+        InputDeviceRoles.initialize(this);
         SharedPreferences preferences = GamePreferences.get(this);
         /* Debug mode (the launcher's Advanced screen, DebugOptions): the log
          * open and the switches the game reads as it starts.  Off, the game
@@ -131,6 +134,7 @@ public class NFS3Activity extends SDLActivity
          * holding the game's steering flag up. */
         boolean padForPlayerOne = GamepadSlots.resolve(preferences)[0] != null;
         java.io.File dataRoot = getExternalFilesDir(null);
+        if (dataRoot != null) ControlProfile.upgradeButtonDevices(dataRoot);
         ControlProfile.Kind driving = dataRoot == null ? null
             : ControlProfile.driveWith(dataRoot, preferences, padForPlayerOne);
         /* No settings file yet -- data straight off the disc: the game makes
@@ -199,6 +203,7 @@ public class NFS3Activity extends SDLActivity
         }
         // The native side's log and SDL's (nfs3hp_main.cpp, sdl_quiet.h).
         setEnv("NFS_LOG", debug ? "1" : "0");
+        if (getPackageName().endsWith(".armv7tv")) setEnv("NFS_MIRROR_FULL", "0");
         if (debug)
         {
             for (DebugOptions.Option[] group : DebugOptions.ALL)
@@ -222,10 +227,18 @@ public class NFS3Activity extends SDLActivity
          * here is silently undone. */
         setRequestedOrientation(GamePreferences.screenOrientation(preferences));
 
+        setEnv("NFS_PERF_STATS", (preferences.getBoolean(PerformanceSession.COLLECT,false) || preferences.getBoolean(PerformanceSession.OVERLAY,false)) ? "1" : "0");
+        setEnv("NFS_OPAQUE_SHADER", preferences.getBoolean(PerformanceSession.OPAQUE,true) ? "1" : "0");
+        // Role filtering happens in the shared Android/SDL bridge. SDL's
+        // blanket no-axes filter would incorrectly discard button-only pads.
+        setEnv("SDL_TV_REMOTE_AS_JOYSTICK","1");
         desktopWindow();
         super.onCreate(savedInstanceState);
         running = true;
         attachTouchControls();
+        if (preferences.getBoolean(PerformanceSession.COLLECT,false)
+                || preferences.getBoolean(PerformanceSession.OVERLAY,false))
+            performance = new PerformanceSession(this, mLayout);
         pushGamepadSlots();
         ((InputManager) getSystemService(Context.INPUT_SERVICE))
             .registerInputDeviceListener(gamepadListener, null);
@@ -245,6 +258,7 @@ public class NFS3Activity extends SDLActivity
     @Override
     protected void onDestroy()
     {
+        if(performance!=null)performance.close();
         running = false;
         ((InputManager) getSystemService(Context.INPUT_SERVICE))
             .unregisterInputDeviceListener(gamepadListener);
@@ -268,11 +282,20 @@ public class NFS3Activity extends SDLActivity
     private void pushGamepadSlots()
     {
         GamepadSlots.Pad[] pads = GamepadSlots.resolve(GamePreferences.get(this));
+        for(int slot=0;slot<2;slot++) {
+            InputDevice device=GamepadSlots.device(pads[slot]);
+            // Keep held state when an unrelated device changes.
+            String identity=device==null?"":ControllerProfiles.identity(device);
+            if(controllerProfiles[slot]==null || !identity.equals(controllerProfiles[slot].identity))
+                controllerProfiles[slot]=ControllerProfiles.load(this,device);
+        }
         firstPlayersPad = pads[0] == null ? -1 : pads[0].id;
+        secondPlayersPad = pads[1] == null ? -1 : pads[1].id;
         try
         {
             nativeSetGamepadSlots(pads[0] == null ? "" : pads[0].descriptor,
                                   pads[1] == null ? "" : pads[1].descriptor);
+            sendControllerProfile(0); sendControllerProfile(1);
         }
         catch (UnsatisfiedLinkError notLoaded)
         {
@@ -283,9 +306,9 @@ public class NFS3Activity extends SDLActivity
     private final InputManager.InputDeviceListener gamepadListener =
         new InputManager.InputDeviceListener()
     {
-        @Override public void onInputDeviceAdded(int deviceId) { pushGamepadSlots(); }
-        @Override public void onInputDeviceRemoved(int deviceId) { pushGamepadSlots(); }
-        @Override public void onInputDeviceChanged(int deviceId) { pushGamepadSlots(); }
+        @Override public void onInputDeviceAdded(int deviceId) { InputDeviceRoles.changed(deviceId);pushGamepadSlots(); }
+        @Override public void onInputDeviceRemoved(int deviceId) { InputDeviceRoles.changed(deviceId);remoteNavigation.remove(deviceId);pushGamepadSlots(); }
+        @Override public void onInputDeviceChanged(int deviceId) { InputDeviceRoles.changed(deviceId);remoteNavigation.remove(deviceId);pushGamepadSlots(); }
     };
 
     /* Which way the window has to lie.  SDL asks Android for it once the game's
@@ -335,6 +358,7 @@ public class NFS3Activity extends SDLActivity
     protected void onResume()
     {
         super.onResume();
+        if(performance!=null)performance.resume();
         if(haptics!=null)haptics.resume();
         attachTouchControls();
     }
@@ -342,9 +366,19 @@ public class NFS3Activity extends SDLActivity
     @Override
     protected void onPause()
     {
+        remoteHandler.removeCallbacks(remoteRepeat);remoteRepeatScheduled=false;remoteNavigation.release();
+        if(performance!=null)performance.pause();
         if (touchControlsOverlay != null)
             touchControlsOverlay.releaseAll();
         if (gameSurface != null) gameSurface.cancelPointer();
+        try {
+            for(int slot=0;slot<2;slot++) {
+                if(controllerProfiles[slot]!=null)controllerProfiles[slot].release();
+                sendControllerProfile(slot);
+            }
+            nativeGamepadButton(0, -1, false);
+            nativeGamepadButton(1, -1, false);
+        } catch (UnsatisfiedLinkError notLoaded) { /* SDL shows library-load failures. */ }
         if(haptics!=null)haptics.pause();
         super.onPause();
     }
@@ -516,7 +550,58 @@ public class NFS3Activity extends SDLActivity
 
     /* A gamepad in the player's hands: the on-screen controls get out of the way
      * at the first press, and come back with the next touch on the screen. */
+    // Preserve A/B even if SDL cannot build a complete mapping for this pad.
+    private int secondPlayersPad = -1;
+    private final ControllerProfile[] controllerProfiles = new ControllerProfile[2];
+    private void sendControllerProfile(int slot) {
+        ControllerProfile profile=controllerProfiles[slot];
+        nativeControllerProfile(slot,profile==null?0:profile.snapshot());
+    }
+    static int padButtonIndex(int code) { return ControllerProfile.logicalButton(code); }
+    private final android.os.Handler remoteHandler=new android.os.Handler(android.os.Looper.getMainLooper());
+    private final RemoteNavigation remoteNavigation=new RemoteNavigation((code,down)->{
+        if(code==android.view.KeyEvent.KEYCODE_ESCAPE) {
+            systemBack(new android.view.KeyEvent(down?android.view.KeyEvent.ACTION_DOWN:android.view.KeyEvent.ACTION_UP,
+                android.view.KeyEvent.KEYCODE_BACK));
+        } else if(down)SDLActivity.onNativeKeyDown(code);else SDLActivity.onNativeKeyUp(code);
+    });
+    private boolean remoteRepeatScheduled;
+    private void repeatRemoteIfNeeded() {
+        if(remoteNavigation.repeating() && !remoteRepeatScheduled) {
+            remoteRepeatScheduled=true;remoteHandler.postDelayed(remoteRepeat,40);
+        }
+    }
+    private final Runnable remoteRepeat=new Runnable(){public void run(){
+        remoteRepeatScheduled=false;remoteNavigation.tick(android.os.SystemClock.uptimeMillis());repeatRemoteIfNeeded();
+    }};
+
     @Override public boolean dispatchKeyEvent(android.view.KeyEvent event) {
+        if(InputDeviceRoles.isRemote(event.getDevice()) &&
+           (event.getAction()==android.view.KeyEvent.ACTION_DOWN || event.getAction()==android.view.KeyEvent.ACTION_UP) &&
+           remoteNavigation.key(event.getDeviceId(),event.getKeyCode(),event.getAction()==android.view.KeyEvent.ACTION_DOWN,
+               android.os.SystemClock.uptimeMillis())) {
+            lastInput=INPUT_KEYBOARD;
+            repeatRemoteIfNeeded();
+            return true;
+        }
+        int button = padButtonIndex(event.getKeyCode());
+        int slot = firstPlayersPad >= 0 && event.getDeviceId() == firstPlayersPad ? 0 : secondPlayersPad >= 0 && event.getDeviceId() == secondPlayersPad ? 1 : -1;
+        if(slot>=0 && (event.getAction()==android.view.KeyEvent.ACTION_DOWN || event.getAction()==android.view.KeyEvent.ACTION_UP)) {
+            controllerProfiles[slot].key(event.getKeyCode(),event.getAction()==android.view.KeyEvent.ACTION_DOWN);
+            sendControllerProfile(slot);
+            // Unknown Android buttons assigned by the user must not leak as
+            // keyboard/navigation events through SDL as well.
+            if(button<0 && controllerProfiles[slot].usesKey(event.getKeyCode()))return true;
+        }
+        if (slot >= 0 && button >= 0 && (event.getAction() == android.view.KeyEvent.ACTION_DOWN
+                || event.getAction() == android.view.KeyEvent.ACTION_UP)) {
+            nativeGamepadButton(slot, button, event.getAction() == android.view.KeyEvent.ACTION_DOWN);
+            // This is the sole digital-button route. Passing the same key to
+            // SDL too can apply its mapping and generate another logical button.
+            lastInput = INPUT_PAD;
+            if (touchControlsOverlay != null && slot == 0) touchControlsOverlay.hideForGamepad();
+            return true;
+        }
         if(event.getAction()==android.view.KeyEvent.ACTION_DOWN) {
             if(GamepadSlots.isGamepad(event.getDevice()))lastInput=INPUT_PAD;
             else if(isRealKeyboard(event.getDevice()))lastInput=INPUT_KEYBOARD;
@@ -528,7 +613,8 @@ public class NFS3Activity extends SDLActivity
             systemBack(event);
             return true;
         }
-        return super.dispatchKeyEvent(event);
+        boolean handled=super.dispatchKeyEvent(event);
+        return handled;
     }
 
     /* The system's back -- the gesture, or the navigation bar's button -- is the
@@ -598,6 +684,20 @@ public class NFS3Activity extends SDLActivity
     }
 
     @Override public boolean dispatchGenericMotionEvent(android.view.MotionEvent event) {
+        if(InputDeviceRoles.isRemote(event.getDevice()) && event.isFromSource(android.view.InputDevice.SOURCE_JOYSTICK)) {
+            float x=event.getAxisValue(android.view.MotionEvent.AXIS_HAT_X),y=event.getAxisValue(android.view.MotionEvent.AXIS_HAT_Y);
+            if(Math.abs(x)<.01f)x=event.getAxisValue(android.view.MotionEvent.AXIS_X);
+            if(Math.abs(y)<.01f)y=event.getAxisValue(android.view.MotionEvent.AXIS_Y);
+            remoteNavigation.motion(event.getDeviceId(),x,y,android.os.SystemClock.uptimeMillis());
+            repeatRemoteIfNeeded();
+            lastInput=INPUT_KEYBOARD;return true;
+        }
+        int profileSlot=event.getDeviceId()==firstPlayersPad?0:event.getDeviceId()==secondPlayersPad?1:-1;
+        if(profileSlot>=0 && GamepadSlots.isGamepad(event.getDevice()) &&
+           event.isFromSource(android.view.InputDevice.SOURCE_JOYSTICK)) {
+            ControllerProfiles.motion(controllerProfiles[profileSlot],event);
+            sendControllerProfile(profileSlot);
+        }
         if(isGamepadMotion(event))lastInput=INPUT_PAD;
         else if(isExternalPointer(event)&&event.getActionMasked()==android.view.MotionEvent.ACTION_BUTTON_PRESS)
             lastInput=INPUT_POINTER;
@@ -763,6 +863,8 @@ public class NFS3Activity extends SDLActivity
     private static native void nativeMousePointer(float x, float y, int buttons);
     private static native void nativeToggleKeyboard();
     private static native boolean nativeKeyboardActive();
+    private static native void nativeControllerProfile(int slot,long state);
+    private static native void nativeGamepadButton(int slot, int button, boolean down);
     private static native void nativeSetGamepadSlots(String first, String second);
 
     /* Whether sound can be going out over Bluetooth: Android sends media there

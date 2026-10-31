@@ -16,6 +16,7 @@
 #include "nfs3hp.h"
 #include <SDL3/SDL.h>
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <cstdarg>
 #include <cstdio>
@@ -333,7 +334,7 @@ struct World
     }
     x86::reg32 vectors(x86::reg32 n, float scale = 100.0f)
     {
-        const x86::reg32 v = alloc(12 * n + 12);
+        const x86::reg32 v = alloc(12 * n + 16) + below(4);
         floats(v, 3 * n + 3, scale);
         return v;
     }
@@ -547,6 +548,13 @@ void makeCase(World& g, const std::string& name, x86::CPU& cpu, Args& a)
         cpu.edx = g.vectors(1, 50.0f);
         cpu.ebx = n;
         cpu.ecx = g.vectors(32, 20.0f);
+        // Real track objects can start two bytes into their packed record.
+        // Exercise both the small-list and >20 vertex dispatch paths.
+        if (chance(50)) {
+            std::memmove(&g.a.getMemory<x86::reg8>(cpu.ecx + 2),
+                         &g.a.getMemory<x86::reg8>(cpu.ecx), 32 * 12);
+            cpu.ecx += 2;
+        }
         a.stack[0] = g.alloc(4 * 32);
         g.randomBytes(a.stack[0], 4 * 32);
         a.stack[1] = g.alloc(0x20 * 32);
@@ -1175,6 +1183,70 @@ struct Counts
     unsigned cases = 0, failed = 0;
 };
 
+/* Synthetic CPU-kernel timing, not a race/FPS benchmark. Fixed finite input,
+ * separate output, no setup or memory snapshots in the timed region. Run the
+ * same executable built with the old and new native_vertices.cpp to compare.
+ * VCHECK_BENCH=<iterations> vcheck 0 [name ...] */
+void benchmark(VApp& app, const Tested& t, unsigned iterations)
+{
+    const std::string name(t.name);
+    if (name != "dotProducts" && name != "rotateVectors" && name != "transformPoints"
+        && name != "multiplyMatrices" && name != "addVectors" && name != "subtractVectors" && name != "scaleVectors")
+        return;
+    World g{app};
+    constexpr unsigned count = 1024;
+    const auto input = g.alloc(12 * count), output = g.alloc(12 * count);
+    const auto matrix = g.alloc(36), move = g.alloc(12);
+    for (unsigned i = 0; i < count * 3; ++i)
+        g.f(input + 4 * i) = float(int(i % 257) - 128) / 17.0f;
+    for (unsigned i = 0; i < 9; ++i)
+        g.f(matrix + 4 * i) = float(int(i) - 4) / 7.0f;
+    g.f(move) = 1.25f;
+    g.f(move + 4) = -2.5f;
+    g.f(move + 8) = 0.75f;
+    x86::CPU entry{};
+    entry.fpu.init();
+    entry.fpu.setControl(0x037f);
+    entry.eax = count;
+    entry.edx = input;
+    entry.ebx = matrix;
+    entry.ecx = output;
+    entry.esp = kStackHigh - 0x2000;
+    g.w(entry.esp + 4) = output;
+    if (name == "transformPoints")
+        entry.ecx = move;
+    if (name == "scaleVectors") {
+        const float scale = 1.2345f;
+        std::memcpy(&g.w(entry.esp + 4), &scale, 4);
+        g.w(entry.esp + 8) = output;
+    }
+    if (name == "multiplyMatrices")
+    {
+        entry.eax = input;
+        entry.edx = matrix;
+        entry.ebx = output;
+    }
+    for (unsigned i = 0; i < 100; ++i)
+    {
+        auto cpu = entry;
+        t.native(&app, cpu);
+    }
+    const auto start = std::chrono::steady_clock::now();
+    for (unsigned i = 0; i < iterations; ++i)
+    {
+        auto cpu = entry;
+        t.native(&app, cpu);
+    }
+    const double ns = std::chrono::duration<double, std::nano>(std::chrono::steady_clock::now() - start).count();
+    std::printf("BENCH %s %.1f ns/call (%u iterations, %u items), sample %.9g\n", t.name,
+                ns / iterations, iterations, name == "multiplyMatrices" ? 1u : count, double(g.f(output)));
+}
+
+// Byte offsets of the current vector output: packed floats need not start
+// on a four-byte boundary. Apply the existing NaN-only comparison policy
+// relative to the actual output base, never to arbitrary adjacent bytes.
+x86::reg32 packedOutput = 0, packedOutputSize = 0;
+
 bool compare(VApp& n, VApp& g, const x86::CPU& nc, const x86::CPU& gc, char* what, size_t size)
 {
     if (nc.terminate != gc.terminate)
@@ -1244,6 +1316,16 @@ bool compare(VApp& n, VApp& g, const x86::CPU& nc, const x86::CPU& gc, char* wha
         for (x86::reg32 at = from; at < to; ++at)
             if (m[at] != o[at])
             {
+                if (at >= packedOutput && at - packedOutput < packedOutputSize) {
+                    const auto start = packedOutput + ((at - packedOutput) & ~3u);
+                    x86::reg32 a, b;
+                    std::memcpy(&a, m + start, 4);
+                    std::memcpy(&b, o + start, 4);
+                    if ((a & 0x7f800000) == 0x7f800000 && (a & 0x7fffff)
+                        && (b & 0x7f800000) == 0x7f800000 && (b & 0x7fffff)) {
+                        ++g_nanOnly; at = start + 3; continue;
+                    }
+                }
                 const x86::reg32 aligned = at & ~3u;
                 x86::reg32 a, b;
                 std::memcpy(&a, m + aligned, 4);
@@ -1282,6 +1364,7 @@ bool compare(VApp& n, VApp& g, const x86::CPU& nc, const x86::CPU& gc, char* wha
 }
 }  // namespace
 
+#ifdef _WIN32
 extern "C" __declspec(dllimport) void* __stdcall SetUnhandledExceptionFilter(void* filter);
 extern "C" __declspec(dllimport) void* __stdcall GetModuleHandleA(const char* name);
 
@@ -1302,10 +1385,13 @@ static long __stdcall crashed(void* pointers)
     std::fflush(stdout);
     std::_Exit(5);
 }
+#endif
 
 int main(int argc, char** argv)
 {
+#ifdef _WIN32
     SetUnhandledExceptionFilter(reinterpret_cast<void*>(&crashed));
+#endif
     const unsigned cases = argc > 1 ? unsigned(std::atoi(argv[1])) : 200;
     std::vector<std::string> names(argv + (argc > 2 ? 2 : argc), argv + argc);
     static VApp nativeApp, generatedApp;
@@ -1319,6 +1405,14 @@ int main(int argc, char** argv)
     {
         if (!names.empty() && std::find(names.begin(), names.end(), std::string(t.name)) == names.end())
             continue;
+        if (const char* value = std::getenv("VCHECK_BENCH"))
+        {
+            const unsigned iterations = unsigned(std::strtoul(value, nullptr, 10));
+            if (!iterations)
+                return 2;
+            benchmark(nativeApp, t, iterations);
+            continue;
+        }
         Counts total;
         const unsigned nanBefore = g_nanOnly, stoppedBefore = g_stopped;
         std::string firstFailures;
@@ -1345,6 +1439,18 @@ int main(int argc, char** argv)
                 cpu.flags.of = random32() & 1;
                 Args args;
                 makeCase(world, t.name, cpu, args);
+                packedOutput = packedOutputSize = 0;
+                const std::string name(t.name);
+                const auto count = x86::sreg32(cpu.eax) > 0 ? cpu.eax : 0;
+                if (name == "addVectors" || name == "subtractVectors" || name == "rotateVectors" || name == "dotProducts") {
+                    packedOutput = cpu.ecx; packedOutputSize = count * (name == "dotProducts" ? 4 : 12);
+                } else if (name == "scaleVectors") {
+                    packedOutput = args.stack[1]; packedOutputSize = count * 12;
+                } else if (name == "transformPoints") {
+                    packedOutput = args.stack[0]; packedOutputSize = count * 12;
+                } else if (name == "unitVector" || name == "normalise") {
+                    packedOutput = name == "unitVector" ? cpu.edx : cpu.eax; packedOutputSize = 12;
+                }
                 if (const char* show = std::getenv("VCHECK_SHOW"))
                 {
                     unsigned sm = 0, sc = 0;

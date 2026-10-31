@@ -1,5 +1,6 @@
 #include <new>
 #include <lib/renderer.h>
+#include <lib/perfstats.h>
 #include <lib/window.h>
 #include <lib/gamepad.h>
 #include <SDL3/SDL.h>
@@ -503,6 +504,7 @@ void Renderer::present()
 
 void Renderer::presentFrame(x86::reg32 width, x86::reg32 height)
 {
+    perf::Scope presentTiming(perf::PresentCalls);
     const Uint64 presentStart = SDL_GetTicksNS();
     glBindTexture(GL_TEXTURE_2D, m_texture);
     int w, h;
@@ -576,7 +578,9 @@ void Renderer::presentFrame(x86::reg32 width, x86::reg32 height)
 
     glFlush();
     maybeGrabFrame(w, h);
-    if (!SDL_GL_SwapWindow(m_window->m_window))
+    bool swapped;
+    {perf::Scope swapTiming(perf::SwapCalls);swapped=SDL_GL_SwapWindow(m_window->m_window);}
+    if (!swapped)
     {
         static unsigned s_failures = 0;
         if (++s_failures <= 8u || (s_failures % 600u) == 0u)
@@ -586,6 +590,7 @@ void Renderer::presentFrame(x86::reg32 width, x86::reg32 height)
      * DirectDraw/2D menu path and the THRASH driver's (ThrashRenderer::swap()
      * ends up here too).  Every message-trace line carries this count, which is how
      * "the game was told about the key" gets tied to "a new frame came out". */
+    if(swapped)perf::presented(perf::enabled()?perf::now():0,width,height);
     NFS_MSG_FRAME();
     /* Mostly waiting: the window's clear on the buffer coming back from the
      * display, the swap on the GPU.  Not work a faster core would shorten.
@@ -864,6 +869,7 @@ PerformanceHint s_performanceHint;
 
 void Renderer::paceFrame()
 {
+    perf::gameCycleEnd();
     const Uint64 now = SDL_GetTicksNS();
 #ifdef __ANDROID__
     /* The work since the last frame went out, less the waiting in present(). */
@@ -881,11 +887,14 @@ void Renderer::paceFrame()
          * from now, rather than rush the frames after it to catch up. */
         if (!m_nextFrameNs || now >= m_nextFrameNs + m_frameNs)
             m_nextFrameNs = now;
-        else if (now < m_nextFrameNs)
+        else if (now < m_nextFrameNs) {
+            perf::Scope paceTiming(perf::PaceCalls);
             SDL_DelayNS(m_nextFrameNs - now);
+        }
         m_nextFrameNs += m_frameNs;
     }
     m_frameStartNs = SDL_GetTicksNS();
+    perf::gameCycleBegin();
 }
 
 void Renderer::swap()

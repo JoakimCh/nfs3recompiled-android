@@ -1,4 +1,6 @@
 #include <lib/thrashrenderer.h>
+#include <lib/perfstats.h>
+#include <lib/opaque_policy.h>
 #include <lib/renderer.h>
 #include <SDL3/SDL.h>
 #include <lib/glcompat.h>
@@ -21,10 +23,10 @@ static const char g_preamble[] = NFS_GLSL_PREAMBLE;
 /* The vertex shader: the fog factor from the draw's table at the corner's w,
  * as the Voodoo2 looked its table up (fogW below). */
 static const char g_vertexShader[] = ""
-"in vec3 g_position;"
-"in vec4 g_color;"
-"in vec3 g_texCoord;"
-"in vec4 g_combine;"
+"layout(location=0) in vec3 g_position;"
+"layout(location=1) in vec4 g_color;"
+"layout(location=2) in vec3 g_texCoord;"
+"layout(location=3) in vec4 g_combine;"
 "out vec3 v_texCoord;"
 "out vec4 v_color;"
 "out float v_fog;"
@@ -100,6 +102,9 @@ static const char g_fragmentShader[] =
 "{"
 "    vec2 uv = (v_texCoord.st / v_texCoord.p) / 256.0;"
 "    vec4 textureColor;"
+"\n#ifdef NFS_OPAQUE\n"
+"    textureColor = texture(u_texture, uv);"
+"\n#else\n"
 "    if (u_chromaKey) {"
 "        float size = float(textureSize(u_texture, 0).x);"
 "        vec2 texelPos = uv * size;"
@@ -127,12 +132,18 @@ static const char g_fragmentShader[] =
 "    } else {"
 "        textureColor = texture(u_texture, uv);"
 "    }"
+"\n#endif\n"
 "    vec4 color = vec4(mix(v_color.rgb, v_color.rgb * textureColor.rgb, v_combine.s),"
 "                      mix(v_color.a, v_color.a * textureColor.a, v_combine.t));"
+"\n#ifndef NFS_OPAQUE\n"
 "    if (color.a <= u_alphaRef) discard;"
+"\n#endif\n"
 "    color.rgb = mix(color.rgb, u_fogColor, clamp(v_fog, 0.0, 1.0));"
 "    if (u_gamma != 1.0)"
 "        color.rgb = pow(max(color.rgb, vec3(0.0)), vec3(1.0 / max(u_gamma, 0.001)));"
+"\n#ifdef NFS_OPAQUE\n"
+"    color.a = 1.0;"
+"\n#endif\n"
 "    o_color = color;"
 /* The Voodoo's 16-bit depth steps where the buffer has finer ones
  * (needsDepthSteps). */
@@ -210,8 +221,10 @@ ThrashRenderer::ThrashRenderer(Renderer* renderer)
     ,   m_vertexBuffer(0)
     ,   m_vertexArray(0)
     ,   m_program(0)
+    ,   m_opaqueProgram(0)
     ,   m_samplers{0, 0, 0, 0}
     ,   m_locations{}
+    ,   m_opaqueLocations{}
     ,   m_depth16(false)
     ,   m_vertices(takeVertices())
     ,   m_vertexCount(0)
@@ -219,6 +232,8 @@ ThrashRenderer::ThrashRenderer(Renderer* renderer)
     ,   m_texture(0)
     ,   m_textureLevels(1)
     ,   m_textureFormat(0)
+    ,   m_textureOpaque(false)
+    ,   m_batchOpaque(true)
     ,   m_renderStamp(1)
     ,   m_fogTableIndex(0)
     ,   m_fogTableRaw{}
@@ -252,9 +267,9 @@ ThrashRenderer::ThrashRenderer(Renderer* renderer)
 
 ThrashRenderer::~ThrashRenderer()
 {
-    const unsigned int framebuffer = m_framebuffer, depthBuffer = m_depthBuffer, program = m_program;
+    const unsigned int framebuffer = m_framebuffer, depthBuffer = m_depthBuffer, program = m_program, opaqueProgram = m_opaqueProgram;
     const unsigned int vertexBuffer = m_vertexBuffer, vertexArray = m_vertexArray;
-    glthread::post(m_renderer, [this, framebuffer, depthBuffer, program, vertexBuffer, vertexArray]() {
+    glthread::post(m_renderer, [this, framebuffer, depthBuffer, program, opaqueProgram, vertexBuffer, vertexArray]() {
         for (unsigned int& texture : m_glTextures)
             if (texture)
                 glDeleteTextures(1, &texture);
@@ -263,6 +278,7 @@ ThrashRenderer::~ThrashRenderer()
         glDeleteFramebuffers(1, &framebuffer);
         glDeleteRenderbuffers(1, &depthBuffer);
         glDeleteProgram(program);
+        if(opaqueProgram)glDeleteProgram(opaqueProgram);
         glDeleteBuffers(1, &vertexBuffer);
         glDeleteVertexArrays(1, &vertexArray);
     });
@@ -303,6 +319,23 @@ void ThrashRenderer::initGl()
                                           GL_FRAMEBUFFER_ATTACHMENT_DEPTH_SIZE, &depthBits);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     compileShaders(depthBits, (const char*)glGetString(GL_RENDERER));
+    // VAO captures this immutable layout and VBO object, not its storage.
+    // glBufferData can replace the storage without resetting the attributes.
+    glBindVertexArray(m_vertexArray);
+    glBindBuffer(GL_ARRAY_BUFFER, m_vertexBuffer);
+    glVertexAttribPointer(m_locations.position, 3, GL_FLOAT, GL_FALSE, sizeof(ThrashVertex),
+                          (const void*)offsetof(ThrashVertex, x));
+    glEnableVertexAttribArray(m_locations.position);
+    glVertexAttribPointer(m_locations.color, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(ThrashVertex),
+                          (const void*)offsetof(ThrashVertex, color));
+    glEnableVertexAttribArray(m_locations.color);
+    glVertexAttribPointer(m_locations.texCoord, 3, GL_FLOAT, GL_FALSE, sizeof(ThrashVertex),
+                          (const void*)offsetof(ThrashVertex, u));
+    glEnableVertexAttribArray(m_locations.texCoord);
+    glVertexAttribPointer(m_locations.combine, 4, GL_UNSIGNED_BYTE, GL_FALSE, sizeof(ThrashVertex),
+                          (const void*)offsetof(ThrashVertex, combine));
+    glEnableVertexAttribArray(m_locations.combine);
+
 }
 
 static GLuint compileShader(GLenum type, const std::string& defines, const char* body)
@@ -335,47 +368,46 @@ void ThrashRenderer::compileShaders(int depthBits, const char* renderer)
                 m_depth16 ? "the Voodoo's 16-bit steps" : "the GPU's own precision", depthBits,
                 renderer ? renderer : "?");
 
-    const GLuint vertex = compileShader(GL_VERTEX_SHADER, "", g_vertexShader);
-    const GLuint fragment = compileShader(GL_FRAGMENT_SHADER, m_depth16 ? "#define NFS_DEPTH16 1\n" : "",
-                                          g_fragmentShader);
-    m_program = glCreateProgram();
-    glAttachShader(m_program, vertex);
-    glAttachShader(m_program, fragment);
-    glLinkProgram(m_program);
-    GLint status = 0;
-    glGetProgramiv(m_program, GL_LINK_STATUS, &status);
-    if (!status)
-    {
-        GLchar log[2048];
-        GLsizei length = 0;
-        glGetProgramInfoLog(m_program, sizeof log, &length, log);
-        SDL_LogError(SDL_LOG_CATEGORY_RENDER, "[GFX] native THRASH program: %s", log);
-    }
-    glDeleteShader(vertex);
-    glDeleteShader(fragment);
+    const GLuint vertex=compileShader(GL_VERTEX_SHADER,"",g_vertexShader);
+    auto makeProgram=[&](bool opaquePath,Locations& locations) -> GLuint {
+        std::string defines=m_depth16?"#define NFS_DEPTH16 1\n":"";
+        if(opaquePath)defines+="#define NFS_OPAQUE 1\n";
+        const GLuint fragment=compileShader(GL_FRAGMENT_SHADER,defines,g_fragmentShader);
+        const GLuint program=glCreateProgram();
+        glAttachShader(program,vertex);glAttachShader(program,fragment);glLinkProgram(program);
+        glDeleteShader(fragment);
+        GLint linked=0;glGetProgramiv(program,GL_LINK_STATUS,&linked);
+        if(!linked){
+            GLchar log[2048];GLsizei length=0;glGetProgramInfoLog(program,sizeof log,&length,log);
+            SDL_LogError(SDL_LOG_CATEGORY_RENDER,"[GFX] %s shader link failed: %s",opaquePath?"opaque":"general",log);
+            glDeleteProgram(program);return 0;
+        }
+        locations.position = glGetAttribLocation(program, "g_position");
+        locations.color = glGetAttribLocation(program, "g_color");
+        locations.texCoord = glGetAttribLocation(program, "g_texCoord");
+        locations.combine = glGetAttribLocation(program, "g_combine");
+        locations.transform = glGetUniformLocation(program, "u_transform");
+        locations.fogW = glGetUniformLocation(program, "u_fogW");
+        locations.fogTable = glGetUniformLocation(program, "u_fogTable");
+        locations.fogColor = glGetUniformLocation(program, "u_fogColor");
+        locations.alphaRef = glGetUniformLocation(program, "u_alphaRef");
+        locations.chromaKey = glGetUniformLocation(program, "u_chromaKey");
+        locations.chromaKeyColor = glGetUniformLocation(program, "u_chromaKeyBytes");
+        locations.format = glGetUniformLocation(program, "u_format");
+        locations.gamma = glGetUniformLocation(program, "u_gamma");
+        locations.wrap = glGetUniformLocation(program, "u_wrap");
+        locations.levels = glGetUniformLocation(program, "u_levels");
+        locations.texture = glGetUniformLocation(program, "u_texture");
 
-    m_locations.position = glGetAttribLocation(m_program, "g_position");
-    m_locations.color = glGetAttribLocation(m_program, "g_color");
-    m_locations.texCoord = glGetAttribLocation(m_program, "g_texCoord");
-    m_locations.combine = glGetAttribLocation(m_program, "g_combine");
-    m_locations.transform = glGetUniformLocation(m_program, "u_transform");
-    m_locations.fogW = glGetUniformLocation(m_program, "u_fogW");
-    m_locations.fogTable = glGetUniformLocation(m_program, "u_fogTable");
-    m_locations.fogColor = glGetUniformLocation(m_program, "u_fogColor");
-    m_locations.alphaRef = glGetUniformLocation(m_program, "u_alphaRef");
-    m_locations.chromaKey = glGetUniformLocation(m_program, "u_chromaKey");
-    m_locations.chromaKeyColor = glGetUniformLocation(m_program, "u_chromaKeyBytes");
-    m_locations.format = glGetUniformLocation(m_program, "u_format");
-    m_locations.gamma = glGetUniformLocation(m_program, "u_gamma");
-    m_locations.wrap = glGetUniformLocation(m_program, "u_wrap");
-    m_locations.levels = glGetUniformLocation(m_program, "u_levels");
-    m_locations.texture = glGetUniformLocation(m_program, "u_texture");
-    glUseProgram(m_program);
-    glUniform1i(m_locations.texture, 0);
-    float w[64];
-    fogW(w);
-    glUniform1fv(m_locations.fogW, 64, w);
-    glUseProgram(0);
+        glUseProgram(program);glUniform1i(locations.texture,0);
+        float w[64];fogW(w);glUniform1fv(locations.fogW,64,w);
+        return program;
+    };
+    m_program=makeProgram(false,m_locations);
+    m_opaqueProgram=perf::opaqueEnabled()?makeProgram(true,m_opaqueLocations):0;
+    glDeleteShader(vertex);glUseProgram(0);
+    perf::rendererConfig(m_opaqueProgram!=0,m_depth16);
+
 }
 
 void ThrashRenderer::clear(x86::reg32 color)
@@ -431,6 +463,7 @@ void ThrashRenderer::flush()
     ++counters.drawCalls;
     Batch batch;
     batch.end = m_vertexCount;
+    batch.opaqueAlpha = m_batchOpaque;
     batch.texture = m_texture;
     batch.levels = m_textureLevels;
     batch.format = m_textureFormat;
@@ -450,6 +483,7 @@ void ThrashRenderer::flush()
     batch.gamma = m_gamma;
     batch.fogTable = m_fogTableIndex;
     m_batches.push_back(batch);
+    m_batchOpaque = true;
 }
 
 void ThrashRenderer::renderPending()
@@ -483,11 +517,13 @@ void ThrashRenderer::renderPending()
 
 void ThrashRenderer::drawPending(const ThrashDraw& draw)
 {
+    const bool measure=perf::enabled();
+    const uint64_t start=measure?perf::now():0, cpuStart=measure?perf::cpuNow():0;
+    uint64_t actualDraws=0,opaqueDraws=0,opaqueVertices=0,switches=0;
     glBindFramebuffer(GL_FRAMEBUFFER, m_framebuffer);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_renderer->m_texture, 0);
     glBindVertexArray(m_vertexArray);
     glViewport(0, 0, draw.width, draw.height);
-    glUseProgram(m_program);
     // glOrtho(0, w, 0, h, 0, -65536).
     const float w = float(draw.width), h = float(draw.height);
     const float matrix[16] = {
@@ -496,49 +532,59 @@ void ThrashRenderer::drawPending(const ThrashDraw& draw)
         0.0f,     0.0f,     2.0f / 65536.0f, 0.0f,
         -1.0f,    -1.0f,    -1.0f,           1.0f,
     };
-    glUniformMatrix4fv(m_locations.transform, 1, GL_FALSE, matrix);
     glActiveTexture(GL_TEXTURE0);
     glBindBuffer(GL_ARRAY_BUFFER, m_vertexBuffer);
     glBufferData(GL_ARRAY_BUFFER, sizeof(ThrashVertex) * draw.vertexCount, draw.vertices, GL_STREAM_DRAW);
-    glVertexAttribPointer(m_locations.position, 3, GL_FLOAT, GL_FALSE, sizeof(ThrashVertex),
-                          (const void*)offsetof(ThrashVertex, x));
-    glEnableVertexAttribArray(m_locations.position);
-    glVertexAttribPointer(m_locations.color, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(ThrashVertex),
-                          (const void*)offsetof(ThrashVertex, color));
-    glEnableVertexAttribArray(m_locations.color);
-    glVertexAttribPointer(m_locations.texCoord, 3, GL_FLOAT, GL_FALSE, sizeof(ThrashVertex),
-                          (const void*)offsetof(ThrashVertex, u));
-    glEnableVertexAttribArray(m_locations.texCoord);
-    glVertexAttribPointer(m_locations.combine, 4, GL_UNSIGNED_BYTE, GL_FALSE, sizeof(ThrashVertex),
-                          (const void*)offsetof(ThrashVertex, combine));
-    glEnableVertexAttribArray(m_locations.combine);
-    glUniform3f(m_locations.fogColor, draw.fogColor[0], draw.fogColor[1], draw.fogColor[2]);
-    glUniform1f(m_locations.alphaRef, draw.alphaTestRef);
-    glUniform3i(m_locations.chromaKeyColor, GLint(draw.chromaKeyColor >> 16 & 0xff),
-                GLint(draw.chromaKeyColor >> 8 & 0xff), GLint(draw.chromaKeyColor & 0xff));
+    for(int i=0;i<2;++i) {
+        const GLuint program=i?m_opaqueProgram:m_program;if(!program)continue;
+        const auto& loc=i?m_opaqueLocations:m_locations;glUseProgram(program);
+        glUniformMatrix4fv(loc.transform,1,GL_FALSE,matrix);
+        glUniform3f(loc.fogColor,draw.fogColor[0],draw.fogColor[1],draw.fogColor[2]);
+        glUniform1f(loc.alphaRef,draw.alphaTestRef);
+        glUniform3i(loc.chromaKeyColor,GLint(draw.chromaKeyColor>>16&0xff),GLint(draw.chromaKeyColor>>8&0xff),GLint(draw.chromaKeyColor&0xff));
+    }
+    GLuint activeProgram=0;
 
     x86::reg32 first = 0;
     int fogTable = -1;
     const Batch* previous = nullptr;
     bool scissor = false;
-    for (const Batch& batch : draw.batches)
+    bool blendEnabled = true;
+    for (size_t batchIndex = 0; batchIndex < draw.batches.size(); ++batchIndex)
     {
-        if (batch.fogTable != fogTable)
+        const Batch& batch = draw.batches[batchIndex];
+        const x86::reg32 vertexEnd = batch.end;
+        const bool validTexture=batch.texture<m_glTextures.size()&&m_glTextures[batch.texture]!=0;
+        const bool fast=m_opaqueProgram&&opaque::eligible(batch.opaqueAlpha,batch.chromaKey,draw.alphaTestRef,validTexture,batch.alphaBlend);
+        const GLuint program=fast?m_opaqueProgram:m_program;
+        const auto& loc=fast?m_opaqueLocations:m_locations;
+        const bool programChanged=activeProgram!=program;
+        if(programChanged){glUseProgram(program);activeProgram=program;++switches;}
+        if(fast){++opaqueDraws;opaqueVertices+=vertexEnd-first;}
+        // Alpha one with SRC_ALPHA/ONE_MINUS_SRC_ALPHA replaces the destination.
+        // Make that proven fact explicit to the GPU's opaque-surface processing.
+        if(!previous || blendEnabled!=!fast) {
+            if(fast)glDisable(GL_BLEND);else glEnable(GL_BLEND);
+            blendEnabled=!fast;
+        }
+        if (programChanged || batch.fogTable != fogTable)
         {
             fogTable = batch.fogTable;
-            glUniform1fv(m_locations.fogTable, 64, draw.fogTables[fogTable].data());
+            glUniform1fv(loc.fogTable, 64, draw.fogTables[fogTable].data());
         }
         if (!previous || batch.texture != previous->texture)
         {
             glBindTexture(GL_TEXTURE_2D, batch.texture < m_glTextures.size() ? m_glTextures[batch.texture] : 0);
-            glUniform1f(m_locations.levels, float(batch.levels));
-            glUniform1i(m_locations.format, batch.format);
+        }
+        if(programChanged || !previous || batch.texture!=previous->texture) {
+            glUniform1f(loc.levels,float(batch.levels));glUniform1i(loc.format,batch.format);
         }
         if (!previous || batch.wrapS != previous->wrapS || batch.wrapT != previous->wrapT)
         {
             glBindSampler(0, m_samplers[(batch.wrapS ? 1 : 0) + (batch.wrapT ? 2 : 0)]);
-            glUniform2f(m_locations.wrap, batch.wrapS ? 1.f : 0.f, batch.wrapT ? 1.f : 0.f);
         }
+        if(programChanged || !previous || batch.wrapS!=previous->wrapS || batch.wrapT!=previous->wrapT)
+            glUniform2f(loc.wrap,batch.wrapS?1.f:0.f,batch.wrapT?1.f:0.f);
         if (!previous || batch.zTest != previous->zTest)
         {
             if (batch.zTest)
@@ -558,10 +604,10 @@ void ThrashRenderer::drawPending(const ThrashDraw& draw)
             else
                 glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE, GL_ONE, GL_ZERO);
         }
-        if (!previous || batch.chromaKey != previous->chromaKey)
-            glUniform1i(m_locations.chromaKey, batch.chromaKey ? 1 : 0);
-        if (!previous || batch.gamma != previous->gamma)
-            glUniform1f(m_locations.gamma, batch.gamma);
+        if (programChanged || !previous || batch.chromaKey != previous->chromaKey)
+            glUniform1i(loc.chromaKey, batch.chromaKey ? 1 : 0);
+        if (programChanged || !previous || batch.gamma != previous->gamma)
+            glUniform1f(loc.gamma, batch.gamma);
         if (!previous || batch.cull != previous->cull)
         {
             if (batch.cull)
@@ -592,10 +638,24 @@ void ThrashRenderer::drawPending(const ThrashDraw& draw)
                       batch.clipMaxY - batch.clipMinY);
         scissor = clipped;
         previous = &batch;
-        glDrawArrays(GL_TRIANGLES, GLint(first), GLsizei(batch.end - first));
-        first = batch.end;
+        glDrawArrays(GL_TRIANGLES, GLint(first), GLsizei(vertexEnd - first));
+        ++actualDraws;
+        first = vertexEnd;
     }
     glBindSampler(0, 0);
+    if(!blendEnabled)glEnable(GL_BLEND);
+    if(measure) {
+        perf::opaqueUsage(opaqueDraws,opaqueVertices,switches);
+        perf::submitted(draw.batches.size(),actualDraws,draw.vertexCount,perf::now()-start,perf::cpuNow()-cpuStart);
+        const uint64_t epoch=perf::state().epoch.load(), boundaryStart=perf::now(), boundaryCpu=perf::cpuNow();
+        std::array<uint64_t,13> counts{};
+        for(size_t i=1;i<draw.batches.size();++i) {
+            ++counts[0];const auto mask=draw.batches[i-1].differenceMask(draw.batches[i]);
+            if(!mask)++counts[1];
+            for(unsigned bit=0;bit<11;++bit)counts[2+bit]+=(mask>>bit)&1u;
+        }
+        perf::boundaries(counts,perf::now()-boundaryStart,perf::cpuNow()-boundaryCpu,epoch);
+    }
 }
 
 void ThrashRenderer::swap()
@@ -844,6 +904,7 @@ void ThrashRenderer::setTexture(x86::reg32, x86::reg32 address)
         m_texture = found->second.index;
         m_textureLevels = found->second.levels;
         m_textureFormat = found->second.format;
+        m_textureOpaque = found->second.opaqueAlpha;
     }
     found->second.useStamp = m_renderStamp;
 }
@@ -873,7 +934,7 @@ void ThrashRenderer::setTextureData(x86::reg32, x86::reg32 address, const void* 
     auto found = m_textures.find(address);
     if (found == m_textures.end())
     {
-        Texture texture = { m_nextTexture++, 0, 0, 0, 0 };
+        Texture texture = { m_nextTexture++, 0, 0, 0, 0, false };
         found = m_textures.emplace(address, texture).first;
     }
     Texture& texture = found->second;
@@ -895,6 +956,8 @@ void ThrashRenderer::setTextureData(x86::reg32, x86::reg32 address, const void* 
 
     std::vector<x86::reg8> copied(static_cast<const x86::reg8*>(data),
                                   static_cast<const x86::reg8*>(data) + texels * texelBytes);
+    texture.opaqueAlpha=opaque::textureAlphaIsOne(copied.data(),texels,kind);
+    if(texture.index==m_texture)m_textureOpaque=texture.opaqueAlpha;
     if (format == TF_ARGB_1555)
     {
         // A1 R5 G5 B5 to R5 G5 B5 A1: the alpha bit from the top to the bottom.
@@ -1058,8 +1121,10 @@ void ThrashRenderer::finishTriangle(ThrashVertex* out)
                 out[i].v = tow[i];
         }
     }
-    for (int i = 0; i < 3; ++i)
+    for (int i = 0; i < 3; ++i) {
         std::memcpy(out[i].combine, combine, sizeof combine);
+        if(m_batchOpaque&&perf::opaqueEnabled()&&!opaque::vertexAlphaIsOne(out[i],m_textureOpaque))m_batchOpaque=false;
+    }
     m_vertexCount += 3;
     DrawCounters& counters = s_counters;
     ++counters.triangles;
@@ -1068,3 +1133,19 @@ void ThrashRenderer::finishTriangle(ThrashVertex* out)
 }
 
 }
+
+#if defined(__ANDROID__)
+#include <jni.h>
+extern "C" JNIEXPORT jlongArray JNICALL
+Java_dev_nfs3hp_port_PerformanceSession_nativeSnapshot(JNIEnv* env,jclass) {
+    auto values=win32::perf::snapshot();
+    jlong data[win32::perf::FieldCount];for(size_t i=0;i<win32::perf::FieldCount;++i)data[i]=static_cast<jlong>(values[i]);
+    auto result=env->NewLongArray(win32::perf::FieldCount);
+    if(result)env->SetLongArrayRegion(result,0,win32::perf::FieldCount,data);
+    return result;
+}
+extern "C" JNIEXPORT void JNICALL
+Java_dev_nfs3hp_port_PerformanceSession_nativeActive(JNIEnv*,jclass,jboolean active) {
+    win32::perf::active(active);
+}
+#endif

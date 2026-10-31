@@ -184,10 +184,6 @@ public final class TouchOverlayInstrumentation extends Instrumentation {
                 } catch(Exception e) { throw new RuntimeException(e); }
             });
             capture("ui-touch-settings.png");
-            runOnMainSync(()->activity.go(LauncherActivity.Screen.TouchKeys));waitForIdleSync();
-            capture("ui-touch-keys.png");
-            runOnMainSync(()->activity.onBackPressed());waitForIdleSync();
-            require(activity.getScreen()==LauncherActivity.Screen.Touch,"back from touch keys returns to touch settings");
             runOnMainSync(()->activity.openEditor());waitForIdleSync();
             /* One layout to arrange: the racing one.  The menus carry nothing of
              * ours any more, so the editor no longer asks which is being edited. */
@@ -197,21 +193,12 @@ public final class TouchOverlayInstrumentation extends Instrumentation {
             require(activity.getScreen()==LauncherActivity.Screen.Touch,"done in the editor returns to touch settings");
             runOnMainSync(()->activity.onBackPressed());waitForIdleSync();
             require(activity.getScreen()==LauncherActivity.Screen.Controls,"back from touch settings returns to controls");
-            runOnMainSync(()->activity.go(LauncherActivity.Screen.Gamepads));waitForIdleSync();
-            runOnMainSync(()->activity.setCapturingSlot(0));waitForIdleSync();
-            runOnMainSync(()->activity.onBackPressed());waitForIdleSync();
-            require(activity.getCapturingSlot()==-1&&activity.getScreen()==LauncherActivity.Screen.Gamepads,
-                "back cancels the wait for a pad without leaving the screen");
-            capture("ui-gamepads.png");
             runOnMainSync(()->activity.go(LauncherActivity.Screen.ControlsHelp));waitForIdleSync();
             capture("ui-controls-help.png");
             runOnMainSync(()->activity.onBackPressed());waitForIdleSync();
-            require(activity.getScreen()==LauncherActivity.Screen.Gamepads,"back from help returns to the gamepads screen");
-            runOnMainSync(()->activity.openGamepadButtons(1));waitForIdleSync();
-            capture("ui-gamepad-buttons.png");
-            runOnMainSync(()->activity.onBackPressed());waitForIdleSync();
-            require(activity.getScreen()==LauncherActivity.Screen.Gamepads,"back from the buttons returns to the gamepads screen");
-            runOnMainSync(()->activity.onBackPressed());waitForIdleSync();
+            require(activity.getScreen()==LauncherActivity.Screen.Controls,"back from help returns to controls");
+            for(LauncherActivity.Screen screen:LauncherActivity.Screen.values())
+                require(!screen.name().equals("TouchKeys")&&!screen.name().equals("Gamepads")&&!screen.name().equals("GamepadButtons"),"obsolete settings screen removed");
             runOnMainSync(()->activity.onBackPressed());waitForIdleSync();
             require(activity.getScreen()==LauncherActivity.Screen.Main,"back walks up to the first screen");
             /* Display, saved as it is chosen with no Save button, and Screen

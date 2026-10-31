@@ -53,7 +53,6 @@ final class LauncherSettings {
         // Still read from a file exported before Force Feedback had a screen of its own.
         GamePreferences.TOUCH_VIBRATION,
         GamePreferences.FORCE_FEEDBACK,
-        GamePreferences.GAMEPAD_DIGITAL[0], GamePreferences.GAMEPAD_DIGITAL[1],
         GamePreferences.SAVES_INCLUDE_SETTINGS,
         GamePreferences.NETWORK_PORT,
     };
@@ -61,7 +60,7 @@ final class LauncherSettings {
     /** Families whose every member travels: control geometry and mappings.
      *  What a pad's buttons do travels; which pad is which does not. */
     private static final String[] PREFIXES = {
-        "touch_position_", "mapping_touch_key_", "gamepad1_button_", "gamepad2_button_",
+        "touch_position_",
     };
 
     private static boolean carried(String key) {

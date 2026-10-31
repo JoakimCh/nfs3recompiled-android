@@ -5,23 +5,10 @@ import android.content.SharedPreferences;
 
 import java.util.Locale;
 
-/**
- * What each button of each pad does.
- *
- * A pad's sticks and triggers are the game's axes; its buttons are keys.  A
- * button is set to an action rather than to a key, and the key behind the
- * action depends on the player: the first pad sends player one's keys, the
- * second pad player two's -- the keys ControlProfile writes into the game's
- * settings.  That is what lets both pads share one list of actions and one
- * set of defaults.
- *
- * A pad set to Digital drives a race as a keyboard does instead: its D-pad
- * steers, accelerates and brakes and its triggers work the pedals, each one
- * sending its player's key for that (ControlProfile.drivingKeys), whatever the
- * D-pad is set to here.  Only in a race: the menus are the same either way.
- *
- * Resolved here into final values for the native side, which reads them as
- * NFS_GAMEPAD<n>_<BUTTON> (s_padButtons in sdl-backend/gamepad.cpp).
+/** Fixed menu keys and racing fallback defaults for the two virtual gamepads.
+ * Native button/axis assignments in the game take priority over fallback keys.
+ * Obsolete launcher mappings and keyboard-driving modes are ignored; legacy
+ * setters remain only for compatibility checks against older saved preferences.
  */
 final class GamepadButtons
 {
@@ -73,14 +60,14 @@ final class GamepadButtons
 
     /* What the same buttons send outside a race, parallel to BUTTON_IDS: the
      * face buttons a console player reaches for without looking -- the lower
-     * one confirms, the right one goes back -- Start confirms as well, Share
-     * goes back, and the D-pad moves the highlight.  The rest are quiet: a
+     * one confirms, the right one goes back, and the D-pad moves the highlight.
+     * Start and Select have no extra menu aliases.  The rest are quiet: a
      * menu has nothing for a handbrake, and a replay being watched has nothing
      * for any of them.  Fixed rather than set per button, so the screen that
      * sets up a pad stays one screen about driving. */
     private static final String[] MENU_KEYS = {
         "Return", "Escape", "", "", "", "",
-        "", "", "Escape", "Return",
+        "", "", "", "",
         "Up", "Down", "Left", "Right",
     };
 
@@ -119,8 +106,7 @@ final class GamepadButtons
 
     static String action(SharedPreferences preferences, int slot, int button)
     {
-        String action = preferences.getString(preferenceKey(slot, BUTTON_IDS[button]),
-            DEFAULT_ACTIONS[button]);
+        String action = DEFAULT_ACTIONS[button];
         for (String known : ACTION_IDS)
             if (known.equals(action))
                 return action;
@@ -140,11 +126,12 @@ final class GamepadButtons
         edit.apply();
     }
 
-    /** Whether the pad in this slot drives a race on keys (Digital) rather than
-     *  on its stick and triggers (Analog, the default). */
+    /** The removed launcher keyboard-driving mode is always disabled. */
     static boolean digital(SharedPreferences preferences, int slot)
     {
-        return preferences.getBoolean(GamePreferences.GAMEPAD_DIGITAL[slot], false);
+        // All native buttons and proportional axes are always available to the game.
+        // Ignore obsolete launcher modes, including values in old imported settings.
+        return false;
     }
 
     static void setDigital(SharedPreferences preferences, int slot, boolean digital)

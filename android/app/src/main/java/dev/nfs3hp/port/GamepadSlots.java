@@ -6,31 +6,18 @@ import android.view.InputDevice;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Which physical pad is Gamepad 1 and which is Gamepad 2.
- *
- * The game always sees two DirectInput devices, and what a pad's buttons do is
- * set per slot (GamepadButtons). The one thing neither can know is which of the
- * pads Android has attached belongs to which player, and that is all this
- * decides.
- *
- * Pads are remembered by their Android input-device descriptor: the device id
- * changes every time a Bluetooth pad reconnects and the name is the same for
- * two pads of one model, but the descriptor survives reconnects and reboots and
- * tells identical pads apart. The native side recognises the same descriptor
- * through the fingerprint SDL keeps of it in the joystick GUID.
- *
- * Assignments describe hardware on this particular phone, so they are left out
- * of the launcher-settings export on purpose, like the data-set keys.
+/** Assigns only devices accepted by the shared role policy. Explicit player
+ * choices take priority; remaining slots use connection order. Legacy pins are ignored.
+ * The pure descriptor resolver remains shared with compatibility checks.
  */
 final class GamepadSlots
 {
     static final int COUNT = 2;
 
-    private static final String[] DESCRIPTOR = { "gamepad_slot_1", "gamepad_slot_2" };
+    private static final String[] DESCRIPTOR = { "input_player_1_descriptor", "input_player_2_descriptor" };
     /* Kept beside the descriptor only to name a pad that is not connected
      * right now; the descriptor itself means nothing to a player. */
-    private static final String[] NAME = { "gamepad_slot_1_name", "gamepad_slot_2_name" };
+    private static final String[] NAME = { "input_player_1_name", "input_player_2_name" };
 
     private GamepadSlots() {}
 
@@ -53,6 +40,7 @@ final class GamepadSlots
     /** "" while the slot is automatic. */
     static String assigned(SharedPreferences preferences, int slot)
     {
+        // New role-aware assignments are independent of obsolete launcher pins.
         return preferences.getString(DESCRIPTOR[slot], "");
     }
 
@@ -81,12 +69,7 @@ final class GamepadSlots
 
     static boolean isGamepad(InputDevice device)
     {
-        if (device == null || device.isVirtual())
-            return false;
-        String descriptor = device.getDescriptor();
-        return descriptor != null && !descriptor.isEmpty()
-            && (device.supportsSource(InputDevice.SOURCE_GAMEPAD)
-                || device.supportsSource(InputDevice.SOURCE_JOYSTICK));
+        return InputDeviceRoles.isController(device);
     }
 
     /** Physical gamepads attached right now, in Android device-id order --

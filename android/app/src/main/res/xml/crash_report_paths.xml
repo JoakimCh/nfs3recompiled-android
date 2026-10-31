@@ -1,0 +1,1 @@
+<paths xmlns:android="http://schemas.android.com/apk/res/android"><files-path name="crash" path="crash-reports/" /><files-path name="performance" path="performance-reports/" /><files-path name="input" path="input-reports/" /><files-path name="device-capabilities" path="device-reports/" /></paths>

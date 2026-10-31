@@ -112,31 +112,9 @@ public class SDLControllerManager
 
     // Check if a given device is considered a possible SDL joystick
     static public boolean isDeviceSDLJoystick(int deviceId) {
-        InputDevice device = InputDevice.getDevice(deviceId);
-        // We cannot use InputDevice.isVirtual before API 16, so let's accept
-        // only nonnegative device ids (VIRTUAL_KEYBOARD equals -1)
-        if ((device == null) || (deviceId < 0)) {
-            return false;
-        }
-        int sources = device.getSources();
-
-        /* This is called for every button press, so let's not spam the logs */
-        /*
-        if ((sources & InputDevice.SOURCE_CLASS_JOYSTICK) != 0) {
-            SDLLog.v(TAG, "Input device " + device.getName() + " has class joystick.");
-        }
-        if ((sources & InputDevice.SOURCE_DPAD) == InputDevice.SOURCE_DPAD) {
-            SDLLog.v(TAG, "Input device " + device.getName() + " is a dpad.");
-        }
-        if ((sources & InputDevice.SOURCE_GAMEPAD) == InputDevice.SOURCE_GAMEPAD) {
-            SDLLog.v(TAG, "Input device " + device.getName() + " is a gamepad.");
-        }
-        */
-
-        return ((sources & InputDevice.SOURCE_CLASS_JOYSTICK) != 0 ||
-                ((sources & InputDevice.SOURCE_DPAD) == InputDevice.SOURCE_DPAD) ||
-                ((sources & InputDevice.SOURCE_GAMEPAD) == InputDevice.SOURCE_GAMEPAD)
-        );
+        // The same role policy drives the launcher list, player slots and
+        // SDL discovery. Keep button-only controllers; exclude remote devices.
+        return dev.nfs3hp.port.InputDeviceRoles.isController(InputDevice.getDevice(deviceId));
     }
 
 }
@@ -276,7 +254,7 @@ class SDLJoystickHandler {
             for (i = 0; i < deviceIds.length; i++) {
                 if (device_id == deviceIds[i]) break;
             }
-            if (i == deviceIds.length) {
+            if (i == deviceIds.length || !SDLControllerManager.isDeviceSDLJoystick(device_id)) {
                 if (removedDevices == null) {
                     removedDevices = new ArrayList<Integer>();
                 }
