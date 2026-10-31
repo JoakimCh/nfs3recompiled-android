@@ -1,6 +1,6 @@
 package dev.nfs3hp.port;
 
-import android.app.Activity;
+import androidx.activity.ComponentActivity;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -16,7 +16,7 @@ import java.util.HashSet;
 import java.util.List;
 
 /** Interactive Android input test and per-controller normalization. No game files edited. */
-public final class ControllerSetupActivity extends Activity implements InputManager.InputDeviceListener {
+public final class ControllerSetupActivity extends ComponentActivity implements InputManager.InputDeviceListener {
     private LinearLayout content,devices,players,otherDevices,detailPanel;
     private TextView selectedTitle,roleLabel;
     private final TextView[] indicators=new TextView[6];
@@ -62,12 +62,10 @@ public final class ControllerSetupActivity extends Activity implements InputMana
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);InputDeviceRoles.initialize(this);
         if(state!=null){descriptor=state.getString("controller","");showOthers=state.getBoolean("show_others");expanded=state.getBoolean("expanded",true);}
-        ScrollView scroll=new ScrollView(this);scroll.setFillViewport(true);scroll.setBackgroundColor(0xff090e30);
+        ScrollView scroll=new ScrollView(this);scroll.setFillViewport(true);scroll.setBackgroundColor(android.graphics.Color.TRANSPARENT);
         LinearLayout center=column();center.setGravity(android.view.Gravity.CENTER_HORIZONTAL);scroll.addView(center);
-        content=column();content.setPadding(dp(20),dp(16),dp(20),dp(24));
-        center.addView(content,new LinearLayout.LayoutParams(Math.min(getResources().getDisplayMetrics().widthPixels,dp(1000)),-2));setContentView(scroll);
-        Button back=button("‹  Controls",this::finish);back.setTag("back");content.addView(back);
-        TextView title=text("GAMEPADS",26);title.setTextColor(0xffead34e);content.addView(title);
+        content=column();content.setPadding(0,0,0,dp(12));
+        center.addView(content,new LinearLayout.LayoutParams(-1,-2));ControllerSetupScreenKt.showControllerSetup(this,scroll);
         content.addView(text("Choose a player’s controller above, or select a device below to test and adjust its menu controls. Racing controls are assigned inside the game.",16));
         players=row();content.addView(players);
         heading(content,"Connected controllers");devices=column();content.addView(devices);
@@ -100,7 +98,9 @@ public final class ControllerSetupActivity extends Activity implements InputMana
         detailPanel.addView(button("Change device role…",()->showRole(device)));
         detailPanel.addView(text("Use Remote / keyboard for a TV remote. Remotes navigate with keyboard keys and cannot occupy gamepad slots. Choices save for this device.",14));
         otherDevices=column();content.addView(otherDevices);
-        content.addView(button("Save input device report…",()->InputDeviceReport.show(this)));
+        Button report=button("Save input device report…",()->InputDeviceReport.show(this));
+        LinearLayout.LayoutParams reportLayout=new LinearLayout.LayoutParams(-1,-2);
+        reportLayout.topMargin=dp(12);content.addView(report,reportLayout);
         refreshDevices();
     }
     @Override protected void onResume(){super.onResume();((InputManager)getSystemService(INPUT_SERVICE)).registerInputDeviceListener(this,null);refreshDevices();}

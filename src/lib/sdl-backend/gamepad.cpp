@@ -747,7 +747,7 @@ void sendKey(const ButtonBinding& binding, bool down)
     event.key.scancode = binding.scancode;
     event.key.key = binding.key;
     event.key.down = down;
-    const bool pushed=SDL_PushEvent(&event);
+    SDL_PushEvent(&event);
 }
 
 struct SlotButtons

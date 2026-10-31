@@ -1,5 +1,11 @@
 # Fork changes
 
+## tv24 — version 101
+
+Gamepad setup uses the shared launcher header, back arrow and page background.
+Added space above the input-report button. Fixed an unused recorder variable
+that prevented the Android build after cleanup.
+
 ## tv23 — version 100
 
 Advanced has pinned Unlocks, Performance and Debug tabs. Each bonus car has its

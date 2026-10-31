@@ -28,6 +28,7 @@ public class ControllerSetupActivityTest {
         int width=root.getResources().getDisplayMetrics().widthPixels,height=root.getResources().getDisplayMetrics().heightPixels;
         root.measure(View.MeasureSpec.makeMeasureSpec(width,View.MeasureSpec.EXACTLY),View.MeasureSpec.makeMeasureSpec(height,View.MeasureSpec.EXACTLY));
         root.layout(0,0,width,height);
+        org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idle();
     }
     @Test public void opensWithButtonOnlyControllerAndAssignsInput() {
         android.app.Application app=org.robolectric.RuntimeEnvironment.getApplication();InputDeviceRoles.initialize(app);
@@ -39,7 +40,7 @@ public class ControllerSetupActivityTest {
         manager.addInputDevice(input);manager.addInputDeviceKeys(40,new int[]{96,97,99});InputDeviceRoles.changed(40);
         assertTrue(InputDeviceRoles.isController(input));
         try(ActivityController<ControllerSetupActivity> controller=Robolectric.buildActivity(ControllerSetupActivity.class).setup()) {
-            View root=controller.get().getWindow().getDecorView();layout(root);
+            View root=controller.get().getWindow().getDecorView();layout(root);layout(root);
             assertNotNull(find(root,"Button-only test pad"));
             find(root,"Start test").performClick();
             controller.get().dispatchKeyEvent(new android.view.KeyEvent(1,1,0,96,0,0,40,0,0,android.view.InputDevice.SOURCE_GAMEPAD));
@@ -70,8 +71,10 @@ public class ControllerSetupActivityTest {
     }
     @Test public void opensWithoutControllerAndSurvivesPauseResume() {
         try(ActivityController<ControllerSetupActivity> controller=Robolectric.buildActivity(ControllerSetupActivity.class).setup()) {
-            View root=controller.get().getWindow().getDecorView();
+            View root=controller.get().getWindow().getDecorView();layout(root);
             assertNotNull(find(root,"No game controller detected"));layout(root);
+            TextView report=find(root,"Save input device report");assertNotNull(report);
+            assertTrue(((android.widget.LinearLayout.LayoutParams)report.getLayoutParams()).topMargin>0);
             TextView others=find(root,"Remotes and other inputs");assertNotNull(others);others.performClick();
             controller.pause().stop().restart().start().resume().visible();
             assertNotNull(find(root,"No game controller detected"));layout(root);
