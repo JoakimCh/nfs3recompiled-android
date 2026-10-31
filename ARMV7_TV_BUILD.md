@@ -1,8 +1,9 @@
 # ARMv7 TV fork
 
 The integrated source includes the original project's alphaG0.78 changes plus
-our ARMv7 and controller work. The next ARMv7 build is versionCode 99 / tv22;
-this is source metadata, not a claim that a tv22 APK has been built or tested.
+our ARMv7 and controller work. A signed ARMv7 test APK, versionCode 99 / tv22, has been built and passed
+Android compilation, seven launcher checks and final package verification. It
+awaits physical phone/TV testing.
 The last hardware-tested release was tv21 (versionCode 98).
 
 ## Build
@@ -38,7 +39,7 @@ R.txt; do not substitute outputs from another variant. Run focused UI checks wit
 ./gradlew testReleaseUnitTest -Parmv7Tv. Sign externally with the original private
 certificate to update installed TV releases. Those credentials are intentionally
 absent from GitHub. Verify signature, ABI, version, non-debug/profileable flags,
-16 KiB alignment and native BuildID before delivering any APK. Retain exact
+16 KiB ZIP alignment and native BuildID before delivering any APK. Retain exact
 matching full native symbols separately for crash decoding.
 
 ## Current behavior

@@ -41,13 +41,22 @@ Private signing paths/extensions are also ignored. The next ARMv7 version is
 - git diff --check passed. Public payload is UTF-8 source/docs/tests only; no
   private release keys or passwords were added.
 
-## Remaining validation
+## Android test APK built (tv22)
 
-No Android APK or full Android/Compose compilation was performed for this
-integration. The source-r2 bonus UI and source-r3 Advanced cleanup also remain
-unbuilt. No physical phone/TV verification or GPU render comparison was done
-here. Before delivering a new APK, perform the targeted Android page/lifecycle
-checks and final packaged resource check in ARMV7_TV_BUILD.md, followed by normal
-release metadata/signing/alignment verification. The previous hardware-tested
-release remains tv21. This branch is suitable for review as a draft PR; the
-above host checks do not establish device readiness.
+On 2026-10-31, assembleRelease -Parmv7Tv -PprofileNative completed successfully
+against application source commit a25dc2c33279912d7692348c3f3fb04d54c7f41d.
+VersionCode 99 / 0.78-armv7-tv22-profile uses the original release certificate.
+All seven Robolectric checks passed: the existing six controller-page/crash-report
+checks and LauncherAdvancedTest covering Advanced entry, unlock writes and resume
+refresh after an external settings change. Android/Compose compilation passed.
+The finished signed APK passed the 296-field packaged resource consistency gate,
+ARMv7-only ELF/ABI checks, package/version/certificate checks, non-debug and
+shell-profileable manifest checks, and zipalign -P 16. The 16 KiB check concerns
+ZIP layout; ARM32 ELF load alignments are recorded separately in the release data.
+The removed Android input-recorder JNI exports are absent. Exact native symbols
+were retained separately. See tools/release_checks/tv22.json for artifact identity.
+
+This follow-up commit adds only tests/docs/release metadata; application source
+is identical to the tested APK. No phone/TV run or GPU render comparison has been
+performed on this merged revision. Keep the PR unmerged pending the owner's test;
+the previous hardware-tested release remains tv21.
