@@ -170,8 +170,6 @@ public:
      * their buttons into the keys the launcher assigned, and runs the
      * force-feedback mixer. */
     static void update();
-    static void inputDiagnostics(bool enabled);
-    static std::string inputReport(std::uint64_t previous);
     /* While set, a pad's buttons send no key but Escape, and keys they already
      * hold are let go.  Set from the game layer, once a frame, for the time the
      * pads' keys would work somebody else's car (nfs3hp_main.cpp). */

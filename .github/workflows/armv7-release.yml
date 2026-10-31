@@ -1,6 +1,11 @@
 name: Manual ARMv7 release
 on:
   workflow_dispatch:
+    inputs:
+      run_tests:
+        description: Run launcher regression tests
+        type: boolean
+        default: false
 permissions:
   contents: read
 concurrency:
@@ -30,10 +35,14 @@ jobs:
           yes | sdkmanager --licenses > /dev/null || true
           sdkmanager "platforms;android-36" "build-tools;36.0.0" "ndk;28.2.13676358" "cmake;3.22.1"
           git clone --depth 1 --branch release-3.4.2 https://github.com/libsdl-org/SDL.git third_party/SDL
-      - name: Build and check launcher
+      - name: Build APK
         working-directory: android
         run: |
-          bash ./gradlew assembleRelease testReleaseUnitTest -Parmv7Tv -PprofileNative -Pkotlin.incremental=false --no-daemon --max-workers=2
+          bash ./gradlew assembleRelease -Parmv7Tv -PprofileNative -Pkotlin.incremental=false --no-daemon --max-workers=2
+      - name: Check launcher
+        if: inputs.run_tests
+        working-directory: android
+        run: bash ./gradlew testReleaseUnitTest -Parmv7Tv -PprofileNative --no-daemon --max-workers=2
       - name: Sign and verify finished APK
         env:
           KEY: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}

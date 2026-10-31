@@ -54,7 +54,6 @@ int main() {
     auto id = SDL_AttachVirtualJoystick(&desc); assert(id);
     auto joy = SDL_OpenJoystick(id); assert(joy);
     SDL_SetJoystickVirtualAxis(joy, 4, -32768); SDL_SetJoystickVirtualAxis(joy, 5, -32768);
-    Gamepad::inputDiagnostics(true);
     win32::Input::poll();
     Gamepad pad(0); Gamepad::context(Gamepad::Context::Menu); Gamepad::update(); keys();
     assert(pad.getButtonCount() == 16 && pad.getAxesCount() == 2);
@@ -107,12 +106,11 @@ int main() {
     for(unsigned d=0;d<4;++d) {
         Gamepad::context(Gamepad::Context::Menu); Gamepad::update(); keys();
         SDL_SetJoystickVirtualButton(joy,directions[d],true); Gamepad::update(); expect(arrows[d],true);
-        if(d==0) { auto report=Gamepad::inputReport(0);assert(report.find("mapping=")!=std::string::npos);assert(report.find("physical=0x400")!=std::string::npos);assert(report.find("menu-key")!=std::string::npos); SDL_Delay(410); Gamepad::update(); expect(arrows[d],true,true); }
+        if(d==0) { SDL_Delay(410); Gamepad::update(); expect(arrows[d],true,true); }
         SDL_SetJoystickVirtualButton(joy,directions[d],false); Gamepad::update(); expect(arrows[d],false);
         Gamepad::context(Gamepad::Context::Capture); Gamepad::update(); keys();
         SDL_SetJoystickVirtualButton(joy,directions[d],true);
         assert(pad.getState().buttons==(1u<<(10+d))); // capture can poll between swaps
-        if(d==0)assert(Gamepad::inputReport(0).find("di0 buttons=1024")!=std::string::npos);
         Gamepad::nativeButtons(0,1u<<(10+d)); Gamepad::context(Gamepad::Context::Race);
         Gamepad::update(); assert(keys().empty()); assert(pad.getState().buttons==(1u<<(10+d)));
         SDL_SetJoystickVirtualButton(joy,directions[d],false); Gamepad::update(); assert(pad.getState().buttons==0);
@@ -319,8 +317,5 @@ int main() {
     SDL_SetJoystickVirtualAxis(joy,0,-24000); Gamepad::update(); expect(SDLK_LEFT,true);
     SDL_DetachVirtualJoystick(id); win32::Input::poll(); Gamepad::update(); expect(SDLK_LEFT,false);
     SDL_CloseJoystick(joy);
-    auto trace=Gamepad::inputReport(0);assert(trace.find("slot1")!=std::string::npos);
-    Gamepad::inputDiagnostics(false);assert(Gamepad::inputReport(0)==trace);
-    Gamepad::inputDiagnostics(true);Gamepad::update();assert(Gamepad::inputReport(0).find("slot0 device")!=std::string::npos);Gamepad::inputDiagnostics(false);
-    std::cout << "PASS: default Android hats + X/Y, single Confirm/Back without Start/Select menu/pause aliases; generic controller profiles (all directions, capture, axis suppression, source suppression, swapped A/B, no duplicates, race identity, player isolation) plus native diagnostics and actual SDL3 gamepad axes, A/B, SDL/Android digital D-pad, raw hats, two-slot isolation, repeats, capture, remapping priority, delayed releases, pause clear and unplug\n";
+    std::cout << "PASS: default Android hats + X/Y, single Confirm/Back without Start/Select menu/pause aliases; generic controller profiles (all directions, capture, axis suppression, source suppression, swapped A/B, no duplicates, race identity, player isolation) plus actual SDL3 gamepad axes, A/B, SDL/Android digital D-pad, raw hats, two-slot isolation, repeats, capture, remapping priority, delayed releases, pause clear and unplug\n";
 }
