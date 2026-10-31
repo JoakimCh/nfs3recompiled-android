@@ -3,7 +3,17 @@ plugins {
      id 'org.jetbrains.kotlin.plugin.compose'
 }
 
+// Experimental TV build; the normal upstream build remains ARM64.
+def armv7Tv = providers.gradleProperty("armv7Tv").isPresent()
+def profileNative = providers.gradleProperty("profileNative").isPresent()
+def gameAbi = armv7Tv ? 'armeabi-v7a' : 'arm64-v8a'
+if (armv7Tv && (providers.gradleProperty("x87Exact").isPresent()
+        || providers.gradleProperty("wideFpu").isPresent())) {
+    throw new GradleException("The ARMv7 TV build uses the default double-backed FPU.")
+}
+
 android {
+    testBuildType = "release"
     namespace = "dev.nfs3hp.port"
     // AGP 9.1's max supported/default is compileSdk 36 + build-tools 36.0.0
     // (both installed); 35 still builds but 36 is the version it targets.
@@ -12,6 +22,7 @@ android {
 
     defaultConfig {
         applicationId = "dev.nfs3hp.port"
+        if (armv7Tv) applicationIdSuffix = ".armv7tv"
         /* Android 8.0.  The floor is java.nio.file, which the launcher reads
          * and writes the game's files with: it arrived in API 26, and going
          * lower would mean desugaring the library and rewriting that.  Nothing
@@ -24,16 +35,17 @@ android {
         minSdk = 26
         targetSdk = 36
         // Kept in step with versionName so the two can never disagree: 0.78 -> 78.
-        versionCode = 78
+        versionCode = armv7Tv ? 100 : 78
         versionName = "0.78"
+        if (armv7Tv) versionNameSuffix = profileNative ? "-armv7-tv23-profile" : "-armv7-tv23"
         testInstrumentationRunner "dev.nfs3hp.port.TouchOverlayInstrumentation"
         // Only arm64-v8a is packed: Compose brings androidx.graphics.path for
         // four ABIs, and a phone of another ABI would then install an APK with
         // no game in it (arm64 only, decided 2026-10-01).
         ndk {
-            abiFilters 'arm64-v8a'
+            abiFilters gameAbi
         }
-        manifestPlaceholders = [launcherAppLabel: "@string/app_name"]
+        manifestPlaceholders = [nativeProfileable: profileNative.toString(), launcherAppLabel: armv7Tv ? "NFS III ARMv7 TV" : "@string/app_name"]
 
         externalNativeBuild {
             cmake {
@@ -70,7 +82,7 @@ android {
                 )
                 // Only nfs3hp is wired up for Android (see the NFS_BUILD_NFS2SE
                 // guard in the root CMakeLists.txt); the default is already OFF.
-                abiFilters 'arm64-v8a'
+                abiFilters gameAbi
             }
         }
     }
@@ -82,6 +94,7 @@ android {
          * game starts as a player has it.  Signed afterwards: zipalign -p 4,
          * then apksigner (APK/README.md). */
         release {
+            debuggable = false
             minifyEnabled = false
         }
     }
@@ -106,12 +119,26 @@ android {
         assets.srcDirs = ['src/main/assets']
     }
 
+    testOptions {
+        unitTests.includeAndroidResources = true
+        unitTests.all {
+            maxHeapSize = '2g'
+            systemProperty 'robolectric.dependency.repo.url', 'https://repo.maven.apache.org/maven2'
+            jvmArgs '--add-opens=java.base/java.lang=ALL-UNNAMED', '--add-opens=java.base/java.util=ALL-UNNAMED',
+                '--add-opens=java.base/java.io=ALL-UNNAMED', '--add-opens=java.base/java.net=ALL-UNNAMED',
+                '--add-opens=java.base/java.security=ALL-UNNAMED', '--add-opens=java.base/java.text=ALL-UNNAMED',
+                '--add-opens=java.base/jdk.internal.access=ALL-UNNAMED', '--add-opens=java.desktop/java.awt.font=ALL-UNNAMED',
+                '--add-opens=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED'
+        }
+    }
     lint {
         abortOnError = false
     }
 }
 
 dependencies {
+    testImplementation 'junit:junit:4.13.2'
+    testImplementation 'org.robolectric:robolectric:4.17'
     implementation fileTree(include: ['*.jar'], dir: 'libs')
     implementation 'androidx.documentfile:documentfile:1.0.1'
     // The launcher's screens: Compose with Material 3, in the game's own colours.

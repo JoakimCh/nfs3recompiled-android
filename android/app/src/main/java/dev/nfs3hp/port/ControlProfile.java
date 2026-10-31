@@ -64,10 +64,11 @@ public final class ControlProfile
         LOOK_BEHIND = 9, RECOVER = 10, SPIKE_STRIP = 11, HEADLIGHTS = 12;
 
     /* A slot as the game records it: a plain joystick (type 1) with force
-     * feedback (flag 8), no buttons and no hats, axes X and Y -- what
+     * feedback (flag 8), sixteen buttons and no hats, axes X and Y -- what
      * IDirectInputDevice::GetCapabilities reports for either slot. */
     static final int PAD_TYPE = 1 | 8;
     static final int PAD_AXES = 0x3;
+    static final int PAD_BUTTONS = 0xffff;
     private static final int NAME_OFFSET = 0x04, NAME_LENGTH = 0x34;
     private static final int BUTTONS_OFFSET = 0x38, HATS_OFFSET = 0x3C, AXES_OFFSET = 0x40;
     /* What the game's own menus change about a device: force-feedback strength
@@ -411,7 +412,7 @@ public final class ControlProfile
         int base = DEVICE_RECORDS + slot * DEVICE_RECORD_SIZE;
         byte[] name = ("NFS Gamepad " + (slot + 1)).getBytes(StandardCharsets.US_ASCII);
         boolean described = config.getInt(base) == PAD_TYPE
-            && config.getInt(base + BUTTONS_OFFSET) == 0
+            && (config.getInt(base + BUTTONS_OFFSET) == 0 || config.getInt(base + BUTTONS_OFFSET) == PAD_BUTTONS)
             && config.getInt(base + HATS_OFFSET) == 0
             && config.getInt(base + AXES_OFFSET) == PAD_AXES
             && nameIs(config, base + NAME_OFFSET, name);
@@ -429,6 +430,7 @@ public final class ControlProfile
         config.putInt(base, PAD_TYPE);
         for (int i = 0; i < name.length; ++i)
             config.put(base + NAME_OFFSET + i, name[i]);
+        config.putInt(base + BUTTONS_OFFSET, PAD_BUTTONS);
         config.putInt(base + AXES_OFFSET, PAD_AXES);
         config.putInt(base + GAIN_OFFSET, gain);
         for (int i = 0; i < axisSettings.length; ++i)
@@ -479,6 +481,35 @@ public final class ControlProfile
      *  keys of their own while Gamepad 2 is set to Digital.  Settings the player
      *  made themselves, in the game's own Controls screen, are not one of the
      *  sets and are left exactly as they are.  Returns the set in force. */
+    // Upgrade only the known old virtual devices, retaining every binding and
+    // axis/FF setting. Otherwise the game's device-list check resets controls.
+    static boolean upgradeButtonRecords(byte[] bytes) {
+        if (!isSettingsFile(bytes)) return false;
+        ByteBuffer config = ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN);
+        boolean changed = false;
+        for (int slot = 0; slot < 2; ++slot) {
+            int base = DEVICE_RECORDS + slot * DEVICE_RECORD_SIZE;
+            byte[] name = ("NFS Gamepad " + (slot + 1)).getBytes(StandardCharsets.US_ASCII);
+            if (config.getInt(base) == PAD_TYPE && config.getInt(base + BUTTONS_OFFSET) == 0
+                    && config.getInt(base + HATS_OFFSET) == 0 && config.getInt(base + AXES_OFFSET) == PAD_AXES
+                    && nameIs(config, base + NAME_OFFSET, name)) {
+                config.putInt(base + BUTTONS_OFFSET, PAD_BUTTONS);
+                changed = true;
+            }
+        }
+        return changed;
+    }
+    static void upgradeButtonDevices(File dataRoot) {
+        try {
+            File file = settingsFile(dataRoot);
+            if (file == null) return;
+            byte[] bytes = Files.readAllBytes(file.toPath());
+            if (upgradeButtonRecords(bytes)) replace(file, bytes);
+        } catch (IOException e) {
+            AppLog.w("ControlProfile", "Could not upgrade gamepad buttons", e);
+        }
+    }
+
     static Kind driveWith(File dataRoot, SharedPreferences preferences, boolean padForPlayerOne)
     {
         Key[] touchDriving = touchDriving(preferences);
@@ -785,7 +816,7 @@ public final class ControlProfile
         }
     }
 
-    private static File settingsFile(File dataRoot)
+    static File settingsFile(File dataRoot)
     {
         File fedata = child(dataRoot, "fedata");
         File config = fedata == null ? null : child(fedata, "config");

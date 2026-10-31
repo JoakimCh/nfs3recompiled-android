@@ -1,4 +1,5 @@
 #include "native_guest.h"
+#include <lib/touch_input.h>
 
 /* The controls read and turned into the players' actions every frame of a
  * race.  disassemble_nfs3hp.py binds each address to the function of that
@@ -279,6 +280,10 @@ void pollJoystick(win32::WinApplication* app, x86::CPU& cpu)
 /* 0x4316c0: 0xff if control eax's button is held on its joystick, else 0. */
 void buttonHeld(win32::WinApplication* app, x86::CPU& cpu)
 {
+    if(win32::touchinput::matches(cpu.eax,[app](reg32 address){return reg32(app->getMemory<reg32>(address));})) {
+        cpu.eax=0xff;cpu.esp+=4;return;
+    }
+
     push(app, cpu, cpu.ecx);
     push(app, cpu, cpu.edx);
     push(app, cpu, cpu.ebp);
@@ -297,6 +302,10 @@ void buttonHeld(win32::WinApplication* app, x86::CPU& cpu)
 /* 0x4316f0: 0xff if control eax's hat points its direction, else 0. */
 void hatPointing(win32::WinApplication* app, x86::CPU& cpu)
 {
+    if(win32::touchinput::matches(cpu.eax,[app](reg32 address){return reg32(app->getMemory<reg32>(address));})) {
+        cpu.eax=0xff;cpu.esp+=4;return;
+    }
+
     push(app, cpu, cpu.ecx);
     push(app, cpu, cpu.edx);
     push(app, cpu, cpu.ebp);
@@ -327,6 +336,10 @@ void hatPointing(win32::WinApplication* app, x86::CPU& cpu)
  * 0xff -- the whole axis, a pedal's. */
 void axisAmount(win32::WinApplication* app, x86::CPU& cpu)
 {
+    if(win32::touchinput::matches(cpu.eax,[app](reg32 address){return reg32(app->getMemory<reg32>(address));})) {
+        cpu.eax=0xff;cpu.esp+=4;return;
+    }
+
     push(app, cpu, cpu.ecx);
     push(app, cpu, cpu.edx);
     push(app, cpu, cpu.ebp);
@@ -391,6 +404,10 @@ void axisAmount(win32::WinApplication* app, x86::CPU& cpu)
  * whichever key it is. */
 void keyHeld(win32::WinApplication* app, x86::CPU& cpu)
 {
+    if(win32::touchinput::matches(cpu.eax,[app](reg32 address){return reg32(app->getMemory<reg32>(address));})) {
+        cpu.eax=0xff;cpu.esp+=4;putByte(app,kClearedKey,0);return;
+    }
+
     push(app, cpu, cpu.edx);
     push(app, cpu, cpu.ebp);
     cpu.ebp = cpu.esp;
@@ -414,6 +431,10 @@ void keyHeld(win32::WinApplication* app, x86::CPU& cpu)
  * controlHeldByKind, which the code jumps on to. */
 void controlHeld(win32::WinApplication* app, x86::CPU& cpu)
 {
+    if(win32::touchinput::matches(cpu.eax,[app](reg32 address){return reg32(app->getMemory<reg32>(address));})) {
+        cpu.eax=0xff;cpu.esp+=4;return;
+    }
+
     push(app, cpu, cpu.edx);
     push(app, cpu, cpu.ebp);
     cpu.ebp = cpu.esp;

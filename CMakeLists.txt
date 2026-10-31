@@ -215,6 +215,10 @@ function(add_game_exe name)
     # in memory (include/cpu.h).  Nothing in it throws or catches; an exception
     # from the port's own code could only ever have ended the game anyway.
     if(NOT MSVC)
+        # Vertex arithmetic is compared against separate x87 operations.
+        # GCC does not use the clang/MSVC FP pragmas in this source.
+        set_property(SOURCE "${game_src_dir}/native_vertices.cpp" APPEND PROPERTY COMPILE_OPTIONS
+            -ffp-contract=off -frounding-math)
         set_property(SOURCE ${DISASM_SOURCES} APPEND PROPERTY COMPILE_OPTIONS -fno-exceptions)
         # A function that can run off its end without returning a value is
         # undefined behaviour the optimiser turns into anything at all: a

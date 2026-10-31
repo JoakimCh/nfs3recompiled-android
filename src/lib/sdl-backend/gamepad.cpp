@@ -1,4 +1,10 @@
 #include <lib/gamepad.h>
+#include <lib/gamepad_policy.h>
+#include <lib/touch_input.h>
+#include <lib/input_trace.h>
+#include <lib/controller_profile.h>
+#include <sstream>
+#include <iomanip>
 #include <lib/forcefeedback.h>
 #ifdef __ANDROID__
 #include <jni.h>
@@ -42,6 +48,19 @@ struct Slot
     SDL_Gamepad*   gamepad = nullptr;
 };
 static Slot s_slots[Gamepad::kSlotCount];
+static InputTrace s_inputTrace;
+std::atomic<int> s_context{int(Gamepad::Context::Menu)};
+static std::atomic<std::uint64_t> s_controllerProfile[Gamepad::kSlotCount];
+static std::atomic<x86::reg32> s_androidButtons[Gamepad::kSlotCount];
+// Android face buttons and directions can arrive through different paths.
+// Keep face-button authority (the A/B duplicate fix), but select D-pad
+// authority only after Android actually reports a direction.
+static constexpr x86::reg32 kAndroidRoute = 1u << 16;
+static constexpr x86::reg32 kAndroidDpadRoute = 1u << 17;
+static constexpr x86::reg32 kAndroidRoutes = kAndroidRoute | kAndroidDpadRoute;
+static std::atomic<x86::reg32> s_nativeButtons[Gamepad::kSlotCount];
+static padpolicy::CaptureGate s_captureGate[Gamepad::kSlotCount];
+static x86::reg32 s_physicalButtons[Gamepad::kSlotCount];
 
 /* Which physical pad belongs in which slot is the launcher's decision, not
  * SDL's: the player picks them in Controls -> Gamepad, and NFS3Activity
@@ -64,8 +83,13 @@ static bool        s_assignmentChanged = false;
 void Gamepad::setSlotDescriptors(const char* first, const char* second)
 {
     std::lock_guard<std::mutex> lock(s_assignmentMutex);
-    s_assignment[0] = first ? first : "";
-    s_assignment[1] = second ? second : "";
+    const char* values[] = { first ? first : "", second ? second : "" };
+    for (unsigned slot = 0; slot < kSlotCount; ++slot) {
+        if (s_assignment[slot] != values[slot]) {
+            s_androidButtons[slot].store(0);
+        }
+        s_assignment[slot] = values[slot];
+    }
     s_assignmentKnown = true;
     s_assignmentChanged = true;
 }
@@ -518,25 +542,10 @@ void Gamepad::setAxisResponse(x86::reg32 axis, const AxisResponse& response)
 }
 
 /* ----------------------------------------------------------------------
- * Buttons.  A slot has none as far as the game is concerned; each of a pad's
- * buttons sends a keyboard key instead, picked per slot in the launcher
- * (Controls -> Gamepad -> Buttons) and handed down as NFS_GAMEPAD<n>_<BUTTON>
- * -- player one's keys for the first pad, player two's for the second, the
- * keys the control profile in config.dat binds.  So a button means the same
- * in a race, in split screen and in the menus, with no mode to keep track of.
- * A value "axis:<action>" pushes the slot's own axis instead, for a player who
- * wants to steer or accelerate with a button; an empty value sends nothing.
- *
- * The triggers are the pedals' axis and no button at all -- unless the
- * launcher gives them a key, which it does for a pad set to Digital
- * (GamepadButtons.java): that pad drives on keys in a race, the way a keyboard
- * does, its D-pad steering and its triggers working the pedals.  A trigger
- * then counts as a button held down past a third of its travel.
- *
- * The keys go out as SDL events, not through SDL's keyboard state: window.cpp
- * turns them into the game's key messages exactly as it does a real
- * keyboard's, while the touch blend in getState() -- which reads that state --
- * can never take the second pad's D-pad for the first player's steering. */
+ * Buttons keep their launcher mappings unless the player binds them natively
+ * in the game's Controls screen. The menu uses its own confirm/back/arrows;
+ * capture exposes buttons without sending those menu keys. */
+
 namespace
 {
 
@@ -571,8 +580,8 @@ const PadButton s_padButtons[] =
     { "RIGHT_SHOULDER", SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER, SDL_GAMEPAD_AXIS_INVALID,       { "A",      "F"      }, ""       },
     { "LEFT_STICK",     SDL_GAMEPAD_BUTTON_LEFT_STICK,     SDL_GAMEPAD_AXIS_INVALID,       { "H",      "W"      }, ""       },
     { "RIGHT_STICK",    SDL_GAMEPAD_BUTTON_RIGHT_STICK,    SDL_GAMEPAD_AXIS_INVALID,       { "L",      "Y"      }, ""       },
-    { "BACK",           SDL_GAMEPAD_BUTTON_BACK,           SDL_GAMEPAD_AXIS_INVALID,       { "R",      "X"      }, "Escape" },
-    { "START",          SDL_GAMEPAD_BUTTON_START,          SDL_GAMEPAD_AXIS_INVALID,       { "Escape", "Escape" }, "Return" },
+    { "BACK",           SDL_GAMEPAD_BUTTON_BACK,           SDL_GAMEPAD_AXIS_INVALID,       { "R",      "X"      }, "" },
+    { "START",          SDL_GAMEPAD_BUTTON_START,          SDL_GAMEPAD_AXIS_INVALID,       { "Escape", "Escape" }, "" },
     { "DPAD_UP",        SDL_GAMEPAD_BUTTON_DPAD_UP,        SDL_GAMEPAD_AXIS_INVALID,       { "Up",     "Up"     }, "Up"     },
     { "DPAD_DOWN",      SDL_GAMEPAD_BUTTON_DPAD_DOWN,      SDL_GAMEPAD_AXIS_INVALID,       { "Down",   "Down"   }, "Down"   },
     { "DPAD_LEFT",      SDL_GAMEPAD_BUTTON_DPAD_LEFT,      SDL_GAMEPAD_AXIS_INVALID,       { "Left",   "Left"   }, "Left"   },
@@ -594,6 +603,93 @@ bool buttonDown(SDL_Gamepad* pad, const PadButton& button, bool held)
     if (button.button != SDL_GAMEPAD_BUTTON_INVALID)
         return SDL_GetGamepadButton(pad, button.button);
     return SDL_GetGamepadAxis(pad, button.trigger) > (held ? kTriggerUp : kTriggerDown);
+}
+
+// A face-key report must not hide directions that arrive only through SDL.
+// Once Android reports a direction, its whole D-pad group becomes authoritative
+// so delayed or conflicting SDL direction reports cannot generate a second press.
+bool automaticPhysicalButton(const Slot& source, x86::reg32 androidState, unsigned index, bool held)
+{
+    const bool android = (androidState & (1u << index)) != 0;
+    const bool dpad = index >= 10 && index <= 13;
+    if (androidState & (dpad ? kAndroidDpadRoute : kAndroidRoute)) {
+        if (index < 14) return android;
+        // Triggers can be analog-only, digital-only, or reported both ways.
+        return android || (source.gamepad && buttonDown(source.gamepad, s_padButtons[index], held));
+    }
+    if (source.gamepad) return buttonDown(source.gamepad, s_padButtons[index], held);
+    bool raw = source.handle && index < unsigned(SDL_GetNumJoystickButtons(source.handle))
+        && SDL_GetJoystickButton(source.handle, int(index));
+    // SDL hats are digital D-pads too, even on an unmapped joystick. Report
+    // the same four virtual buttons for navigation and in-game capture.
+    if (dpad && source.handle && SDL_GetNumJoystickHats(source.handle) > 0) {
+        static constexpr Uint8 directions[] = { SDL_HAT_UP, SDL_HAT_DOWN, SDL_HAT_LEFT, SDL_HAT_RIGHT };
+        raw = raw || (SDL_GetJoystickHat(source.handle, 0) & directions[index - 10]);
+    }
+    return raw;
+}
+
+// Profiles override only the requested functions, independent of SDL's database.
+bool physicalButton(const Slot& source, x86::reg32 androidState, unsigned index, bool held)
+{
+    const unsigned slot=unsigned(&source-s_slots);
+    const auto profile=s_controllerProfile[slot].load();
+    const auto context=Gamepad::Context(s_context.load());
+    const bool menu=context==Gamepad::Context::Menu || context==Gamepad::Context::Pause;
+    const int assigned=controllerprofile::button(profile,index,menu);
+    if(assigned>=0)return assigned!=0;
+    return automaticPhysicalButton(source,androidState,index,held);
+}
+
+// Diagnostic-only state capture runs here on the game/SDL polling thread.
+void recordInputSlot(unsigned slot,const Slot& source,x86::reg32 androidState,
+                     x86::reg32 physical,x86::reg32 blocked,int context)
+{
+    if(!s_inputTrace.enabled())return;
+    const auto now=SDL_GetTicks();
+    std::ostringstream identity;
+    identity << "id=" << source.id << " mapped=" << bool(source.gamepad);
+    if(source.handle) {
+        char guid[40];SDL_GUIDToString(SDL_GetJoystickGUID(source.handle),guid,sizeof(guid));
+        const char* name=SDL_GetJoystickName(source.handle);
+        identity << " name=" << std::quoted(name?name:"") << " guid=" << guid
+                 << " nbuttons=" << SDL_GetNumJoystickButtons(source.handle)
+                 << " naxes=" << SDL_GetNumJoystickAxes(source.handle) << " nhats=" << SDL_GetNumJoystickHats(source.handle);
+    }
+    const std::string channel="slot"+std::to_string(slot);
+    // Mapping retrieval is only necessary when the device identity changes.
+    if(s_inputTrace.state(now,channel+" device",identity.str(),identity.str())) {
+        std::string detail;
+        if(source.gamepad) { char* mapping=SDL_GetGamepadMapping(source.gamepad);if(mapping){detail="mapping="+std::string(mapping);SDL_free(mapping);} }
+        if(!detail.empty())s_inputTrace.note(now,channel+" "+detail);
+    }
+    std::uint64_t raw=0,mapped=0;unsigned hats=0;
+    if(source.handle) {
+        for(int i=0;i<std::min(64,SDL_GetNumJoystickButtons(source.handle));++i)
+            if(SDL_GetJoystickButton(source.handle,i))raw|=std::uint64_t(1)<<i;
+        for(int i=0;i<std::min(4,SDL_GetNumJoystickHats(source.handle));++i)
+            hats|=unsigned(SDL_GetJoystickHat(source.handle,i))<<(8*i);
+    }
+    if(source.gamepad)for(int i=0;i<std::min(64,int(SDL_GAMEPAD_BUTTON_COUNT));++i)
+        if(SDL_GetGamepadButton(source.gamepad,SDL_GamepadButton(i)))mapped|=std::uint64_t(1)<<i;
+    std::ostringstream common,axes,quantized;
+    common << "id=" << source.id << " context=" << context << std::hex
+           << " android=0x" << androidState << " profile=0x" << s_controllerProfile[slot].load() << " raw=0x" << raw << " mapped=0x" << mapped
+           << " hats=0x" << hats << " physical=0x" << physical << " blocked=0x" << blocked
+           << " bound=0x" << s_nativeButtons[slot].load();
+    if(source.handle)for(int i=0;i<std::min(8,SDL_GetNumJoystickAxes(source.handle));++i){
+        int value=SDL_GetJoystickAxis(source.handle,i);axes << ' ' << value;quantized << ' ' << value/2048;
+    }
+    const auto signature=common.str()+" axes_q2048="+quantized.str();
+    s_inputTrace.state(now,channel,signature,common.str()+" axes="+axes.str());
+}
+
+int menuAxis(const Slot& slot, int axis)
+{
+    if (slot.gamepad)
+        return SDL_GetGamepadAxis(slot.gamepad, axis ? SDL_GAMEPAD_AXIS_LEFTY : SDL_GAMEPAD_AXIS_LEFTX);
+    return slot.handle && SDL_GetNumJoystickAxes(slot.handle) > axis
+        ? SDL_GetJoystickAxis(slot.handle, axis) : 0;
 }
 
 ButtonBinding parseBinding(const char* value)
@@ -632,7 +728,7 @@ ButtonBinding parseBinding(const char* value)
  * being driven, or a menu -- which a replay counts as, since nobody is driving
  * one either.  A button means one thing while driving and another outside it,
  * the way the on-screen controls have two layouts, and from the same signal. */
-std::atomic<int> s_context{int(Gamepad::Context::Menu)};
+
 
 /* Both meanings of every button of every slot: the racing one the launcher
  * sets (NFS_GAMEPAD<n>_<BUTTON>) and the one a menu and a replay get
@@ -676,10 +772,6 @@ const ButtonBinding& buttonBinding(x86::reg32 slot, size_t button, Gamepad::Cont
         }
         return table;
     }();
-    /* Over a race the menu is the pause menu, and the button that opened it
-     * closes it: the one that is Escape while driving stays Escape. */
-    if (context == Gamepad::Context::Pause && s_bindings[slot][0][button].scancode == SDL_SCANCODE_ESCAPE)
-        return s_bindings[slot][0][button];
     return s_bindings[slot][context == Gamepad::Context::Race ? 0 : 1][button];
 }
 
@@ -702,13 +794,15 @@ void sendKey(const ButtonBinding& binding, bool down)
     event.key.scancode = binding.scancode;
     event.key.key = binding.key;
     event.key.down = down;
-    SDL_PushEvent(&event);
+    const bool pushed=SDL_PushEvent(&event);
+    if(s_inputTrace.enabled())s_inputTrace.note(SDL_GetTicks(),"menu-key key="+std::to_string(binding.key)+" scan="+std::to_string(int(binding.scancode))+" down="+std::to_string(down)+" pushed="+std::to_string(pushed));
 }
 
 struct SlotButtons
 {
     SDL_JoystickID pad = 0;
     bool           held[kPadButtons] = {};
+    Uint64         repeatAt[kPadButtons] = {};
     bool           sent[kPadButtons] = {};    // its key went down and has not come up
     /* Which key that was.  A button held across the end of a race sends one
      * key and would otherwise be let go of by another, leaving the first one
@@ -748,28 +842,60 @@ void updateButtonKeys()
             }
             buttons.pad = source.id;
         }
-        if (!source.gamepad)
-            continue;
+        const x86::reg32 androidState = s_androidButtons[slot].load();
+        x86::reg32 physical = 0;
+        for (unsigned i = 0; i < kPadButtons; ++i)
+            if (physicalButton(source, androidState, i, (s_physicalButtons[slot] & (1u << i)) != 0)) physical |= 1u << i;
+        s_physicalButtons[slot] = physical;
+        const bool capture = context == Gamepad::Context::Capture;
+        s_captureGate[slot].sample(physical, capture);
+        recordInputSlot(slot,source,androidState,physical,s_captureGate[slot].blocked,int(context));
+        const x86::reg32 native = s_nativeButtons[slot].load();
         for (size_t i = 0; i < kPadButtons; ++i)
         {
             const ButtonBinding& binding = buttonBinding(slot, i, context);
+            const bool suppressed = capture || (context == Gamepad::Context::Race && (native & (1u << i)));
             /* A key that is down goes up as soon as it stops being what this
              * button means -- muted, or a race gave way to a menu under a
              * thumb that never moved. */
             if (buttons.sent[i]
-                && ((muted && muteable(buttons.sentAs[i])) || buttons.sentAs[i].scancode != binding.scancode))
+                && (suppressed || (muted && muteable(buttons.sentAs[i])) || buttons.sentAs[i].scancode != binding.scancode))
             {
                 sendKey(buttons.sentAs[i], false);
                 buttons.sent[i] = false;
             }
-            const bool down = buttonDown(source.gamepad, s_padButtons[i], buttons.held[i]);
+            bool down = (physical & (1u << i)) != 0;
+            if (context == Gamepad::Context::Menu || context == Gamepad::Context::Pause) {
+                const char* name = s_padButtons[i].name;
+                if (SDL_strncmp(name, "DPAD_", 5) == 0 &&
+                    controllerprofile::allowMenuAxis(s_controllerProfile[slot].load(),unsigned(i-10))) {
+                    const bool horizontal = i == 12 || i == 13;
+                    int value = menuAxis(source, horizontal ? 0 : 1);
+                    if (i == 10 || i == 12) value = -value;
+                    down = down || padpolicy::direction(value, buttons.held[i]);
+                }
+            }
             const bool changed = down != buttons.held[i];
             buttons.held[i] = down;
-            if (down && !buttons.sent[i] && changed && !(muted && muteable(binding)))
+            if (down && !buttons.sent[i] && changed && !suppressed && !(muted && muteable(binding)))
             {
                 sendKey(binding, true);
                 buttons.sentAs[i] = binding;
                 buttons.sent[i] = true;
+                buttons.repeatAt[i] = SDL_GetTicks() + 400;
+            }
+            else if (down && buttons.sent[i] && !suppressed
+                     && (context == Gamepad::Context::Menu || context == Gamepad::Context::Pause)
+                     && i >= 10 && i <= 13 && SDL_GetTicks() >= buttons.repeatAt[i]) {
+                SDL_Event event{};
+                event.type = SDL_EVENT_KEY_DOWN;
+                event.key.timestamp = SDL_GetTicksNS();
+                event.key.scancode = binding.scancode;
+                event.key.key = binding.key;
+                event.key.down = true;
+                event.key.repeat = true;
+                SDL_PushEvent(&event);
+                buttons.repeatAt[i] = SDL_GetTicks() + 120;
             }
             else if (!down && buttons.sent[i])
             {
@@ -782,6 +908,31 @@ void updateButtonKeys()
 
 }
 
+void Gamepad::controllerProfile(unsigned slot,std::uint64_t state) {
+    if(slot<kSlotCount)s_controllerProfile[slot].store(state);
+}
+
+void Gamepad::inputDiagnostics(bool enabled) { s_inputTrace.active(enabled); }
+std::string Gamepad::inputReport(std::uint64_t previous) { return s_inputTrace.snapshot(previous); }
+
+void Gamepad::androidButton(unsigned slot, int button, bool down)
+{
+    if (slot >= kSlotCount) return;
+    if (button < 0) { s_androidButtons[slot].fetch_and(kAndroidRoutes); return; }
+    if (button >= 16) return;
+    const auto routes = kAndroidRoute | (button >= 10 && button <= 13 ? kAndroidDpadRoute : 0);
+    if (down) s_androidButtons[slot].fetch_or(routes | (1u << button));
+    else {
+        // One atomic state carries both ownership and held bits.
+        auto previous = s_androidButtons[slot].load();
+        while (!s_androidButtons[slot].compare_exchange_weak(previous,
+                (previous | routes) & ~(1u << button))) {}
+    }
+}
+void Gamepad::nativeButtons(unsigned slot, x86::reg32 mask)
+{
+    if (slot < kSlotCount) s_nativeButtons[slot].store(mask);
+}
 void Gamepad::muteGameKeys(bool muted)
 {
     s_gameKeysMuted.store(muted, std::memory_order_relaxed);
@@ -816,11 +967,11 @@ x86::reg32 Gamepad::getCount()
  * The game keeps a description of every device in config.dat and compares it
  * with what it finds at each start; on any difference it throws its control
  * bindings away and generates new ones.  So a slot is always the same two
- * axes and no buttons -- which is also exactly what the launcher's control
- * profile describes when it writes that file (ControlProfile.java). */
+ * axes and sixteen buttons, matching ControlProfile.java. Old settings files
+ * are migrated before startup without replacing the player's bindings. */
 x86::reg32 Gamepad::getButtonCount() const
 {
-    return 0;
+    return 16;
 }
 
 x86::reg32 Gamepad::getAxesCount() const
@@ -830,11 +981,14 @@ x86::reg32 Gamepad::getAxesCount() const
 
 bool Gamepad::touchSteering()
 {
-    return s_touchSteering;
+    return s_touchSteering || (touchinput::held() & 3u)!=0;
 }
 
 GamepadState Gamepad::getState() const
 {
+    // The original binding routine waits for button-up before drawing again.
+    // HIDAPI pads must keep receiving reports during that wait too.
+    if (Context(s_context.load()) == Context::Capture) SDL_UpdateJoysticks();
     GamepadState result;
     memset(&result, 0, sizeof(result));
 
@@ -862,15 +1016,22 @@ GamepadState Gamepad::getState() const
          * zone goes on each before they are combined: on the difference it
          * would swallow a light press of one whenever the other rested on its
          * trigger too. */
+        const x86::reg32 native = s_nativeButtons[m_slot].load();
         result.axes[kAxisPedals] = x86::sreg16(
-              shapeAxis(SDL_GetGamepadAxis(slot->gamepad, SDL_GAMEPAD_AXIS_LEFT_TRIGGER), pedalResponse)
-            - shapeAxis(SDL_GetGamepadAxis(slot->gamepad, SDL_GAMEPAD_AXIS_RIGHT_TRIGGER), pedalResponse));
+              ((native & (1u << 14)) ? 0 : shapeAxis(SDL_GetGamepadAxis(slot->gamepad, SDL_GAMEPAD_AXIS_LEFT_TRIGGER), pedalResponse))
+            - ((native & (1u << 15)) ? 0 : shapeAxis(SDL_GetGamepadAxis(slot->gamepad, SDL_GAMEPAD_AXIS_RIGHT_TRIGGER), pedalResponse)));
+        // Axis-only D-pads and left-stick Y must reach the same game Y axis
+        // in menus, capture and racing. Keep the existing combined triggers;
+        // the largest magnitude wins instead of adding or cancelling inputs.
+        blendAxis(result, kAxisPedals, shapeAxis(
+            SDL_GetGamepadAxis(slot->gamepad, SDL_GAMEPAD_AXIS_LEFTY), pedalResponse));
         /* A button put on an axis steers or works a pedal, which is a racing
          * thing whatever else is on the screen. */
         for (size_t i = 0; i < kPadButtons; ++i)
         {
             const ButtonBinding& binding = buttonBinding(m_slot, i, Context::Race);
-            if (binding.axis >= 0 && buttonDown(slot->gamepad, s_padButtons[i], false))
+            if (binding.axis >= 0 && !(s_nativeButtons[m_slot].load() & (1u << i))
+                && physicalButton(*slot, s_androidButtons[m_slot].load(), unsigned(i), false))
                 blendAxis(result, x86::reg32(binding.axis), binding.direction * 32767);
         }
     }
@@ -883,6 +1044,25 @@ GamepadState Gamepad::getState() const
             result.axes[kAxisSteer] = x86::sreg16(shapeAxis(SDL_GetJoystickAxis(pad, 0), steerResponse));
         if (axes > 1)
             result.axes[kAxisPedals] = x86::sreg16(shapeAxis(SDL_GetJoystickAxis(pad, 1), pedalResponse));
+    }
+
+    if (m_slot < kSlotCount) {
+        const Context mode = Context(s_context.load());
+        const x86::reg32 androidState = s_androidButtons[m_slot].load();
+        x86::reg32 physical = 0;
+        if (slot) for (unsigned i = 0; i < kPadButtons; ++i)
+            if (physicalButton(*slot, androidState, i, (s_physicalButtons[m_slot] & (1u << i)) != 0)) physical |= 1u << i;
+        // The binding screen polls between swaps too. Do not wait for update().
+        const auto usable = s_captureGate[m_slot].sample(physical, mode == Context::Capture);
+        if(slot&&mode==Context::Capture)recordInputSlot(m_slot,*slot,androidState,physical,s_captureGate[m_slot].blocked,int(mode));
+        if (mode == Context::Capture) {
+            result.buttons = usable;
+            // A configured axis direction is captured as its canonical D-pad
+            // button, rather than racing the original analog axis for capture.
+            if(controllerprofile::axisHeld(s_controllerProfile[m_slot].load()))
+                for(auto& axis:result.axes)axis=0;
+        }
+        else if (mode == Context::Race) result.buttons = usable & s_nativeButtons[m_slot].load();
     }
 
     if (m_slot == 0 && !touchDrivesAsKeys())
@@ -900,6 +1080,10 @@ GamepadState Gamepad::getState() const
         blendAxis(result, kAxisSteer, 32767 * touchSteer);
         blendAxis(result, kAxisPedals,
                   32767 * (int(held(TOUCH_BRAKE)) - int(held(TOUCH_ACCELERATE))));
+    }
+    if(s_inputTrace.enabled()) {
+        const auto value="buttons="+std::to_string(result.buttons)+" x="+std::to_string(result.axes[kAxisSteer]/2048)+" y="+std::to_string(result.axes[kAxisPedals]/2048);
+        s_inputTrace.state(SDL_GetTicks(),"di"+std::to_string(m_slot),value,value);
     }
     return result;
 }
@@ -969,3 +1153,19 @@ void win32::Gamepad::phoneTick(float turn) {
     (void)turn;
 #endif
 }
+
+#ifdef __ANDROID__
+extern "C" JNIEXPORT void JNICALL
+Java_dev_nfs3hp_port_TouchControlsOverlay_nativeTouchAction(JNIEnv*,jclass,jint action,jboolean down){
+    win32::touchinput::set(unsigned(action),down==JNI_TRUE);
+}
+#endif
+
+
+
+#ifdef __ANDROID__
+extern "C" JNIEXPORT void JNICALL
+Java_dev_nfs3hp_port_NFS3Activity_nativeControllerProfile(JNIEnv*,jclass,jint slot,jlong state){
+    win32::Gamepad::controllerProfile(unsigned(slot),std::uint64_t(state));
+}
+#endif

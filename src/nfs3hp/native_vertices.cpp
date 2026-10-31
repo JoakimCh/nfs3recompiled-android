@@ -1,5 +1,6 @@
 #include <nfs3hp.h>
 #include "native_thrash.h"
+#include "packed_vertex.h"
 #include <SDL3/SDL.h>
 #include <cfenv>
 #include <cfloat>
@@ -81,6 +82,15 @@ void clipQuadNative(win32::WinApplication* app, x86::CPU& cpu);
 void clipTriangleByZNative(win32::WinApplication* app, x86::CPU& cpu);
 void sortedBucketsNative(win32::WinApplication* app, x86::CPU& cpu);
 
+// A guest float may begin at any byte address. Keep the byte-backed accessor
+// on both reads and writes instead of exposing an aligned host float pointer.
+struct GuestFloats {
+    win32::WinApplication* app;
+    x86::reg32 base;
+    float operator[](unsigned i) const { return app->getMemory<float>(base + 4 * i); }
+    win32::MemoryAccessor<float> operator[](unsigned i) { return app->getMemory<float>(base + 4 * i); }
+};
+
 inline float asFloat(x86::reg32 bits)
 {
     float value;
@@ -106,6 +116,30 @@ struct FloatMath
     static Value div(Value a, Value b) { return a / b; }
     static Value sqrt(Value a) { return std::sqrt(a); }
 };
+
+/* The default FPU keeps extended/double results as host doubles. Dispatch
+ * once per call instead of checking its precision at every operation in a
+ * vertex loop. Keep the same operation order, with contraction disabled.
+ * This is not the 80-bit or long-double implementation. */
+struct DoubleMath
+{
+    typedef double Value;
+    static Value add(Value a, Value b) { return a + b; }
+    static Value sub(Value a, Value b) { return a - b; }
+    static Value mul(Value a, Value b) { return a * b; }
+    static Value div(Value a, Value b) { return a / b; }
+    static Value sqrt(Value a) { return std::sqrt(a); }
+};
+
+inline bool hostDouble(const x86::CPU& cpu)
+{
+#if defined(WITH_PEDANTIC_FPU) || defined(WITH_WIDE_FPU)
+    NFS2_USE(cpu);
+    return false;
+#else
+    return cpu.fpu.rounding == x86::FPU::kRoundNone;
+#endif
+}
 
 /* The arithmetic as the generated code does it, through the emulated FPU:
  * each result rounded as the control word asks at the time (FPU::add and the
@@ -495,8 +529,8 @@ void objectVerticesWith(win32::WinApplication* app, x86::CPU& cpu, const Math& m
         cpu.esp += 4 + 4;
         return;
     }
-    const float* m = &app->getMemory<float>(cpu.ebx);
-    const float* t = &app->getMemory<float>(cpu.ecx);
+    const GuestFloats m{app, cpu.ebx};
+    const GuestFloats t{app, cpu.ecx};
     const float scaleX = app->getMemory<float>(x86::reg32(0x56009c));
     const float scaleY = app->getMemory<float>(x86::reg32(0x5600a0));
     const float centreX = app->getMemory<float>(x86::reg32(0x5600a4));
@@ -506,7 +540,7 @@ void objectVerticesWith(win32::WinApplication* app, x86::CPU& cpu, const Math& m
 
     // Rotated and moved on the x87 stack, stored once; z of exactly 1 made tiny.
     auto move = [&](x86::reg32 from, x86::reg32 to) {
-        const float* v = &app->getMemory<float>(from);
+        const auto v = readPackedVertex(&app->getMemory<x86::reg8>(from));
         const auto x = math.add(math.add(math.mul(v[0], m[0]), math.mul(v[1], m[3])), math.mul(v[2], m[6]));
         const auto y = math.add(math.add(math.mul(v[0], m[1]), math.mul(v[1], m[4])), math.mul(v[2], m[7]));
         const auto z = math.add(math.add(math.mul(v[0], m[2]), math.mul(v[1], m[5])), math.mul(v[2], m[8]));
@@ -570,13 +604,13 @@ void rotateVectorsWith(win32::WinApplication* app, x86::CPU& cpu, const Math& ma
     x86::reg32 out = cpu.ecx;
     for (x86::sreg32 left = count; left > 0; --left)
     {
-        const float* v = &app->getMemory<float>(in);
+        const GuestFloats v{app, in};
         const float v0 = v[0], v1 = v[1], v2 = v[2];
-        const float* m = &app->getMemory<float>(matrix);
+        const GuestFloats m{app, matrix};
         const float x = float(math.add(math.add(math.mul(v0, m[0]), math.mul(v1, m[3])), math.mul(v2, m[6])));
         const float y = float(math.add(math.add(math.mul(v0, m[1]), math.mul(v1, m[4])), math.mul(v2, m[7])));
         const float z = float(math.add(math.add(math.mul(v0, m[2]), math.mul(v1, m[5])), math.mul(v2, m[8])));
-        float* o = &app->getMemory<float>(out);
+        GuestFloats o{app, out};
         o[0] = x;
         o[1] = y;
         o[2] = z;
@@ -2179,6 +2213,11 @@ void objectVerticesNative(win32::WinApplication* app, x86::CPU& cpu)
  * not be turned again from what they were: one run, the FPU's. */
 void rotateVectorsNative(win32::WinApplication* app, x86::CPU& cpu)
 {
+    if (hostDouble(cpu))
+    {
+        rotateVectorsWith(app, cpu, DoubleMath());
+        return;
+    }
     const x86::reg32 span = x86::sreg32(cpu.eax) > 0 ? cpu.eax * 0xc : 0;
     const bool inPlace = span != 0 && cpu.ecx - cpu.edx + span - 1 < 2 * span - 1;
     runNative<rotateVectorsWith<FloatMath>, rotateVectorsWith<FpuMath>>(app, cpu, inPlace);
@@ -2204,8 +2243,8 @@ void dotProductsWith(win32::WinApplication* app, x86::CPU& cpu, const Math& math
     x86::reg32 out = cpu.ecx;
     for (x86::sreg32 left = count; left > 0; --left)
     {
-        const float* v = &app->getMemory<float>(in);
-        const float* w = &app->getMemory<float>(d);
+        const GuestFloats v{app, in};
+        const GuestFloats w{app, d};
         const float v0 = v[0], v1 = v[1], v2 = v[2];
         app->getMemory<float>(out) = float(math.add(math.add(math.mul(v0, w[0]), math.mul(v1, w[1])),
                                                     math.mul(v2, w[2])));
@@ -2224,30 +2263,33 @@ void dotProductsWith(win32::WinApplication* app, x86::CPU& cpu, const Math& math
 
 void dotProductsNative(win32::WinApplication* app, x86::CPU& cpu)
 {
-    runNative<dotProductsWith<FloatMath>, dotProductsWith<FpuMath>>(app, cpu);
+    if (hostDouble(cpu))
+        dotProductsWith(app, cpu, DoubleMath());
+    else
+        runNative<dotProductsWith<FloatMath>, dotProductsWith<FpuMath>>(app, cpu);
 }
 
 /* sub_4e0280: c = a b, 3x3 matrices of floats, row by row.
  *   eax  a; edx  b; ebx  c
  * c may be a or b: the original copies whichever it is to its frame first, and
  * leaves eax or edx pointing at the copy.  Here everything is read before
- * anything is written; the arithmetic is the emulated FPU's (FpuMath), so
- * nothing runs twice. */
-void multiplyMatricesNative(win32::WinApplication* app, x86::CPU& cpu)
+ * anything is written. DoubleMath handles the default double precision;
+ * FpuMath handles the other modes. Neither needs a retry. */
+template <typename Math>
+void multiplyMatricesWith(win32::WinApplication* app, x86::CPU& cpu, const Math& M)
 {
-    const FpuMath M{cpu.fpu};
     const x86::reg32 esp = cpu.esp;
     const x86::reg32 a = cpu.eax, b = cpu.edx, c = cpu.ebx;
     const x86::reg32 frame = esp - 16 - 0x2c;  // push ecx, esi, edi, ebp; sub esp, 0x2c
     float left[9], right[9];
-    std::memcpy(left, &app->getMemory<float>(a), sizeof left);
-    std::memcpy(right, &app->getMemory<float>(b), sizeof right);
+    std::memcpy(left, &app->getMemory<x86::reg8>(a), sizeof left);
+    std::memcpy(right, &app->getMemory<x86::reg8>(b), sizeof right);
     float product[9];
     for (int i = 0; i < 3; ++i)
         for (int j = 0; j < 3; ++j)
             product[i * 3 + j] = float(M.add(M.add(M.mul(left[i * 3], right[j]), M.mul(left[i * 3 + 1], right[3 + j])),
                                               M.mul(left[i * 3 + 2], right[6 + j])));
-    std::memcpy(&app->getMemory<float>(c), product, sizeof product);
+    std::memcpy(&app->getMemory<x86::reg8>(c), product, sizeof product);
     // The copy in the frame, where the original makes one.
     if (a == c || b == c)
         std::memcpy(&app->getMemory<float>(frame), a == c ? left : right, sizeof left);
@@ -2262,15 +2304,23 @@ void multiplyMatricesNative(win32::WinApplication* app, x86::CPU& cpu)
     cpu.esp = esp + 4;
 }
 
+void multiplyMatricesNative(win32::WinApplication* app, x86::CPU& cpu)
+{
+    if (hostDouble(cpu))
+        multiplyMatricesWith(app, cpu, DoubleMath());
+    else
+        multiplyMatricesWith(app, cpu, FpuMath{cpu.fpu});
+}
+
 /* sub_4e0430: points turned by a 3x3 matrix and moved.
  *   eax  count; edx  the points in; ebx  the matrix; ecx  the move;
  *   [esp+4]  the points out, 12 bytes each (it returns with ret 4)
  * A point's three are read before it is written, so it works in place; the
- * move is added to what was stored, as floats.  FpuMath, as for a
- * multiplied matrix: out may be in. */
-void transformPointsNative(win32::WinApplication* app, x86::CPU& cpu)
+ * move is added to what was stored, as floats. As for a multiplied matrix,
+ * select DoubleMath or FpuMath once; out may be in. */
+template <typename Math>
+void transformPointsWith(win32::WinApplication* app, x86::CPU& cpu, const Math& M)
 {
-    const FpuMath M{cpu.fpu};
     const x86::sreg32 count = x86::sreg32(cpu.eax);
     const x86::reg32 esp = cpu.esp;
     const x86::reg32 outArgument = app->getMemory<x86::reg32>(esp + 4);
@@ -2289,17 +2339,17 @@ void transformPointsNative(win32::WinApplication* app, x86::CPU& cpu)
     x86::reg32 out = outArgument;
     for (x86::sreg32 left = count; left > 0; --left)
     {
-        const float* v = &app->getMemory<float>(in);
+        const GuestFloats v{app, in};
         const float v0 = v[0], v1 = v[1], v2 = v[2];
-        const float* m = &app->getMemory<float>(matrix);
+        const GuestFloats m{app, matrix};
         const float x = float(M.add(M.add(M.mul(v0, m[0]), M.mul(v1, m[3])), M.mul(v2, m[6])));
         const float y = float(M.add(M.add(M.mul(v0, m[1]), M.mul(v1, m[4])), M.mul(v2, m[7])));
         const float z = float(M.add(M.add(M.mul(v0, m[2]), M.mul(v1, m[5])), M.mul(v2, m[8])));
-        float* o = &app->getMemory<float>(out);
+        GuestFloats o{app, out};
         o[0] = x;
         o[1] = y;
         o[2] = z;
-        const float* t = &app->getMemory<float>(move);
+        const GuestFloats t{app, move};
         const float t0 = t[0], t1 = t[1], t2 = t[2];
         const float x2 = float(M.add(o[0], t0));
         const float y2 = float(M.add(o[1], t1));
@@ -2318,6 +2368,14 @@ void transformPointsNative(win32::WinApplication* app, x86::CPU& cpu)
     flags.compare(0, 0);
     flags.store(cpu);
     cpu.esp = esp + 4 + 4;
+}
+
+void transformPointsNative(win32::WinApplication* app, x86::CPU& cpu)
+{
+    if (hostDouble(cpu))
+        transformPointsWith(app, cpu, DoubleMath());
+    else
+        transformPointsWith(app, cpu, FpuMath{cpu.fpu});
 }
 
 /* sub_4c79a0: the frame's polygons as one list, from the depth buckets.
@@ -3085,8 +3143,8 @@ void depthBucketsNative(win32::WinApplication* app, x86::CPU& cpu)
 void dotPushNative(win32::WinApplication* app, x86::CPU& cpu)
 {
     const FpuMath M{cpu.fpu};
-    const float* a = &app->getMemory<float>(cpu.eax);
-    const float* b = &app->getMemory<float>(cpu.edx);
+    const GuestFloats a{app, cpu.eax};
+    const GuestFloats b{app, cpu.edx};
     const double sum = M.add(M.add(M.mul(a[0], b[0]), M.mul(a[1], b[1])), M.mul(a[2], b[2]));
     cpu.fpu.count += 1;
     cpu.fpu.st(0) = x86::Float(sum);
@@ -3098,7 +3156,7 @@ void dotPushNative(win32::WinApplication* app, x86::CPU& cpu)
 void normaliseNative(win32::WinApplication* app, x86::CPU& cpu)
 {
     const FpuMath M{cpu.fpu};
-    float* v = &app->getMemory<float>(cpu.eax);
+    GuestFloats v{app, cpu.eax};
     const float x = v[0], y = v[1], z = v[2];
     const float length = float(M.sqrt(M.add(M.add(M.mul(y, y), M.mul(x, x)), M.mul(z, z))));
     IntegerFlags flags;
@@ -3147,7 +3205,7 @@ void nearestBlockNative(win32::WinApplication* app, x86::CPU& cpu)
     const x86::reg32 esp = cpu.esp;
     const x86::reg32 frame = esp - 20;  // push ebx, ecx, edx, esi, ebp; mov ebp, esp
     const double scale = app->getMemory<double>(x86::reg32(0x536d74));
-    const float* p = &app->getMemory<float>(cpu.eax);
+    const GuestFloats p{app, cpu.eax};
     x86::reg32* point = &app->getMemory<x86::reg32>(frame - 0x10);
     for (int i = 0; i < 3; ++i)
         point[i] = x86::reg32(cpu.fpu.toInteger<x86::sreg32>(x86::Float(FpuMath{cpu.fpu}.mul(p[i], scale))));
@@ -3263,8 +3321,8 @@ void groundHeightNative(win32::WinApplication* app, x86::CPU& cpu)
 {
     const FpuMath M{cpu.fpu};
     const x86::reg32 esp = cpu.esp;
-    const float* m = &app->getMemory<float>(cpu.eax);
-    const float* args = &app->getMemory<float>(esp + 4);
+    const GuestFloats m{app, cpu.eax};
+    const GuestFloats args{app, esp + 4};
     const float o[3] = { args[0], args[1], args[2] };
     const float d[3] = { float(M.sub(args[3], o[0])), float(M.sub(args[4], o[1])), float(M.sub(args[5], o[2])) };
     float r[3];
@@ -3276,7 +3334,7 @@ void groundHeightNative(win32::WinApplication* app, x86::CPU& cpu)
         q[j] = float(M.add(M.add(M.mul(r[0], m[j]), M.mul(r[1], m[3 + j])), M.mul(r[2], m[6 + j])));
     for (int j = 0; j < 3; ++j)
         q[j] = float(M.add(q[j], o[j]));
-    float* written = &app->getMemory<float>(esp + 0x10);
+    GuestFloats written{app, esp + 0x10};
     written[0] = d[0];
     written[1] = d[1];
     written[2] = d[2];
@@ -3446,7 +3504,7 @@ void particlesNative(win32::WinApplication* app, x86::CPU& cpu)
             byte(flag) = 0;
             continue;
         }
-        const float* m = &app->getMemory<float>(matrix);
+        const GuestFloats m{app, matrix};
         float x = float(M.add(M.add(M.mul(position[0], m[0]), M.mul(position[1], m[3])), M.mul(position[2], m[6])));
         float y = float(M.add(M.add(M.mul(position[0], m[1]), M.mul(position[1], m[4])), M.mul(position[2], m[7])));
         float z = float(M.add(M.add(M.mul(position[0], m[2]), M.mul(position[1], m[5])), M.mul(position[2], m[8])));
@@ -3973,7 +4031,7 @@ void lightGlowNative(win32::WinApplication* app, x86::CPU& cpu)
         finish(statusInto(view));
         return;
     }
-    const float* m = &app->getMemory<float>(view + 0x44);
+    const GuestFloats m{app, view + 0x44};
     const float p0 = floatAt(ebp + 0x1c), p1 = floatAt(ebp + 0x20), p2 = floatAt(ebp + 0x24);
     float x = float(M.add(M.add(M.mul(p0, m[0]), M.mul(p1, m[3])), M.mul(p2, m[6])));
     float y = float(M.add(M.add(M.mul(p0, m[1]), M.mul(p1, m[4])), M.mul(p2, m[7])));
@@ -4227,7 +4285,7 @@ void headlightBeamNative(win32::WinApplication* app, x86::CPU& cpu)
         d[2] = float(M.mul(inverse, d[2]));
     }
     auto dot = [&](x86::reg32 w) {
-        const float* v = &app->getMemory<float>(w);
+        const GuestFloats v{app, w};
         return float(M.add(M.add(M.mul(d[0], v[0]), M.mul(d[1], v[1])), M.mul(d[2], v[2])));
     };
     const float c1 = dot(carMatrix + 0x18);
@@ -4295,8 +4353,8 @@ void headlightBeamNative(win32::WinApplication* app, x86::CPU& cpu)
 
     // The two rings: points round the beam, to the car, the world, the view, the screen.
     auto ring = [&](x86::reg32 records, float radius, bool lit) {
-        const float* m = &app->getMemory<float>(carMatrix);
-        const float* v = &app->getMemory<float>(view + 0x44);
+        const GuestFloats m{app, carMatrix};
+        const GuestFloats v{app, view + 0x44};
         const float camera[3] = { floatAt(view + 0x38), floatAt(view + 0x3c), floatAt(view + 0x40) };
         float a = start;
         for (x86::sreg32 i = 0; i < count; ++i)
@@ -4537,14 +4595,14 @@ void carDetailNative(win32::WinApplication* app, x86::CPU& cpu)
     const float corners[8][3] = { { -e0, e1, e2 },  { e0, e1, e2 },  { e0, e1, -e2 },  { -e0, e1, -e2 },
                                   { -e0, -e1, e2 }, { e0, -e1, e2 }, { e0, -e1, -e2 }, { -e0, -e1, -e2 } };
     // the car's place in the view (sub_4e0430) and its matrix turned by the view's (sub_4e0280)
-    const float* v = &app->getMemory<float>(view + 0x44);
-    const float* position = &app->getMemory<float>(car + 0x98);
+    const GuestFloats v{app, view + 0x44};
+    const GuestFloats position{app, car + 0x98};
     float place[3];
     for (int j = 0; j < 3; ++j)
         place[j] = float(M.add(M.add(M.mul(position[0], v[j]), M.mul(position[1], v[3 + j])), M.mul(position[2], v[6 + j])));
     for (int j = 0; j < 3; ++j)
         place[j] = float(M.add(place[j], floatAt(view + 0x38 + x86::reg32(j) * 4)));
-    const float* turn = &app->getMemory<float>(car + 0xc0);
+    const GuestFloats turn{app, car + 0xc0};
     float r[9];
     for (int i = 0; i < 3; ++i)
         for (int j = 0; j < 3; ++j)
@@ -4682,14 +4740,14 @@ void objectVerticesListNative(win32::WinApplication* app, x86::CPU& cpu)
     x86::reg32 left = count;
     x86::reg32 eax = matrix, ebx = count, ecx = vertices;
     x86::reg32 in = vertices;
-    const float* m = &app->getMemory<float>(matrix);
-    const float* t = &app->getMemory<float>(move);
+    const GuestFloats m{app, matrix};
+    const GuestFloats t{app, move};
     while (true)
     {
         --left;
         if (left == 0xffffffff)
             break;
-        const float* v = &app->getMemory<float>(in);
+        const auto v = readPackedVertex(&app->getMemory<x86::reg8>(in));
         float p[3];
         for (int j = 0; j < 3; ++j)
             p[j] = float(M.add(M.add(M.mul(v[0], m[j]), M.mul(v[1], m[3 + j])), M.mul(v[2], m[6 + j])));
@@ -4861,9 +4919,9 @@ inline void countedDown(x86::CPU& cpu, x86::reg32 added, x86::reg32 before)
 
 /* sub_4e0050: count vectors at edx times the float [esp+4] into [esp+8]
  * (ret 8). */
-void scaleVectorsNative(win32::WinApplication* app, x86::CPU& cpu)
+template <typename Math>
+void scaleVectorsWith(win32::WinApplication* app, x86::CPU& cpu, const Math& M)
 {
-    const FpuMath M{cpu.fpu};
     const x86::reg32 esp = cpu.esp;
     const x86::sreg32 count = x86::sreg32(cpu.eax);
     const double scale = app->getMemory<float>(esp + 4);
@@ -4880,9 +4938,9 @@ void scaleVectorsNative(win32::WinApplication* app, x86::CPU& cpu)
     }
     for (x86::sreg32 i = 0; i < count; ++i)
     {
-        const float* v = &app->getMemory<float>(in);
+        const GuestFloats v{app, in};
         const float x = v[0], y = v[1], z = v[2];
-        float* o = &app->getMemory<float>(out);
+        GuestFloats o{app, out};
         o[0] = float(M.mul(x, scale));
         o[1] = float(M.mul(y, scale));
         o[2] = float(M.mul(z, scale));
@@ -4897,10 +4955,9 @@ void scaleVectorsNative(win32::WinApplication* app, x86::CPU& cpu)
 
 /* sub_4dffb0 (add) and sub_4e0000 (subtract): count vectors at edx, each with
  * the one vector at ebx, into ecx. */
-template <bool Add>
-void offsetVectorsNative(win32::WinApplication* app, x86::CPU& cpu)
+template <bool Add, typename Math>
+void offsetVectorsWith(win32::WinApplication* app, x86::CPU& cpu, const Math& M)
 {
-    const FpuMath M{cpu.fpu};
     const x86::sreg32 count = x86::sreg32(cpu.eax);
     x86::reg32 in = cpu.edx;
     const x86::reg32 by = cpu.ebx;
@@ -4917,11 +4974,11 @@ void offsetVectorsNative(win32::WinApplication* app, x86::CPU& cpu)
     x86::reg32 last = out;
     for (x86::sreg32 i = 0; i < count; ++i)
     {
-        const float* a = &app->getMemory<float>(in);
-        const float* b = &app->getMemory<float>(by);
+        const GuestFloats a{app, in};
+        const GuestFloats b{app, by};
         const float a0 = a[0], a1 = a[1], a2 = a[2];
         const float b0 = b[0], b1 = b[1], b2 = b[2];
-        float* o = &app->getMemory<float>(out);
+        GuestFloats o{app, out};
         o[0] = float(Add ? M.add(a0, b0) : M.sub(a0, b0));
         o[1] = float(Add ? M.add(a1, b1) : M.sub(a1, b1));
         o[2] = float(Add ? M.add(a2, b2) : M.sub(a2, b2));
@@ -4937,11 +4994,21 @@ void offsetVectorsNative(win32::WinApplication* app, x86::CPU& cpu)
     cpu.esp += 4;
 }
 
+void scaleVectorsNative(win32::WinApplication* app, x86::CPU& cpu) {
+    if (hostDouble(cpu)) scaleVectorsWith(app, cpu, DoubleMath());
+    else scaleVectorsWith(app, cpu, FpuMath{cpu.fpu});
+}
+template <bool Add>
+void offsetVectorsNative(win32::WinApplication* app, x86::CPU& cpu) {
+    if (hostDouble(cpu)) offsetVectorsWith<Add>(app, cpu, DoubleMath());
+    else offsetVectorsWith<Add>(app, cpu, FpuMath{cpu.fpu});
+}
+
 /* sub_4e06a0: the length of the vector at eax, pushed onto the x87 stack. */
 inline double vectorLength(win32::WinApplication* app, x86::FPU& fpu, x86::reg32 at)
 {
     const FpuMath M{fpu};
-    const float* v = &app->getMemory<float>(at);
+    const GuestFloats v{app, at};
     return M.sqrt(M.add(M.add(M.mul(v[1], v[1]), M.mul(v[0], v[0])), M.mul(v[2], v[2])));
 }
 
@@ -4958,9 +5025,9 @@ void unitVectorNative(win32::WinApplication* app, x86::CPU& cpu)
 {
     const FpuMath M{cpu.fpu};
     const double inverse = M.div(1.0, vectorLength(app, cpu.fpu, cpu.eax));
-    const float* v = &app->getMemory<float>(cpu.eax);
+    const GuestFloats v{app, cpu.eax};
     const float x = v[0], y = v[1], z = v[2];
-    float* o = &app->getMemory<float>(cpu.edx);
+    GuestFloats o{app, cpu.edx};
     o[0] = float(M.mul(x, inverse));
     o[1] = float(M.mul(y, inverse));
     o[2] = float(M.mul(inverse, z));
@@ -5017,13 +5084,13 @@ void boxOutsideNative(win32::WinApplication* app, x86::CPU& cpu)
     x86::reg32 code = 0, edx = 0;
     for (int i = 0; i < 4; ++i)
     {
-        const float* v = &app->getMemory<float>(corners + x86::reg32(i) * 12);
+        const GuestFloats v{app, corners + x86::reg32(i) * 12};
         const float v0 = v[0], v1 = v[1], v2 = v[2];
-        const float* m = &app->getMemory<float>(matrix);
+        const GuestFloats m{app, matrix};
         float x = float(M.add(M.add(M.mul(v0, m[0]), M.mul(v1, m[3])), M.mul(v2, m[6])));
         float y = float(M.add(M.add(M.mul(v0, m[1]), M.mul(v1, m[4])), M.mul(v2, m[7])));
         float z = float(M.add(M.add(M.mul(v0, m[2]), M.mul(v1, m[5])), M.mul(v2, m[8])));
-        const float* t = &app->getMemory<float>(move);
+        const GuestFloats t{app, move};
         x = float(M.add(t[0], x));
         y = float(M.add(t[1], y));
         z = float(M.add(t[2], z));

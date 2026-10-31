@@ -64,6 +64,7 @@ public final class TouchControlsOverlay extends View {
         menuMode=!preview; // The game starts in its menus; preview opens on the racing layout.
         keys=new TouchKeyState(output!=null?output:(key,down)->{
             if(preview) return;
+            if(key<0){try{nativeTouchAction(-key-1,down);}catch(UnsatisfiedLinkError notLoaded){/* SDL reports load failures. */}return;}
             if(down) SDLActivity.onNativeKeyDown(key);else SDLActivity.onNativeKeyUp(key);
         });
         setFocusable(false);setContentDescription(c.getString(R.string.touch_preview_description));
@@ -484,7 +485,14 @@ public final class TouchControlsOverlay extends View {
         }
         return true;
     }
-    private int key(String action) { return GamePreferences.getTouchKey(preferences,action.equals("back")?"pause":action); }
+    private static native void nativeTouchAction(int action,boolean down);
+    private int key(String action) {
+        int function=TouchAction.function(action);
+        // Negative tokens are stable ACTION identities, so releases remain
+        // correct even if the binding or layout changes while a finger is held.
+        if(!preview&&!menuMode&&function>=0)return -function-1;
+        return GamePreferences.getTouchKey(preferences,action.equals("back")?"pause":action);
+    }
     private void update(Contact c,float x,float y) {
         ArrayList<Integer> wanted=new ArrayList<>();
         c.inside=c.control.hitBox.contains(x,y);

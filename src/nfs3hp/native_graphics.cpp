@@ -1,4 +1,5 @@
 #include "native_guest.h"
+#include <lib/perfstats.h>
 #include "thrash.h"
 
 #include <cstdint>
@@ -4126,6 +4127,7 @@ constexpr reg32 kRaceFrameSteps[] = {0x4dece0, 0x4dedf0, 0x4cc600};
  * frame (sub_484030), and the countdown. */
 void raceFrame(win32::WinApplication* app, x86::CPU& cpu)
 {
+    win32::perf::Scope raceTiming(win32::perf::RaceCalls,cpu.eax==0);
     push(app, cpu, cpu.ebx);
     push(app, cpu, cpu.ecx);
     push(app, cpu, cpu.edx);

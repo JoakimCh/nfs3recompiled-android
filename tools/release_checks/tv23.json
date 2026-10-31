@@ -1,0 +1,39 @@
+{
+  "source_commit": "967523605b6e8809313283083c69906b52589d58",
+  "version": "0.78-armv7-tv23-profile",
+  "versionCode": 100,
+  "native_build_id": "89be35747ec99a575221ab159fb0f508b8a08750",
+  "apk_sha256": "3703962fa40287bb88f319d926ed0ff9077d5a164fc43f62c3d5d9394f650cfd",
+  "apk_bytes": 21678233,
+  "native_files": [
+    "lib/armeabi-v7a/libSDL3.so",
+    "lib/armeabi-v7a/libandroidx.graphics.path.so",
+    "lib/armeabi-v7a/libc++_shared.so",
+    "lib/armeabi-v7a/libmain.so"
+  ],
+  "device_tested": false,
+  "debuggable": false,
+  "shell_profileable": true,
+  "packaged_resource_fields_checked": 296,
+  "packaged_resource_mismatches": 0,
+  "zip_alignment_bytes": 16384,
+  "ui_tests": [
+    {
+      "name": "dev.nfs3hp.port.ControllerSetupActivityTest",
+      "tests": "6",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "dev.nfs3hp.port.LauncherAdvancedTest",
+      "tests": "1",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    }
+  ],
+  "bonus_checks": "Every bonus-car bit on/off preserves all other fields; host check passed.",
+  "notes": "Owner confirmed tv22 works. tv23 adds Advanced tabs and independent car toggles; device test pending. Exact symbols retained separately."
+}
+

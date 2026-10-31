@@ -364,8 +364,8 @@ HRESULT setProperty(Entry& entry, const Arguments& a)
 }
 
 /* The device's state now: a pad's two axes -- X steers, Y is both pedals --
- * the axes it does not have centred, every hat centred and no buttons (a
- * pad's buttons reach the game as keys, sdl-backend/gamepad.cpp); the mouse's
+ * the axes it does not have centred, every hat centred and its bindable
+ * buttons (legacy key mappings remain in sdl-backend/gamepad.cpp); the mouse's
  * movement since the last read and its buttons; nothing for the keyboard. */
 HRESULT deviceState(win32::WinApplication* app, x86::CPU& cpu, Entry& entry, const Arguments& a)
 {
@@ -383,6 +383,8 @@ HRESULT deviceState(win32::WinApplication* app, x86::CPU& cpu, Entry& entry, con
         const win32::GamepadState now = pad->getState();
         state->lX = 0x7fff + now.axes[win32::Gamepad::kAxisSteer];
         state->lY = 0x7fff + now.axes[win32::Gamepad::kAxisPedals];
+        for (unsigned button = 0; button < 16; ++button)
+            state->rgbButtons[button] = (now.buttons & (x86::reg64(1) << button)) ? 0x80 : 0;
         state->lZ = state->lRx = state->lRy = state->lRz = 0x7fff;
         for (int pov = 0; pov < 4; ++pov)
             state->rgdwPOV[pov] = DWORD(-1);

@@ -59,8 +59,8 @@
     <string name="delete_data_title">Delete data set?</string>
     <string name="delete_data_message">Delete %1$s from this device? This cannot be undone.</string>
 
-    <string name="controls_explanation">This is the port\'s translation layer between physical gamepad or touch input and the emulated keyboard. It is separate from the game\'s own in-game Controls menu; that menu is unchanged and unaffected.</string>
-    <string name="controls_row_hint">For each action, choose a physical gamepad button, then the emulated key sent by both that button and its on-screen touch button.</string>
+    <string name="controls_explanation">Set racing assignments in the game\'s Controls menu. Touch buttons follow those assignments. Gamepads connect automatically; X/Y axes and the D-pad navigate menus.</string>
+    <string name="controls_row_hint">Choose the physical gamepad button and the key it sends. Racing touch buttons follow the assignments in the game\'s Controls menu.</string>
 
     <string name="touch_mode_label">Input mode</string>
     <string name="touch_mode_buttons">Buttons</string>
@@ -99,7 +99,7 @@
          screen is in English everywhere (it is for the people testing). -->
     <string name="advanced_title" translatable="false">Advanced</string>
     <string name="debug_mode" translatable="false">Debug mode</string>
-    <string name="debug_mode_note" translatable="false">Off: nothing is written to the log and the game starts as a player has it. On: the log is open and the switches below reach the game when it next starts. Launch extras (adb, the names under each switch) still win for that one start.</string>
+    <string name="debug_mode_note" translatable="false">Off: nothing is written to the log and the game starts as a player has it. On: logging and the debug options below are enabled. Launch extras (adb, the names under each switch) still win for that one start.</string>
     <string name="debug_traces" translatable="false">Traces</string>
     <string name="debug_code" translatable="false">Natives and experiments</string>
     <string name="debug_picture" translatable="false">Picture and renderer</string>
@@ -109,4 +109,9 @@
     <string name="debug_depth16_on" translatable="false">On</string>
     <string name="debug_depth16_ab" translatable="false">Five seconds each, in turns [GPU]</string>
     <string name="debug_reset" translatable="false">Reset every switch</string>
+    <string name="touch_live_bindings_hint" translatable="false">Racing touch buttons follow the game’s current control assignments, including gamepad buttons and axes. Menu controls use automatic defaults.</string>
+    <string name="controls_automatic_note" translatable="false">Gamepads connect automatically. Set racing buttons and axes in the game’s Controls menu. On-screen racing buttons follow those assignments.</string>
+    <string name="controls_automatic_help" translatable="false">Menus: by default, use the X/Y axes or D-pad to move, A / Cross to confirm, and B / Circle to go back. Use Gamepad test and setup to test a controller and customize directions, confirm and back. Assignments save per controller; configured directions also work in the game’s remapping screen. Touch users can tap menu items directly.\n\nRacing: assign buttons, D-pad directions and axes in the game’s Controls menu. Axes retain proportional input; buttons remain digital. On-screen racing buttons automatically follow the current game assignments.\n\nSplit screen: connected gamepads are assigned automatically in connection order: the first to player 1 and the second to player 2. Touch racing controls operate player 1. Reconnecting pads can change their order.\n\nThe launcher does not overwrite your custom in-game bindings. Use Touch controls to change the on-screen layout, size and visibility.</string>
+    <string name="controls_automatic_help_button" translatable="false">Controls help</string>
+    <string name="controls_automatic_help_title" translatable="false">Touch and gamepads</string>
 </resources>

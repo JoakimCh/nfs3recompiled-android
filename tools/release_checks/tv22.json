@@ -1,0 +1,61 @@
+{
+  "source_commit": "a25dc2c33279912d7692348c3f3fb04d54c7f41d",
+  "version": "0.78-armv7-tv22-profile",
+  "versionCode": 99,
+  "native_build_id": "7bc7e4b48b649e60622cae03639b7c92f0f0c54c",
+  "apk_sha256": "2dff0746f2fe7c2ec16fa44e9133b9a2105df15094f03bc6362d201692113ed6",
+  "apk_bytes": 21661849,
+  "native_files": [
+    "lib/armeabi-v7a/libSDL3.so",
+    "lib/armeabi-v7a/libandroidx.graphics.path.so",
+    "lib/armeabi-v7a/libc++_shared.so",
+    "lib/armeabi-v7a/libmain.so"
+  ],
+  "device_tested": false,
+  "signing_certificate_sha256": "464eab8f658b68c234e80e85f5bcb6c5a79771600ac04c0f9d5458769c27b60e",
+  "debuggable": false,
+  "shell_profileable": true,
+  "zip_alignment_bytes": 16384,
+  "packaged_resource_fields_checked": 296,
+  "packaged_resource_mismatches": 0,
+  "ui_tests": [
+    {
+      "name": "dev.nfs3hp.port.ControllerSetupActivityTest",
+      "tests": "6",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "dev.nfs3hp.port.LauncherAdvancedTest",
+      "tests": "1",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    }
+  ],
+  "elf_load_alignment": {
+    "lib/armeabi-v7a/libSDL3.so": [
+      4096,
+      4096,
+      4096
+    ],
+    "lib/armeabi-v7a/libandroidx.graphics.path.so": [
+      16384,
+      16384,
+      16384
+    ],
+    "lib/armeabi-v7a/libc++_shared.so": [
+      4096,
+      4096,
+      4096,
+      4096
+    ],
+    "lib/armeabi-v7a/libmain.so": [
+      16384,
+      16384,
+      16384
+    ]
+  },
+  "note": "APK and exact native symbols retained separately. Application source identical to source_commit; follow-up changes are tests/docs only. Physical testing pending."
+}

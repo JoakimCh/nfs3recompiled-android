@@ -1,5 +1,6 @@
 #ifndef LIB_THRASHRENDERER_H_
 #define LIB_THRASHRENDERER_H_
+#include <cstring>
 
 #include <lib/winapp.h>
 #include <array>
@@ -136,6 +137,24 @@ public:
         x86::reg32 clipMinX, clipMinY, clipMaxX, clipMaxY;
         float gamma;
         int fogTable;
+        // Instrumentation only: all differing categories, including simultaneous changes.
+        unsigned differenceMask(const Batch& b) const {
+            unsigned m=0;
+            if(texture!=b.texture)m|=1u<<0;
+            if(levels!=b.levels)m|=1u<<1;
+            if(format!=b.format)m|=1u<<2;
+            if(wrapS!=b.wrapS||wrapT!=b.wrapT)m|=1u<<3;
+            if(zTest!=b.zTest||zTestAlways!=b.zTestAlways||zBuffer!=b.zBuffer)m|=1u<<4;
+            if(alphaBlend!=b.alphaBlend)m|=1u<<5;
+            if(cull!=b.cull||cullMode!=b.cullMode)m|=1u<<6;
+            if(chromaKey!=b.chromaKey)m|=1u<<7;
+            if(clipMinX!=b.clipMinX||clipMinY!=b.clipMinY||clipMaxX!=b.clipMaxX||clipMaxY!=b.clipMaxY)m|=1u<<8;
+            if(fogTable!=b.fogTable)m|=1u<<9;
+            if(std::memcmp(&gamma,&b.gamma,sizeof gamma)!=0)m|=1u<<10;
+            return m;
+        }
+        bool opaqueAlpha; // All vertices/texture alpha proved one; not guest state.
+        // Removed merge equality/run selection; only boundary diagnostics remain.
     };
 
     /* What a check of the THRASH driver sees of the renderer
@@ -172,6 +191,7 @@ private:
         x86::reg32 levels;
         x86::reg32 useStamp;
         int format;
+        bool opaqueAlpha;
     };
 
     void initGl();
@@ -195,14 +215,16 @@ private:
     unsigned int            m_vertexBuffer;
     unsigned int            m_vertexArray;
     unsigned int            m_program;
+    unsigned int            m_opaqueProgram;
     unsigned int            m_samplers[4];  // [wrapS + 2 * wrapT]
     std::vector<unsigned int> m_glTextures;
-    struct
+    struct Locations
     {
         int position, color, texCoord, combine;
         int transform, fogW, fogTable, fogColor, alphaRef, chromaKey, chromaKeyColor, gamma, wrap, levels, texture,
             format;
-    } m_locations;
+    };
+    Locations m_locations, m_opaqueLocations;
     bool                    m_depth16;
 
     // The game thread's.
@@ -214,6 +236,8 @@ private:
     x86::reg32              m_texture;
     x86::reg32              m_textureLevels;
     int                     m_textureFormat;
+    bool                    m_textureOpaque;
+    bool                    m_batchOpaque;
     x86::reg32              m_renderStamp;
     std::vector<std::array<float, 64>> m_fogTables;
     int                     m_fogTableIndex;

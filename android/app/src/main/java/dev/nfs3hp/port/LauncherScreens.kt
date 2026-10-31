@@ -45,6 +45,10 @@ import androidx.compose.foundation.text.InlineTextContent
 import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.foundation.text.appendInlineContent
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
@@ -59,6 +63,7 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -108,7 +113,6 @@ private fun depth(screen: LauncherActivity.Screen): Int = when (screen) {
     LauncherActivity.Screen.Main -> 0
     LauncherActivity.Screen.Controls, LauncherActivity.Screen.Display, LauncherActivity.Screen.Data,
     LauncherActivity.Screen.Language, LauncherActivity.Screen.Faq, LauncherActivity.Screen.Network -> 1
-    LauncherActivity.Screen.TouchKeys, LauncherActivity.Screen.GamepadButtons,
     LauncherActivity.Screen.ControlsHelp, LauncherActivity.Screen.DataSets, LauncherActivity.Screen.Editor -> 3
     else -> 2
 }
@@ -125,10 +129,7 @@ private fun Screen(a: LauncherActivity, screen: LauncherActivity.Screen) {
         LauncherActivity.Screen.LauncherSettings -> LauncherSettingsScreen(a)
         LauncherActivity.Screen.Controls -> ControlsScreen(a)
         LauncherActivity.Screen.Touch -> TouchScreen(a)
-        LauncherActivity.Screen.TouchKeys -> TouchKeysScreen(a)
         LauncherActivity.Screen.Editor -> Unit  // a View of its own (LauncherActivity.openEditor)
-        LauncherActivity.Screen.Gamepads -> GamepadsScreen(a)
-        LauncherActivity.Screen.GamepadButtons -> GamepadButtonsScreen(a)
         LauncherActivity.Screen.ControlsHelp -> ControlsHelpScreen(a)
         LauncherActivity.Screen.ForceFeedback -> ForceFeedbackScreen(a)
         LauncherActivity.Screen.Faq -> FaqScreen(a)
@@ -487,14 +488,17 @@ private fun LauncherSettingsScreen(a: LauncherActivity) {
 
 // ---- Controls ----
 
-/* Split screen help lives on the Gamepads screen, beside the steps it walks
- * through. */
+/* Racing bindings live in the game; the launcher only controls the overlay and haptics. */
 @Composable
 private fun ControlsScreen(a: LauncherActivity) {
     ScreenFrame(stringResource(R.string.controls_hub), onBack = { a.go(LauncherActivity.Screen.Main) }) {
         Column(Modifier.widthIn(max = MENU_WIDTH), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             MainMenuButton(stringResource(R.string.controls_touch)) { a.go(LauncherActivity.Screen.Touch) }
-            MainMenuButton(stringResource(R.string.controls_gamepad)) { a.go(LauncherActivity.Screen.Gamepads) }
+            MainMenuButton("Gamepad test and setup") {
+                a.startActivity(android.content.Intent(a, ControllerSetupActivity::class.java))
+            }
+            Hint("Gamepads are detected automatically. Use Gamepad test and setup if directions or menu buttons need adjusting. Racing controls are assigned inside the game.")
+            MainMenuButton(stringResource(R.string.controls_automatic_help_button)) { a.go(LauncherActivity.Screen.ControlsHelp) }
             MainMenuButton(stringResource(R.string.controls_force_feedback)) { a.go(LauncherActivity.Screen.ForceFeedback) }
         }
     }
@@ -565,7 +569,6 @@ private fun TouchScreen(a: LauncherActivity) {
                     )
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         MenuButton(stringResource(R.string.edit_touch_layout), { a.openEditor() }, Modifier.weight(1f), height = 48.dp)
-                        MenuButton(stringResource(R.string.touch_keys_button), { a.go(LauncherActivity.Screen.TouchKeys) }, Modifier.weight(1f), height = 48.dp)
                     }
                 }
             },
@@ -687,165 +690,6 @@ private fun IntSetting(
     }
 }
 
-/* The key each on-screen control sends.  The overlay speaks to the game
- * through keys, so these have to match the game's settings -- which the
- * gamepad control set written from Controls -> Gamepads does out of the box. */
-@Composable
-private fun TouchKeysScreen(a: LauncherActivity) {
-    val preferences = remember { GamePreferences.get(a) }
-    val actions = remember { GamePreferences.actionLabels(a) }
-    val keys = remember { GamePreferences.keyLabels(a).toList() }
-    ScreenFrame(stringResource(R.string.touch_keys_title), onBack = { a.go(LauncherActivity.Screen.Touch) }) {
-        Hint(stringResource(R.string.touch_keys_hint))
-        Panel(Modifier.widthIn(max = 720.dp)) {
-            GamePreferences.ACTION_IDS.forEachIndexed { i, action ->
-                var key by remember {
-                    mutableIntStateOf(GamePreferences.indexOf(GamePreferences.KEY_VALUES,
-                        GamePreferences.getTouchKey(preferences, action)))
-                }
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(actions[i], Modifier.weight(1f), color = GameColors.Silver, style = MaterialTheme.typography.bodyLarge)
-                    DropdownPill(keys, key, { index ->
-                        key = index
-                        preferences.edit().putInt(GamePreferences.touchKey(action), GamePreferences.KEY_VALUES[index]).apply()
-                    }, Modifier.width(240.dp))
-                }
-            }
-        }
-    }
-}
-
-/* Which physical pad is Gamepad 1 and which is Gamepad 2, how each drives a
- * race -- Analog or Digital -- what their buttons do, and writing the port's
- * controls into the game.  A pad is picked by pressing a button on it rather
- * than from a list, because two pads of the same model share a name and a list
- * could not tell them apart. */
-@Composable
-private fun GamepadsScreen(a: LauncherActivity) {
-    val preferences = remember { GamePreferences.get(a) }
-    var edits by remember { mutableIntStateOf(0) }  // Automatic chosen here
-    val changes = a.padsChanged + edits  // read, so pads coming and going redraw this
-    val pads = remember(changes, a.capturingSlot) { GamepadSlots.resolve(preferences) }
-    val keyboard = remember(changes) { a.keyboardControlsInstalled() }
-    ScreenFrame(
-        stringResource(R.string.gamepads_title),
-        onBack = { a.go(LauncherActivity.Screen.Controls) },
-        action = { QuietButton(stringResource(R.string.controls_help), { a.go(LauncherActivity.Screen.ControlsHelp) }) },
-    ) {
-        Hint(stringResource(R.string.gamepads_hint))
-        if (keyboard)
-            Hint(stringResource(R.string.gamepads_keyboard_note), color = GameColors.Gold)
-        val slots = @Composable { modifier: Modifier ->
-            for (slot in 0 until GamepadSlots.COUNT) {
-                val pinned = GamepadSlots.assigned(preferences, slot).isNotEmpty()
-                val pad = pads[slot]
-                val status = when {
-                    a.capturingSlot == slot -> stringResource(R.string.gamepad_assign_prompt, slot + 1)
-                    pinned && pad != null -> pad.name
-                    pinned -> stringResource(R.string.gamepad_slot_absent, GamepadSlots.assignedName(preferences, slot))
-                    pad != null -> stringResource(R.string.gamepad_slot_auto_now, pad.name)
-                    else -> stringResource(R.string.gamepad_slot_auto_none)
-                }
-                Panel(modifier) {
-                    Text(stringResource(R.string.gamepad_slot_label, slot + 1), color = GameColors.Silver,
-                        style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                    Text(status, color = if (a.capturingSlot == slot) GameColors.Gold else GameColors.MenuBlue,
-                        minLines = 2, style = MaterialTheme.typography.bodyMedium)
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        MenuButton(stringResource(R.string.gamepad_assign), { a.capturingSlot = slot }, Modifier.weight(1f), height = 44.dp)
-                        QuietButton(stringResource(R.string.gamepad_use_auto), {
-                            a.capturingSlot = -1
-                            GamepadSlots.useAutomatic(preferences, slot)
-                            edits++
-                        }, Modifier.weight(1f))
-                    }
-                    QuietButton(stringResource(R.string.gamepad_buttons), { a.openGamepadButtons(slot) }, Modifier.fillMaxWidth())
-                    /* How this pad drives a race: its stick and triggers as
-                     * axes, or its D-pad and triggers as keys. */
-                    var digital by remember(slot) { mutableStateOf(GamepadButtons.digital(preferences, slot)) }
-                    SegmentedChoice(
-                        listOf(stringResource(R.string.gamepad_mode_analog), stringResource(R.string.gamepad_mode_digital)),
-                        if (digital) 1 else 0,
-                        { index ->
-                            digital = index == 1
-                            GamepadButtons.setDigital(preferences, slot, digital)
-                        },
-                    )
-                    Text(stringResource(if (digital) R.string.gamepad_digital_note else R.string.gamepad_analog_note),
-                        color = GameColors.Muted, minLines = 3, style = MaterialTheme.typography.bodyMedium)
-                }
-            }
-        }
-        BoxWithConstraints(Modifier.fillMaxWidth()) {
-            if (maxWidth < NARROW)
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) { slots(Modifier.fillMaxWidth()) }
-            else
-                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) { slots(Modifier.weight(1f)) }
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            MenuButton(stringResource(R.string.controls_write_gamepads), { a.confirmWriteControls(ControlProfile.Kind.GAMEPADS) }, Modifier.weight(1f))
-            MenuButton(stringResource(R.string.controls_write_keyboard), { a.confirmWriteControls(ControlProfile.Kind.KEYBOARD) }, Modifier.weight(1f))
-        }
-    }
-}
-
-/* What each button of one pad does.  Stored as it is chosen, like the touch
- * keys; NFS3Activity hands it all to the native side when the game starts. */
-@Composable
-private fun GamepadButtonsScreen(a: LauncherActivity) {
-    val slot = a.buttonsSlot
-    val preferences = remember { GamePreferences.get(a) }
-    val buttons = remember { GamepadButtons.buttonLabels(a) }
-    val actions = remember { GamepadButtons.actionLabels(a).toList() }
-    var generation by remember { mutableIntStateOf(0) }  // Defaults redraws every row
-    val digital = remember(slot) { GamepadButtons.digital(preferences, slot) }
-    ScreenFrame(
-        stringResource(R.string.gamepad_buttons_title, slot + 1),
-        onBack = { a.go(LauncherActivity.Screen.Gamepads) },
-        action = {
-            QuietButton(stringResource(R.string.gamepad_buttons_reset), {
-                GamepadButtons.reset(preferences, slot)
-                generation++
-            })
-        },
-    ) {
-        Hint(stringResource(R.string.gamepad_buttons_hint))
-        if (digital)
-            Hint(stringResource(R.string.gamepad_buttons_digital_note), color = GameColors.Gold)
-        key(generation) {
-            Panel(Modifier.widthIn(max = 720.dp)) {
-                GamepadButtons.BUTTON_IDS.indices.forEach { button ->
-                    var action by remember {
-                        mutableIntStateOf(GamePreferences.indexOf(GamepadButtons.ACTION_IDS,
-                            GamepadButtons.action(preferences, slot, button)))
-                    }
-                    /* Digital, the D-pad drives a race whatever it is set to, so
-                     * its rows say so instead of offering a choice. */
-                    val drives = if (digital) GamepadButtons.digitalAction(button) else null
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(buttons[button], Modifier.weight(1f), color = GameColors.Silver, style = MaterialTheme.typography.bodyLarge)
-                        if (drives != null)
-                            Text(actions[GamePreferences.indexOf(GamepadButtons.ACTION_IDS, drives)],
-                                Modifier.width(240.dp).padding(horizontal = 16.dp), color = GameColors.Gold,
-                                style = MaterialTheme.typography.bodyLarge, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
-                        else
-                            DropdownPill(actions, action, { index ->
-                                action = index
-                                GamepadButtons.setAction(preferences, slot, button, GamepadButtons.ACTION_IDS[index])
-                            }, Modifier.width(240.dp))
-                    }
-                }
-            }
-        }
-    }
-}
-
-/** Order of the split-screen help page: one resource per step, like the FAQ. */
-private val CONTROLS_HELP_SECTIONS = intArrayOf(
-    R.string.help_split_setup, R.string.help_split_write, R.string.help_split_race,
-    R.string.help_split_driving, R.string.help_split_digital, R.string.help_split_notes,
-)
-
 /** Order of the help page.  One resource per question so that editing one
  *  answer does not invalidate a whole translated page. */
 private val FAQ_SECTIONS = intArrayOf(
@@ -857,8 +701,8 @@ private val FAQ_SECTIONS = intArrayOf(
 
 @Composable
 private fun ControlsHelpScreen(a: LauncherActivity) {
-    val text = remember { helpText(a, CONTROLS_HELP_SECTIONS) }
-    ScreenFrame(stringResource(R.string.controls_help_title), onBack = { a.go(LauncherActivity.Screen.Gamepads) }) {
+    val text = stringResource(R.string.controls_automatic_help)
+    ScreenFrame(stringResource(R.string.controls_automatic_help_title), onBack = { a.go(LauncherActivity.Screen.Controls) }) {
         Panel { Text(text, color = GameColors.Silver, style = MaterialTheme.typography.bodyLarge, lineHeight = 24.sp) }
     }
 }
@@ -1174,60 +1018,124 @@ private fun AdjustmentScreen(a: LauncherActivity) {
 
 // ---- Advanced ----
 
-/** One build for players and for testing: debug mode off is a release in all
- *  but name -- nothing in the log, the game as a player has it.  On, the log
- *  is open and the switches below reach the game when it next starts
- *  (DebugOptions, NFS3Activity).  In English in every language: it is for
- *  the people testing the port. */
+/** Advanced tools grouped for players and troubleshooting. */
 @Composable
 private fun AdvancedScreen(a: LauncherActivity) {
     val preferences = remember { GamePreferences.get(a) }
-    /* Bumped by Reset, so every switch below is read again. */
     var generation by remember { mutableIntStateOf(0) }
+    var tab by rememberSaveable { mutableIntStateOf(0) }
     val width = Modifier.widthIn(max = 720.dp).fillMaxWidth()
-    ScreenFrame(stringResource(R.string.advanced_title), onBack = { a.go(LauncherActivity.Screen.Main) }) {
-        Panel(width) {
-            SwitchRow(stringResource(R.string.debug_mode), a.debugMode, { on ->
-                preferences.edit().putBoolean(DebugOptions.ENABLED, on).apply()
-                AppLog.setEnabled(on)
-                a.debugMode = on
-            }, stringResource(R.string.debug_mode_note))
+    ScreenFrame(stringResource(R.string.advanced_title), onBack = { a.go(LauncherActivity.Screen.Main) }, scroll = false) {
+        TabRow(tab, modifier = width, containerColor = GameColors.Deep, contentColor = GameColors.Gold) {
+            listOf("Unlocks", "Performance", "Debug").forEachIndexed { index, title ->
+                Tab(selected = tab == index, onClick = { tab = index }, text = { Text(title) })
+            }
         }
-        if (a.debugMode) {
-            key(generation) {
-                val groups = listOf(
-                    R.string.debug_traces to DebugOptions.TRACES,
-                    R.string.debug_code to DebugOptions.CODE,
-                    R.string.debug_picture to DebugOptions.PICTURE,
-                )
-                for ((title, options) in groups) {
-                    Panel(width) {
-                        Label(stringResource(title))
-                        for (option in options)
-                            BooleanSetting(preferences, option.preference(), option.byDefault,
-                                option.description, option.name) {}
+        key(tab) {
+            Column(Modifier.fillMaxWidth().weight(1f).verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                when (tab) {
+                    0 -> Panel(width) {
+                        Hint("Change the active data set's saved unlocks. Turning a toggle off relocks that content, including earned unlocks. Race results and controls stay unchanged.")
+                        val bonus = a.bonusContent
+                        if (bonus != null) {
+                            Label("Bonus cars")
+                            BoxWithConstraints(Modifier.fillMaxWidth()) {
+                                val columns = if (maxWidth >= 620.dp) 5 else if (maxWidth >= 400.dp) 3 else 2
+                                val cars = listOf("El Niño", "CLK-GTR", "XJR-15", "Pursuit Diablo SV", "Pursuit El Niño")
+                                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    cars.indices.toList().chunked(columns).forEach { row ->
+                                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                            row.forEach { index ->
+                                                FilterChip(
+                                                    selected = bonus.car(index),
+                                                    onClick = { a.setBonusCar(index, !bonus.car(index)) },
+                                                    modifier = Modifier.weight(1f).height(64.dp),
+                                                    label = { Text(cars[index], style = MaterialTheme.typography.bodySmall) },
+                                                    leadingIcon = if (bonus.car(index)) ({ Text("✓") }) else null,
+                                                    colors = FilterChipDefaults.filterChipColors(
+                                                        selectedContainerColor = GameColors.Gold,
+                                                        selectedLabelColor = GameColors.Night,
+                                                        selectedLeadingIconColor = GameColors.Night,
+                                                        labelColor = GameColors.Silver),
+                                                )
+                                            }
+                                            repeat(columns - row.size) { Spacer(Modifier.weight(1f)) }
+                                        }
+                                    }
+                                }
+                            }
+                            SwitchRow("Empire City", bonus.track, { a.setBonusContent(track = it) })
+                        }
+                        if (a.bonusContentMessage.isNotEmpty()) Hint(a.bonusContentMessage)
                     }
-                }
-                Panel(width) {
-                    Label(stringResource(R.string.debug_depth16))
-                    var depth by remember {
-                        mutableIntStateOf(DebugOptions.DEPTH16_VALUES.indexOf(
-                            preferences.getString("debug_" + DebugOptions.DEPTH16, "")).coerceAtLeast(0))
+                    1 -> {
+                        key(generation) {
+                            Panel(width) {
+                                BooleanSetting(preferences, PerformanceSession.OVERLAY, false,
+                                    "Performance overlay", "FPS, frame intervals, draw calls and opaque-shader coverage.") {}
+                                BooleanSetting(preferences, PerformanceSession.COLLECT, false,
+                                    "Collect performance statistics", "Saves timing and rendering statistics once per second. Works with Debug mode off.") {}
+                                BooleanSetting(preferences, PerformanceSession.OPAQUE, true,
+                                    "Opaque shader optimization · Experimental", "Default on. Uses a faster shader for proven opaque draws, with the original shader as fallback.") {}
+                                Hint("Frame intervals measure presentation pacing, not GPU execution time.")
+                            }
+                        }
+                        MenuButton("Share performance report", { PerformanceSession.showReport(a) }, width)
+                        MenuButton("Reset performance settings", {
+                            preferences.edit().remove(PerformanceSession.COLLECT)
+                                .remove(PerformanceSession.OVERLAY).remove(PerformanceSession.OPAQUE).apply()
+                            generation++
+                        }, width)
                     }
-                    ChoiceList(
-                        listOf(stringResource(R.string.debug_depth16_auto), stringResource(R.string.debug_depth16_off),
-                            stringResource(R.string.debug_depth16_on), stringResource(R.string.debug_depth16_ab)),
-                        depth,
-                    ) { index ->
-                        depth = index
-                        preferences.edit().putString("debug_" + DebugOptions.DEPTH16, DebugOptions.DEPTH16_VALUES[index]).apply()
+                    2 -> {
+                        MenuButton("Crash report", { CrashReports.showLast(a) }, width)
+                        Panel(width) {
+                            SwitchRow(stringResource(R.string.debug_mode), a.debugMode, { on ->
+                                preferences.edit().putBoolean(DebugOptions.ENABLED, on).apply()
+                                AppLog.setEnabled(on)
+                                a.debugMode = on
+                            }, stringResource(R.string.debug_mode_note))
+                        }
+                        if (a.debugMode) {
+                            key(generation) {
+                                val groups = listOf(
+                                    R.string.debug_traces to DebugOptions.TRACES,
+                                    R.string.debug_code to DebugOptions.CODE,
+                                    R.string.debug_picture to DebugOptions.PICTURE,
+                                )
+                                for ((title, options) in groups) {
+                                    Panel(width) {
+                                        Label(stringResource(title))
+                                        for (option in options)
+                                            BooleanSetting(preferences, option.preference(), option.byDefault,
+                                                option.description, option.name) {}
+                                    }
+                                }
+                                Panel(width) {
+                                    Label(stringResource(R.string.debug_depth16))
+                                    var depth by remember {
+                                        mutableIntStateOf(DebugOptions.DEPTH16_VALUES.indexOf(
+                                            preferences.getString("debug_" + DebugOptions.DEPTH16, "")).coerceAtLeast(0))
+                                    }
+                                    ChoiceList(
+                                        listOf(stringResource(R.string.debug_depth16_auto), stringResource(R.string.debug_depth16_off),
+                                            stringResource(R.string.debug_depth16_on), stringResource(R.string.debug_depth16_ab)),
+                                        depth,
+                                    ) { index ->
+                                        depth = index
+                                        preferences.edit().putString("debug_" + DebugOptions.DEPTH16, DebugOptions.DEPTH16_VALUES[index]).apply()
+                                    }
+                                }
+                            }
+                            MenuButton(stringResource(R.string.debug_reset), {
+                                DebugOptions.reset(preferences)
+                                generation++
+                            }, width)
+                        }
                     }
                 }
             }
-            MenuButton(stringResource(R.string.debug_reset), {
-                DebugOptions.reset(preferences)
-                generation++
-            }, width)
         }
     }
 }

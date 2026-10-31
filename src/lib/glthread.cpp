@@ -1,4 +1,5 @@
 #include <lib/glthread.h>
+#include <lib/perfstats.h>
 #include <lib/renderer.h>
 #include <SDL3/SDL.h>
 #include <condition_variable>
@@ -36,7 +37,10 @@ void loop()
     std::unique_lock<std::mutex> lock(s_mutex);
     for (;;)
     {
-        s_wake.wait(lock, []() { return !s_jobs.empty() || s_releasing; });
+        if(s_jobs.empty() && !s_releasing) {
+            perf::Scope idleTiming(perf::GlIdleCalls);
+            s_wake.wait(lock, []() { return !s_jobs.empty() || s_releasing; });
+        }
         if (s_jobs.empty())
         {
             if (s_current)
@@ -131,6 +135,7 @@ void finish()
 {
     if (!on() || std::this_thread::get_id() == s_threadId)
         return;
+    perf::Scope finishTiming(perf::FinishCalls);
     std::unique_lock<std::mutex> lock(s_mutex);
     s_idle.wait(lock, []() { return s_jobs.empty() && !s_busy; });
 }
@@ -158,6 +163,7 @@ unsigned long long presentPosted(int frames)
 {
     if (!on())
         return 0;
+    perf::Scope throttleTiming(perf::QueueCalls);
     const Uint64 start = SDL_GetTicksNS();
     std::unique_lock<std::mutex> lock(s_mutex);
     ++s_presents;

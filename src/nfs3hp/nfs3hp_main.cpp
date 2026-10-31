@@ -1,3 +1,5 @@
+#include <lib/gamepad_policy.h>
+#include <lib/touch_input.h>
 #include <SDL3/SDL_main.h>
 #include <lib/file.h>
 #include <lib/registry.h>
@@ -2050,13 +2052,28 @@ void layoutTick(win32::WinApplication* app)
     static int last = -1;
     // Not while the loading screen is still up: nothing to drive yet.
     const bool driving = playerDriving(app) && !nfs3hp::loadingScreenUp();
+    win32::touchinput::active(driving);
     /* The pads follow the same signal as the on-screen controls: their buttons
      * are the racing ones while a race is being driven, and the menu's -- one
      * to confirm, one to go back, the D-pad to move -- everywhere else, a
      * replay included.  With the menu open over a race the button that opened
      * it closes it too (Gamepad::Context::Pause). */
     const bool paused = nfs3hp::raceIsRunning() && app->getMemory<x86::reg32>(0x7a3d10) != 0;
-    win32::Gamepad::context(driving ? win32::Gamepad::Context::Race
+    const bool capturing = !driving && win32::padpolicy::controlsCapture(
+        x86::reg32(app->getMemory<x86::reg32>(0x559230)),
+        [app](x86::reg32 at) { return x86::reg32(app->getMemory<x86::reg32>(at)); },
+        [app](x86::reg32 at) { return x86::sreg16(app->getMemory<x86::sreg16>(at)); });
+    // Give a button's native assignment priority over its launcher key/axis.
+    x86::reg32 masks[2] = {};
+    const bool split = app->getMemory<x86::reg32>(0x6fd3b0) == 1;
+    const x86::reg32 table = split ? 0x6fd240 : 0x6fd20c;
+    for (unsigned i = 0; i < (split ? 26u : 13u); ++i) {
+        const x86::reg32 binding = app->getMemory<x86::reg32>(table + 4 * i);
+        for (unsigned slot = 0; slot < 2; ++slot) masks[slot] |= win32::padpolicy::boundButton(binding, slot);
+    }
+    for (unsigned slot = 0; slot < 2; ++slot) win32::Gamepad::nativeButtons(slot, masks[slot]);
+    win32::Gamepad::context(capturing ? win32::Gamepad::Context::Capture
+                            : driving ? win32::Gamepad::Context::Race
                             : paused ? win32::Gamepad::Context::Pause : win32::Gamepad::Context::Menu);
     if (last == int(driving))
         return;
@@ -2698,6 +2715,11 @@ extern "C" JNIEXPORT void JNICALL
 Java_dev_nfs3hp_port_NFS3Activity_nativeMousePointer(JNIEnv*, jclass, jfloat x, jfloat y, jint buttons)
 {
     queueMouse(float(x), float(y), int(buttons));
+}
+extern "C" JNIEXPORT void JNICALL
+Java_dev_nfs3hp_port_NFS3Activity_nativeGamepadButton(JNIEnv*, jclass, jint slot, jint button, jboolean down)
+{
+    win32::Gamepad::androidButton(unsigned(slot), int(button), down != JNI_FALSE);
 }
 /* Which physical pad is Gamepad 1 and which is Gamepad 2, resolved by the
  * launcher's rules (GamepadSlots.java) and sent again whenever Android attaches
