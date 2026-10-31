@@ -1,3 +1,9 @@
+## Joakim's fork of [nfs3recompiled-android](https://github.com/ZloiKILLER/nfs3recompiled-android/).
+I'm using AI to add my own improvements.
+I focus on ARMv7 support and better controller support.
+
+Original readme below:
+
 # NFS III: Hot Pursuit — Android
 
 Need for Speed III: Hot Pursuit, the 1998 PC game, running natively on Android
