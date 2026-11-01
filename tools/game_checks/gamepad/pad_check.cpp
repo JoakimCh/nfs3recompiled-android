@@ -339,6 +339,22 @@ int main() {
     Gamepad::update();expect(SDLK_ESCAPE,false);Gamepad::update();assert(keys().empty());
     Gamepad::androidButton(0,-1,false);Gamepad::update();keys();
     Gamepad::racePause(0,0);Gamepad::nativeButtons(0,0);Gamepad::nativeButtons(1,0);
+    // A pair without menu Back works in either order and keeps ordinary racing input immediate.
+    const std::uint64_t shoulderStart = (1ull<<4) | (1ull<<9) | (1ull<<16) | (5ull<<20) | (10ull<<25);
+    for(bool reverse:{false,true}) {
+        Gamepad::racePause(0,shoulderStart);Gamepad::nativeButtons(0,(1u<<4)|(1u<<9));
+        Gamepad::context(Gamepad::Context::Race);Gamepad::update();keys();
+        const int first=reverse?9:4,second=reverse?4:9;
+        Gamepad::androidButton(0,first,true);Gamepad::update();assert(keys().empty());
+        assert(pad.getState().buttons==(1u<<first));
+        Gamepad::androidButton(0,second,true);Gamepad::update();expect(SDLK_ESCAPE,true);
+        assert(pad.getState().buttons==0);
+        Gamepad::context(Gamepad::Context::Pause);Gamepad::update();expect(SDLK_ESCAPE,false);
+        Gamepad::androidButton(0,first,false);Gamepad::update();assert(keys().empty());
+        Gamepad::androidButton(0,first,true);Gamepad::update();assert(keys().empty());
+        Gamepad::androidButton(0,-1,false);Gamepad::update();keys();
+    }
+    Gamepad::racePause(0,0);Gamepad::nativeButtons(0,0);
     // Button identity must not depend on the other slot. Held menu keys release on unplug.
     Gamepad::context(Gamepad::Context::Menu); Gamepad::update(); keys();
     SDL_SetJoystickVirtualAxis(joy,0,-24000); Gamepad::update(); expect(SDLK_LEFT,true);

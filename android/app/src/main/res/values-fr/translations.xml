@@ -190,7 +190,7 @@
  <string name="controller_details_hide">Masquer les détails des entrées</string>
  <string name="controller_reset_menu">Réinitialiser les commandes de menu</string>
  <string name="controller_pause_title">Raccourci de pause en course</string>
- <string name="controller_pause_hint">Maintenez le bouton Retour des menus et un bouton supplémentaire pour mettre une course en pause.</string>
+ <string name="controller_pause_hint">Attribuez deux boutons et maintenez-les enfoncés pour mettre en pause. Les directions de la croix et les entrées analogiques ne sont pas prises en charge.</string>
  <string name="controller_device_type">Type d\'appareil</string>
  <string name="controller_change_type">Changer le type d\'appareil…</string>
  <string name="controller_role_hint">Choisissez Télécommande / clavier pour une télécommande de téléviseur afin qu\'elle n\'occupe pas une place de joueur.</string>
@@ -204,4 +204,13 @@
  <string name="faq_screen_data"><b>Affichage et fichiers du jeu</b>\nAffichage permet de choisir l\'orientation de l\'écran et la limite d\'images par seconde. Une limite plus basse peut réduire la consommation. Fichiers et sauvegardes gère les fichiers du jeu importés, les parties sauvegardées et les sauvegardes du lanceur. Choisissez des fichiers du jeu actifs avant de jouer.</string>
  <string name="faq_mapping"><b>Manettes</b>\nDans Commandes → Manettes, choisissez une manette par joueur, testez les entrées et modifiez les commandes de menu. Automatique utilise les autres manettes dans leur ordre de connexion. Les attributions enregistrées restent réservées lorsque les manettes sont déconnectées. Configurez les commandes de course dans le jeu. Si le bouton Retour des menus sert à la conduite, définissez un Raccourci de pause en course : maintenez Retour et un bouton supplémentaire.</string>
  <string name="controls_automatic_help">Menus : utilisez la croix directionnelle ou le stick gauche pour vous déplacer, A / Cross pour confirmer et B / Circle pour revenir en arrière. Dans Manettes, testez les appareils et modifiez leurs commandes de menu. Dans Tactile, choisissez Toucher direct ou Pavé tactile.\n\nCourse : configurez les commandes dans le menu Controls du jeu. Les boutons tactiles suivent ces attributions. Si le bouton Retour des menus sert à la conduite, choisissez un bouton supplémentaire dans Manettes → Raccourci de pause en course. Maintenez les deux pour mettre en pause.\n\nÉcran partagé : choisissez une manette par joueur dans Manettes. Automatique utilise les autres manettes dans leur ordre de connexion. Une attribution enregistrée reste réservée pendant la déconnexion de la manette. Les commandes tactiles de course contrôlent le joueur 1.</string>
+ <string name="controller_assign">Attribuer</string>
+ <string name="controller_cancel">Annuler</string>
+ <string name="controller_disable">Désactiver</string>
+ <string name="controller_shortcut_disabled">Désactivé</string>
+ <string name="controller_pause_first">Appuyez sur le premier bouton.</string>
+ <string name="controller_pause_second">Appuyez sur le deuxième bouton.</string>
+ <string name="controller_pause_different">Choisissez un autre bouton.</string>
+ <string name="controller_button_actions_hint">Confirm et Back acceptent uniquement les boutons (sans croix directionnelle ni entrées analogiques).</string>
+ <string name="controller_buttons_only">Utilisez un bouton de manette. Les directions de la croix et les entrées analogiques ne sont pas prises en charge.</string>
 </resources>

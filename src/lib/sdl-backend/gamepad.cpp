@@ -813,31 +813,31 @@ void updateButtonKeys()
         // Evaluate physical sources before menu remapping and before in-game
         // bindings suppress launcher keys. Never combine two controllers.
         const auto pause = s_racePause[slot].load();
-        const int backIndex = int((pause >> 20) & 31) - 1;
-        const int extraIndex = int((pause >> 25) & 31) - 1;
+        const int firstIndex = int((pause >> 20) & 31) - 1;
+        const int secondIndex = int((pause >> 25) & 31) - 1;
         auto pauseHeld = [&](int index, unsigned bit) {
             return (pause & (1ull << bit)) ||
                 (index >= 0 && index < int(kPadButtons) &&
                  automaticPhysicalButton(source, androidState, unsigned(index),
                      buttons.pauseLatched));
         };
-        const bool backHeld = pauseHeld(backIndex, 17);
-        const bool extraHeld = pauseHeld(extraIndex, 18);
+        const bool firstHeld = pauseHeld(firstIndex, 17);
+        const bool secondHeld = pauseHeld(secondIndex, 18);
         if (buttons.pauseSent) {
             sendKey(escape, false);
             buttons.pauseSent = false;
         }
-        if (buttons.pauseLatched && !backHeld && !extraHeld)
+        if (buttons.pauseLatched && !firstHeld && !secondHeld)
             buttons.pauseLatched = false;
         if (!buttons.pauseLatched && (pause & (1ull << 16)) &&
-            context == Gamepad::Context::Race && backHeld && extraHeld) {
+            context == Gamepad::Context::Race && firstHeld && secondHeld) {
             buttons.pauseLatched = true;
             buttons.pauseSources = x86::reg32(pause & 0xffff);
             buttons.pauseMenuSources = x86::reg32((pause >> 32) & 0xffff);
             buttons.pauseSent = true;
         }
         // Keep the combination out of the pause menu until BOTH controls are
-        // released, including the synthetic menu Back button (EAST).
+        // released, including any menu actions mapped to those controls.
         s_pauseConsumed[slot] = buttons.pauseLatched ? buttons.pauseSources : 0;
         const auto consumed = s_pauseConsumed[slot] |
             (buttons.pauseLatched && context != Gamepad::Context::Race ? buttons.pauseMenuSources : 0);
@@ -847,7 +847,7 @@ void updateButtonKeys()
             const ButtonBinding& binding = buttonBinding(slot, i, context);
             const bool suppressed = capture || (consumed & (1u << i)) ||
                 (context == Gamepad::Context::Race && ((native & (1u << i)) ||
-                    ((pause & (1ull << 16)) && int(i) == backIndex &&
+                    ((pause & (1ull << 16)) && (int(i) == firstIndex || int(i) == secondIndex) &&
                      binding.scancode == SDL_SCANCODE_ESCAPE)));
             /* A key that is down goes up as soon as it stops being what this
              * button means -- muted, or a race gave way to a menu under a

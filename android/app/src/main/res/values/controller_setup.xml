@@ -5,7 +5,7 @@
  <string name="controller_details_hide">Hide input details</string>
  <string name="controller_reset_menu">Reset menu controls</string>
  <string name="controller_pause_title">Race pause shortcut</string>
- <string name="controller_pause_hint">Hold your menu Back button and an extra button to pause a race.</string>
+ <string name="controller_pause_hint">Assign two gamepad buttons, then hold both to pause. D-pad directions and analog inputs are not supported.</string>
  <string name="controller_device_type">Device type</string>
  <string name="controller_change_type">Change device type…</string>
  <string name="controller_role_hint">Use Remote / keyboard for a TV remote so it does not take a player slot.</string>
@@ -14,4 +14,14 @@
  <string name="controller_automatic">Automatic</string>
  <string name="controller_unassigned">Not assigned</string>
  <string name="controls_setup_hint">Choose controllers, test input and change menu controls. Assign racing controls inside the game.</string>
+ <string name="controller_assign">Assign</string>
+ <string name="controller_cancel">Cancel</string>
+ <string name="controller_disable">Disable</string>
+ <string name="controller_shortcut_disabled">Disabled</string>
+ <string name="controller_pause_first">Press the first button.</string>
+ <string name="controller_pause_second">Press the second button.</string>
+ <string name="controller_pause_different">Choose a different button.</string>
+ <string name="controller_pause_pair" translatable="false">%1$s + %2$s</string>
+ <string name="controller_button_actions_hint">Confirm and Back accept buttons only (no D-pad or analog inputs).</string>
+ <string name="controller_buttons_only">Use a gamepad button. D-pad directions and analog inputs are not supported.</string>
 </resources>

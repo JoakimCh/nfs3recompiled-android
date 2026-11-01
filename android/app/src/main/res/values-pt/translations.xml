@@ -190,7 +190,7 @@
  <string name="controller_details_hide">Ocultar detalhes de entrada</string>
  <string name="controller_reset_menu">Repor controlos dos menus</string>
  <string name="controller_pause_title">Atalho de pausa na corrida</string>
- <string name="controller_pause_hint">Mantenha premidos o botão Voltar dos menus e um botão adicional para pausar uma corrida.</string>
+ <string name="controller_pause_hint">Atribui dois botões e mantém ambos premidos para pausar. As direções do D-pad e as entradas analógicas não são suportadas.</string>
  <string name="controller_device_type">Tipo de dispositivo</string>
  <string name="controller_change_type">Alterar tipo de dispositivo…</string>
  <string name="controller_role_hint">Escolha Telecomando / teclado para um telecomando de TV, para que não ocupe um lugar de jogador.</string>
@@ -204,4 +204,13 @@
  <string name="faq_screen_data"><b>Ecrã e ficheiros do jogo</b>\nEcrã permite definir a orientação e o limite de fotogramas por segundo. Um limite inferior pode reduzir o consumo. Ficheiros e cópias de segurança gere os ficheiros do jogo importados, jogos guardados e cópias das definições do iniciador. Escolha ficheiros do jogo ativos antes de jogar.</string>
  <string name="faq_mapping"><b>Comandos de jogo</b>\nEm Comandos → Comandos de jogo, escolha um comando por jogador, teste as entradas e altere os controlos dos menus. Automático usa os comandos restantes por ordem de ligação. As atribuições guardadas ficam reservadas quando os comandos estão desligados. Atribua os controlos de corrida dentro do jogo. Se o botão Voltar dos menus estiver atribuído à condução, defina um Atalho de pausa na corrida: mantenha premidos Voltar e um botão adicional.</string>
  <string name="controls_automatic_help">Menus: use o direcional ou o manípulo esquerdo para se mover, A / Cross para confirmar e B / Circle para voltar. Em Comandos de jogo pode testar dispositivos e alterar os controlos dos menus. Em Toque pode escolher Toque direto ou Touchpad.\n\nCorridas: atribua os controlos no menu Controls do jogo. Os botões no ecrã seguem essas atribuições. Se o botão Voltar dos menus estiver atribuído à condução, escolha um botão adicional em Comandos de jogo → Atalho de pausa na corrida. Mantenha ambos premidos para pausar.\n\nEcrã dividido: escolha um comando por jogador em Comandos de jogo. Automático usa os restantes por ordem de ligação. Uma atribuição guardada fica reservada enquanto o comando está desligado. Os controlos táteis de corrida controlam o jogador 1.</string>
+ <string name="controller_assign">Atribuir</string>
+ <string name="controller_cancel">Cancelar</string>
+ <string name="controller_disable">Desativar</string>
+ <string name="controller_shortcut_disabled">Desativado</string>
+ <string name="controller_pause_first">Prime o primeiro botão.</string>
+ <string name="controller_pause_second">Prime o segundo botão.</string>
+ <string name="controller_pause_different">Escolhe um botão diferente.</string>
+ <string name="controller_button_actions_hint">Confirm e Back aceitam apenas botões (sem D-pad ou entradas analógicas).</string>
+ <string name="controller_buttons_only">Usa um botão do comando. As direções do D-pad e as entradas analógicas não são suportadas.</string>
 </resources>

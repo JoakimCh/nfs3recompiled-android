@@ -190,7 +190,7 @@
  <string name="controller_details_hide">Nascondi dettagli di input</string>
  <string name="controller_reset_menu">Ripristina comandi dei menu</string>
  <string name="controller_pause_title">Scorciatoia per la pausa in gara</string>
- <string name="controller_pause_hint">Tieni premuti il pulsante Indietro dei menu e un pulsante aggiuntivo per mettere in pausa una gara.</string>
+ <string name="controller_pause_hint">Assegna due pulsanti e tienili premuti per mettere in pausa. Le direzioni del D-pad e gli ingressi analogici non sono supportati.</string>
  <string name="controller_device_type">Tipo di dispositivo</string>
  <string name="controller_change_type">Cambia tipo di dispositivo…</string>
  <string name="controller_role_hint">Scegli Telecomando / tastiera per un telecomando TV, così non occuperà un posto giocatore.</string>
@@ -204,4 +204,13 @@
  <string name="faq_screen_data"><b>Schermo e file di gioco</b>\nSchermo controlla l\'orientamento e il limite di fotogrammi al secondo. Un limite inferiore può ridurre il consumo. File e backup gestisce i file di gioco importati, i salvataggi e i backup delle impostazioni del launcher. Scegli i file di gioco attivi prima di giocare.</string>
  <string name="faq_mapping"><b>Gamepad</b>\nIn Comandi → Gamepad, scegli un gamepad per ogni giocatore, prova gli input e modifica i comandi dei menu. Automatico usa i gamepad rimanenti nell\'ordine di connessione. Le assegnazioni salvate restano riservate quando i gamepad sono scollegati. Assegna i comandi di gara nel gioco. Se il pulsante Indietro dei menu è assegnato alla guida, imposta una Scorciatoia per la pausa in gara: tieni premuti Indietro e un pulsante aggiuntivo.</string>
  <string name="controls_automatic_help">Menu: usa la croce direzionale o lo stick sinistro per spostarti, A / Cross per confermare e B / Circle per tornare indietro. In Gamepad puoi provare i dispositivi e modificarne i comandi dei menu. In Touch puoi scegliere Tocco diretto o Touchpad.\n\nGara: assegna i comandi nel menu Controls del gioco. I pulsanti sullo schermo seguono queste assegnazioni. Se il pulsante Indietro dei menu è assegnato alla guida, scegli un pulsante aggiuntivo in Gamepad → Scorciatoia per la pausa in gara. Tieni premuti entrambi per mettere in pausa.\n\nSchermo diviso: scegli un gamepad per ogni giocatore in Gamepad. Automatico usa quelli rimanenti nell\'ordine di connessione. Un\'assegnazione salvata resta riservata mentre il gamepad è scollegato. I comandi touch di gara controllano il giocatore 1.</string>
+ <string name="controller_assign">Assegna</string>
+ <string name="controller_cancel">Annulla</string>
+ <string name="controller_disable">Disattiva</string>
+ <string name="controller_shortcut_disabled">Disattivato</string>
+ <string name="controller_pause_first">Premi il primo pulsante.</string>
+ <string name="controller_pause_second">Premi il secondo pulsante.</string>
+ <string name="controller_pause_different">Scegli un pulsante diverso.</string>
+ <string name="controller_button_actions_hint">Confirm e Back accettano solo pulsanti (niente D-pad o ingressi analogici).</string>
+ <string name="controller_buttons_only">Usa un pulsante del controller. Le direzioni del D-pad e gli ingressi analogici non sono supportati.</string>
 </resources>

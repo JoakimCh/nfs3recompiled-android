@@ -190,7 +190,7 @@
  <string name="controller_details_hide">Giriş ayrıntılarını gizle</string>
  <string name="controller_reset_menu">Menü kontrollerini sıfırla</string>
  <string name="controller_pause_title">Yarışı duraklatma kısayolu</string>
- <string name="controller_pause_hint">Yarışı duraklatmak için menüdeki Geri düğmesini ve ek bir düğmeyi basılı tutun.</string>
+ <string name="controller_pause_hint">İki oyun kumandası düğmesi atayın ve duraklatmak için ikisini de basılı tutun. D-pad yönleri ve analog girişler desteklenmez.</string>
  <string name="controller_device_type">Cihaz türü</string>
  <string name="controller_change_type">Cihaz türünü değiştir…</string>
  <string name="controller_role_hint">TV kumandasının oyuncu yuvasını kullanmaması için Uzaktan kumanda / klavye seçin.</string>
@@ -204,4 +204,13 @@
  <string name="faq_screen_data"><b>Ekran ve oyun dosyaları</b>\nEkran, yönü ve kare hızı sınırını belirler. Daha düşük bir sınır güç tüketimini azaltabilir. Dosyalar ve yedekler, içe aktarılan oyun dosyalarını, kayıtları ve başlatıcı ayarları yedeklerini yönetir. Oynamadan önce etkin oyun dosyalarını seçin.</string>
  <string name="faq_mapping"><b>Kumandalar</b>\nKontroller → Kumandalar bölümünde her oyuncu için bir kumanda seçin, girişleri test edin ve menü kontrollerini değiştirin. Otomatik, kalan kumandaları bağlantı sırasıyla kullanır. Kaydedilen atamalar, kumandalar bağlı olmadığında da ayrılmış kalır. Yarış kontrollerini oyunun içinden atayın. Menüdeki Geri düğmesi sürüş için atanmışsa Yarışı duraklatma kısayolu ayarlayın: Geri ve ek bir düğmeyi basılı tutun.</string>
  <string name="controls_automatic_help">Menüler: hareket etmek için yön tuşlarını veya sol çubuğu, onaylamak için A / Cross ve geri gitmek için B / Circle kullanın. Kumandalar bölümünde cihazları test edip menü kontrollerini değiştirebilirsiniz. Dokunma bölümünde Doğrudan dokunma veya Dokunmatik yüzey seçebilirsiniz.\n\nYarış: kontrolleri oyunun Controls menüsünden atayın. Ekran düğmeleri bu atamaları izler. Menüdeki Geri düğmesi sürüş için atanmışsa Kumandalar → Yarışı duraklatma kısayolu bölümünde ek bir düğme seçin. Duraklatmak için ikisini de basılı tutun.\n\nBölünmüş ekran: Kumandalar bölümünde her oyuncu için bir kumanda seçin. Otomatik, kalanları bağlantı sırasıyla kullanır. Kumanda bağlı değilken kaydedilmiş yuvası ayrılmış kalır. Dokunmatik yarış kontrolleri oyuncu 1\'i yönetir.</string>
+ <string name="controller_assign">Ata</string>
+ <string name="controller_cancel">İptal</string>
+ <string name="controller_disable">Devre dışı bırak</string>
+ <string name="controller_shortcut_disabled">Devre dışı</string>
+ <string name="controller_pause_first">İlk düğmeye basın.</string>
+ <string name="controller_pause_second">İkinci düğmeye basın.</string>
+ <string name="controller_pause_different">Farklı bir düğme seçin.</string>
+ <string name="controller_button_actions_hint">Confirm ve Back yalnızca düğmeleri kabul eder (D-pad veya analog girişleri değil).</string>
+ <string name="controller_buttons_only">Bir oyun kumandası düğmesi kullanın. D-pad yönleri ve analog girişler desteklenmez.</string>
 </resources>

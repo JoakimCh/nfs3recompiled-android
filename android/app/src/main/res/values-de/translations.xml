@@ -190,7 +190,7 @@
  <string name="controller_details_hide">Eingabedetails ausblenden</string>
  <string name="controller_reset_menu">Menüsteuerung zurücksetzen</string>
  <string name="controller_pause_title">Tastenkombination zum Pausieren</string>
- <string name="controller_pause_hint">Die Zurück-Taste für Menüs und eine weitere Taste gedrückt halten, um ein Rennen zu pausieren.</string>
+ <string name="controller_pause_hint">Weise zwei Gamepad-Tasten zu und halte beide zum Pausieren gedrückt. Steuerkreuz und analoge Eingaben werden nicht unterstützt.</string>
  <string name="controller_device_type">Gerätetyp</string>
  <string name="controller_change_type">Gerätetyp ändern…</string>
  <string name="controller_role_hint">Für eine TV-Fernbedienung Fernbedienung / Tastatur wählen, damit sie keinen Spielerplatz belegt.</string>
@@ -204,4 +204,13 @@
  <string name="faq_screen_data"><b>Anzeige und Spieldateien</b>\nUnter Anzeige werden Bildschirmausrichtung und Bildratenlimit eingestellt. Ein niedrigeres Limit kann den Stromverbrauch senken. Dateien &amp; Sicherungen verwaltet importierte Spieldateien, Spielstände und Sicherungen der Launcher-Einstellungen. Vor dem Spielen aktive Spieldateien auswählen.</string>
  <string name="faq_mapping"><b>Controller</b>\nUnter Steuerung → Gamepads lassen sich Controller für jeden Spieler wählen, Eingaben testen und Menüsteuerungen ändern. Automatisch verwendet die übrigen Controller in Verbindungsreihenfolge. Gespeicherte Spielerzuweisungen bleiben bei getrennten Controllern reserviert. Die Rennsteuerung wird im Spiel zugewiesen. Wenn die Zurück-Taste für Menüs beim Fahren belegt ist, eine Tastenkombination zum Pausieren festlegen: Zurück und eine weitere Taste gedrückt halten.</string>
  <string name="controls_automatic_help">Menüs: Steuerkreuz oder linken Stick zum Bewegen, A / Cross zum Bestätigen und B / Circle zum Zurückgehen verwenden. Unter Gamepads lassen sich Geräte testen und Menüsteuerungen ändern. Unter Touch stehen Direkte Berührung und Touchpad zur Wahl.\n\nRennen: Die Steuerung im Controls-Menü des Spiels zuweisen. Die Bildschirmtasten folgen diesen Zuweisungen. Ist die Zurück-Taste für Menüs beim Fahren belegt, unter Gamepads → Tastenkombination zum Pausieren eine weitere Taste wählen. Beide zum Pausieren gedrückt halten.\n\nGeteilter Bildschirm: Unter Gamepads für jeden Spieler einen Controller wählen. Automatisch verwendet die übrigen Controller in Verbindungsreihenfolge. Eine gespeicherte Zuweisung bleibt bei getrenntem Controller reserviert. Die Touch-Rennsteuerung bedient Spieler 1.</string>
+ <string name="controller_assign">Zuweisen</string>
+ <string name="controller_cancel">Abbrechen</string>
+ <string name="controller_disable">Deaktivieren</string>
+ <string name="controller_shortcut_disabled">Deaktiviert</string>
+ <string name="controller_pause_first">Drücke die erste Taste.</string>
+ <string name="controller_pause_second">Drücke die zweite Taste.</string>
+ <string name="controller_pause_different">Wähle eine andere Taste.</string>
+ <string name="controller_button_actions_hint">Confirm und Back unterstützen nur Tasten (kein Steuerkreuz oder analoge Eingaben).</string>
+ <string name="controller_buttons_only">Verwende eine Gamepad-Taste. Steuerkreuz und analoge Eingaben werden nicht unterstützt.</string>
 </resources>

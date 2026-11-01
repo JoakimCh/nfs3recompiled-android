@@ -26,17 +26,26 @@ final class ControllerProfiles {
         SharedPreferences prefs=GamePreferences.get(context);String prefix=prefix(p.identity);
         for(int i=0;i<6;i++)p.bindings[i]=ControllerProfile.Binding.decode(prefs.getString(prefix+i,""));
         for(int i=4;i<6;i++)if(p.bindings[i]!=null && p.bindings[i].axis)p.bindings[i]=null;
-        p.racePauseModifier=ControllerProfile.Binding.decode(prefs.getString(prefix+"race_pause_modifier",""));
-        if(p.racePauseModifier!=null && (p.racePauseModifier.axis ||
-            ControllerProfile.samePauseButton(p.racePauseModifier.code,p.bindings[5]==null?97:p.bindings[5].code)))
-            p.racePauseModifier=null;
+        boolean legacy=!prefs.contains(prefix+"race_pause_first") && !prefs.contains(prefix+"race_pause_second")
+            && prefs.contains(prefix+"race_pause_modifier");
+        ControllerProfile.Binding first=ControllerProfile.Binding.decode(prefs.getString(prefix+"race_pause_first",""));
+        ControllerProfile.Binding second=ControllerProfile.Binding.decode(prefs.getString(prefix+"race_pause_second",""));
+        if(legacy) {
+            first=p.bindings[5]==null?new ControllerProfile.Binding(97):p.bindings[5];
+            second=ControllerProfile.Binding.decode(prefs.getString(prefix+"race_pause_modifier",""));
+        }
+        try {p.setRacePause(first,second);}catch(IllegalArgumentException invalid){p.setRacePause(null,null);}
+        if(legacy)save(context,p); // Freeze the old Back mapping before it can change.
         p.release();return p;
     }
     static void save(Context context,ControllerProfile p) {
         SharedPreferences.Editor e=GamePreferences.get(context).edit();String prefix=prefix(p.identity);
         for(int i=0;i<6;i++)if(p.bindings[i]==null)e.remove(prefix+i);else e.putString(prefix+i,p.bindings[i].encode());
-        if(p.racePauseModifier==null)e.remove(prefix+"race_pause_modifier");
-        else e.putString(prefix+"race_pause_modifier",p.racePauseModifier.encode());
+        e.remove(prefix+"race_pause_modifier");
+        if(p.hasRacePause()) {
+            e.putString(prefix+"race_pause_first",p.racePauseFirst.encode());
+            e.putString(prefix+"race_pause_second",p.racePauseSecond.encode());
+        } else e.remove(prefix+"race_pause_first").remove(prefix+"race_pause_second");
         e.apply();
     }
     static void motion(ControllerProfile p,MotionEvent event) {

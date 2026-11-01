@@ -3,6 +3,41 @@
 This file records evidence, not a substitute for checking the current source and
 latest Actions run. A new context should read AGENTS.md, BUILD.md and this file.
 
+## Assignment feedback: untested
+
+Selected next version: 0.78.30/code 107. Shortcut capture displays the pending
+first button and an ellipsis beside the controls, with a local second-button
+prompt and input feedback. Confirm, Back and both shortcut steps share validation
+that rejects D-pad directions (including their existing logical aliases), D-pad
+center and axis bindings. Directional menu assignments retain their prior input
+support. Existing saved bindings are preserved.
+
+The wording and all 18 translations were updated. Regression tests were added
+for validation, nearby progress/error feedback and Confirm/Back rejection.
+These changes are merged into `main` from `feature/controller-pause-pair`. Tests
+and APK builds have not been run for this revision.
+
+## Controller assignment and two-button race pause: user feedback
+
+Changes on `feature/controller-pause-pair` selected version 0.78.29/code 106:
+assignment no longer starts input testing automatically, and race pause captures
+two independent buttons. The saved pair is committed only when complete. Old
+Back-plus-extra preferences migrate once, and backup format 3 carries both buttons
+while accepting older exports.
+
+Before publication, the standalone Java ControllerProfileCheck passed, including
+arbitrary pairs, duplicate/alias rejection, unchanged pairs after menu Back edits,
+button release and per-controller isolation. Java syntax parsing passed for all
+seven changed launcher/test files, and all 19 resource sets parsed with matching
+new keys. These checks do not substitute for Android compilation or Robolectric.
+The native regression was extended for a non-Back pair and both press orders.
+Android/Robolectric tests and the SDL native regression have not been run in this
+workspace. Joakim subsequently reported the build worked, then requested a clearer
+first-button cue. He also reported that his Zero 2 D-pad could not be assigned to
+Confirm or Back in either mode. Button-only assignment remains the chosen policy;
+the latest local changes add explicit feedback rather than axis support. The run
+ID and device coverage of that successful build have not been recorded here.
+
 ## Fast APK mode: tooling checks passed; hosted build pending
 
 Added manual `apk-fast` mode to the existing workflow and shared Android runner.
@@ -20,8 +55,9 @@ APK run, timing comparison or device test has been performed yet.
 
 ## Numeric version migration
 
-Selected next ARMv7 version: `0.78.29`, Android version code `106`, fork revision
-`29`, defined in `tools/android-release.json`. Gradle and signing use that mapping;
+The numeric migration introduced `0.78.29`, Android version code `106`, fork
+revision `29`. Current versions are defined in `tools/android-release.json`.
+Gradle and signing use that mapping;
 APKs use `nfs3-0.78.29-armv7.apk`. The package and certificate are unchanged.
 Profiling remains enabled independently of the version string.
 
@@ -32,8 +68,9 @@ matched the new changelog entry to the historical tv28 baseline.
 
 The local changes were restored from this conversation after the workspace reset.
 All 26 release-helper tests passed again before publication; launcher tests were not
-rerun because the Android toolchain was not restored. No APK with the numeric
-version has been built, signed, published or device tested yet.
+rerun because the Android toolchain was not restored. At that point no numeric
+APK had been built; the later user feedback on the two-button shortcut build is
+recorded above. The new 0.78.30 feedback changes remain untested.
 
 ## Release publishing: initial hosted run verified; revised notes tested locally
 
@@ -56,8 +93,8 @@ Joakim subsequently reported trying the revised release workflow and liking its
 notes. That user report is recorded separately from the locally inspected checks;
 the retry run ID has not been recorded here.
 
-The existing release is left in place for Joakim to delete and retry. Its tag must
-also be deleted to reuse the same APK run. See
+To recreate a release from the same APK run, delete its existing release and tag
+before retrying. See
 [BUILD.md](BUILD.md#publish-an-existing-apk-as-a-release) for usage on `main`.
 
 ## Application: tv28, version 105

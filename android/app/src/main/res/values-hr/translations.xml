@@ -190,7 +190,7 @@
  <string name="controller_details_hide">Sakrij pojedinosti ulaza</string>
  <string name="controller_reset_menu">Vrati kontrole izbornika</string>
  <string name="controller_pause_title">Prečac za pauzu utrke</string>
- <string name="controller_pause_hint">Držite tipku Natrag za izbornike i dodatnu tipku kako biste pauzirali utrku.</string>
+ <string name="controller_pause_hint">Dodijelite dvije tipke i držite obje za pauziranje. Smjerovi D-pada i analogni ulazi nisu podržani.</string>
  <string name="controller_device_type">Vrsta uređaja</string>
  <string name="controller_change_type">Promijeni vrstu uređaja…</string>
  <string name="controller_role_hint">Za daljinski upravljač televizora odaberite Daljinski upravljač / tipkovnica kako ne bi zauzimao mjesto igrača.</string>
@@ -204,4 +204,13 @@
  <string name="faq_screen_data"><b>Zaslon i datoteke igre</b>\nZaslon određuje orijentaciju i ograničenje broja sličica. Niže ograničenje može smanjiti potrošnju. Datoteke i sigurnosne kopije služe za upravljanje uvezenim datotekama igre, spremljenim igrama i sigurnosnim kopijama postavki pokretača. Prije igranja odaberite aktivne datoteke igre.</string>
  <string name="faq_mapping"><b>Kontroleri</b>\nU Upravljanje → Kontroleri odaberite kontroler za svakog igrača, testirajte ulaze i promijenite kontrole izbornika. Automatski koristi preostale kontrolere redoslijedom povezivanja. Spremljene dodjele ostaju rezervirane kada se kontroleri odspoje. Kontrole utrke dodijelite u igri. Ako tipka Natrag za izbornike služi za vožnju, postavite Prečac za pauzu utrke: držite Natrag i dodatnu tipku.</string>
  <string name="controls_automatic_help">Izbornici: krećite se križnim tipkama ili lijevom palicom, potvrdite s A / Cross, a vratite se s B / Circle. U Kontroleri možete testirati uređaje i mijenjati kontrole izbornika. U Dodir odaberite Izravan dodir ili Touchpad.\n\nUtrka: dodijelite kontrole u izborniku Controls u igri. Zaslonske tipke prate te dodjele. Ako tipka Natrag za izbornike služi za vožnju, odaberite dodatnu tipku u Kontroleri → Prečac za pauzu utrke. Držite obje za pauzu.\n\nPodijeljeni zaslon: u Kontroleri odaberite kontroler za svakog igrača. Automatski koristi preostale kontrolere redoslijedom povezivanja. Spremljena dodjela ostaje rezervirana kada je kontroler odspojen. Dodirne kontrole utrke upravljaju igračem 1.</string>
+ <string name="controller_assign">Dodijeli</string>
+ <string name="controller_cancel">Odustani</string>
+ <string name="controller_disable">Onemogući</string>
+ <string name="controller_shortcut_disabled">Onemogućeno</string>
+ <string name="controller_pause_first">Pritisnite prvu tipku.</string>
+ <string name="controller_pause_second">Pritisnite drugu tipku.</string>
+ <string name="controller_pause_different">Odaberite drugu tipku.</string>
+ <string name="controller_button_actions_hint">Confirm i Back prihvaćaju samo tipke (bez D-pada i analognih ulaza).</string>
+ <string name="controller_buttons_only">Upotrijebite tipku kontrolera. Smjerovi D-pada i analogni ulazi nisu podržani.</string>
 </resources>

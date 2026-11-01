@@ -88,7 +88,7 @@ example `armv7-v105-run41324391872`, and points to that build's exact source com
 A prerelease does not replace the repository's latest regular release.
 Selecting either type leaves the original build metadata unchanged.
 
-New release titles use the numeric version, such as **0.78.29**. Historical TV
+New release titles use the numeric version, such as **0.78.30**. Historical TV
 builds retain titles such as **NFS III ARMv7 TV — tv28**. Notes come
 from `docs/fork/CHANGELOG.md` at the **APK's source commit**, even when the workflow
 itself runs from a newer commit. They include versioned entries after the previous
@@ -98,7 +98,7 @@ compare against the previous regular release; prereleases can compare against an
 earlier prerelease too. Rebuilds of the same fork revision use the preceding lower
 version. With no earlier release, only the current version's changes are included.
 
-Maintain a heading such as `## 0.78.29 — version 106` for each new version,
+Maintain a heading such as `## 0.78.30 — version 107` for each new version,
 matching the release manifest. Historical headings such as `## tv28 — version 105`
 remain supported. Keep these entries about game/launcher
 changes. Put device feedback and validation records in BUILD_STATUS.md and
@@ -125,25 +125,26 @@ No personal token, new secret or change to repository-wide default token
 permissions is needed. It runs only when manually started.
 
 The initial hosted publication succeeded, and Joakim reported successfully trying
-the revised changelog-based notes. The numeric naming migration still needs its
-first APK build and hosted publication. See BUILD_STATUS.md for the evidence.
+the revised changelog-based notes and the two-button shortcut build. The next
+assignment-feedback revision still needs an APK build and validation. See
+BUILD_STATUS.md for the evidence.
 
 ## Version naming
 
 Numeric versions come from
 [android-release.json](../../tools/android-release.json), shared by Gradle and
-signing. The first APK build and hosted publication using these names are still
-pending. See BUILD_STATUS.md for validation status.
+signing. The next selected build is 0.78.30/code 107; this revision is untested.
+See BUILD_STATUS.md for validation status.
 
 | Item | Selected next build |
 | --- | --- |
-| App version and release title | `0.78.29` |
-| APK filename | `nfs3-0.78.29-armv7.apk` |
-| Symbols filename | `nfs3-0.78.29-armv7-symbols.zip` |
-| Release metadata | `nfs3-0.78.29-armv7-release.json` |
-| Android version code | `106`, increased from tv28's `105` |
+| App version and release title | `0.78.30` |
+| APK filename | `nfs3-0.78.30-armv7.apk` |
+| Symbols filename | `nfs3-0.78.30-armv7-symbols.zip` |
+| Release metadata | `nfs3-0.78.30-armv7-release.json` |
+| Android version code | `107`, increased from 0.78.29's `106` |
 
-`0.78` identifies the upstream version; `29` identifies this fork's revision.
+`0.78` identifies the upstream version; `30` identifies this fork's revision.
 Keep the fork revision increasing, including after an upstream version update.
 Architecture belongs in filenames and metadata. Profiling capability is recorded
 in build metadata, without a `profile` suffix in the version or release title.

@@ -190,7 +190,7 @@
  <string name="controller_details_hide">Skrýt podrobnosti vstupu</string>
  <string name="controller_reset_menu">Obnovit ovládání nabídek</string>
  <string name="controller_pause_title">Zkratka pro pozastavení závodu</string>
- <string name="controller_pause_hint">Závod pozastavíte podržením tlačítka Zpět pro nabídky a dalšího tlačítka.</string>
+ <string name="controller_pause_hint">Přiřaďte dvě tlačítka ovladače a podržením obou hru pozastavte. Směry D-padu ani analogové vstupy nejsou podporovány.</string>
  <string name="controller_device_type">Typ zařízení</string>
  <string name="controller_change_type">Změnit typ zařízení…</string>
  <string name="controller_role_hint">Pro televizní ovladač zvolte Dálkový ovladač / klávesnice, aby nezabíral místo hráče.</string>
@@ -204,4 +204,13 @@
  <string name="faq_screen_data"><b>Obraz a herní soubory</b>\nObraz nastavuje orientaci obrazovky a limit snímkové frekvence. Nižší limit může snížit spotřebu. Soubory a zálohy spravují importované herní soubory, uložené hry a zálohy nastavení spouštěče. Před hraním vyberte aktivní herní soubory.</string>
  <string name="faq_mapping"><b>Gamepady</b>\nV Ovládání → Gamepady vyberte gamepad pro každého hráče, otestujte vstupy a změňte ovládání nabídek. Automaticky používá zbývající gamepady v pořadí připojení. Uložená přiřazení zůstávají rezervovaná i po odpojení gamepadu. Ovládání závodu nastavte ve hře. Pokud tlačítko Zpět pro nabídky slouží k řízení, nastavte Zkratku pro pozastavení závodu: podržte Zpět a další tlačítko.</string>
  <string name="controls_automatic_help">Nabídky: pohybujte se směrovým křížem nebo levou páčkou, potvrzujte A / Cross a vracejte se pomocí B / Circle. V Gamepady můžete testovat zařízení a měnit ovládání nabídek. V Dotyk zvolte Přímý dotyk nebo Touchpad.\n\nZávod: nastavte ovládání v nabídce Controls ve hře. Tlačítka na obrazovce tato přiřazení následují. Pokud tlačítko Zpět pro nabídky slouží k řízení, vyberte další tlačítko v Gamepady → Zkratka pro pozastavení závodu. Podržením obou závod pozastavíte.\n\nRozdělená obrazovka: v Gamepady vyberte gamepad pro každého hráče. Automaticky používá zbývající gamepady v pořadí připojení. Uložené přiřazení zůstává rezervované i po odpojení gamepadu. Dotykové ovládání řídí hráče 1.</string>
+ <string name="controller_assign">Přiřadit</string>
+ <string name="controller_cancel">Zrušit</string>
+ <string name="controller_disable">Vypnout</string>
+ <string name="controller_shortcut_disabled">Vypnuto</string>
+ <string name="controller_pause_first">Stiskněte první tlačítko.</string>
+ <string name="controller_pause_second">Stiskněte druhé tlačítko.</string>
+ <string name="controller_pause_different">Vyberte jiné tlačítko.</string>
+ <string name="controller_button_actions_hint">Confirm a Back přijímají pouze tlačítka (bez D-padu a analogových vstupů).</string>
+ <string name="controller_buttons_only">Použijte tlačítko ovladače. Směry D-padu ani analogové vstupy nejsou podporovány.</string>
 </resources>

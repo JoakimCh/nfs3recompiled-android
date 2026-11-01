@@ -34,7 +34,7 @@ final class LauncherSettings {
     private LauncherSettings() {}
 
     /** Bumped only if the meaning of the contents changes, not their spelling. */
-    private static final int FORMAT = 2;
+    private static final int FORMAT = 3;
     private static final String FORMAT_KEY = "format", SETTINGS_KEY = "settings";
     private static final String TYPE = "type", VALUE = "value";
 
@@ -64,6 +64,7 @@ final class LauncherSettings {
     private static boolean carried(String key, int format) {
         for (String known : KEYS) if (known.equals(key)) return true;
         for (String prefix : PREFIXES) if (key.startsWith(prefix)) return true;
+        if(format<3 && (key.endsWith("_race_pause_first") || key.endsWith("_race_pause_second")))return false;
         return format >= 2 && (GamePreferences.TOUCH_SNAP.equals(key)
             || controllerSetting(key));
     }
@@ -71,7 +72,7 @@ final class LauncherSettings {
     private static boolean controllerSetting(String key) {
         return GamepadSlots.assignmentPreference(key)
             || key.matches("input_role_[0-9a-f]{64}")
-            || key.matches("controller_profile_[0-9a-f]{64}_([0-5]|race_pause_modifier)");
+            || key.matches("controller_profile_[0-9a-f]{64}_([0-5]|race_pause_modifier|race_pause_first|race_pause_second)");
     }
 
     static int export(Context context, Uri uri) throws IOException {
@@ -98,7 +99,7 @@ final class LauncherSettings {
         } catch (JSONException malformed) {
             throw new IOException(malformed);
         }
-        // An empty v2 snapshot is useful too: importing it restores defaults.
+        // An empty snapshot is useful too: importing it restores defaults.
         return count;
     }
 
@@ -144,7 +145,7 @@ final class LauncherSettings {
          * first.  Keys outside the whitelist -- the active data set, the
          * language -- are never touched either way. */
         for (String key : preferences.getAll().keySet())
-            if (carried(key, format)) edit.remove(key);
+            if (carried(key, format) || (format>=2 && controllerSetting(key))) edit.remove(key);
 
         int applied = 0;
         for (java.util.Iterator<String> keys = settings.keys(); keys.hasNext(); ) {
@@ -160,6 +161,18 @@ final class LauncherSettings {
         if (applied == 0 && settings.length() != 0)
             throw new IOException(context.getString(R.string.launcher_wrong_format));
 
+        for(java.util.Iterator<String> keys=settings.keys();keys.hasNext();) {
+            String key=keys.next();
+            if(format<3 || !controllerSetting(key) || !key.endsWith("_race_pause_first") && !key.endsWith("_race_pause_second"))continue;
+            String prefix=key.substring(0,key.lastIndexOf("race_pause_"));
+            JSONObject first=settings.optJSONObject(prefix+"race_pause_first"),second=settings.optJSONObject(prefix+"race_pause_second");
+            if(first==null || second==null)throw new IOException(context.getString(R.string.launcher_wrong_format));
+            String a=first.optString(VALUE),b=second.optString(VALUE);
+            if(a.isEmpty() && b.isEmpty())continue;
+            ControllerProfile.Binding x=ControllerProfile.Binding.decode(a),y=ControllerProfile.Binding.decode(b);
+            if(x==null || y==null || x.axis || y.axis || ControllerProfile.samePauseButton(x.code,y.code))
+                throw new IOException(context.getString(R.string.launcher_wrong_format));
+        }
         String backup = writeBackup(context, dataRoot);
         if (!edit.commit()) throw new IOException(context.getString(R.string.launcher_restore_failed));
         InputDeviceRoles.initialize(context);
@@ -199,7 +212,7 @@ final class LauncherSettings {
             ControllerProfile.Binding binding = ControllerProfile.Binding.decode(text);
             if (binding == null) return false;
             boolean buttonOnly = key.endsWith("_4") || key.endsWith("_5")
-                || key.endsWith("_race_pause_modifier");
+                || key.endsWith("_race_pause_modifier") || key.endsWith("_race_pause_first") || key.endsWith("_race_pause_second");
             return !buttonOnly || !binding.axis;
         }
         return true;
