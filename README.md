@@ -2,6 +2,8 @@
 I'm using AI to add my own improvements.
 I focus on ARMv7 support and better controller support.
 
+AI contributors: read [AGENTS.md](AGENTS.md) before starting work.
+
 Fork status, decisions and workflow: [docs/fork/README.md](docs/fork/README.md).
 
 Original readme below:
