@@ -12,7 +12,7 @@ on:
         type: string
         required: false
       release_type:
-        description: Prerelease for testing, release for a device-tested build
+        description: Publish as a prerelease or regular release
         type: choice
         required: true
         default: prerelease

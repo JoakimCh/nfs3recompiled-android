@@ -66,15 +66,33 @@ The workflow is available on `main`. To publish a build:
    or enter the branch containing the APK build.
 3. Leave **APK run ID** blank for that branch's latest successful signed APK run,
    or paste a specific run ID (the number after `/actions/runs/` in its URL).
-4. Choose **prerelease** for a test build, or **release** for a device-tested build.
+4. Choose **prerelease** or **release**. A regular release becomes the latest release.
 5. Start the workflow. Its summary links to the published release.
 
 The workflow checks that the source commit, successful tests, signed APK hash
 and symbol metadata agree. It uploads the APK, exact symbols, verification JSON
 and checksums. The release tag identifies the version code and build run, for
 example `armv7-v105-run41324391872`, and points to that build's exact source commit.
-A regular release becomes the repository's latest release; a prerelease does not.
+A prerelease does not replace the repository's latest regular release.
 Selecting either type leaves the original build metadata unchanged.
+
+Release titles use the TV version, such as **NFS III ARMv7 TV — tv28**. Notes come
+from `docs/fork/CHANGELOG.md` at the **APK's source commit**, even when the workflow
+itself runs from a newer commit. They include versioned entries after the previous
+published ARMv7 release through the APK version: tv25–tv28 when updating from tv24.
+The previous release's tag must be in the APK's source history. Regular releases
+compare against the previous regular release; prereleases can compare against an
+earlier prerelease too. Rebuilds of the same TV version use the preceding lower
+version. With no earlier release, only the current version's changes are included.
+
+Maintain a heading such as `## tv28 — version 105` for every TV version, matching
+the APK's version name and version code. Keep these entries about game/launcher
+changes. Put device feedback and validation records in BUILD_STATUS.md and
+unreleased workflow work in separate Unreleased sections. Legacy personal
+feedback and known maintenance-only notes are omitted when reading older entries.
+Unreleased sections, future versions and the previous version's own changes are
+excluded. Missing, empty or inconsistent entries stop publication before a draft
+is created. Technical build information is collapsed below the changes.
 
 The selected run must be a successful signed APK run from the build workflow on
 the chosen branch. Missing or expired artifacts stop publication; the workflow
@@ -82,7 +100,9 @@ never silently substitutes an older APK. Publish before artifact expiry, or make
 a new APK build. Published assets remain available on the repository's
 [Releases page](https://github.com/JoakimCh/nfs3recompiled-android/releases).
 
-Existing tags/releases are never overwritten. A failed upload may leave a draft;
+Existing tags/releases are never overwritten. To recreate a deleted release from
+the same APK run, delete its tag too (for example `armv7-v105-run41324391872`).
+Deleting a release alone leaves the tag behind. A failed upload may leave a draft;
 inspect and delete an incomplete draft before retrying. If its tag exists too,
 remove it only after confirming it belongs to that failed attempt. The workflow
 requests `actions: read` and `contents: write` for its publishing job. GitHub
@@ -90,8 +110,9 @@ automatically supplies a temporary `GITHUB_TOKEN`, passed to the CLI as `GH_TOKE
 No personal token, new secret or change to repository-wide default token
 permissions is needed. It runs only when manually started.
 
-Local helper tests and workflow structure checks passed. Actual hosted release
-publication has not run yet; record its first successful run in BUILD_STATUS.md.
+The initial hosted publication succeeded. The revised changelog-based notes have
+local test coverage and an exact-source preview; their first hosted run remains
+pending. See BUILD_STATUS.md for the recorded evidence.
 
 ## Local builds
 

@@ -3,17 +3,28 @@
 This file records evidence, not a substitute for checking the current source and
 latest Actions run. A new context should read AGENTS.md, BUILD.md and this file.
 
-## Release publishing: locally tested; hosted run pending
+## Release publishing: initial hosted run verified; revised notes tested locally
 
-The manual `publish-apk.yml` workflow and `tools/release/publish_android.py` promote
-an existing signed APK run to a prerelease or release. On 2026-11-01, all ten
-release-helper tests and three setup tests passed. They covered publication
-ordering with mocked GitHub calls, keeping a failed upload private as a draft,
-source selection, mismatched files, expired artifacts and existing-tag refusal.
-Workflow structure checks confirmed manual dispatch, prerelease default and the
-built-in token with job-scoped permissions. Actual hosted release publication
-has not run yet; no GitHub Release has been created by this implementation.
-See [BUILD.md](BUILD.md#publish-an-existing-apk-as-a-release) for usage on `main`.
+[Publication run 41326807799](https://github.com/JoakimCh/nfs3recompiled-android/actions/runs/41326807799)
+succeeded on 2026-11-01 from workflow commit `e93c02e5891770b86a0bee0be76ea8b096157731`.
+The publish step completed and created
+[the tv28 release](https://github.com/JoakimCh/nfs3recompiled-android/releases/tag/armv7-v105-run41324391872)
+with all five expected assets. Its APK SHA-256 matches the source build below.
+This verifies the built-in token permissions and publication of existing artifacts.
+
+The revised notes use the changelog from the APK's source commit, select the
+previous published ARMv7 version in that source history, and omit personal
+feedback. The title is simplified and build details are collapsed. All 23 tooling
+tests passed locally (20 release helper tests and three setup tests), including
+missing changelog entries, source/version matching, legacy tags, prerelease
+baselines and rejection before publication. A preview using the actual tv28 source
+and published release records selected tv24 as baseline and included tv25–tv28.
+GitHub's comparison API confirmed that the tv24 tag is an ancestor of that source.
+The revised notes have not yet been exercised by a hosted publication run.
+
+The existing release is left in place for Joakim to delete and retry. Its tag must
+also be deleted to reuse the same APK run. See
+[BUILD.md](BUILD.md#publish-an-existing-apk-as-a-release) for usage on `main`.
 
 ## Application: tv28, version 105
 

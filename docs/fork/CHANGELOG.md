@@ -6,8 +6,14 @@ Added a manual Publish APK release workflow. It promotes an existing successful
 signed APK run to a prerelease or release with its matching symbols, verification
 metadata and checksums. No rebuild or signing credentials are needed. Expired
 artifacts, inconsistent metadata and existing tags stop publication. Ten release
-helper tests and workflow structure checks passed; hosted publication remains
-untested. The workflow uses the built-in token with explicit job permissions.
+helper tests and workflow structure checks passed, followed by a successful hosted
+publication. The workflow uses the built-in token with explicit job permissions.
+
+Release notes now collect the versioned changelog entries since the previous
+published ARMv7 release, using the APK's source commit. Titles are shorter,
+personal testing feedback is omitted, and technical details are collapsed.
+Missing or inconsistent changelog entries stop publication. The revised notes
+passed local tests and an exact-source preview; their hosted retry is pending.
 
 ## Unreleased build automation
 

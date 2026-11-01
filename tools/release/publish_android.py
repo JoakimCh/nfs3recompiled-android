@@ -8,7 +8,7 @@ from pathlib import Path
 import re
 import subprocess
 import tempfile
-from urllib.parse import urlencode
+from urllib.parse import quote, urlencode
 import zipfile
 
 if __package__:
@@ -30,11 +30,12 @@ def api(path):
     return json.loads(gh('api', path))
 
 
-def pages(path, key):
+def pages(path, key=None):
     separator = '&' if '?' in path else '?'
     page = 1
     while True:
-        items = api(f'{path}{separator}per_page=100&page={page}')[key]
+        response = api(f'{path}{separator}per_page=100&page={page}')
+        items = response[key] if key else response
         yield from items
         if len(items) < 100:
             return
@@ -134,6 +135,101 @@ def unused_tag(repo, tag):
     require(b'HTTP 404' in result.stderr, 'Could not check whether the release tag already exists.')
 
 
+def changelog_sections(text):
+    """Read versioned entries only; Unreleased and historical prose are not releases."""
+    headings = list(re.finditer(r'^## (.+)$', text, re.MULTILINE))
+    sections = {}
+    codes = set()
+    for index, heading in enumerate(headings):
+        match = re.fullmatch(r'tv(\d+) [-–—] version (\d+)(?: .*)?', heading[1].strip())
+        if not match:
+            continue
+        tv, code = map(int, match.groups())
+        require(tv not in sections and code not in codes, 'Duplicate changelog version.')
+        end = headings[index + 1].start() if index + 1 < len(headings) else len(text)
+        body = text[heading.end():end].strip()
+        # Older entries mixed personal feedback into the change descriptions.
+        # Keep feedback in BUILD_STATUS.md; release notes contain changes only.
+        legacy_notes = (
+            r'\bJoakim (?:reported|approved)\b[^.]*\.\s*',
+            r'Added translation maintenance guidance in TRANSLATIONS\.md\.\s*',
+            r'The pre-existing host\s+trackVertices check discrepancy remains documented in WORKSPACE\.md\.\s*',
+        )
+        for pattern in legacy_notes:
+            body = re.sub(pattern, '', body)
+        body = re.sub(r'\n{3,}', '\n\n', body).strip()
+        sections[tv] = {'code': code, 'body': body}
+        codes.add(code)
+    return sections
+
+
+def apk_tv(version):
+    match = re.search(r'(?:^|-)tv(\d+)(?:-|$)', version)
+    require(match, 'Cannot identify the TV version from the APK version name.')
+    return int(match[1])
+
+
+def previous_release(repo, run, current_tv, kind):
+    candidates = []
+    for release in pages(f'repos/{repo}/releases'):
+        if release['draft'] or (kind == 'release' and release['prerelease']):
+            continue
+        # Assets identify ARMv7 releases even when legacy tags use another format.
+        versions = set()
+        for asset in release.get('assets', []):
+            match = re.fullmatch(r'nfs3-.*-armv7-tv(\d+)(?:-[\w.-]+)?-release\.apk', asset['name'])
+            if match:
+                versions.add(int(match[1]))
+        require(len(versions) <= 1, 'A published release contains ambiguous ARMv7 versions.')
+        if versions and (tv := versions.pop()) < current_tv:
+            candidates.append((tv, release))
+    for tv, release in sorted(candidates, key=lambda item: (item[0], item[1]['published_at']), reverse=True):
+        comparison = api(f"repos/{repo}/compare/{quote(release['tag_name'], safe='')}...{run['head_sha']}")
+        if comparison['status'] in ('ahead', 'identical'):
+            return tv, release
+    require(not candidates, 'Cannot find a previous ARMv7 release in this build source history.')
+    return None
+
+
+def changes_for_release(sections, current_tv, code, previous_tv=None):
+    current = sections.get(current_tv)
+    require(current and current['code'] == code,
+            'APK version/code is missing or inconsistent in its source changelog.')
+    start = previous_tv + 1 if previous_tv is not None else current_tv
+    require(start <= current_tv, 'Invalid previous-release version range.')
+    if previous_tv is not None:
+        require(previous_tv in sections, 'Previous release is missing from the source changelog.')
+    entries = []
+    for tv in range(current_tv, start - 1, -1):
+        entry = sections.get(tv)
+        require(entry and entry['body'], f'Missing or empty changelog changes for tv{tv}.')
+        entries.append(f"### tv{tv}\n\n{entry['body']}")
+    return '\n\n'.join(entries)
+
+
+def release_notes(repo, run, metadata, kind, test_count):
+    # Fetch the APK source, not the newer workflow checkout or branch tip.
+    source = gh('api', f"repos/{repo}/contents/docs/fork/CHANGELOG.md?ref={run['head_sha']}",
+                '--header', 'Accept: application/vnd.github.raw+json').decode('utf-8')
+    tv = apk_tv(metadata['version'])
+    previous = previous_release(repo, run, tv, kind)
+    changes = changes_for_release(changelog_sections(source), tv, metadata['versionCode'],
+                                  previous[0] if previous else None)
+    since = f"Changes since [tv{previous[0]}]({previous[1]['html_url']}).\n\n" if previous else ''
+    notes = (
+        'Download the **.apk** below to install or update the game.\n\n'
+        f'## Changes\n\n{since}{changes}\n\n'
+        '<details>\n<summary>Build details</summary>\n\n'
+        f"- Version: `{metadata['version']}` ({metadata['versionCode']}).\n"
+        f"- Source: [`{run['head_sha'][:7]}`](https://github.com/{repo}/commit/{run['head_sha']}).\n"
+        f"- [Build and automated checks]({run['html_url']}): {test_count} launcher tests passed.\n"
+        f"- Native BuildID: `{metadata['native_build_id']}`.\n\n"
+        'The symbols ZIP and JSON files are for troubleshooting and verification. '
+        'SHA256SUMS.txt contains file checksums. Only the APK is needed to play.\n\n'
+        '</details>\n')
+    return f'NFS III ARMv7 TV — tv{tv}', notes
+
+
 def main():
     repo = os.environ['GITHUB_REPOSITORY']
     branch = os.environ['RELEASE_BUILD_BRANCH'].strip()
@@ -153,20 +249,11 @@ def main():
         checksums.write_text(''.join(f'{hashlib.sha256(p.read_bytes()).hexdigest()}  {p.name}\n' for p in assets))
         assets.append(checksums)
         notes = directory / 'release-notes.md'
-        notes.write_text(
-            f"ARMv7 TV build **{metadata['version']}**, version code {code}.\n\n"
-            f"Source: `{run['head_sha']}` on `{branch}`.\n\n"
-            f"Build and checks: {run['html_url']}\n\n"
-            f"All {metadata_test_count(directory)} launcher tests, native build and original-certificate "
-            "signing checks passed.\n\n"
-            "Download the `.apk` to install. The symbols ZIP is for crash decoding; keep it "
-            "with this APK. Verification JSON and SHA256SUMS.txt identify the exact files.\n\n"
-            f"Native BuildID: `{metadata['native_build_id']}`.\n\n"
-            "Device testing is separate from these automated checks; selecting a release "
-            "type does not change the original build's device-test metadata.\n")
+        title, body = release_notes(repo, run, metadata, kind, metadata_test_count(directory))
+        notes.write_text(body)
         # Upload everything while private, then publish. A failed upload leaves a draft.
         gh('release', 'create', tag, '--repo', repo, '--target', run['head_sha'],
-           '--title', f"ARMv7 {metadata['version']} (run {run['id']})",
+           '--title', title,
            '--notes-file', notes, '--draft', '--latest=false',
            *(['--prerelease'] if kind == 'prerelease' else []))
         gh('release', 'upload', tag, *assets, '--repo', repo)

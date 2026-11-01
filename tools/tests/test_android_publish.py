@@ -109,6 +109,7 @@ class ReleasePromotionTests(unittest.TestCase):
              patch.object(publish, 'choose_run', return_value=self.run_fixture(3)), \
              patch.object(publish, 'artifact', side_effect=self.fixture()), \
              patch.object(publish, 'unused_tag'), \
+             patch.object(publish, 'release_notes', return_value=('NFS III ARMv7 TV — tv28', 'Changes.')), \
              patch.object(publish, 'gh', side_effect=call) as gh:
             if failed_upload:
                 with self.assertRaises(subprocess.CalledProcessError):
@@ -131,6 +132,138 @@ class ReleasePromotionTests(unittest.TestCase):
     def test_failed_upload_leaves_draft_unpublished(self):
         calls = self.publish_main(failed_upload=True)
         self.assertEqual([c[1] for c in calls], ['create', 'upload'])
+
+    def test_invalid_changelog_stops_before_creating_a_draft(self):
+        env = {'GITHUB_REPOSITORY': 'owner/repo', 'RELEASE_BUILD_BRANCH': 'feature/test',
+               'RELEASE_RUN_ID': '3', 'RELEASE_TYPE': 'release'}
+        with patch.dict(os.environ, env), \
+             patch.object(publish, 'choose_run', return_value=self.run_fixture(3)), \
+             patch.object(publish, 'artifact', side_effect=self.fixture()), \
+             patch.object(publish, 'unused_tag'), \
+             patch.object(publish, 'release_notes', side_effect=RuntimeError('Missing changelog')), \
+             patch.object(publish, 'gh') as gh:
+            with self.assertRaisesRegex(RuntimeError, 'Missing changelog'):
+                publish.main()
+            gh.assert_not_called()
+
+
+class ReleaseNotesTests(unittest.TestCase):
+    changelog = """# Fork changes
+
+## Unreleased build automation
+
+Never include this automation work.
+
+## tv29 — version 106
+
+Future change.
+
+## tv28 — version 105
+
+Joakim reported testing build 28 without problems on 2026-11-01.
+
+Improved settings backups and translated launcher wording.
+Added translation maintenance guidance in TRANSLATIONS.md.
+
+## tv27 — version 104
+
+Updated SDL. Joakim reported testing the game without problems. Retained input routing.
+The pre-existing host
+trackVertices check discrepancy remains documented in WORKSPACE.md.
+
+## tv26 — version 103 (test build)
+
+Added a race pause shortcut.
+
+## tv25 — version 102
+
+Fixed the controller page header.
+
+## tv24 — version 101
+
+Older changes already released.
+"""
+
+    def sections(self):
+        return publish.changelog_sections(self.changelog)
+
+    def test_collects_full_range_and_omits_feedback_unreleased_future_and_baseline(self):
+        notes = publish.changes_for_release(self.sections(), 28, 105, 24)
+        for version in (25, 26, 27, 28):
+            self.assertIn(f'### tv{version}', notes)
+        for excluded in ('tv24', 'tv29', 'Joakim', 'Unreleased', 'automation work', 'Future change', 'TRANSLATIONS.md', 'WORKSPACE.md'):
+            self.assertNotIn(excluded, notes)
+        self.assertIn('Updated SDL. Retained input routing.', notes)
+
+    def test_missing_intermediate_entry_and_wrong_code_stop_publication(self):
+        sections = self.sections()
+        del sections[26]
+        with self.assertRaisesRegex(RuntimeError, 'tv26'):
+            publish.changes_for_release(sections, 28, 105, 24)
+        with self.assertRaisesRegex(RuntimeError, 'version/code'):
+            publish.changes_for_release(self.sections(), 28, 999, 24)
+
+    def test_missing_baseline_or_empty_changes_stop_publication(self):
+        sections = self.sections()
+        del sections[24]
+        with self.assertRaisesRegex(RuntimeError, 'Previous release'):
+            publish.changes_for_release(sections, 28, 105, 24)
+        sections = self.sections()
+        sections[28]['body'] = ''
+        with self.assertRaisesRegex(RuntimeError, 'empty'):
+            publish.changes_for_release(sections, 28, 105)
+
+    def test_first_release_uses_only_current_version(self):
+        notes = publish.changes_for_release(self.sections(), 28, 105)
+        self.assertIn('### tv28', notes)
+        self.assertNotIn('### tv27', notes)
+
+    def test_duplicate_entries_are_rejected(self):
+        with self.assertRaisesRegex(RuntimeError, 'Duplicate'):
+            publish.changelog_sections(self.changelog + '\n## tv28 — version 105\nDuplicate.')
+
+    def release(self, tv, prerelease=False):
+        return {'draft': False, 'prerelease': prerelease, 'published_at': '2026-11-01',
+                'tag_name': f'v0.78-tv{tv}', 'html_url': f'https://example.com/tv{tv}',
+                'assets': [{'name': f'nfs3-0.78-armv7-tv{tv}-profile-release.apk'}]}
+
+    def test_baseline_handles_legacy_tags_and_ignores_current_and_future_versions(self):
+        releases = [self.release(30), self.release(28), self.release(24)]
+        with patch.object(publish, 'pages', return_value=iter(releases)), \
+             patch.object(publish, 'api', return_value={'status': 'ahead'}) as api:
+            baseline = publish.previous_release('owner/repo', {'head_sha': 'a' * 40}, 28, 'release')
+        self.assertEqual(baseline[0], 24)
+        self.assertIn('v0.78-tv24...', api.call_args.args[0])
+
+    def test_regular_release_includes_changes_since_previous_stable_not_prerelease(self):
+        releases = [self.release(27, prerelease=True), self.release(24)]
+        with patch.object(publish, 'pages', return_value=iter(releases)), \
+             patch.object(publish, 'api', return_value={'status': 'ahead'}):
+            self.assertEqual(publish.previous_release('o/r', {'head_sha': 'a' * 40}, 28, 'release')[0], 24)
+        with patch.object(publish, 'pages', return_value=iter(releases)), \
+             patch.object(publish, 'api', return_value={'status': 'ahead'}):
+            self.assertEqual(publish.previous_release('o/r', {'head_sha': 'a' * 40}, 28, 'prerelease')[0], 27)
+
+    def test_unrelated_source_history_is_rejected(self):
+        with patch.object(publish, 'pages', return_value=iter([self.release(24)])), \
+             patch.object(publish, 'api', return_value={'status': 'diverged'}):
+            with self.assertRaisesRegex(RuntimeError, 'source history'):
+                publish.previous_release('o/r', {'head_sha': 'a' * 40}, 28, 'release')
+
+    def test_fetches_apk_source_and_renders_player_notes_with_collapsed_details(self):
+        run = {'head_sha': 'a' * 40, 'html_url': 'https://example.com/build'}
+        metadata = {'version': '0.78-armv7-tv28-profile', 'versionCode': 105, 'native_build_id': '1234'}
+        with patch.object(publish, 'gh', return_value=self.changelog.encode()) as gh, \
+             patch.object(publish, 'previous_release', return_value=(24, self.release(24))):
+            title, body = publish.release_notes('o/r', run, metadata, 'release', 14)
+        self.assertEqual(title, 'NFS III ARMv7 TV — tv28')
+        self.assertIn('?ref=' + 'a' * 40, gh.call_args.args[1])
+        self.assertIn('Accept: application/vnd.github.raw+json', gh.call_args.args)
+        self.assertIn('### tv25', body)
+        self.assertIn('<details>', body)
+        self.assertNotIn('Device testing', body)
+        self.assertNotIn('Joakim', body)
+        self.assertLess(body.index('## Changes'), body.index('<details>'))
 
 
 if __name__ == '__main__':
