@@ -2,135 +2,101 @@
 
 ## Unreleased release publishing
 
-Added a manual Publish APK release workflow. It promotes an existing successful
-signed APK run to a prerelease or release with its matching symbols, verification
-metadata and checksums. No rebuild or signing credentials are needed. Expired
-artifacts, inconsistent metadata and existing tags stop publication. Ten release
-helper tests and workflow structure checks passed, followed by a successful hosted
-publication. The workflow uses the built-in token with explicit job permissions.
+The release publisher accepts signed `apk-fast` builds, preserving skipped-test
+metadata and existing artifact checks. Fast builds keep the same changelog notes
+without claiming automated tests passed.
 
-Release notes now collect the versioned changelog entries since the previous
-published ARMv7 release, using the APK's source commit. Titles are shorter,
-personal testing feedback is omitted, and technical details are collapsed.
-Missing or inconsistent changelog entries stop publication. The revised notes
-passed local tests and an exact-source preview; their hosted retry is pending.
+The Publish APK release workflow promotes an existing signed build with matching
+symbols, metadata and checksums. Notes collect versioned entries from the APK
+source since the previous published ARMv7 version, with collapsed build details.
 
 ## Unreleased build automation
 
-Added shared setup/tests/check/APK/signing commands, complete Linux workspace
-bootstrap, cached manual workflow modes and feature-branch support. Launcher-only
-tests skip native configuration; native builds use bounded Ninja job pools.
-Signing credentials are checked early and used only in APK mode. Added tooling
-filesystem regressions and recovery/status documentation. Local tests/check/APK
-modes passed. The first hosted APK run also passed, including all 14 launcher
-tests, cold setup, signing and artifact uploads; see BUILD_STATUS.md.
+Added shared setup/tests/check/APK commands, Linux bootstrap and cached manual
+workflow modes with feature-branch support. Launcher-only tests skip native
+configuration. Native builds use bounded job pools; signing credentials are
+checked early and kept outside caches.
 
 ## 0.78.31 — version 108
 
-Gamepad testing details are collapsed until Test gamepad is pressed. The button
-changes to Stop testing, which stops input testing and hides the indicators,
-active functions and raw input details. The separate input-details toggle is
-removed. Assignment controls remain visible. Updated all 18 translations.
+Gamepad input details and indicators expand with Test gamepad and collapse with
+Stop testing. Removed the separate input-details toggle; assignment controls stay
+visible. Updated all 18 translations.
 
-The race pause shortcut now holds its generated Escape press long enough for the
-game to sample it, and keeps Escape held while both assigned inputs remain held.
-Previously it released Escape on the next input update, so a race could miss the
-press. Button order and the gap between presses do not matter:
-the shortcut activates whenever both assigned buttons are held. Escape releases
-immediately when leaving the race context, and the pair still triggers once until
-both controls are released.
+The pause shortcut keeps Escape held while both assigned buttons are held, with
+a minimum delivery hold for brief overlaps. Previously it released Escape on the
+next input poll, so races could miss it. Either button order works with any gap
+between presses. Leaving the race context releases Escape immediately; the pair
+still triggers only once until both controls are released.
 
 ## 0.78.30 — version 107
 
-Pause shortcut assignment now shows the first selected button beside the controls
-while waiting for the second. Assignment prompts and unsupported-input feedback
-appear directly below the pair. Confirm, Back and the shortcut share button-only
-validation, with explanatory text for D-pad directions and analog inputs.
-Directional menu assignments retain their button and axis support. Updated all
-18 launcher translations.
+Pause assignment shows the first button while waiting for the second, with prompts
+and unsupported-input feedback beside the pair. Confirm, Back and the shortcut
+share button-only validation and explanatory text. Directional menu assignments
+retain button and axis support. Updated all 18 translations.
 
 ## 0.78.29 — version 106
 
-Versions now use a numeric format, starting with 0.78.29. ARMv7 downloads use
-shorter filenames, and release titles show the version number. Performance
-profiling remains available without a suffix in the app version.
+Versions use a numeric format, with shorter ARMv7 filenames and numeric release
+titles. Performance profiling remains available without a version suffix.
 
-Assigning a menu control now returns to normal navigation instead of silently
-starting Test input. The assignment press is consumed until the controls are
-released. Race pause shortcuts now use two independently selected buttons.
-Assign captures the first button, then a different second button; Cancel keeps
-the existing pair, and Disable clears both. Old Back-plus-extra shortcuts migrate
-to fixed pairs, so later changes to menu Back do not affect them. Updated all 18
-translations. Settings backup format 3 includes both buttons and still imports
-formats 1 and 2; importing a format 2 setup replaces an existing pair correctly.
+Menu assignment returns to navigation and consumes the press until release.
+Pause shortcuts capture two independent, different buttons. Cancel keeps the old
+pair; Disable clears it. Old Back-plus-extra settings migrate to fixed pairs, so
+menu Back changes no longer affect them. Updated all 18 translations. Backup
+format 3 includes both buttons and imports formats 1 and 2; format 2 imports
+correctly replace existing pairs.
 
 ## tv28 — version 105
 
-Joakim reported testing build 28 without problems on 2026-11-01.
+Simplified launcher labels/help, file-deletion wording and the pause description.
+Controller bindings use readable button names; raw input details can be expanded.
+Updated all 18 translations and made ordinary controls help translatable.
+Controller setup follows the selected launcher language.
 
-Simplified launcher labels and help, clarified file deletion, and shortened the
-race pause shortcut description. Controller bindings use readable button names;
-raw Android input details can be expanded when troubleshooting. Obsolete
-controller instructions were removed. Updated the revised wording in all 18
-launcher translations. Ordinary controls help and the revised controller-page
-descriptions now use translatable resources; controller setup follows the chosen
-launcher language. Added translation maintenance guidance in TRANSLATIONS.md.
-
-Launcher settings backups now include per-controller menu controls, race pause
-shortcuts, device types, saved player assignments and touch editor snapping.
-Controller identities are preserved exactly, including disconnected devices.
-Version 1 backups remain importable without clearing these newer settings.
-Version 2 can also back up and restore a default setup. Imports validate stored
-types and stop if the automatic backup cannot be written. Game file references
-and launcher language remain local.
+Settings backups include per-controller menu/pause controls, device types, player
+assignments and touch snapping, preserving disconnected controller identities.
+Version 1 imports preserve newer settings; format 2 can restore a default setup.
+Imports validate types and stop if the automatic backup fails. Game file
+references and launcher language stay local.
 
 ## tv27 — version 104
 
-Updated the build toolchain and SDL from the shared tools/android-toolchain.json.
-The Android SDL Java bridge is merged with the matching upstream release while
-preserving fork-specific input routing. Runtime target SDK stays at 36.
-Joakim reported testing the game without problems. The pre-existing host
-trackVertices check discrepancy remains documented in WORKSPACE.md.
+Updated the toolchain and SDL through tools/android-toolchain.json. Merged the
+matching SDL Java bridge while preserving fork input routing. Target SDK stays 36.
 
 ## tv26 — version 103 (test build)
 
-Added an optional per-controller race pause combination under Gamepads → During
-race: Back plus a selectable extra button. It overrides racing assignments only
-when both are held, triggers once, and stays consumed through the pause menu
-until both are released. Disabled by default; menu Back is unchanged. Racing
-inputs remain immediate before the combination is completed.
+Added a per-controller race pause combination: Back plus a chosen extra button.
+Both held overrides racing assignments once, staying consumed through the pause
+menu until release. Disabled by default; menu Back and immediate racing inputs
+remain unchanged before the combination is completed.
 
 ## tv25 — version 102
 
-Fixed gamepad-page content drawing over the header. The header stays fixed,
-with controller content scrolling inside the area below it.
+Fixed gamepad content drawing over the header; controls scroll below it.
 
 ## tv24 — version 101
 
-Gamepad setup uses the shared launcher header, back arrow and page background.
-Added space above the input-report button. Fixed an unused recorder variable
-that prevented the Android build after cleanup.
+Gamepad setup uses the shared header, back arrow and background. Added space
+above the input-report button and fixed an unused variable blocking Android builds.
 
 ## tv23 — version 100
 
-Advanced has pinned Unlocks, Performance and Debug tabs. Each bonus car has its
-own compact toggle; unlock information appears first. Opaque shader selection
-moved under Performance. Removed restart reminders. Joakim approved the interface.
+Advanced has pinned Unlocks, Performance and Debug tabs. Bonus cars have individual
+toggles, with unlock information first. Opaque shader selection moved under
+Performance. Removed restart reminders.
 
 ## tv22 — version 99
 
-Integrated the latest upstream menu/sound work. Added bonus-content switches,
-improved remote classification and simplified Advanced. Performance capture and
-overlay default off; controller recording was removed. Joakim reported it works.
+Integrated upstream menu/sound work. Added bonus-content switches, improved remote
+classification and simplified Advanced. Performance capture/overlay default off;
+controller recording was removed.
 
 ## Earlier work
 
-Added ARMv7 builds and fixed packed-data alignment crashes. Reworked controller
-routing, player assignment and touch remapping. Added device reports, crash
-reports and opaque shader optimization. Fixed a packaged resource mismatch that
-crashed gamepad setup. Two-pad split screen was tested successfully.
-
-## Cleanup branch
-
-Consolidated the notes, removed obsolete recorder helpers/tests and made release
-UI tests opt-in. No changes to controller routing or game math are intended.
+Added ARMv7 support, packed-data alignment fixes, controller/player routing,
+touch remapping, two-pad split screen, device/crash reports and opaque shader
+optimization. Fixed packaged resource mismatches. Consolidated notes, removed
+obsolete recorder helpers/tests and made release UI tests opt-in.

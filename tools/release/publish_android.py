@@ -113,10 +113,15 @@ def prepare(repo, run, directory):
         require(hashlib.sha256(apk_data).hexdigest() == metadata['apk_sha256'], 'APK SHA-256 mismatch.')
         validation = json.loads(member(archive, 'validation.json'))
         tests = validation['tests']
+        mode = validation['mode']
+        valid_tests = (
+            mode == 'apk' and isinstance(tests, dict) and tests['tests'] > 0
+            and all(tests[k] == 0 for k in ('failures', 'errors', 'skipped'))
+        ) or (mode == 'apk-fast' and tests is None)
         require(validation['source_commit'] == run['head_sha'] and validation['source_dirty'] is False
-                and validation['mode'] == 'apk' and validation['native_compiled'] is True
-                and tests['tests'] > 0 and all(tests[k] == 0 for k in ('failures', 'errors', 'skipped')),
-                'Build validation does not show a clean APK build with successful tests.')
+                and validation['native_compiled'] is True and valid_tests,
+                'Build validation must show a clean APK build with successful tests, '
+                'or an apk-fast build with tests explicitly skipped.')
         (directory / apk_name).write_bytes(apk_data)
         (directory / reports[0]).write_bytes(member(archive, reports[0]))
         (directory / 'validation.json').write_bytes(member(archive, 'validation.json'))
@@ -219,13 +224,14 @@ def release_notes(repo, run, metadata, kind, test_count):
     previous = previous_release(repo, run, tv, kind)
     changes = changes_for_release(sections, tv, metadata['versionCode'], previous[0] if previous else None)
     since = f"Changes since [{sections[previous[0]]['label']}]({previous[1]['html_url']}).\n\n" if previous else ''
+    checks = f': {test_count} launcher tests passed' if test_count is not None else ''
     notes = (
         'Download the **.apk** below to install or update the game.\n\n'
         f'## Changes\n\n{since}{changes}\n\n'
         '<details>\n<summary>Build details</summary>\n\n'
         f"- Version: `{metadata['version']}` ({metadata['versionCode']}).\n"
         f"- Source: [`{run['head_sha'][:7]}`](https://github.com/{repo}/commit/{run['head_sha']}).\n"
-        f"- [Build and automated checks]({run['html_url']}): {test_count} launcher tests passed.\n"
+        f"- [Build and automated checks]({run['html_url']}){checks}.\n"
         f"- Native BuildID: `{metadata['native_build_id']}`.\n\n"
         'The symbols ZIP and JSON files are for troubleshooting and verification. '
         'SHA256SUMS.txt contains file checksums. Only the APK is needed to play.\n\n'
@@ -271,7 +277,8 @@ def main():
 
 
 def metadata_test_count(directory):
-    return json.loads((directory / 'validation.json').read_text())['tests']['tests']
+    tests = json.loads((directory / 'validation.json').read_text())['tests']
+    return tests['tests'] if tests is not None else None
 
 
 if __name__ == '__main__':

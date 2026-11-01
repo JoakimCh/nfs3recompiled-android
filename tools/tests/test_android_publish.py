@@ -23,7 +23,7 @@ def archive(files):
 
 
 class ReleasePromotionTests(unittest.TestCase):
-    def fixture(self, wrong_hash=False, wrong_symbols=False, failed_tests=False, version="test", fast=False):
+    def fixture(self, wrong_hash=False, wrong_symbols=False, failed_tests=False, version="test", fast=False, validation_updates=None):
         names = artifact_names(version)
         metadata = {
             'version': version, 'versionCode': 106 if version == '0.78.29' else 105, 'apk': names['apk'],
@@ -39,6 +39,7 @@ class ReleasePromotionTests(unittest.TestCase):
                                                        'errors': 0, 'skipped': 0}}
         if fast:
             validation.update(mode='apk-fast', tests=None)
+        validation.update(validation_updates or {})
         symbol_metadata = dict(metadata, native_build_id='other') if wrong_symbols else metadata
         with archive({'metadata/release.json': symbol_metadata,
                       'armeabi-v7a/libmain.so': b'symbols'}) as symbols:
@@ -78,8 +79,27 @@ class ReleasePromotionTests(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, 'Build validation'):
                 publish.prepare('owner/repo', {'head_sha': 'a' * 40}, Path(temp))
 
-    def test_rejects_fast_apk_without_successful_tests(self):
+    def test_promotes_fast_apk_preserving_skipped_test_metadata(self):
         with tempfile.TemporaryDirectory() as temp, patch.object(publish, 'artifact', side_effect=self.fixture(fast=True)):
+            result = publish.prepare('owner/repo', {'head_sha': 'a' * 40}, Path(temp))
+            self.assertEqual((Path(temp) / result['apk']).read_bytes(), b'apk')
+            self.assertTrue((Path(temp) / artifact_names(result['version'])['symbols']).is_file())
+            validation = json.loads((Path(temp) / 'validation.json').read_bytes())
+            self.assertEqual(validation['mode'], 'apk-fast')
+            self.assertIsNone(validation['tests'])
+
+    def test_fast_apk_still_requires_clean_native_build_and_explicit_skip(self):
+        for update in ({'source_dirty': True}, {'source_commit': 'b' * 40},
+                       {'native_compiled': False}, {'mode': 'check'},
+                       {'tests': {'tests': 14, 'failures': 1, 'errors': 0, 'skipped': 0}}):
+            with self.subTest(update=update), tempfile.TemporaryDirectory() as temp, \
+                 patch.object(publish, 'artifact', side_effect=self.fixture(fast=True, validation_updates=update)):
+                with self.assertRaisesRegex(RuntimeError, 'Build validation'):
+                    publish.prepare('owner/repo', {'head_sha': 'a' * 40}, Path(temp))
+
+    def test_normal_apk_cannot_skip_tests(self):
+        with tempfile.TemporaryDirectory() as temp, \
+             patch.object(publish, 'artifact', side_effect=self.fixture(validation_updates={'tests': None})):
             with self.assertRaisesRegex(RuntimeError, 'Build validation'):
                 publish.prepare('owner/repo', {'head_sha': 'a' * 40}, Path(temp))
 
@@ -114,7 +134,7 @@ class ReleasePromotionTests(unittest.TestCase):
                 publish.choose_run('owner/repo', 'main', '3')
             signed.assert_not_called()
 
-    def publish_main(self, failed_upload=False):
+    def publish_main(self, failed_upload=False, fast=False):
         env = {'GITHUB_REPOSITORY': 'owner/repo', 'RELEASE_BUILD_BRANCH': 'feature/test',
                'RELEASE_RUN_ID': '3', 'RELEASE_TYPE': 'prerelease', 'GITHUB_STEP_SUMMARY': ''}
         def call(*args):
@@ -123,7 +143,7 @@ class ReleasePromotionTests(unittest.TestCase):
             return b''
         with patch.dict(os.environ, env), \
              patch.object(publish, 'choose_run', return_value=self.run_fixture(3)), \
-             patch.object(publish, 'artifact', side_effect=self.fixture()), \
+             patch.object(publish, 'artifact', side_effect=self.fixture(fast=fast)), \
              patch.object(publish, 'unused_tag'), \
              patch.object(publish, 'release_notes', return_value=('NFS III ARMv7 TV — tv28', 'Changes.')), \
              patch.object(publish, 'gh', side_effect=call) as gh:
@@ -144,6 +164,10 @@ class ReleasePromotionTests(unittest.TestCase):
         self.assertIn('--latest=false', edit)
         self.assertIn('--draft=false', edit)
         self.assertTrue(any(str(p).endswith('SHA256SUMS.txt') for p in upload))
+
+    def test_fast_publication_handles_absent_test_count(self):
+        calls = self.publish_main(fast=True)
+        self.assertEqual([c[1] for c in calls], ['create', 'upload', 'edit'])
 
     def test_failed_upload_leaves_draft_unpublished(self):
         calls = self.publish_main(failed_upload=True)
@@ -280,6 +304,19 @@ Older changes already released.
         self.assertNotIn('Device testing', body)
         self.assertNotIn('Joakim', body)
         self.assertLess(body.index('## Changes'), body.index('<details>'))
+
+    def test_fast_release_notes_keep_changes_without_claiming_tests_passed(self):
+        run = {'head_sha': 'a' * 40, 'html_url': 'https://example.com/build'}
+        metadata = {'version': '0.78-armv7-tv28-profile', 'versionCode': 105, 'native_build_id': '1234'}
+        with patch.object(publish, 'gh', return_value=self.changelog.encode()), \
+             patch.object(publish, 'previous_release', return_value=(24, self.release(24))):
+            title, normal = publish.release_notes('o/r', run, metadata, 'release', 14)
+            fast_title, fast = publish.release_notes('o/r', run, metadata, 'release', None)
+        self.assertEqual(title, fast_title)
+        self.assertEqual(normal.split('<details>')[0], fast.split('<details>')[0])
+        self.assertIn('[Build and automated checks](https://example.com/build)', fast)
+        self.assertNotIn('tests passed', fast)
+        self.assertNotIn('None', fast)
 
     def test_numeric_release_uses_legacy_baseline_and_numeric_title(self):
         source = self.changelog.replace('## tv29 — version 106', '## 0.78.29 — version 106')

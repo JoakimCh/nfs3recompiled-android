@@ -22,10 +22,9 @@ workspace are not required to reconstruct the process.
 ## Bootstrap behavior
 
 `tools/setup_android.py` owns installation; `tools/android.py` owns execution.
-Setup by itself never authorizes tests, builds, signing or publication. The shared
-scripts have now been exercised locally, including an isolated launcher SDK
-bootstrap and native build. The hosted APK workflow also passed cold setup. See
-BUILD_STATUS.md for the exact evidence and remaining cache/mode checks.
+Setup by itself never authorizes tests, builds, signing or publication. The
+bootstrap handles installed-tool discovery, downloads and the environment fixes
+below; inspect its diagnostics before reconstructing setup manually.
 
 - Prefer compatible installed JDKs and complete SDK/CMake installations. Otherwise
   fetch the selected JDK from Adoptium, SDK installer from Google and CMake/Ninja
@@ -46,8 +45,8 @@ BUILD_STATUS.md for the exact evidence and remaining cache/mode checks.
 - Use a writable cache temp directory, `TMPDIR`, `-Djava.io.tmpdir` and
   `-XX:-UsePerfData` when system temporary/proc locations are unavailable.
 - Derive HTTP/HTTPS proxy host and port from the current environment every time.
-  Pass properties explicitly with `-D` to Gradle as well as to Java. Java options
-  alone did not suffice for the Gradle daemon in tv28 setup. Never commit ports.
+  Pass properties explicitly with `-D` to Gradle as well as to Java.
+  Never commit ports.
 - Copy the JDK trust store and import configured public CA certificates when the
   environment supplies `SSL_CERT_FILE` or `REQUESTS_CA_BUNDLE`. Keep TLS verification
   enabled. The cache holds public certificates, not signing credentials.
@@ -56,13 +55,12 @@ BUILD_STATUS.md for the exact evidence and remaining cache/mode checks.
   with `curl` and verify `distributionSha256Sum`. Put the verified ZIP in the
   wrapper's existing `GRADLE_USER_HOME/wrapper/dists/<distribution>/<URL hash>/`
   directory, leaving its lock files alone. The wrapper then verifies and unpacks
-  it normally. This recovered a cold workspace where Java's download failed even
-  though the SDK downloads and explicit Gradle proxy properties worked.
+  it normally.
 - Some SDK installs put files inside an extra `android-*` directory. Flatten only
   an unambiguous package directory with `source.properties`, refuse collisions,
   preserve root `package.xml`, then check the expected tool files.
-- A separately downloaded CMake needs Ninja available beside it. The manifest now
-  includes the selected Ninja version and verified Linux x86_64 archive checksum.
+- A separately downloaded CMake needs Ninja beside it. Use the manifest-selected
+  Ninja version and checksum.
 - Limit native compilation using CMake/Ninja job pools. The wrapper defaults to two
   compilation jobs and one link job; choose a larger limit only with enough memory.
 - After Gradle upgrades, incompatible old test-result metadata may require removing
@@ -71,15 +69,12 @@ BUILD_STATUS.md for the exact evidence and remaining cache/mode checks.
 - Host GCC temporary assembler output was incomplete on one earlier run. `-pipe`
   and rebuilding incomplete object files resolved it; inspect diagnostics first.
 
-## Native checks and prior findings
+## Compiler and native checks
 
-A toolchain/native math change deserves the existing controller and floating-point
-checks in addition to launcher tests. Keep the pre-existing result accurately:
-for tv27, 45 vertex functions were compared across eight FPU modes with old/new
-NDKs. Output was byte-for-byte identical; 44 functions passed, and `trackVertices`
-had the same known NaN/finite discrepancy with both compilers. Do not report that
-as a completely passing math suite. Details remain in releases/tv27.json.
-
-On-device behavior is a separate check. Joakim tested the original local tv28 APK
-without reported problems. Later APKs rebuilt locally and on GitHub have passed
-automated checks but have not been device tested.
+- After Kotlin compilation reports conflicting overloads despite a single source
+  declaration, inspect generated outputs and try clearing only
+  `android/app/build/kotlin` and `android/app/build/intermediates/built_in_kotlinc`.
+  This recovered stale compilation state without removing native caches.
+- For toolchain/native math changes, run the existing gamepad and floating-point
+  checks when authorized. The known `trackVertices` discrepancy and validation
+  limits are recorded in BUILD_STATUS.md and releases/tv27.json.

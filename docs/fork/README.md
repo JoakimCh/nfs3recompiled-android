@@ -3,9 +3,9 @@
 Joakim's fork adds ARMv7 Android TV support and improves gamepad and touch
 controls. It includes the original project's alphaG0.78 update.
 
-The latest device-tested build is **tv28** (version 105). The ARMv7 package is `dev.nfs3hp.port.armv7tv`;
-the normal build still targets ARM64. APK identities are in
-[release details](releases/). Joakim reported testing tv28 without problems.
+The ARMv7 package is `dev.nfs3hp.port.armv7tv`; the ordinary build targets ARM64.
+See [BUILD_STATUS.md](BUILD_STATUS.md) for verified builds and device feedback,
+and [release details](releases/) for APK identities.
 
 ## What differs from upstream
 
@@ -35,3 +35,11 @@ other draws use the original shader.
 
 Git is the source checkpoint. APKs, matching native symbols and the private
 signing backup are stored separately. No source ZIP is needed to resume work.
+
+## Maintaining these notes
+
+- Update current status entries instead of appending session reports.
+- Keep build evidence in BUILD_STATUS.md and release JSON; use Git history for
+  superseded investigations. Keep reusable instructions independent of versions.
+- Keep changelog entries about changes, without test results or personal feedback.
+- Give each topic one home and link to it rather than repeating it across guides.

@@ -8,7 +8,7 @@ on:
         type: string
         required: false
       run_id:
-        description: APK run ID (blank uses the latest successful APK run on that branch)
+        description: APK run ID (apk or apk-fast; blank uses the latest successful signed build on that branch)
         type: string
         required: false
       release_type:
