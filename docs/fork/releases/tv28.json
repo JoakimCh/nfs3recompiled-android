@@ -1,0 +1,59 @@
+{
+  "version": "0.78-armv7-tv28-profile",
+  "versionCode": 105,
+  "source_commit": "25f196cce192aeaffdab1636f8bed217ec324298",
+  "uncommitted_changes": true,
+  "apk": "nfs3-0.78-armv7-tv28-profile-release.apk",
+  "apk_sha256": "44324da857215a38ec21a107e140260f4ea6262f7f74314ee85b20c4e1894e37",
+  "native_build_id": "b1318854f2c1a78da77910d5ef0e080cc82d14da",
+  "certificate_sha256": "464eab8f658b68c234e80e85f5bcb6c5a79771600ac04c0f9d5458769c27b60e",
+  "native_files": [
+    "lib/armeabi-v7a/libSDL3.so",
+    "lib/armeabi-v7a/libandroidx.graphics.path.so",
+    "lib/armeabi-v7a/libc++_shared.so",
+    "lib/armeabi-v7a/libmain.so"
+  ],
+  "debuggable": false,
+  "shell_profileable": true,
+  "zip_alignment_bytes": 16384,
+  "device_tested": true,
+  "resource_check": {
+    "apk": "nfs3-0.78-armv7-tv28-profile-release.apk",
+    "app_resources_checked": 301,
+    "packaged_app_int_fields": 301,
+    "mismatches": [],
+    "duplicate_fields": [],
+    "passed": true
+  },
+  "toolchain": {
+    "jdk": 25,
+    "gradle": "9.8.2",
+    "agp": "9.5.0",
+    "kotlin": "2.4.10",
+    "compileSdk": 37,
+    "platformPackage": "platforms;android-37.0",
+    "targetSdk": 36,
+    "buildTools": "37.0.0",
+    "ndk": "30.0.16248370",
+    "cmake": "4.4.5",
+    "sdl": "3.4.18",
+    "sdlCommit": "829a65d769d935c4852f8159e964312c0957260a"
+  },
+  "device_test": {
+    "reported_by": "Joakim",
+    "reported_on": "2026-11-01",
+    "result": "Tested build 28 and found no problems.",
+    "coverage": "General device test; device model and individual feature coverage were not specified."
+  },
+  "ui_tests": {
+    "tests": 14,
+    "failures": 0,
+    "errors": 0,
+    "android_apis": [
+      34,
+      36
+    ]
+  },
+  "matching_symbols": "nfs3-0.78-armv7-tv28-profile-symbols.zip",
+  "notes": "Locally built and signed. The successful test run included the local exact-button selector correction; automation modes were added afterwards and are not covered by this device test."
+}

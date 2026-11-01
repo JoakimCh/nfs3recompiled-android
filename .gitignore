@@ -50,3 +50,7 @@ private-signing/
 
 # Private signing recovery (never source history).
 *signing-recovery*.zip
+
+# Shared Android setup/run commands and CI cache/artifact directories.
+.nfs3-cache/
+out/

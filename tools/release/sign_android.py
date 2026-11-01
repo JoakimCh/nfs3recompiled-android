@@ -10,6 +10,9 @@ import subprocess
 import tempfile
 import zipfile
 
+KEY_ALIAS = 'armv7-tv-release'
+CERTIFICATE_SHA256 = '464eab8f658b68c234e80e85f5bcb6c5a79771600ac04c0f9d5458769c27b60e'
+
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
@@ -45,9 +48,9 @@ def main():
         raise RuntimeError('Input and output APK must differ')
     run([bt / 'zipalign', '-f', '-P', '16', '4', args.apk, apk])
     run([bt / 'apksigner', 'sign', '--ks', args.keystore,
-         '--ks-key-alias', 'armv7-tv-release', '--ks-pass',
+         '--ks-key-alias', KEY_ALIAS, '--ks-pass',
          'file:' + str(args.password_file.resolve()), apk])
-    certificate = '464eab8f658b68c234e80e85f5bcb6c5a79771600ac04c0f9d5458769c27b60e'
+    certificate = CERTIFICATE_SHA256
     if certificate not in run([bt / 'apksigner', 'verify', '--verbose', '--print-certs', apk]):
         raise RuntimeError('Signing identity differs from installed TV releases')
     run([bt / 'zipalign', '-c', '-P', '16', '4', apk])

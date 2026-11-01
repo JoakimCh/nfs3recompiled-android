@@ -38,6 +38,15 @@ public class ControllerSetupActivityTest {
         }
         return null;
     }
+    private android.widget.Button findButton(View root,String label) {
+        if(root instanceof android.widget.Button && ((android.widget.Button)root).getText().toString().equals(label))
+            return (android.widget.Button)root;
+        if(root instanceof ViewGroup)for(int i=0;i<((ViewGroup)root).getChildCount();i++) {
+            android.widget.Button found=findButton(((ViewGroup)root).getChildAt(i),label);
+            if(found!=null)return found;
+        }
+        return null;
+    }
     private String texts(View root) {
         StringBuilder out=new StringBuilder();if(root instanceof TextView)out.append(((TextView)root).getText()).append(" | ");
         if(root instanceof ViewGroup)for(int i=0;i<((ViewGroup)root).getChildCount();i++)out.append(texts(((ViewGroup)root).getChildAt(i)));
@@ -61,17 +70,17 @@ public class ControllerSetupActivityTest {
         try(ActivityController<ControllerSetupActivity> controller=Robolectric.buildActivity(ControllerSetupActivity.class).setup()) {
             View root=controller.get().getWindow().getDecorView();layout(root);layout(root);
             assertNotNull(find(root,"Button-only test pad"));
-            find(root,"Start test").performClick();
+            findButton(root,"Start test").performClick();
             controller.get().dispatchKeyEvent(new android.view.KeyEvent(1,1,0,96,0,0,40,0,0,android.view.InputDevice.SOURCE_GAMEPAD));
             controller.get().dispatchKeyEvent(new android.view.KeyEvent(1,2,1,96,0,0,40,0,0,android.view.InputDevice.SOURCE_GAMEPAD));
-            find(root,"Stop test").performClick();find(root,"Assign").performClick();assertNotNull(find(root,"Cancel"));
+            findButton(root,"Stop test").performClick();findButton(root,"Assign").performClick();assertNotNull(find(root,"Cancel"));
             org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idleFor(java.time.Duration.ofMillis(350));
             controller.get().dispatchKeyEvent(new android.view.KeyEvent(10,10,0,99,0,0,40,0,0,android.view.InputDevice.SOURCE_GAMEPAD));
             controller.get().dispatchKeyEvent(new android.view.KeyEvent(10,11,1,99,0,0,40,0,0,android.view.InputDevice.SOURCE_GAMEPAD));
             assertNotNull(ControllerProfiles.load(controller.get(),input).bindings[0]);
             assertEquals(99,ControllerProfiles.load(controller.get(),input).bindings[0].code);layout(root);
             assertNull(ControllerProfiles.load(controller.get(),input).racePauseModifier);
-            find(root,"Assign extra button").performClick();
+            findButton(root,"Assign extra button").performClick();
             org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idleFor(java.time.Duration.ofMillis(350));
             controller.get().dispatchKeyEvent(new android.view.KeyEvent(20,20,0,97,0,0,40,0,0,android.view.InputDevice.SOURCE_GAMEPAD));
             assertNull(ControllerProfiles.load(controller.get(),input).racePauseModifier);
@@ -80,7 +89,7 @@ public class ControllerSetupActivityTest {
             controller.get().dispatchKeyEvent(new android.view.KeyEvent(30,31,1,96,0,0,40,0,0,android.view.InputDevice.SOURCE_GAMEPAD));
             assertEquals(96,ControllerProfiles.load(controller.get(),input).racePauseModifier.code);
             assertEquals(99,ControllerProfiles.load(controller.get(),input).bindings[0].code);
-            find(root,"Disable").performClick();
+            findButton(root,"Disable").performClick();
             assertNull(ControllerProfiles.load(controller.get(),input).racePauseModifier);
             View scrolling=find(root,"Input device report");
             while(!(scrolling instanceof android.widget.ScrollView)) scrolling=(View)scrolling.getParent();

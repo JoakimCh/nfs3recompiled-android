@@ -1,6 +1,17 @@
 # Fork changes
 
-## tv28 — version 105 (test build)
+## Unreleased build automation
+
+Added shared setup/tests/check/APK/signing commands, complete Linux workspace
+bootstrap, cached manual workflow modes and feature-branch support. Launcher-only
+tests skip native configuration; native builds use bounded Ninja job pools.
+Signing credentials are checked early and used only in APK mode. Added tooling
+filesystem regressions and recovery/status documentation. These automation paths
+are implemented but have not yet been executed.
+
+## tv28 — version 105
+
+Joakim reported testing build 28 without problems on 2026-11-01.
 
 Simplified launcher labels and help, clarified file deletion, and shortened the
 race pause shortcut description. Controller bindings use readable button names;

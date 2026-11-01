@@ -6,6 +6,15 @@ plugins {
 // Experimental TV build; the normal upstream build remains ARM64.
 def armv7Tv = providers.gradleProperty("armv7Tv").isPresent()
 def profileNative = providers.gradleProperty("profileNative").isPresent()
+// Launcher tests deliberately avoid installing/configuring the native toolchain.
+def launcherTestsOnly = providers.gradleProperty("launcherTestsOnly").isPresent()
+def nativeJobs = providers.gradleProperty("nativeJobs").orElse("2").get().toInteger()
+if (nativeJobs < 1) throw new GradleException("nativeJobs must be positive")
+if (launcherTestsOnly && gradle.startParameter.taskNames.any {
+    !(it in [':app:testReleaseUnitTest', 'testReleaseUnitTest'])
+}) {
+    throw new GradleException("launcherTestsOnly is restricted to testReleaseUnitTest; APK/native builds must include native libraries.")
+}
 def toolchain = rootProject.ext.nfsToolchain
 def gameAbi = armv7Tv ? 'armeabi-v7a' : 'arm64-v8a'
 if (armv7Tv && (providers.gradleProperty("x87Exact").isPresent()
@@ -48,42 +57,47 @@ android {
         }
         manifestPlaceholders = [nativeProfileable: profileNative.toString(), launcherAppLabel: armv7Tv ? "NFS III ARMv7 TV" : "@string/app_name"]
 
-        externalNativeBuild {
-            cmake {
-                /* AGP compiles the debug variant with no -O flag at all, so
-                 * clang defaults to -O0.  For ~60 MB of generated virtual-CPU
-                 * code that is the difference between a playable frame rate and
-                 * something that feels interpreted; the desktop reference build
-                 * is Release.  This lands after CMAKE_CXX_FLAGS_DEBUG, so it
-                 * wins, while -g is kept for symbolicating native crashes. */
-                cppFlags "-O2"
-                arguments(
-                    "-DANDROID_STL=c++_shared",
-                    // The game pumps SDL's event queue from a guest thread, so
-                    // SDL_assert(SDL_IsMainThread()) inside SDL_PumpEvents fires
-                    // on every single pump. SDL_HINT_ASSERT only suppresses the
-                    // dialog -- the assertion machinery itself still runs, and a
-                    // simpleperf profile put SDL_ReportAssertion at ~1% of total
-                    // CPU. "release" keeps the cheap assertions and drops that one.
-                    "-DSDL_ASSERTIONS=release",
-                    // Must match the desktop reference build, which has MMX on
-                    // (CMake default).  WITH_MMX only flips the MMX bit in the
-                    // emulated CPUID, and the game picks a completely different
-                    // set of copy/decode routines when it thinks MMX is absent --
-                    // that no-MMX path is what left the movie streamer's filename
-                    // buffer all zeroes on device.  MMX itself is plain C++
-                    // (include/mmx.h), the same on ARM as on x86.
-                    "-DWITH_MMX=ON",
-                    // -PwideFpu: the long double x87 experiment (include/fpu.h).
-                    "-DWITH_WIDE_FPU=" + (providers.gradleProperty("wideFpu").isPresent() ? "ON" : "OFF"),
-                    // -Px87Exact: every x87 value in 80 bits and the x87's own
-                    // arithmetic to the bit (src/lib/x87soft.cpp) -- extended
-                    // races exactly as the Modern Patch's PCs run them.
-                    "-DWITH_PEDANTIC_FPU=" + (providers.gradleProperty("x87Exact").isPresent() ? "ON" : "OFF")
-                )
-                // Only nfs3hp is wired up for Android (see the NFS_BUILD_NFS2SE
-                // guard in the root CMakeLists.txt); the default is already OFF.
-                abiFilters gameAbi
+        if (!launcherTestsOnly) {
+            externalNativeBuild {
+                cmake {
+                    /* AGP compiles the debug variant with no -O flag at all, so
+                     * clang defaults to -O0.  For ~60 MB of generated virtual-CPU
+                     * code that is the difference between a playable frame rate and
+                     * something that feels interpreted; the desktop reference build
+                     * is Release.  This lands after CMAKE_CXX_FLAGS_DEBUG, so it
+                     * wins, while -g is kept for symbolicating native crashes. */
+                    cppFlags "-O2"
+                    arguments(
+                        "-DCMAKE_JOB_POOLS=nfs_compile=${nativeJobs};nfs_link=1",
+                        "-DCMAKE_JOB_POOL_COMPILE=nfs_compile",
+                        "-DCMAKE_JOB_POOL_LINK=nfs_link",
+                        "-DANDROID_STL=c++_shared",
+                        // The game pumps SDL's event queue from a guest thread, so
+                        // SDL_assert(SDL_IsMainThread()) inside SDL_PumpEvents fires
+                        // on every single pump. SDL_HINT_ASSERT only suppresses the
+                        // dialog -- the assertion machinery itself still runs, and a
+                        // simpleperf profile put SDL_ReportAssertion at ~1% of total
+                        // CPU. "release" keeps the cheap assertions and drops that one.
+                        "-DSDL_ASSERTIONS=release",
+                        // Must match the desktop reference build, which has MMX on
+                        // (CMake default).  WITH_MMX only flips the MMX bit in the
+                        // emulated CPUID, and the game picks a completely different
+                        // set of copy/decode routines when it thinks MMX is absent --
+                        // that no-MMX path is what left the movie streamer's filename
+                        // buffer all zeroes on device.  MMX itself is plain C++
+                        // (include/mmx.h), the same on ARM as on x86.
+                        "-DWITH_MMX=ON",
+                        // -PwideFpu: the long double x87 experiment (include/fpu.h).
+                        "-DWITH_WIDE_FPU=" + (providers.gradleProperty("wideFpu").isPresent() ? "ON" : "OFF"),
+                        // -Px87Exact: every x87 value in 80 bits and the x87's own
+                        // arithmetic to the bit (src/lib/x87soft.cpp) -- extended
+                        // races exactly as the Modern Patch's PCs run them.
+                        "-DWITH_PEDANTIC_FPU=" + (providers.gradleProperty("x87Exact").isPresent() ? "ON" : "OFF")
+                    )
+                    // Only nfs3hp is wired up for Android (see the NFS_BUILD_NFS2SE
+                    // guard in the root CMakeLists.txt); the default is already OFF.
+                    abiFilters gameAbi
+                }
             }
         }
     }
@@ -110,10 +124,12 @@ android {
         buildConfig = false
     }
 
-    externalNativeBuild {
-        cmake {
-            path 'jni/CMakeLists.txt'
-            version = toolchain.cmake
+    if (!launcherTestsOnly) {
+        externalNativeBuild {
+            cmake {
+                path 'jni/CMakeLists.txt'
+                version = toolchain.cmake
+            }
         }
     }
 

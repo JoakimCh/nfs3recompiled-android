@@ -10,5 +10,8 @@
   "ndk": "30.0.16248370",
   "cmake": "4.4.5",
   "sdl": "3.4.18",
-  "sdlCommit": "829a65d769d935c4852f8159e964312c0957260a"
+  "sdlCommit": "829a65d769d935c4852f8159e964312c0957260a",
+  "sdkCommandLineToolsFallback": "22.0",
+  "ninja": "1.13.2",
+  "ninjaSha256LinuxX64": "5749cbc4e668273514150a80e387a957f933c6ed3f5f11e03fb30955e2bbead6"
 }
