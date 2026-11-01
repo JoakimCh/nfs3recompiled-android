@@ -16,7 +16,7 @@
   "debuggable": false,
   "shell_profileable": true,
   "zip_alignment_bytes": 16384,
-  "device_tested": false,
+  "device_tested": true,
   "resource_check": {
     "apk": "nfs3-0.78-armv7-tv27-profile-release.apk",
     "app_resources_checked": 296,
@@ -61,8 +61,13 @@
     "track_vertex_1000_case_comparison": "Same three NaN/finite discrepancies at identical cases with r28c and r30."
   },
   "matching_symbols": "nfs3-0.78-armv7-tv27-profile-symbols.zip",
-  "notes": "Toolchain/SDL trial; device verification pending. Includes the tv26 race pause combination. Existing trackVertices host discrepancy reproduces unchanged with the old compiler.",
+  "notes": "Toolchain/SDL update; Joakim reported testing the game without problems. Includes the tv26 race pause combination. Existing trackVertices host discrepancy reproduces unchanged with the old compiler.",
   "java_runtime": "Temurin 25.0.5+8 LTS",
   "clang": "21.0.0 (r574158c)",
-  "previous_build": "tv26, version 103"
+  "previous_build": "tv26, version 103",
+  "device_test": {
+    "reported_by": "Joakim",
+    "result": "Reported testing the game without problems.",
+    "coverage": "General game testing; specific device model and individual feature coverage were not recorded."
+  }
 }

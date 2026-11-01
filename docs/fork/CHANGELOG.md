@@ -1,11 +1,12 @@
 # Fork changes
 
-## tv27 — version 104 (toolchain trial)
+## tv27 — version 104
 
 Updated the build toolchain and SDL from the shared tools/android-toolchain.json.
 The Android SDL Java bridge is merged with the matching upstream release while
 preserving fork-specific input routing. Runtime target SDK stays at 36.
-
+Joakim reported testing the game without problems. The pre-existing host
+trackVertices check discrepancy remains documented in WORKSPACE.md.
 
 ## tv26 — version 103 (test build)
 

@@ -3,14 +3,16 @@
 Joakim's fork adds ARMv7 Android TV support and improves gamepad and touch
 controls. It includes the original project's alphaG0.78 update.
 
-The latest build is **tv25** (version 102). The ARMv7 package is `dev.nfs3hp.port.armv7tv`;
+The latest build is **tv27** (version 104). The ARMv7 package is `dev.nfs3hp.port.armv7tv`;
 the normal build still targets ARM64. APK identities are in
-[release details](releases/).
+[release details](releases/). Joakim reported testing tv27 without problems.
 
 ## What differs from upstream
 
 - Two-player controller assignment, remote/gamepad separation and configurable
   menu controls. Button-only pads and axis-based D-pads are supported.
+- An optional per-controller Back + extra-button combination opens the race
+  pause menu even when the buttons are assigned to racing actions.
 - Touch controls follow the game's racing assignments.
 - ARMv7 alignment fixes and a conservative opaque-shader optimization.
 - Advanced tabs for unlocks, performance and debugging. Each bonus car and

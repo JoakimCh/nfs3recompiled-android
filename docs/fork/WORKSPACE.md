@@ -5,7 +5,7 @@ tools and existing caches. A missing JDK/SDK is a setup task, not by itself a
 reason to stop an authorized build. Signing recovery stays private and outside
 the repository.
 
-The tv27 trial uses JDK 25, Gradle 9.8.2, AGP 9.5.0, NDK r30, CMake 4.4.5 and
+The tv27 build uses JDK 25, Gradle 9.8.2, AGP 9.5.0, NDK r30, CMake 4.4.5 and
 SDL 3.4.18. tools/setup_android.py prepares SDK packages, CMake and SDL using
 that manifest. It requires a JDK, curl, git and Android command-line tools.
 The Gradle wrapper pins and verifies Gradle; no global Gradle is required.
@@ -45,12 +45,12 @@ the certificate, ARMv7 package, resource IDs, alignment and matching BuildID.
 
 The tv27 host vertex differential run found three trackVertices mismatches in
 8,000 cases with Clang 21. The same cases and output values reproduce with the
-previous NDK r28c Clang 19; this is not evidence of an r30 regression. Device
-verification is still required, and this host check must not be reported as a
-fully passing math suite.
+previous NDK r28c Clang 19; this is not evidence of an r30 regression. This host check must not be reported as a fully passing math suite.
 
 The broader tv27 comparison checked 45 vertex functions, 100 cases per each of
 8 FPU modes. Clang 19 and Clang 21 produced byte-for-byte identical test output:
 44 functions pass, and trackVertices has the same pre-existing discrepancy.
 The seven launcher tests and SDL 3.4.18 controller routing checks also passed.
-These checks do not replace ARMv7 device verification.
+Joakim subsequently reported testing tv27 without problems. Specific device
+model and individual feature coverage were not recorded; this does not imply
+verification on every supported device.

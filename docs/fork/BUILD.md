@@ -4,7 +4,7 @@ The selected stable toolchain is recorded in [tools/android-toolchain.json](../.
 JDK 25 LTS, Gradle 9.8.2, AGP 9.5.0, Kotlin/Compose compiler 2.4.10,
 Android compile SDK 37.0, build-tools 37.0.0, NDK r30 LTS
 (30.0.16248370), CMake 4.4.5 and SDL 3.4.18. Target SDK stays at 36;
-minimum Android version stays at 8.0. This is the tv27 toolchain trial.
+minimum Android version stays at 8.0. Joakim reported testing tv27 without problems.
 
 Prefer current stable tools and LTS releases. Keep exact versions for the
 selected build, then update them deliberately with checks and a device trial.
