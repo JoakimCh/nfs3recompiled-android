@@ -114,6 +114,37 @@ The initial hosted publication succeeded. The revised changelog-based notes have
 local test coverage and an exact-source preview; their first hosted run remains
 pending. See BUILD_STATUS.md for the recorded evidence.
 
+## Version naming: agreed plan for the next build
+
+The next build should replace names such as `0.78-armv7-tv28-profile` with a
+numeric version. This is an agreed convention, **not yet implemented**; the
+current build and publishing scripts still use the TV naming described above.
+
+| Item | Next-build example |
+| --- | --- |
+| App version and release title | `0.78.29` |
+| APK filename | `nfs3-0.78.29-armv7.apk` |
+| Symbols filename | `nfs3-0.78.29-armv7-symbols.zip` |
+| Android version code | `106`, increased from tv28's `105` |
+
+`0.78` identifies the upstream version; `29` identifies this fork's revision.
+Architecture belongs in filenames and metadata. Profiling capability belongs in
+build metadata, without a `profile` suffix in the version or release title.
+The old suffix means local performance profiling is enabled; the build remains
+non-debuggable. Removing the suffix does not require disabling profiling.
+
+Implement the change together in Gradle, signing/output filenames, release title
+generation, previous-release detection and changelog lookup. Use an explicit
+version/code mapping instead of requiring `tvNN` in an APK name. Keep the existing
+code/run-based release tags for traceability. Preserve the application ID and
+signing identity, and continue increasing Android version codes.
+
+The publishing workflow must still recognize old TV versions, filenames and
+changelog headings, including when promoting an existing APK. Leave historical
+APKs, tags and release metadata intact. Add the new version's changelog entry and
+update the instructions above when the migration is implemented; do not change
+only the version string while the scripts still depend on its old format.
+
 ## Local builds
 
 Run these commands from the repository root. Automatic bootstrap supports Linux
