@@ -1,5 +1,10 @@
 # Fork changes
 
+## tv25 — version 102
+
+Fixed gamepad-page content drawing over the header. The header stays fixed,
+with controller content scrolling inside the area below it.
+
 ## tv24 — version 101
 
 Gamepad setup uses the shared launcher header, back arrow and page background.

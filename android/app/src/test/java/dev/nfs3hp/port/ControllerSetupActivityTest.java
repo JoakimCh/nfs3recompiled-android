@@ -51,6 +51,17 @@ public class ControllerSetupActivityTest {
             controller.get().dispatchKeyEvent(new android.view.KeyEvent(10,11,1,99,0,0,40,0,0,android.view.InputDevice.SOURCE_GAMEPAD));
             assertNotNull(ControllerProfiles.load(controller.get(),input).bindings[0]);
             assertEquals(99,ControllerProfiles.load(controller.get(),input).bindings[0].code);layout(root);
+            View scrolling=find(root,"Save input device report");
+            while(!(scrolling instanceof android.widget.ScrollView)) scrolling=(View)scrolling.getParent();
+            android.widget.ScrollView scroll=(android.widget.ScrollView)scrolling;
+            assertTrue(scroll.getClipToOutline());
+            int[] before=new int[2];scroll.getLocationOnScreen(before);
+            assertTrue(before[1]>0);assertTrue(scroll.getHeight()<root.getHeight());
+            scroll.fullScroll(View.FOCUS_DOWN);
+            org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idle();
+            int[] after=new int[2];scroll.getLocationOnScreen(after);
+            assertArrayEquals(before,after);assertTrue(scroll.getScrollY()>0);
+
             controller.get().onBackPressed();
             assertNotNull(find(root,"Start test"));
         } finally {manager.removeInputDevice(40);InputDeviceRoles.changed(40);}

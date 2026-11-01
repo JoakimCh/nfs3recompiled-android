@@ -63,6 +63,7 @@ public final class ControllerSetupActivity extends ComponentActivity implements 
         super.onCreate(state);InputDeviceRoles.initialize(this);
         if(state!=null){descriptor=state.getString("controller","");showOthers=state.getBoolean("show_others");expanded=state.getBoolean("expanded",true);}
         ScrollView scroll=new ScrollView(this);scroll.setFillViewport(true);scroll.setBackgroundColor(android.graphics.Color.TRANSPARENT);
+        scroll.setOutlineProvider(android.view.ViewOutlineProvider.BOUNDS);scroll.setClipToOutline(true);
         LinearLayout center=column();center.setGravity(android.view.Gravity.CENTER_HORIZONTAL);scroll.addView(center);
         content=column();content.setPadding(0,0,0,dp(12));
         center.addView(content,new LinearLayout.LayoutParams(-1,-2));ControllerSetupScreenKt.showControllerSetup(this,scroll);

@@ -3,8 +3,7 @@
 Joakim's fork adds ARMv7 Android TV support and improves gamepad and touch
 controls. It includes the original project's alphaG0.78 update.
 
-The latest build is **tv24** (version 101). Joakim reported tv22 works and
-approved tv23's interface. The ARMv7 package is `dev.nfs3hp.port.armv7tv`;
+The latest build is **tv25** (version 102). The ARMv7 package is `dev.nfs3hp.port.armv7tv`;
 the normal build still targets ARM64. APK identities are in
 [release details](releases/).
 
