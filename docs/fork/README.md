@@ -30,7 +30,8 @@ precision and fallback paths. The opaque shader runs only when opacity is known;
 other draws use the original shader.
 
 [Build and signing](BUILD.md) · [Verified build state](BUILD_STATUS.md) · [Changes](CHANGELOG.md) ·
-[Performance findings](PERFORMANCE.md) · [Translations](TRANSLATIONS.md)
+[Workspace recovery](WORKSPACE.md) · [Performance findings](PERFORMANCE.md) ·
+[Translations](TRANSLATIONS.md)
 
 Git is the source checkpoint. APKs, matching native symbols and the private
 signing backup are stored separately. No source ZIP is needed to resume work.

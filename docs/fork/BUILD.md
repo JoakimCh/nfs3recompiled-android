@@ -1,150 +1,136 @@
 # Android checks, builds and signing
 
-Read this file and [BUILD_STATUS.md](BUILD_STATUS.md) after a context reset.
-The selected toolchain is in [android-toolchain.json](../../tools/android-toolchain.json).
-Use the Gradle wrapper and shared commands below; do not reconstruct setup interactively.
-Setup, tests, builds and publication still require the authorization described in AGENTS.md.
+Use GitHub Actions for routine tests and APK builds. Use the shared local command
+when a workspace build is wanted. Both use
+[android-toolchain.json](../../tools/android-toolchain.json).
+See [BUILD_STATUS.md](BUILD_STATUS.md) for verified runs and device feedback.
 
-## Prefer GitHub Actions
+## Run on GitHub
 
-Signing credentials are configured in this repository's Actions secrets. A signed
-build on `main` succeeded on 2026-11-01; the exact run is in BUILD_STATUS.md.
-The revised workflow in this branch adds these manual modes:
+1. Open [the build workflow](https://github.com/JoakimCh/nfs3recompiled-android/actions/workflows/armv7-release.yml).
+2. Choose **Run workflow**, then select the branch under **Use workflow from**.
+3. Choose a mode and start the run:
 
-| Mode | Work | Deliverables |
+| Mode | What it does | Output |
 | --- | --- | --- |
-| `tests` (default) | Tooling tests, launcher compilation/resources and launcher tests | Test reports and validation JSON |
-| `check` | Tests, then native ARMv7 compilation/linking | Reports and validation JSON; no APK |
-| `apk` | Tests, native build, APK packaging, signing and verification | Signed APK, validation/release JSON and matching symbols |
+| `tests` (default) | Tooling and launcher tests; no native build | Test reports |
+| `check` | Tests, then native ARMv7 compilation and linking | Reports; no APK |
+| `apk` | Tests, native build, packaging, signing and verification | Signed APK, reports and matching native symbols |
 
-Open [Actions](https://github.com/JoakimCh/nfs3recompiled-android/actions), select
-**Android checks and builds**, then **Run workflow**. Select **Use workflow from**
-the intended branch, select the mode and start the run. The workflow file remains
-`.github/workflows/armv7-release.yml`. It already exists on the default branch,
-which is required for manual dispatch. Select a branch containing the revised
-workflow to use its new modes; `main` retains its previous UI until updated.
-There is no main-only job restriction in the revised workflow and no push trigger.
-A dedicated test branch is not required.
+**APK mode already includes tests**; there is no need to run each mode in order.
+Choose `tests` for launcher changes, `check` to check native compilation, and `apk`
+when you want an installable build. These modes target ARMv7 TV; the normal
+upstream build targets ARM64.
 
-When tooling supports it, the equivalent CLI command is:
+Select a branch containing the revised workflow, currently
+`feature/launcher-wording-backups-translations`. Until it is merged, `main` has
+the older workflow and inputs; the Actions sidebar may also show its older name.
+No dedicated test branch is needed. The workflow runs manually, never on push.
+
+With an authenticated GitHub CLI, the equivalent command is:
 
 ```sh
-gh workflow run armv7-release.yml --ref BRANCH -f mode=tests
+gh workflow run armv7-release.yml --ref BRANCH -f mode=apk
 ```
 
-Use `check` or `apk` for the other modes. Do not assume the connected GitHub tool
-can dispatch: inspect its current capabilities. If dispatch is unavailable, give
-the user the exact workflow link, branch and mode, then monitor the run they start.
-Do not repeatedly retry an unavailable action or install the local toolchain just
-because dispatch needs a user click.
+## Download the APK
 
-Before reporting success, inspect the jobs and relevant steps. Tests-only success
-does not mean native compilation ran. A build check verifies compilation/linking;
-APK mode additionally validates packaging, resources, signing and symbol identity.
-A skipped job has verified nothing. An old run does not validate a newer commit.
+Open the completed run and scroll to **Artifacts**. GitHub may require sign-in.
 
-## Download results
+| Artifact | Contents |
+| --- | --- |
+| `armv7-apk` | ZIP containing the signed APK and verification metadata. Extract the APK to install it. |
+| `armv7-native-symbols` | Matching symbols for decoding crashes. Keep them with the APK; they are not needed to play. |
+| `armv7-MODE-reports` | Launcher test results and validation JSON. |
 
-Open the completed run and scroll to **Artifacts**:
+Check the run's branch, source commit and completed steps before using its output.
+A skipped run has not validated anything. APK verification checks the original
+signing certificate, package/version, ARMv7 libraries, 16K alignment,
+non-debuggable/profileable state, packaged resources and matching native BuildID.
+Device testing is still separate.
 
-- `armv7-apk`: ZIP containing the signed APK and verification JSON. Extract the APK to install it.
-- `armv7-native-symbols`: exact native symbols for crash decoding; not needed to play.
-- `armv7-MODE-reports`: launcher test results and validation JSON, including on test failure where available.
+**Artifacts currently expire after one day.** The repository's retention limit
+overrides the workflow's requested 14 days for APKs/reports and 90 days for symbols.
+Check each run's expiry and save useful APKs with their matching symbols before
+then. To retain them longer in Actions, increase the repository's artifact
+retention limit under **Settings → Actions → General**. Never commit APKs or keys.
 
-Always match the run's branch and source commit to the requested changes. The
-known successful `main` run built tv27, not tv28. Test/APK reports expire after
-14 days; symbols after 90 days. Retain an APK and its exact symbols outside Actions
-before expiry when that build will continue to be used. Never commit APKs or keys.
+## Local builds
 
-## Cache behavior
-
-The workflow caches Gradle downloads/build state, Robolectric runtime dependencies,
-selected SDK/build-tools/NDK/CMake/Ninja installations and pinned SDL source.
-Launcher and native tool caches have separate keys, so a launcher-only cache cannot
-prevent saving the larger native cache. The manifest controls tool cache versions.
-Only selected tools are installed in the cache SDK; the entire runner SDK is not cached.
-
-Caches are accelerators, not source or release archives. A miss must still work.
-The initial cold run still downloads tools and dependencies. The wrapper uses
-Ninja compile pools (`--jobs`, default 2) and one link job. It does not assume all
-reported host CPUs can safely compile the generated game sources simultaneously.
-
-## Local workspace fallback
-
-Automatic bootstrap supports Linux x86_64 and requires Python 3.12+, `curl`, `git`
-and `bash`. Other hosts need compatible tools installed explicitly; the cloud
-bootstrap is not a Windows installer. Reuse compatible installed tools and caches.
-JDK 25 LTS is selected; installed compatible JDK 26/27 is accepted. Tool updates
-are deliberate manifest changes followed by checks and a device trial.
-
-These commands are run from the repository root:
+Run these commands from the repository root. Automatic bootstrap supports Linux
+x86_64 with Python 3.12+, `curl`, `git` and `bash`. Other hosts need compatible
+tools installed explicitly.
 
 ```sh
-# Optional preparation only. This does not test, build or sign.
+# Optional preparation only; each mode also prepares its own prerequisites.
 python3 tools/android.py setup --accept-sdk-licenses
 
-# Launcher/tooling tests; skips native toolchain and SDL installation.
+# Launcher and tooling tests; no NDK, CMake or SDL required.
 python3 tools/android.py tests --accept-sdk-licenses
 
-# Tests plus native compilation; no APK or signing credentials.
+# Tests and native compilation; no APK or signing credentials.
 python3 tools/android.py check --accept-sdk-licenses
 
-# Tests, build and original release signing.
+# Tests, build and signing with the original release key.
 python3 tools/android.py apk --accept-sdk-licenses \
   --keystore /private/armv7-tv-release.p12 \
   --password-file /private/password.txt
 ```
 
-`--accept-sdk-licenses` explicitly accepts SDK licenses when installation is needed.
-Omit it when licenses are already accepted. `setup --tests-only` prepares just the
-launcher tools. Each run mode prepares its own prerequisites automatically.
+`--accept-sdk-licenses` accepts SDK licenses when installing packages. Omit it if
+licenses are already accepted. `setup --tests-only` prepares only launcher tools.
+Output goes to `out/`; change it with `--output-dir`.
 
-Set `NFS_BUILD_CACHE` or pass `--cache-dir /writable/cache` to reuse a cache.
+The APK command checks signing credentials before downloading large tools.
+`apk --unsigned` produces an intermediate that must be signed before installation.
+To sign a prepared APK without rebuilding:
+
+```sh
+python3 tools/android.py sign \
+  --keystore /private/armv7-tv-release.p12 \
+  --password-file /private/password.txt
+```
+
+Keep the prepared APK and its matching native build outputs available: signing
+also verifies resources and packages the exact symbols. Use `--apk PATH` to select
+a different prepared APK.
+
+## Tools and caches
+
+Exact versions are selected for reproducibility, rather than requiring manual
+installation of every tool. The bootstrap reuses compatible installed tools and
+fetches missing ones with checksum verification. JDK 25 LTS is selected;
+compatible installed JDK 26/27 is also accepted. Update the manifest deliberately,
+then run checks and a device trial. Use the Gradle wrapper, not a global Gradle.
+
+Set `NFS_BUILD_CACHE` or pass `--cache-dir /writable/cache` to reuse a local cache.
 The default is `nfs3-build-cache` beside the repository. `JAVA_HOME`, `ANDROID_HOME`,
-`ANDROID_SDK_ROOT` and `GRADLE_USER_HOME` override discovery. Cached paths from a
-previous workspace are only reused when present. Machine paths go into ignored
-`android/local.properties` and the cache's `environment.json`, not source history.
-Run one setup operation per cache at a time.
+`ANDROID_SDK_ROOT` and `GRADLE_USER_HOME` override discovery. Machine paths stay
+in ignored files; stale cached paths are checked before reuse. Run one setup
+operation per cache at a time. Native compilation defaults to two jobs and one
+link job; increase `--jobs` only when memory permits.
 
-`--jobs 2` is the default. The same wrapper runs in Actions. It passes current
-proxy/CA settings to Java and explicitly to Gradle, without saving proxy ports.
-See [WORKSPACE.md](WORKSPACE.md) for the observed compatibility fixes.
+Actions caches Gradle/Robolectric dependencies, selected Android tools and pinned
+SDL source. Launcher and native tool caches have separate keys. A first run or
+cache miss downloads dependencies; caches are not release archives. Cold APK
+setup succeeded in the run recorded in BUILD_STATUS.md; warm cache restoration
+still needs a repeat run.
 
-The local APK command requires original signing files before downloading large
-tools. An explicitly requested unsigned intermediate can be built with
-`apk --unsigned`; it is not installable until signed. A prepared APK can be signed
-without recompilation using `tools/android.py sign --keystore ... --password-file ...`.
-The signing command still verifies packaged resources and exact native symbols.
-Output is `out/` unless `--output-dir` is supplied.
+For workspace recovery and proxy/SDK troubleshooting, see [WORKSPACE.md](WORKSPACE.md).
+Low-level Gradle remains available: `-Parmv7Tv -PprofileNative` selects the TV
+package. `-PlauncherTestsOnly` is restricted to launcher tests and rejects APK tasks.
 
-Low-level Gradle commands remain available. `-Parmv7Tv -PprofileNative` selects
-the TV package. The shared launcher-tests command adds `-PlauncherTestsOnly`, which
-is restricted to the launcher test task and cannot produce an APK missing native
-libraries. The normal upstream build remains ARM64; the shared modes/signing
-workflow described here are specifically for ARMv7 TV.
+## Signing credentials
 
-## Signing identity
-
-Only APK mode receives these GitHub repository secrets:
+GitHub signing secrets are configured and verified. Only APK mode uses them:
 
 - `ANDROID_KEYSTORE_BASE64`: base64 of the original `.p12`, not the recovery ZIP.
 - `ANDROID_KEYSTORE_PASSWORD`: the original password.
 
-The workflow verifies the public signing certificate before the expensive build,
-removes those temporary signing files, runs checks/build without them, then
-recreates private temporary files only for final signing. These files live under
-`RUNNER_TEMP`, outside caches, and are removed on exit. Tests/check modes do not
-read signing secrets. Do not put keys, passwords or recovery ZIPs in Git, caches,
-logs or build artifacts.
+The workflow checks the certificate before building, removes the temporary key,
+then recreates it for final signing. Temporary files live outside caches and are
+removed on exit. Local signing needs the original private files, kept outside the
+repository. Never place credentials in Git, caches, logs or artifacts.
 
-Public alias: `armv7-tv-release`. Expected certificate SHA-256:
+Public alias: `armv7-tv-release`. Certificate SHA-256:
 `464eab8f658b68c234e80e85f5bcb6c5a79771600ac04c0f9d5458769c27b60e`.
-The shared signer checks the package/version, certificate, ABI, alignment,
-profileable/non-debug state, packaged R fields and matching native BuildID.
-
-## Validation state
-
-Local validation of the shared runner is recorded in [BUILD_STATUS.md](BUILD_STATUS.md).
-The hosted workflow still needs manual runs of all three modes, including a warm
-cache rerun. Keep local results distinct from hosted Actions results and from
-Joakim's device test of the earlier tv28 APK.

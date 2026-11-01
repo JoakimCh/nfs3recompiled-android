@@ -6,8 +6,9 @@ Added shared setup/tests/check/APK/signing commands, complete Linux workspace
 bootstrap, cached manual workflow modes and feature-branch support. Launcher-only
 tests skip native configuration; native builds use bounded Ninja job pools.
 Signing credentials are checked early and used only in APK mode. Added tooling
-filesystem regressions and recovery/status documentation. These automation paths
-are implemented but have not yet been executed.
+filesystem regressions and recovery/status documentation. Local tests/check/APK
+modes passed. The first hosted APK run also passed, including all 14 launcher
+tests, cold setup, signing and artifact uploads; see BUILD_STATUS.md.
 
 ## tv28 — version 105
 

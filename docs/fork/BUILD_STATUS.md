@@ -18,21 +18,37 @@ latest Actions run. A new context should read AGENTS.md, BUILD.md and this file.
   and individual feature coverage were not specified.
 - Full application metadata: [releases/tv28.json](releases/tv28.json).
 
-## GitHub Actions: legacy workflow verified
+## GitHub Actions: current APK workflow verified
 
-[Successful run 41316976331](https://github.com/JoakimCh/nfs3recompiled-android/actions/runs/41316976331)
-completed on 2026-11-01, building **tv27/version 104 from main**, source commit
-`7349f4b97f2406360313b09c50ac4ed4d5482c1c`.
+[APK run 41324391872](https://github.com/JoakimCh/nfs3recompiled-android/actions/runs/41324391872)
+succeeded on 2026-11-01 on `feature/launcher-wording-backups-translations`, source
+commit `5f68209a56b0dc4d26974b80191466f761655f3d`, with a clean working tree.
+It built **tv28/version 105** in about seven minutes, including cache uploads.
 
-The signing-credential check, build, original-certificate verification and separate
-APK/symbol artifact uploads succeeded. Launcher tests were skipped because the
-old `run_tests` input was not enabled. This proves the repository's two signing
-secrets worked at that time. Their values are not available through GitHub reads.
+- All three tooling tests and all 14 launcher tests passed, with no skipped tests.
+- Native compilation, APK packaging, early signing-credential verification and
+  final original-certificate signing/verification succeeded.
+- All 301 packaged R fields matched. ARMv7 ABI, 16K alignment,
+  non-debuggable/profileable state and matching native symbols were verified.
+- All three artifact uploads succeeded: APK, symbols and test reports.
+- Gradle, native tools and SDL caches were absent initially and saved successfully
+  afterwards. This validates cold hosted APK setup. Warm restoration is untested.
+- APK SHA-256: `cfb2d4683231634b6472da9cd75bd458694369c61bfd82d4a98d5a3cc2eaadbe`.
+- Native BuildID: `23070215567f86d1a4c783977ec7ecb42e8ef1df`.
+- The newly built APK has not been device tested; Joakim's successful device test
+  above applies to the earlier local tv28 binary.
 
-An earlier feature-branch run was skipped by the old main-only job condition. It
-never checked credentials. The revised workflow removes that restriction.
+The repository capped all artifact retention at **one day**, overriding the
+workflow's requested 14/90 days. This run's artifacts expire on 2026-11-02 at
+17:04 Oslo time. Download the APK and exact symbols before expiry if needed.
+See [BUILD.md](BUILD.md) for download and retention instructions.
 
-## New automation: locally validated; hosted runs pending
+Standalone hosted `tests` and `check` modes have not run. APK mode already passed
+tests and native compilation, so those runs are optional checks of their separate
+execution paths, not prerequisites for using this APK. A repeat run can verify
+warm cache restoration. Record future runs against their actual source commits.
+
+## Shared runner: local validation
 
 Published automation commit: `f674acd863ccb3f86bc4052a00e58d39e849f0b9` on
 `feature/launcher-wording-backups-translations`. Local checks on 2026-11-01:
@@ -59,14 +75,20 @@ working tree with unrelated untracked content (and documentation edits during
 packaging); no application source changes were included. This is distinct from
 Joakim's successfully tested original tv28 binary above.
 
-A complete cold native-toolchain installation has not been exercised through the
-new bootstrap; native tools were reused locally. The isolated launcher bootstrap
-reused the verified SDK installer archive, then installed fresh SDK packages.
+The local native checks reused installed tools; the isolated launcher bootstrap
+installed fresh SDK packages using a verified cached installer. Cold native
+bootstrap was subsequently exercised by the hosted APK run above.
 
-The revised **hosted workflow has not run yet**. The only feature-branch run found
-was the previously skipped legacy run. Start manual `tests`, `check` and `apk`
-runs on the intended branch, plus a repeat run to confirm cache restoration:
-[Android checks and builds](https://github.com/JoakimCh/nfs3recompiled-android/actions/workflows/armv7-release.yml).
-Keep execution manual, with `tests` as the default. Record actual run URLs, source
-commits, job outcomes and cache observations here. A skipped or old run is not
-validation of the revised workflow.
+## Earlier GitHub Actions runs
+
+[Successful run 41316976331](https://github.com/JoakimCh/nfs3recompiled-android/actions/runs/41316976331)
+completed on 2026-11-01, building **tv27/version 104 from main**, source commit
+`7349f4b97f2406360313b09c50ac4ed4d5482c1c`.
+
+The signing-credential check, build, original-certificate verification and separate
+APK/symbol artifact uploads succeeded. Launcher tests were skipped because the
+old `run_tests` input was not enabled. This proves the repository's two signing
+secrets worked at that time. Their values are not available through GitHub reads.
+
+An earlier feature-branch run was skipped by the old main-only job condition. It
+never checked credentials. The revised workflow removes that restriction.

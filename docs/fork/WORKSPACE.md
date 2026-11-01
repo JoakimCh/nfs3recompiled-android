@@ -24,8 +24,8 @@ workspace are not required to reconstruct the process.
 `tools/setup_android.py` owns installation; `tools/android.py` owns execution.
 Setup by itself never authorizes tests, builds, signing or publication. The shared
 scripts have now been exercised locally, including an isolated launcher SDK
-bootstrap and native build. See BUILD_STATUS.md for the exact evidence and the
-remaining hosted workflow validation.
+bootstrap and native build. The hosted APK workflow also passed cold setup. See
+BUILD_STATUS.md for the exact evidence and remaining cache/mode checks.
 
 - Prefer compatible installed JDKs and complete SDK/CMake installations. Otherwise
   fetch the selected JDK from Adoptium, SDK installer from Google and CMake/Ninja
@@ -73,6 +73,6 @@ NDKs. Output was byte-for-byte identical; 44 functions passed, and `trackVertice
 had the same known NaN/finite discrepancy with both compilers. Do not report that
 as a completely passing math suite. Details remain in releases/tv27.json.
 
-On-device behavior is a separate check. tv28 has now been tested by Joakim without
-reported problems; that does not establish validation of the subsequently added
-setup scripts, workflow modes or every device/feature.
+On-device behavior is a separate check. Joakim tested the original local tv28 APK
+without reported problems. Later APKs rebuilt locally and on GitHub have passed
+automated checks but have not been device tested.

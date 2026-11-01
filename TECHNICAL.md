@@ -1,5 +1,10 @@
 # NFS III: Hot Pursuit — Android: technical details
 
+For this fork's ARMv7 TV builds, current setup and controller changes, start with
+[the fork guide](docs/fork/README.md) and [build instructions](docs/fork/BUILD.md).
+The upstream technical reference below describes the original ARM64 port.
+
+
 An Android port of the static recompilation of **Need for Speed III: Hot Pursuit**.
 The original 1998 Win32 x86 executable is translated into portable C++ that runs
 on a virtual x86 CPU, with the Win32, DirectDraw and DirectSound calls it
