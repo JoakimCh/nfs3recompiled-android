@@ -190,7 +190,7 @@
  <string name="controller_details_hide">Ascunde detaliile intrării</string>
  <string name="controller_reset_menu">Resetează comenzile meniurilor</string>
  <string name="controller_pause_title">Combinație pentru pauză în cursă</string>
- <string name="controller_pause_hint">Ține apăsate ambele butoane atribuite pentru a pune cursa pe pauză.</string>
+ <string name="controller_pause_hint">Atribuie două butoane și ține-le apăsate pentru pauză. Direcțiile D-pad și intrările analogice nu sunt acceptate.</string>
  <string name="controller_device_type">Tip de dispozitiv</string>
  <string name="controller_change_type">Schimbă tipul dispozitivului…</string>
  <string name="controller_role_hint">Pentru o telecomandă TV, alege Telecomandă / tastatură ca să nu ocupe un loc de jucător.</string>
@@ -209,6 +209,8 @@
  <string name="controller_disable">Dezactivează</string>
  <string name="controller_shortcut_disabled">Dezactivat</string>
  <string name="controller_pause_first">Apasă primul buton.</string>
- <string name="controller_pause_second">Apasă un buton diferit.</string>
+ <string name="controller_pause_second">Apasă al doilea buton.</string>
  <string name="controller_pause_different">Alege un buton diferit.</string>
+ <string name="controller_button_actions_hint">Confirm și Back acceptă doar butoane (fără D-pad sau intrări analogice).</string>
+ <string name="controller_buttons_only">Folosește un buton al controlerului. Direcțiile D-pad și intrările analogice nu sunt acceptate.</string>
 </resources>

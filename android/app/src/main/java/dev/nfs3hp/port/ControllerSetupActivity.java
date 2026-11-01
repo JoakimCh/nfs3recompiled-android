@@ -38,7 +38,8 @@ public final class ControllerSetupActivity extends ComponentActivity implements 
     private long armAt;
     private String descriptor="";
     private Button testButton, pauseAssign;
-    private TextView pauseValue;
+    private TextView pauseValue,pausePrompt;
+    private String captureMessage;
     private String captureName(){return ControllerProfile.NAMES[waiting];}
     private int dp(int value){return Math.round(value*getResources().getDisplayMetrics().density);}
     private TextView text(String value,int size) {
@@ -95,6 +96,7 @@ public final class ControllerSetupActivity extends ComponentActivity implements 
         testButton=button("Start test",()->{cancelCapture();test=!test;testButton.setText(test?"Stop test":"Start test");if(!test){profile.release();down.clear();showFunctions();}updateStatus();});detailPanel.addView(testButton);
         detailPanel.addView(text("During a test, use touch or the TV remote to operate this page. Remote Back stops the test or cancels an assignment.",14));
         heading(detailPanel,"Menu controls");
+        detailPanel.addView(text(getString(R.string.controller_button_actions_hint),14));
         for(int i=0;i<6;i++) {
             final int action=i;LinearLayout bindingRow=row(),label=column();
             label.addView(text(ControllerProfile.NAMES[i],17));values[i]=text("",14);label.addView(values[i]);
@@ -110,7 +112,10 @@ public final class ControllerSetupActivity extends ComponentActivity implements 
         }));
         heading(detailPanel,getString(R.string.controller_pause_title));
         detailPanel.addView(text(getString(R.string.controller_pause_hint),14));
-        pauseValue=text("",14);detailPanel.addView(pauseValue);
+        pauseValue=text("",14);pauseValue.setTag("race-pause-value");detailPanel.addView(pauseValue);
+        pausePrompt=text("",14);pausePrompt.setTag("race-pause-prompt");pausePrompt.setTextColor(0xffead34e);
+        pausePrompt.setAccessibilityLiveRegion(android.view.View.ACCESSIBILITY_LIVE_REGION_POLITE);
+        pausePrompt.setVisibility(android.view.View.GONE);detailPanel.addView(pausePrompt);
         LinearLayout pauseRow=row();
         pauseAssign=button(getString(R.string.controller_assign),()->{if(waiting>=6){cancelCapture();updateStatus();}else begin(6);});
         pauseAssign.setTag("race-pause-assign");weighted(pauseRow,pauseAssign);
@@ -178,7 +183,7 @@ public final class ControllerSetupActivity extends ComponentActivity implements 
             Button role=button(getString(R.string.controller_change_type),()->showRole(input));role.setTag("role:"+input.getDescriptor());card.addView(role);otherDevices.addView(card);
         }
         if(selected==null && !pads.isEmpty()){select(GamepadSlots.device(pads.get(0)));return;}
-        if(selected==null){releaseGate=false;pendingPauseFirst=null;device=null;profile=null;waiting=-1;test=false;testButton.setText("Start test");down.clear();}
+        if(selected==null){releaseGate=false;pendingPauseFirst=null;captureMessage=null;device=null;profile=null;waiting=-1;test=false;testButton.setText("Start test");down.clear();}
         else if(device==null || selected.getId()!=device.getId()){select(selected);return;}
         updateStatus();
         if(focusTag!=null){android.view.View replacement=content.findViewWithTag(focusTag);if(replacement!=null)replacement.requestFocus();}
@@ -195,19 +200,31 @@ public final class ControllerSetupActivity extends ComponentActivity implements 
         assignButtons[i].setText(waiting==i?"Cancel":"Assign");
         assignButtons[i].setActivated(waiting==i);
     }
-        if(pauseValue!=null)pauseValue.setText(profile==null || !profile.hasRacePause()?getString(R.string.controller_shortcut_disabled):
-            getString(R.string.controller_pause_pair,ControllerProfiles.keyLabel(profile.racePauseFirst.code),
-                ControllerProfiles.keyLabel(profile.racePauseSecond.code)));
-        if(pauseAssign!=null)pauseAssign.setText(getString(waiting>=6?R.string.controller_cancel:R.string.controller_assign));
+        if(pauseValue!=null) {
+            if(waiting>=6)pauseValue.setText(getString(R.string.controller_pause_pair,
+                pendingPauseFirst==null?"…":ControllerProfiles.keyLabel(pendingPauseFirst.code),"…"));
+            else pauseValue.setText(profile==null || !profile.hasRacePause()?getString(R.string.controller_shortcut_disabled):
+                getString(R.string.controller_pause_pair,ControllerProfiles.keyLabel(profile.racePauseFirst.code),
+                    ControllerProfiles.keyLabel(profile.racePauseSecond.code)));
+        }
+        if(pausePrompt!=null) {
+            pausePrompt.setVisibility(waiting>=6?android.view.View.VISIBLE:android.view.View.GONE);
+            if(waiting>=6)pausePrompt.setText(captureMessage!=null?captureMessage:
+                getString(waiting==6?R.string.controller_pause_first:R.string.controller_pause_second));
+        }
+        if(pauseAssign!=null) {
+            pauseAssign.setText(getString(waiting>=6?R.string.controller_cancel:R.string.controller_assign));
+            pauseAssign.setActivated(waiting>=6);
+        }
     }
     private void save(){ControllerProfiles.save(this,profile);refreshRows();updateStatus();}
     private void cancelCapture(){
         if(waiting>=0)releaseGate=device!=null && !neutral();
-        waiting=-1;armed=false;pendingPauseFirst=null;handler.removeCallbacks(arm);refreshRows();
+        waiting=-1;armed=false;pendingPauseFirst=null;captureMessage=null;handler.removeCallbacks(arm);refreshRows();
     }
     private void begin(int action) {
         if(profile==null){status.setText("Connect and select a gamepad first.");return;}
-        pendingPauseFirst=null;releaseGate=false;waiting=action;armed=false;armAt=android.os.SystemClock.uptimeMillis()+300;
+        pendingPauseFirst=null;captureMessage=null;releaseGate=false;waiting=action;armed=false;armAt=android.os.SystemClock.uptimeMillis()+300;
         handler.removeCallbacks(arm);handler.post(arm);updateStatus();
     }
     private float rest(InputDevice.MotionRange r) {
@@ -226,22 +243,35 @@ public final class ControllerSetupActivity extends ComponentActivity implements 
         if(android.os.SystemClock.uptimeMillis()>=armAt && neutral()){armed=true;updateStatus();}
         else handler.postDelayed(this,100);
     }};
+    // Shared by Confirm, Back and both shortcut steps. Preserve axis support for directions.
+    static boolean assignableButton(ControllerProfile.Binding binding) {
+        int logical=ControllerProfile.logicalButton(binding.code);
+        return !binding.axis && binding.code!=KeyEvent.KEYCODE_DPAD_CENTER && !(logical>=10 && logical<=13);
+    }
+    private void captureFeedback(String message) {
+        captureMessage=message;status.setText(message);
+        if(waiting>=6 && pausePrompt!=null)pausePrompt.setText(message);
+    }
     private void captured(ControllerProfile.Binding binding) {
+        if(waiting>=4 && !assignableButton(binding)) {
+            captureFeedback(getString(R.string.controller_buttons_only));return;
+        }
+        if(!armed)return;
+        captureMessage=null;
         if(waiting>=6) {
-            if(binding.axis)return;
             if(waiting==6) {
                 pendingPauseFirst=binding;waiting=7;armed=false;
                 armAt=android.os.SystemClock.uptimeMillis();
                 handler.removeCallbacks(arm);handler.post(arm);updateStatus();return;
             }
             if(ControllerProfile.samePauseButton(pendingPauseFirst.code,binding.code)) {
-                status.setText(getString(R.string.controller_pause_different));return;
+                captureFeedback(getString(R.string.controller_pause_different));return;
             }
             profile.setRacePause(pendingPauseFirst,binding);
             cancelCapture();profile.release();save();return;
         }
         for(int i=0;i<6;i++)if(i!=waiting && binding.sameInput(profile.bindings[i])) {
-            status.setText("Already assigned to "+ControllerProfile.NAMES[i]+". Reset that assignment first, or press another control.");return;
+            captureFeedback("Already assigned to "+ControllerProfile.NAMES[i]+". Reset that assignment first, or press another control.");return;
         }
         profile.assign(waiting,binding);cancelCapture();save();
     }
@@ -250,6 +280,7 @@ public final class ControllerSetupActivity extends ComponentActivity implements 
         refreshRows();detailPanel.setVisibility(device!=null && expanded?android.view.View.VISIBLE:android.view.View.GONE);
         if(device!=null){selectedTitle.setText(device.getName());roleLabel.setText(InputDeviceRoles.description(device));}
         if(device==null){status.setText("No selected gamepad connected.");functions.setText("");refreshRows();return;}
+        if(waiting>=0 && captureMessage!=null){status.setText(captureMessage);return;}
         if(waiting>=6) {
             status.setText(getString(waiting==6?R.string.controller_pause_first:R.string.controller_pause_second));return;
         }
@@ -275,8 +306,10 @@ public final class ControllerSetupActivity extends ComponentActivity implements 
             raw.setText("Android button: "+KeyEvent.keyCodeToString(event.getKeyCode())+" ("+event.getKeyCode()+"), scan "+event.getScanCode()+
                 (event.getAction()==KeyEvent.ACTION_DOWN?" · pressed":" · released"));
             boolean reserved=test || waiting>=0 || releaseGate;
-            if(waiting>=0 && armed && event.getAction()==KeyEvent.ACTION_DOWN && event.getRepeatCount()==0)
-                captured(new ControllerProfile.Binding(event.getKeyCode()));
+            if(waiting>=0 && event.getAction()==KeyEvent.ACTION_DOWN && event.getRepeatCount()==0) {
+                ControllerProfile.Binding input=new ControllerProfile.Binding(event.getKeyCode());
+                if(armed || (waiting>=4 && !assignableButton(input)))captured(input);
+            }
             if(waiting>=0 && !armed){handler.removeCallbacks(arm);arm.run();}
             if(releaseGate && neutral()){releaseGate=false;profile.release();}
             showFunctions();if(reserved)return true;
@@ -294,7 +327,7 @@ public final class ControllerSetupActivity extends ComponentActivity implements 
                 if(amount>.25f && amount>strongest){strongest=amount;candidate=new ControllerProfile.Binding(a,delta>0?1:-1,rest(r),r.getRange());}
             }
             raw.setText(description.toString());boolean reserved=test || waiting>=0 || releaseGate;
-            if(waiting>=0 && waiting<4 && armed && candidate!=null)captured(candidate);
+            if(waiting>=0 && candidate!=null && (armed || waiting>=4))captured(candidate);
             if(waiting>=0 && !armed){handler.removeCallbacks(arm);arm.run();}
             if(releaseGate && neutral()){releaseGate=false;profile.release();}
             showFunctions();if(reserved)return true;

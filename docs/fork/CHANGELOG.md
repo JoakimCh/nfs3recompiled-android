@@ -25,6 +25,15 @@ filesystem regressions and recovery/status documentation. Local tests/check/APK
 modes passed. The first hosted APK run also passed, including all 14 launcher
 tests, cold setup, signing and artifact uploads; see BUILD_STATUS.md.
 
+## 0.78.30 — version 107
+
+Pause shortcut assignment now shows the first selected button beside the controls
+while waiting for the second. Assignment prompts and unsupported-input feedback
+appear directly below the pair. Confirm, Back and the shortcut share button-only
+validation, with explanatory text for D-pad directions and analog inputs.
+Directional menu assignments retain their button and axis support. Updated all
+18 launcher translations.
+
 ## 0.78.29 — version 106
 
 Versions now use a numeric format, starting with 0.78.29. ARMv7 downloads use

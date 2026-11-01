@@ -190,7 +190,7 @@
  <string name="controller_details_hide">Eingabedetails ausblenden</string>
  <string name="controller_reset_menu">Menüsteuerung zurücksetzen</string>
  <string name="controller_pause_title">Tastenkombination zum Pausieren</string>
- <string name="controller_pause_hint">Halte beide zugewiesenen Tasten gedrückt, um ein Rennen zu pausieren.</string>
+ <string name="controller_pause_hint">Weise zwei Gamepad-Tasten zu und halte beide zum Pausieren gedrückt. Steuerkreuz und analoge Eingaben werden nicht unterstützt.</string>
  <string name="controller_device_type">Gerätetyp</string>
  <string name="controller_change_type">Gerätetyp ändern…</string>
  <string name="controller_role_hint">Für eine TV-Fernbedienung Fernbedienung / Tastatur wählen, damit sie keinen Spielerplatz belegt.</string>
@@ -209,6 +209,8 @@
  <string name="controller_disable">Deaktivieren</string>
  <string name="controller_shortcut_disabled">Deaktiviert</string>
  <string name="controller_pause_first">Drücke die erste Taste.</string>
- <string name="controller_pause_second">Drücke eine andere Taste.</string>
+ <string name="controller_pause_second">Drücke die zweite Taste.</string>
  <string name="controller_pause_different">Wähle eine andere Taste.</string>
+ <string name="controller_button_actions_hint">Confirm und Back unterstützen nur Tasten (kein Steuerkreuz oder analoge Eingaben).</string>
+ <string name="controller_buttons_only">Verwende eine Gamepad-Taste. Steuerkreuz und analoge Eingaben werden nicht unterstützt.</string>
 </resources>

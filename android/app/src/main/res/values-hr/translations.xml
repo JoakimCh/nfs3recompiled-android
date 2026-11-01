@@ -190,7 +190,7 @@
  <string name="controller_details_hide">Sakrij pojedinosti ulaza</string>
  <string name="controller_reset_menu">Vrati kontrole izbornika</string>
  <string name="controller_pause_title">Prečac za pauzu utrke</string>
- <string name="controller_pause_hint">Držite obje dodijeljene tipke za pauziranje utrke.</string>
+ <string name="controller_pause_hint">Dodijelite dvije tipke i držite obje za pauziranje. Smjerovi D-pada i analogni ulazi nisu podržani.</string>
  <string name="controller_device_type">Vrsta uređaja</string>
  <string name="controller_change_type">Promijeni vrstu uređaja…</string>
  <string name="controller_role_hint">Za daljinski upravljač televizora odaberite Daljinski upravljač / tipkovnica kako ne bi zauzimao mjesto igrača.</string>
@@ -211,4 +211,6 @@
  <string name="controller_pause_first">Pritisnite prvu tipku.</string>
  <string name="controller_pause_second">Pritisnite drugu tipku.</string>
  <string name="controller_pause_different">Odaberite drugu tipku.</string>
+ <string name="controller_button_actions_hint">Confirm i Back prihvaćaju samo tipke (bez D-pada i analognih ulaza).</string>
+ <string name="controller_buttons_only">Upotrijebite tipku kontrolera. Smjerovi D-pada i analogni ulazi nisu podržani.</string>
 </resources>

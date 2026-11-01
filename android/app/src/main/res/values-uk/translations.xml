@@ -190,7 +190,7 @@
  <string name="controller_details_hide">Сховати відомості про ввід</string>
  <string name="controller_reset_menu">Скинути керування в меню</string>
  <string name="controller_pause_title">Комбінація для паузи в перегонах</string>
- <string name="controller_pause_hint">Утримуйте обидві призначені кнопки, щоб призупинити гонку.</string>
+ <string name="controller_pause_hint">Призначте дві кнопки й утримуйте обидві для паузи. Напрямки хрестовини та аналогові входи не підтримуються.</string>
  <string name="controller_device_type">Тип пристрою</string>
  <string name="controller_change_type">Змінити тип пристрою…</string>
  <string name="controller_role_hint">Для пульта телевізора виберіть Пульт / клавіатура, щоб він не займав місце гравця.</string>
@@ -209,6 +209,8 @@
  <string name="controller_disable">Вимкнути</string>
  <string name="controller_shortcut_disabled">Вимкнено</string>
  <string name="controller_pause_first">Натисніть першу кнопку.</string>
- <string name="controller_pause_second">Натисніть іншу кнопку.</string>
+ <string name="controller_pause_second">Натисніть другу кнопку.</string>
  <string name="controller_pause_different">Виберіть іншу кнопку.</string>
+ <string name="controller_button_actions_hint">Confirm і Back приймають лише кнопки (без хрестовини та аналогових входів).</string>
+ <string name="controller_buttons_only">Використовуйте кнопку контролера. Напрямки хрестовини та аналогові входи не підтримуються.</string>
 </resources>

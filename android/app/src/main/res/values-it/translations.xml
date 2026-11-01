@@ -190,7 +190,7 @@
  <string name="controller_details_hide">Nascondi dettagli di input</string>
  <string name="controller_reset_menu">Ripristina comandi dei menu</string>
  <string name="controller_pause_title">Scorciatoia per la pausa in gara</string>
- <string name="controller_pause_hint">Tieni premuti entrambi i pulsanti assegnati per mettere in pausa la gara.</string>
+ <string name="controller_pause_hint">Assegna due pulsanti e tienili premuti per mettere in pausa. Le direzioni del D-pad e gli ingressi analogici non sono supportati.</string>
  <string name="controller_device_type">Tipo di dispositivo</string>
  <string name="controller_change_type">Cambia tipo di dispositivo…</string>
  <string name="controller_role_hint">Scegli Telecomando / tastiera per un telecomando TV, così non occuperà un posto giocatore.</string>
@@ -209,6 +209,8 @@
  <string name="controller_disable">Disattiva</string>
  <string name="controller_shortcut_disabled">Disattivato</string>
  <string name="controller_pause_first">Premi il primo pulsante.</string>
- <string name="controller_pause_second">Premi un pulsante diverso.</string>
+ <string name="controller_pause_second">Premi il secondo pulsante.</string>
  <string name="controller_pause_different">Scegli un pulsante diverso.</string>
+ <string name="controller_button_actions_hint">Confirm e Back accettano solo pulsanti (niente D-pad o ingressi analogici).</string>
+ <string name="controller_buttons_only">Usa un pulsante del controller. Le direzioni del D-pad e gli ingressi analogici non sono supportati.</string>
 </resources>

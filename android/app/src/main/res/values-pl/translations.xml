@@ -190,7 +190,7 @@
  <string name="controller_details_hide">Ukryj szczegóły wejścia</string>
  <string name="controller_reset_menu">Przywróć sterowanie w menu</string>
  <string name="controller_pause_title">Skrót pauzy w wyścigu</string>
- <string name="controller_pause_hint">Przytrzymaj oba przypisane przyciski, aby wstrzymać wyścig.</string>
+ <string name="controller_pause_hint">Przypisz dwa przyciski i przytrzymaj oba, aby wstrzymać grę. Kierunki krzyżaka i wejścia analogowe nie są obsługiwane.</string>
  <string name="controller_device_type">Typ urządzenia</string>
  <string name="controller_change_type">Zmień typ urządzenia…</string>
  <string name="controller_role_hint">Dla pilota TV wybierz Pilot / klawiatura, aby nie zajmował miejsca gracza.</string>
@@ -209,6 +209,8 @@
  <string name="controller_disable">Wyłącz</string>
  <string name="controller_shortcut_disabled">Wyłączone</string>
  <string name="controller_pause_first">Naciśnij pierwszy przycisk.</string>
- <string name="controller_pause_second">Naciśnij inny przycisk.</string>
+ <string name="controller_pause_second">Naciśnij drugi przycisk.</string>
  <string name="controller_pause_different">Wybierz inny przycisk.</string>
+ <string name="controller_button_actions_hint">Confirm i Back przyjmują tylko przyciski (bez krzyżaka i wejść analogowych).</string>
+ <string name="controller_buttons_only">Użyj przycisku kontrolera. Kierunki krzyżaka i wejścia analogowe nie są obsługiwane.</string>
 </resources>

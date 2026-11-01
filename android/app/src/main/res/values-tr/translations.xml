@@ -190,7 +190,7 @@
  <string name="controller_details_hide">Giriş ayrıntılarını gizle</string>
  <string name="controller_reset_menu">Menü kontrollerini sıfırla</string>
  <string name="controller_pause_title">Yarışı duraklatma kısayolu</string>
- <string name="controller_pause_hint">Yarışı duraklatmak için atanmış iki düğmeyi de basılı tutun.</string>
+ <string name="controller_pause_hint">İki oyun kumandası düğmesi atayın ve duraklatmak için ikisini de basılı tutun. D-pad yönleri ve analog girişler desteklenmez.</string>
  <string name="controller_device_type">Cihaz türü</string>
  <string name="controller_change_type">Cihaz türünü değiştir…</string>
  <string name="controller_role_hint">TV kumandasının oyuncu yuvasını kullanmaması için Uzaktan kumanda / klavye seçin.</string>
@@ -209,6 +209,8 @@
  <string name="controller_disable">Devre dışı bırak</string>
  <string name="controller_shortcut_disabled">Devre dışı</string>
  <string name="controller_pause_first">İlk düğmeye basın.</string>
- <string name="controller_pause_second">Farklı bir düğmeye basın.</string>
+ <string name="controller_pause_second">İkinci düğmeye basın.</string>
  <string name="controller_pause_different">Farklı bir düğme seçin.</string>
+ <string name="controller_button_actions_hint">Confirm ve Back yalnızca düğmeleri kabul eder (D-pad veya analog girişleri değil).</string>
+ <string name="controller_buttons_only">Bir oyun kumandası düğmesi kullanın. D-pad yönleri ve analog girişler desteklenmez.</string>
 </resources>

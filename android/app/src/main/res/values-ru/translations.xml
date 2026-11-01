@@ -190,7 +190,7 @@
  <string name="controller_details_hide">Скрыть сведения о вводе</string>
  <string name="controller_reset_menu">Сбросить управление в меню</string>
  <string name="controller_pause_title">Комбинация для паузы в гонке</string>
- <string name="controller_pause_hint">Удерживайте обе назначенные кнопки, чтобы приостановить гонку.</string>
+ <string name="controller_pause_hint">Назначьте две кнопки и удерживайте обе для паузы. Направления крестовины и аналоговые входы не поддерживаются.</string>
  <string name="controller_device_type">Тип устройства</string>
  <string name="controller_change_type">Изменить тип устройства…</string>
  <string name="controller_role_hint">Для пульта телевизора выберите Пульт / клавиатура, чтобы он не занимал место игрока.</string>
@@ -209,6 +209,8 @@
  <string name="controller_disable">Отключить</string>
  <string name="controller_shortcut_disabled">Отключено</string>
  <string name="controller_pause_first">Нажмите первую кнопку.</string>
- <string name="controller_pause_second">Нажмите другую кнопку.</string>
+ <string name="controller_pause_second">Нажмите вторую кнопку.</string>
  <string name="controller_pause_different">Выберите другую кнопку.</string>
+ <string name="controller_button_actions_hint">Confirm и Back принимают только кнопки (без крестовины и аналоговых входов).</string>
+ <string name="controller_buttons_only">Используйте кнопку контроллера. Направления крестовины и аналоговые входы не поддерживаются.</string>
 </resources>

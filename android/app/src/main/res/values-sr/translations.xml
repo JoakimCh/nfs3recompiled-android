@@ -190,7 +190,7 @@
  <string name="controller_details_hide">Сакриј детаље улаза</string>
  <string name="controller_reset_menu">Ресетуј контроле менија</string>
  <string name="controller_pause_title">Пречица за паузу трке</string>
- <string name="controller_pause_hint">Држите оба додељена дугмета да паузирате трку.</string>
+ <string name="controller_pause_hint">Доделите два дугмета и држите оба за паузу. Смерови D-pad контроле и аналогни улази нису подржани.</string>
  <string name="controller_device_type">Тип уређаја</string>
  <string name="controller_change_type">Промени тип уређаја…</string>
  <string name="controller_role_hint">За даљински управљач телевизора изаберите Даљински управљач / тастатура како не би заузимао место играча.</string>
@@ -211,4 +211,6 @@
  <string name="controller_pause_first">Притисните прво дугме.</string>
  <string name="controller_pause_second">Притисните друго дугме.</string>
  <string name="controller_pause_different">Изаберите друго дугме.</string>
+ <string name="controller_button_actions_hint">Confirm и Back прихватају само дугмад (без D-pad контроле и аналогних улаза).</string>
+ <string name="controller_buttons_only">Користите дугме контролера. Смерови D-pad контроле и аналогни улази нису подржани.</string>
 </resources>

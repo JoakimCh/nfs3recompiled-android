@@ -190,7 +190,7 @@
  <string name="controller_details_hide">Dölj inmatningsdetaljer</string>
  <string name="controller_reset_menu">Återställ menykontroller</string>
  <string name="controller_pause_title">Knappkombination för paus</string>
- <string name="controller_pause_hint">Håll båda tilldelade knapparna intryckta för att pausa ett lopp.</string>
+ <string name="controller_pause_hint">Tilldela två handkontrollknappar och håll båda intryckta för att pausa. Styrkorsets riktningar och analoga inmatningar stöds inte.</string>
  <string name="controller_device_type">Enhetstyp</string>
  <string name="controller_change_type">Ändra enhetstyp…</string>
  <string name="controller_role_hint">Välj Fjärrkontroll / tangentbord för en TV-fjärrkontroll så att den inte tar en spelarplats.</string>
@@ -209,6 +209,8 @@
  <string name="controller_disable">Inaktivera</string>
  <string name="controller_shortcut_disabled">Inaktiverad</string>
  <string name="controller_pause_first">Tryck på den första knappen.</string>
- <string name="controller_pause_second">Tryck på en annan knapp.</string>
+ <string name="controller_pause_second">Tryck på den andra knappen.</string>
  <string name="controller_pause_different">Välj en annan knapp.</string>
+ <string name="controller_button_actions_hint">Confirm och Back accepterar bara knappar (inte styrkors eller analoga inmatningar).</string>
+ <string name="controller_buttons_only">Använd en handkontrollknapp. Styrkorsets riktningar och analoga inmatningar stöds inte.</string>
 </resources>

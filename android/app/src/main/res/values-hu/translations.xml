@@ -190,7 +190,7 @@
  <string name="controller_details_hide">Bemeneti részletek elrejtése</string>
  <string name="controller_reset_menu">Menüvezérlés alaphelyzetbe állítása</string>
  <string name="controller_pause_title">Versenyszünet-gombkombináció</string>
- <string name="controller_pause_hint">A verseny szüneteltetéséhez tartsd lenyomva mindkét hozzárendelt gombot.</string>
+ <string name="controller_pause_hint">Rendelj hozzá két gombot, és tartsd mindkettőt lenyomva a szüneteltetéshez. A D-pad irányai és az analóg bemenetek nem támogatottak.</string>
  <string name="controller_device_type">Eszköztípus</string>
  <string name="controller_change_type">Eszköztípus módosítása…</string>
  <string name="controller_role_hint">TV-távirányítóhoz válassza a Távirányító / billentyűzet típust, hogy ne foglaljon játékoshelyet.</string>
@@ -209,6 +209,8 @@
  <string name="controller_disable">Kikapcsolás</string>
  <string name="controller_shortcut_disabled">Kikapcsolva</string>
  <string name="controller_pause_first">Nyomd meg az első gombot.</string>
- <string name="controller_pause_second">Nyomj meg egy másik gombot.</string>
+ <string name="controller_pause_second">Nyomd meg a második gombot.</string>
  <string name="controller_pause_different">Válassz egy másik gombot.</string>
+ <string name="controller_button_actions_hint">A Confirm és a Back csak gombokat fogad el (D-pad és analóg bemenet nélkül).</string>
+ <string name="controller_buttons_only">Használj egy kontrollergombot. A D-pad irányai és az analóg bemenetek nem támogatottak.</string>
 </resources>

@@ -61,6 +61,14 @@ public class ControllerSetupActivityTest {
     private void send(ControllerSetupActivity activity,int key,boolean down) {
         activity.dispatchKeyEvent(new android.view.KeyEvent(40,40,down?0:1,key,0,0,40,0,0,android.view.InputDevice.SOURCE_GAMEPAD));
     }
+    @Test public void buttonOnlyAssignmentsRejectDirectionsAndAxes() {
+        for(int code:new int[]{96,97,102,108,109,250})
+            assertTrue(ControllerSetupActivity.assignableButton(new ControllerProfile.Binding(code)));
+        for(int code:new int[]{19,20,21,22,23,198,199,200,201})
+            assertFalse(ControllerSetupActivity.assignableButton(new ControllerProfile.Binding(code)));
+        for(int axis:new int[]{0,1,15,16,17,18})
+            assertFalse(ControllerSetupActivity.assignableButton(new ControllerProfile.Binding(axis,1,0,2)));
+    }
     @Test public void opensWithButtonOnlyControllerAndAssignsInput() {
         android.app.Application app=org.robolectric.RuntimeEnvironment.getApplication();InputDeviceRoles.initialize(app);
         android.view.InputDevice input=org.robolectric.shadows.ShadowInputDevice.makeInputDeviceNamed("Button-only test pad");
@@ -85,15 +93,38 @@ public class ControllerSetupActivityTest {
             assertNotNull(findButton(root,"Start test"));assertNull(findButton(root,"Stop test"));
             assertFalse(org.robolectric.util.ReflectionHelpers.getField(controller.get(),"releaseGate"));
             assertFalse(ControllerProfiles.load(controller.get(),input).hasRacePause());
+            android.widget.Button[] assignments=org.robolectric.util.ReflectionHelpers.getField(controller.get(),"assignButtons");
+            for(int action:new int[]{4,5}) {
+                assignments[action].performClick();
+                org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idleFor(java.time.Duration.ofMillis(350));
+                send(controller.get(),19,true);send(controller.get(),19,false);
+                assertNull(ControllerProfiles.load(controller.get(),input).bindings[action]);
+                assertEquals(action,(int)org.robolectric.util.ReflectionHelpers.getField(controller.get(),"waiting"));
+                assertNotNull(find(root,controller.get().getString(R.string.controller_buttons_only)));
+                controller.get().onBackPressed();
+            }
             root.findViewWithTag("race-pause-assign").performClick();
             org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idleFor(java.time.Duration.ofMillis(350));
+            TextView pairValue=root.findViewWithTag("race-pause-value"),prompt=root.findViewWithTag("race-pause-prompt");
+            assertEquals("… + …",pairValue.getText().toString());
+            assertEquals(View.VISIBLE,prompt.getVisibility());
+            assertEquals(controller.get().getString(R.string.controller_pause_first),prompt.getText().toString());
+            send(controller.get(),22,true);send(controller.get(),22,false);
+            assertEquals(controller.get().getString(R.string.controller_buttons_only),prompt.getText().toString());
+            assertFalse(ControllerProfiles.load(controller.get(),input).hasRacePause());
             send(controller.get(),102,true);send(controller.get(),102,false);
+            assertEquals(controller.get().getString(R.string.controller_pause_pair,ControllerProfiles.keyLabel(102),"…"),pairValue.getText().toString());
+            assertEquals(controller.get().getString(R.string.controller_pause_second),prompt.getText().toString());
+            assertEquals(View.VISIBLE,prompt.getVisibility());
             assertFalse(ControllerProfiles.load(controller.get(),input).hasRacePause());
             send(controller.get(),102,true);send(controller.get(),102,false); // Duplicate first button is rejected.
+            assertEquals(controller.get().getString(R.string.controller_pause_different),prompt.getText().toString());
             assertFalse(ControllerProfiles.load(controller.get(),input).hasRacePause());
             send(controller.get(),108,true);send(controller.get(),108,false);
             ControllerProfile pair=ControllerProfiles.load(controller.get(),input);
             assertEquals(102,pair.racePauseFirst.code);assertEquals(108,pair.racePauseSecond.code);
+            assertEquals(View.GONE,prompt.getVisibility());
+            assertEquals(controller.get().getString(R.string.controller_pause_pair,ControllerProfiles.keyLabel(102),ControllerProfiles.keyLabel(108)),pairValue.getText().toString());
             assertEquals(99,pair.bindings[0].code);
             assertNotNull(findButton(root,"Start test"));assertNull(findButton(root,"Stop test"));
             assertFalse(org.robolectric.util.ReflectionHelpers.getField(controller.get(),"releaseGate"));

@@ -190,7 +190,7 @@
  <string name="controller_details_hide">Ocultar detalles de entrada</string>
  <string name="controller_reset_menu">Restablecer controles de menú</string>
  <string name="controller_pause_title">Atajo para pausar la carrera</string>
- <string name="controller_pause_hint">Mantén pulsados los dos botones asignados para pausar una carrera.</string>
+ <string name="controller_pause_hint">Asigna dos botones del mando y mantén ambos pulsados para pausar. No se admiten direcciones de la cruceta ni entradas analógicas.</string>
  <string name="controller_device_type">Tipo de dispositivo</string>
  <string name="controller_change_type">Cambiar tipo de dispositivo…</string>
  <string name="controller_role_hint">Elige Mando a distancia / teclado para un mando de TV, para que no ocupe un puesto de jugador.</string>
@@ -209,6 +209,8 @@
  <string name="controller_disable">Desactivar</string>
  <string name="controller_shortcut_disabled">Desactivado</string>
  <string name="controller_pause_first">Pulsa el primer botón.</string>
- <string name="controller_pause_second">Pulsa un botón diferente.</string>
+ <string name="controller_pause_second">Pulsa el segundo botón.</string>
  <string name="controller_pause_different">Elige un botón diferente.</string>
+ <string name="controller_button_actions_hint">Confirm y Back solo admiten botones (sin cruceta ni entradas analógicas).</string>
+ <string name="controller_buttons_only">Usa un botón del mando. No se admiten direcciones de la cruceta ni entradas analógicas.</string>
 </resources>

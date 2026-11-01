@@ -190,7 +190,7 @@
  <string name="controller_details_hide">Invoerdetails verbergen</string>
  <string name="controller_reset_menu">Menubediening herstellen</string>
  <string name="controller_pause_title">Knoppencombinatie voor pauze</string>
- <string name="controller_pause_hint">Houd beide toegewezen knoppen ingedrukt om een race te pauzeren.</string>
+ <string name="controller_pause_hint">Wijs twee knoppen toe en houd beide ingedrukt om te pauzeren. D-padrichtingen en analoge invoer worden niet ondersteund.</string>
  <string name="controller_device_type">Apparaattype</string>
  <string name="controller_change_type">Apparaattype wijzigen…</string>
  <string name="controller_role_hint">Kies Afstandsbediening / toetsenbord voor een tv-afstandsbediening, zodat die geen spelersplek bezet.</string>
@@ -209,6 +209,8 @@
  <string name="controller_disable">Uitschakelen</string>
  <string name="controller_shortcut_disabled">Uitgeschakeld</string>
  <string name="controller_pause_first">Druk op de eerste knop.</string>
- <string name="controller_pause_second">Druk op een andere knop.</string>
+ <string name="controller_pause_second">Druk op de tweede knop.</string>
  <string name="controller_pause_different">Kies een andere knop.</string>
+ <string name="controller_button_actions_hint">Confirm en Back accepteren alleen knoppen (geen D-pad of analoge invoer).</string>
+ <string name="controller_buttons_only">Gebruik een gamepadknop. D-padrichtingen en analoge invoer worden niet ondersteund.</string>
 </resources>

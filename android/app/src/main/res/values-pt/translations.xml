@@ -190,7 +190,7 @@
  <string name="controller_details_hide">Ocultar detalhes de entrada</string>
  <string name="controller_reset_menu">Repor controlos dos menus</string>
  <string name="controller_pause_title">Atalho de pausa na corrida</string>
- <string name="controller_pause_hint">Mantém premidos os dois botões atribuídos para pausar a corrida.</string>
+ <string name="controller_pause_hint">Atribui dois botões e mantém ambos premidos para pausar. As direções do D-pad e as entradas analógicas não são suportadas.</string>
  <string name="controller_device_type">Tipo de dispositivo</string>
  <string name="controller_change_type">Alterar tipo de dispositivo…</string>
  <string name="controller_role_hint">Escolha Telecomando / teclado para um telecomando de TV, para que não ocupe um lugar de jogador.</string>
@@ -209,6 +209,8 @@
  <string name="controller_disable">Desativar</string>
  <string name="controller_shortcut_disabled">Desativado</string>
  <string name="controller_pause_first">Prime o primeiro botão.</string>
- <string name="controller_pause_second">Prime um botão diferente.</string>
+ <string name="controller_pause_second">Prime o segundo botão.</string>
  <string name="controller_pause_different">Escolhe um botão diferente.</string>
+ <string name="controller_button_actions_hint">Confirm e Back aceitam apenas botões (sem D-pad ou entradas analógicas).</string>
+ <string name="controller_buttons_only">Usa um botão do comando. As direções do D-pad e as entradas analógicas não são suportadas.</string>
 </resources>

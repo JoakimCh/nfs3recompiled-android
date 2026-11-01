@@ -190,7 +190,7 @@
  <string name="controller_details_hide">Енгізу мәліметтерін жасыру</string>
  <string name="controller_reset_menu">Мәзір басқаруын қалпына келтіру</string>
  <string name="controller_pause_title">Жарысты кідірту тіркесімі</string>
- <string name="controller_pause_hint">Жарысты кідірту үшін тағайындалған екі түймені де басып тұрыңыз.</string>
+ <string name="controller_pause_hint">Екі түймені тағайындап, кідірту үшін екеуін де басып тұрыңыз. D-pad бағыттары мен аналогтік кірістерге қолдау көрсетілмейді.</string>
  <string name="controller_device_type">Құрылғы түрі</string>
  <string name="controller_change_type">Құрылғы түрін өзгерту…</string>
  <string name="controller_role_hint">Теледидар пульті ойыншы орнын алмауы үшін Пульт / пернетақта түрін таңдаңыз.</string>
@@ -209,6 +209,8 @@
  <string name="controller_disable">Өшіру</string>
  <string name="controller_shortcut_disabled">Өшірілген</string>
  <string name="controller_pause_first">Бірінші түймені басыңыз.</string>
- <string name="controller_pause_second">Басқа түймені басыңыз.</string>
+ <string name="controller_pause_second">Екінші түймені басыңыз.</string>
  <string name="controller_pause_different">Басқа түймені таңдаңыз.</string>
+ <string name="controller_button_actions_hint">Confirm және Back тек түймелерді қабылдайды (D-pad пен аналогтік кірістерден басқа).</string>
+ <string name="controller_buttons_only">Контроллер түймесін пайдаланыңыз. D-pad бағыттары мен аналогтік кірістерге қолдау көрсетілмейді.</string>
 </resources>
