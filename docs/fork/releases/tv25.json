@@ -1,0 +1,38 @@
+{
+  "version": "0.78-armv7-tv25-profile",
+  "versionCode": 102,
+  "source_commit": "3f3236ec8fc4bf7b909fd8c0acc099467a409a97",
+  "uncommitted_changes": false,
+  "apk": "nfs3-0.78-armv7-tv25-profile-release.apk",
+  "apk_sha256": "6b6060fe05851fc18f522672dcfb01630374accec0f93852d2218fe3dc3f7535",
+  "native_build_id": "3081ae6db34aa27c64ba5d1f0464fd83a75fbb78",
+  "certificate_sha256": "464eab8f658b68c234e80e85f5bcb6c5a79771600ac04c0f9d5458769c27b60e",
+  "native_files": [
+    "lib/armeabi-v7a/libSDL3.so",
+    "lib/armeabi-v7a/libandroidx.graphics.path.so",
+    "lib/armeabi-v7a/libc++_shared.so",
+    "lib/armeabi-v7a/libmain.so"
+  ],
+  "debuggable": false,
+  "shell_profileable": true,
+  "zip_alignment_bytes": 16384,
+  "device_tested": false,
+  "resource_check": {
+    "apk": "nfs3-0.78-armv7-tv25-profile-release.apk",
+    "app_resources_checked": 296,
+    "packaged_app_int_fields": 296,
+    "mismatches": [],
+    "duplicate_fields": [],
+    "passed": true
+  },
+  "ui_tests": [
+    {
+      "name": "dev.nfs3hp.port.ControllerSetupActivityTest",
+      "tests": "6",
+      "failures": "0",
+      "errors": "0"
+    }
+  ],
+  "matching_symbols": "nfs3-0.78-armv7-tv24-profile-symbols.zip (native libraries identical)",
+  "notes": "Pinned gamepad header; content constrained and clipped below it. Six page checks passed; device verification pending."
+}
