@@ -7,6 +7,7 @@ final class ControllerProfile {
     static final String[] NAMES={"Up","Down","Left","Right","Confirm / press","Back"};
     final String identity;
     final Binding[] bindings=new Binding[6];
+    Binding racePauseModifier; // null disables the race-only Back combination.
     private final HashSet<Integer> keys=new HashSet<>();
     private final float[] axes=new float[64];
     private final boolean[] held=new boolean[6];
@@ -42,11 +43,14 @@ final class ControllerProfile {
         boolean sameInput(Binding b) { return b!=null && axis==b.axis && code==b.code && (!axis || sign==b.sign); }
     }
     void assign(int action,Binding value) {
-        bindings[action]=value;release();
+        bindings[action]=value;
+        if(action==5 && racePauseModifier!=null &&
+            samePauseButton(racePauseModifier.code,value==null?97:value.code))racePauseModifier=null;
+        release();
     }
     boolean usesKey(int code) {
         for(Binding b:bindings)if(b!=null && !b.axis && b.code==code)return true;
-        return false;
+        return racePauseModifier!=null && racePauseModifier.code==code;
     }
     void key(int code,boolean down) { keysSeen=true;if(down)keys.add(code);else keys.remove(code); }
     void axis(int code,float value) {
@@ -126,6 +130,30 @@ final class ControllerProfile {
             if(held[i])state|=1L<<(8+i);
         }
         return state;
+    }
+    // Separate from the menu snapshot: physical sources must remain available
+    // even when a racing assignment claims their virtual buttons.
+    static boolean samePauseButton(int first,int second) {
+        int logical=logicalButton(first);
+        return first==second || (logical>=0 && logical==logicalButton(second));
+    }
+    long racePauseSnapshot() {
+        if(racePauseModifier==null)return 0;
+        Binding back=bindings[5];
+        int backCode=back==null?97:back.code;
+        if(samePauseButton(backCode,racePauseModifier.code))return 0;
+        int b=logicalButton(backCode),m=logicalButton(racePauseModifier.code);
+        long sources=(b<0?0:1L<<b)|(m<0?0:1L<<m);
+        long menuSources=1L<<1;
+        for(int i=0;i<6;i++) {
+            Binding input=bindings[i];
+            int code=input==null?(i<4?19+i:i==4?96:97):input.axis?-1:input.code;
+            if(code==backCode || code==racePauseModifier.code)
+                menuSources|=1L<<(i<4?10+i:i==4?0:1);
+        }
+        return (menuSources<<32)|sources|(1L<<16)|(keys.contains(backCode)?1L<<17:0)
+            |(keys.contains(racePauseModifier.code)?1L<<18:0)
+            |((long)(b+1)<<20)|((long)(m+1)<<25);
     }
     // Android keycodes -> existing virtual button identity; no vendor IDs.
     static int logicalButton(int code) {

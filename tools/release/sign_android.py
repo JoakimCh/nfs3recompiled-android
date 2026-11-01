@@ -20,7 +20,8 @@ def main():
     parser.add_argument('--output-dir', type=Path, required=True)
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[2]
-    bt = args.sdk.resolve() / 'build-tools/36.0.0'
+    toolchain = json.loads((root / 'tools/android-toolchain.json').read_text())
+    bt = args.sdk.resolve() / 'build-tools' / toolchain['buildTools']
     env = os.environ.copy()
     env['LD_LIBRARY_PATH'] = str(bt / 'lib64') + ':' + env.get('LD_LIBRARY_PATH', '')
 
@@ -53,7 +54,7 @@ def main():
     manifest = run([bt / 'aapt', 'dump', 'xmltree', apk, 'AndroidManifest.xml'])
     if 'android:debuggable' in manifest or 'profileable' not in manifest or not re.search(r'android:shell[^\n]*0xffffffff', manifest):
         raise RuntimeError('Expected non-debug, shell-profileable release')
-    readelf = (args.sdk.resolve() / 'ndk/28.2.13676358/toolchains/llvm/prebuilt'
+    readelf = (args.sdk.resolve() / 'ndk' / toolchain['ndk'] / 'toolchains/llvm/prebuilt'
                / 'linux-x86_64/bin/llvm-readelf')
 
     def build_id(file):
@@ -95,7 +96,7 @@ def main():
                'native_build_id': identity, 'certificate_sha256': certificate,
                'native_files': libraries, 'debuggable': False, 'shell_profileable': True,
                'zip_alignment_bytes': 16384, 'device_tested': False,
-               'resource_check': json.loads(resource_report.read_text())}
+               'resource_check': json.loads(resource_report.read_text()), 'toolchain': toolchain}
     report = out / ('nfs3-' + version + '-release.json')
     report.write_text(json.dumps(summary, indent=2) + '\n')
     with zipfile.ZipFile(symbols, 'a', zipfile.ZIP_DEFLATED) as z:

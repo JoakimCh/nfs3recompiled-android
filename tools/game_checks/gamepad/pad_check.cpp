@@ -312,6 +312,33 @@ int main() {
         SDL_SetJoystickVirtualButton(joy,directions[(d+1)%4],false); Gamepad::update(); assert(keys().empty());
         Gamepad::nativeButtons(0,0);
     }
+    // Race pause wins over in-game bindings; neither player supplies the
+    // other's modifier. Holding/re-pressing just one button must not repeat.
+    const std::uint64_t combo = 3ull | (1ull<<16) | (2ull<<20) | (1ull<<25) | (3ull<<32);
+    Gamepad::racePause(0,combo);Gamepad::nativeButtons(0,3);Gamepad::nativeButtons(1,1);
+    Gamepad::context(Gamepad::Context::Race);Gamepad::update();keys();
+    Gamepad::androidButton(0,1,true);Gamepad::update();assert(keys().empty());
+    assert(pad.getState().buttons==2);
+    Gamepad::androidButton(1,0,true);Gamepad::update();assert(keys().empty());
+    Gamepad::androidButton(1,0,false);Gamepad::androidButton(0,0,true);
+    Gamepad::update();expect(SDLK_ESCAPE,true);assert(pad.getState().buttons==0);
+    Gamepad::context(Gamepad::Context::Pause);Gamepad::update();expect(SDLK_ESCAPE,false);
+    Gamepad::update();assert(keys().empty());
+    Gamepad::androidButton(0,0,false);Gamepad::update();assert(keys().empty());
+    Gamepad::androidButton(0,0,true);Gamepad::update();assert(keys().empty());
+    Gamepad::androidButton(0,-1,false);Gamepad::update();assert(keys().empty());
+    // Modifier-first order works too. Capture never sends Escape.
+    Gamepad::context(Gamepad::Context::Capture);Gamepad::update();keys();
+    Gamepad::androidButton(0,0,true);Gamepad::androidButton(0,1,true);
+    Gamepad::update();assert(keys().empty());assert(pad.getState().buttons==3);
+    Gamepad::androidButton(0,-1,false);Gamepad::update();keys();
+    Gamepad::context(Gamepad::Context::Race);Gamepad::update();keys();
+    Gamepad::androidButton(0,0,true);Gamepad::update();assert(keys().empty());
+    assert(pad.getState().buttons==1);
+    Gamepad::androidButton(0,1,true);Gamepad::update();expect(SDLK_ESCAPE,true);
+    Gamepad::update();expect(SDLK_ESCAPE,false);Gamepad::update();assert(keys().empty());
+    Gamepad::androidButton(0,-1,false);Gamepad::update();keys();
+    Gamepad::racePause(0,0);Gamepad::nativeButtons(0,0);Gamepad::nativeButtons(1,0);
     // Button identity must not depend on the other slot. Held menu keys release on unplug.
     Gamepad::context(Gamepad::Context::Menu); Gamepad::update(); keys();
     SDL_SetJoystickVirtualAxis(joy,0,-24000); Gamepad::update(); expect(SDLK_LEFT,true);

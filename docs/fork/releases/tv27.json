@@ -1,0 +1,73 @@
+{
+  "version": "0.78-armv7-tv27-profile",
+  "versionCode": 104,
+  "source_commit": "6edf170db37a59fadb13bd2945dd82a2995c210e",
+  "uncommitted_changes": true,
+  "apk": "nfs3-0.78-armv7-tv27-profile-release.apk",
+  "apk_sha256": "f48ae692f0527b50f9995cda575012b69e47b21ec8f2e0bef3b6d90efb05b61d",
+  "native_build_id": "a40e67c876b1e0ec8442c86cdb36b6297d12dfc5",
+  "certificate_sha256": "464eab8f658b68c234e80e85f5bcb6c5a79771600ac04c0f9d5458769c27b60e",
+  "native_files": [
+    "lib/armeabi-v7a/libSDL3.so",
+    "lib/armeabi-v7a/libandroidx.graphics.path.so",
+    "lib/armeabi-v7a/libc++_shared.so",
+    "lib/armeabi-v7a/libmain.so"
+  ],
+  "debuggable": false,
+  "shell_profileable": true,
+  "zip_alignment_bytes": 16384,
+  "device_tested": true,
+  "resource_check": {
+    "apk": "nfs3-0.78-armv7-tv27-profile-release.apk",
+    "app_resources_checked": 296,
+    "packaged_app_int_fields": 296,
+    "mismatches": [],
+    "duplicate_fields": [],
+    "passed": true
+  },
+  "toolchain": {
+    "jdk": 25,
+    "gradle": "9.8.2",
+    "agp": "9.5.0",
+    "kotlin": "2.4.10",
+    "compileSdk": 37,
+    "platformPackage": "platforms;android-37.0",
+    "targetSdk": 36,
+    "buildTools": "37.0.0",
+    "ndk": "30.0.16248370",
+    "cmake": "4.4.5",
+    "sdl": "3.4.18",
+    "sdlCommit": "829a65d769d935c4852f8159e964312c0957260a"
+  },
+  "ui_tests": {
+    "tests": 7,
+    "failures": 0,
+    "skipped": 0,
+    "android_apis": [
+      34,
+      36
+    ]
+  },
+  "controller_checks": "passed with SDL 3.4.18",
+  "host_vertex_comparison": {
+    "functions": 45,
+    "cases_per_mode": 100,
+    "modes": 8,
+    "matching_functions": 44,
+    "baseline_discrepancies": [
+      "trackVertices"
+    ],
+    "old_and_new_output_identical": true,
+    "track_vertex_1000_case_comparison": "Same three NaN/finite discrepancies at identical cases with r28c and r30."
+  },
+  "matching_symbols": "nfs3-0.78-armv7-tv27-profile-symbols.zip",
+  "notes": "Toolchain/SDL update; Joakim reported testing the game without problems. Includes the tv26 race pause combination. Existing trackVertices host discrepancy reproduces unchanged with the old compiler.",
+  "java_runtime": "Temurin 25.0.5+8 LTS",
+  "clang": "21.0.0 (r574158c)",
+  "previous_build": "tv26, version 103",
+  "device_test": {
+    "reported_by": "Joakim",
+    "result": "Reported testing the game without problems.",
+    "coverage": "General game testing; specific device model and individual feature coverage were not recorded."
+  }
+}

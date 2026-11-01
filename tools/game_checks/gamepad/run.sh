@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 # Usage: run.sh /absolute/path/to/SDL-source /absolute/path/to/work-dir
-# Requires cmake, a host C++17 compiler and SDL 3.4.2 source.
+# Requires cmake, a host C++17 compiler and the SDL source pinned in tools/android-toolchain.json.
 root=$(cd "$(dirname "$0")/../../.." && pwd)
 sdl_source=$1
 check_work=$2

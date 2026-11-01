@@ -5,6 +5,28 @@ public final class ControllerProfileCheck {
     public static void main(String[] args) {
         ControllerProfile p=new ControllerProfile("one"),q=new ControllerProfile("two");
         check(p.snapshot()==0);
+        ControllerProfile combo=new ControllerProfile("combo");
+        check(combo.racePauseSnapshot()==0);
+        combo.racePauseModifier=new ControllerProfile.Binding(96);
+        long comboState=combo.racePauseSnapshot();
+        check((comboState&(1L<<16))!=0 && (comboState&3)==3);
+        check((comboState&(3L<<17))==0 && ((comboState>>32)&3)==3);
+        combo.key(97,true);check((combo.racePauseSnapshot()&(1L<<17))!=0);
+        check((combo.racePauseSnapshot()&(1L<<18))==0);
+        combo.key(96,true);check((combo.racePauseSnapshot()&(3L<<17))==(3L<<17));
+        check(q.racePauseSnapshot()==0);
+        combo.release();check((combo.racePauseSnapshot()&(3L<<17))==0);
+        combo.assign(5,new ControllerProfile.Binding(109));
+        check((combo.racePauseSnapshot()&(1L<<8))!=0);
+        combo.racePauseModifier=new ControllerProfile.Binding(4);
+        check(combo.racePauseSnapshot()==0); // Back/Select aliases are one button.
+        combo.racePauseModifier=new ControllerProfile.Binding(97);
+        combo.assign(5,null);check(combo.racePauseModifier==null);
+        combo.racePauseModifier=new ControllerProfile.Binding(250);
+        combo.key(250,true);check(combo.usesKey(250));
+        check((combo.racePauseSnapshot()&(1L<<18))!=0);
+        check(((combo.racePauseSnapshot()>>25)&31)==0); // unmapped Android key
+
         ControllerProfile hats=new ControllerProfile("generic hats");
         hats.axis(15,0);hats.axis(16,0);check(hats.snapshot()==0);
         hats.axis(16,-1);long automatic=hats.snapshot();

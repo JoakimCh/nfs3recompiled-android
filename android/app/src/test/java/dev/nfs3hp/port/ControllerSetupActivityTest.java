@@ -51,6 +51,18 @@ public class ControllerSetupActivityTest {
             controller.get().dispatchKeyEvent(new android.view.KeyEvent(10,11,1,99,0,0,40,0,0,android.view.InputDevice.SOURCE_GAMEPAD));
             assertNotNull(ControllerProfiles.load(controller.get(),input).bindings[0]);
             assertEquals(99,ControllerProfiles.load(controller.get(),input).bindings[0].code);layout(root);
+            assertNull(ControllerProfiles.load(controller.get(),input).racePauseModifier);
+            find(root,"Assign extra button").performClick();
+            org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idleFor(java.time.Duration.ofMillis(350));
+            controller.get().dispatchKeyEvent(new android.view.KeyEvent(20,20,0,97,0,0,40,0,0,android.view.InputDevice.SOURCE_GAMEPAD));
+            assertNull(ControllerProfiles.load(controller.get(),input).racePauseModifier);
+            controller.get().dispatchKeyEvent(new android.view.KeyEvent(20,21,1,97,0,0,40,0,0,android.view.InputDevice.SOURCE_GAMEPAD));
+            controller.get().dispatchKeyEvent(new android.view.KeyEvent(30,30,0,96,0,0,40,0,0,android.view.InputDevice.SOURCE_GAMEPAD));
+            controller.get().dispatchKeyEvent(new android.view.KeyEvent(30,31,1,96,0,0,40,0,0,android.view.InputDevice.SOURCE_GAMEPAD));
+            assertEquals(96,ControllerProfiles.load(controller.get(),input).racePauseModifier.code);
+            assertEquals(99,ControllerProfiles.load(controller.get(),input).bindings[0].code);
+            find(root,"Disable").performClick();
+            assertNull(ControllerProfiles.load(controller.get(),input).racePauseModifier);
             View scrolling=find(root,"Save input device report");
             while(!(scrolling instanceof android.widget.ScrollView)) scrolling=(View)scrolling.getParent();
             android.widget.ScrollView scroll=(android.widget.ScrollView)scrolling;

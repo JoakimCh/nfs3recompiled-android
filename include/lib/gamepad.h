@@ -186,6 +186,7 @@ public:
     enum class Context { Race, Menu, Pause, Capture };
     static void androidButton(unsigned slot, int button, bool down);
     static void controllerProfile(unsigned slot, std::uint64_t state);
+    static void racePause(unsigned slot, std::uint64_t state);
     static void nativeButtons(unsigned slot, x86::reg32 mask);
     static void context(Context context);
     /* Whether the touch overlay's steering buttons are what steers player
@@ -213,4 +214,3 @@ private:
 }
 
 #endif
-
