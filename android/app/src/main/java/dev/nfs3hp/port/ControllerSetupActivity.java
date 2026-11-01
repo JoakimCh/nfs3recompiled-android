@@ -33,12 +33,13 @@ public final class ControllerSetupActivity extends ComponentActivity implements 
     private InputDevice device;
     private ControllerProfile profile;
     private int waiting=-1;
-    private boolean armed,test;
+    private boolean armed,test,releaseGate;
+    private ControllerProfile.Binding pendingPauseFirst;
     private long armAt;
     private String descriptor="";
     private Button testButton, pauseAssign;
     private TextView pauseValue;
-    private String captureName(){return waiting==6?"race pause extra button":ControllerProfile.NAMES[waiting];}
+    private String captureName(){return ControllerProfile.NAMES[waiting];}
     private int dp(int value){return Math.round(value*getResources().getDisplayMetrics().density);}
     private TextView text(String value,int size) {
         TextView v=new TextView(this);v.setText(value);v.setTextSize(size);v.setTextColor(0xffdce1fa);
@@ -111,9 +112,9 @@ public final class ControllerSetupActivity extends ComponentActivity implements 
         detailPanel.addView(text(getString(R.string.controller_pause_hint),14));
         pauseValue=text("",14);detailPanel.addView(pauseValue);
         LinearLayout pauseRow=row();
-        pauseAssign=button("Assign extra button",()->{if(waiting==6){cancelCapture();updateStatus();}else begin(6);});
-        weighted(pauseRow,pauseAssign);
-        weighted(pauseRow,button("Disable",()->{cancelCapture();profile.racePauseModifier=null;save();}));
+        pauseAssign=button(getString(R.string.controller_assign),()->{if(waiting>=6){cancelCapture();updateStatus();}else begin(6);});
+        pauseAssign.setTag("race-pause-assign");weighted(pauseRow,pauseAssign);
+        weighted(pauseRow,button(getString(R.string.controller_disable),()->{cancelCapture();profile.setRacePause(null,null);save();}));
         detailPanel.addView(pauseRow);
         heading(detailPanel,getString(R.string.controller_device_type));roleLabel=text("",15);detailPanel.addView(roleLabel);
         detailPanel.addView(button(getString(R.string.controller_change_type),()->showRole(device)));
@@ -125,7 +126,7 @@ public final class ControllerSetupActivity extends ComponentActivity implements 
         refreshDevices();
     }
     @Override protected void onResume(){super.onResume();((InputManager)getSystemService(INPUT_SERVICE)).registerInputDeviceListener(this,null);refreshDevices();}
-    @Override protected void onPause(){((InputManager)getSystemService(INPUT_SERVICE)).unregisterInputDeviceListener(this);handler.removeCallbacks(arm);cancelCapture();test=false;testButton.setText("Start test");if(profile!=null){profile.release();showFunctions();}down.clear();super.onPause();}
+    @Override protected void onPause(){((InputManager)getSystemService(INPUT_SERVICE)).unregisterInputDeviceListener(this);handler.removeCallbacks(arm);cancelCapture();test=false;testButton.setText("Start test");if(profile!=null){profile.release();showFunctions();}down.clear();releaseGate=false;super.onPause();}
     @Override protected void onSaveInstanceState(Bundle out){super.onSaveInstanceState(out);out.putString("controller",descriptor);out.putBoolean("show_others",showOthers);out.putBoolean("expanded",expanded);}
     private void choosePlayer(int slot) {
         List<GamepadSlots.Pad> pads=GamepadSlots.attached();String[] names=new String[pads.size()+1];names[0]=getString(R.string.controller_automatic);
@@ -177,14 +178,14 @@ public final class ControllerSetupActivity extends ComponentActivity implements 
             Button role=button(getString(R.string.controller_change_type),()->showRole(input));role.setTag("role:"+input.getDescriptor());card.addView(role);otherDevices.addView(card);
         }
         if(selected==null && !pads.isEmpty()){select(GamepadSlots.device(pads.get(0)));return;}
-        if(selected==null){device=null;profile=null;waiting=-1;test=false;testButton.setText("Start test");down.clear();}
+        if(selected==null){releaseGate=false;pendingPauseFirst=null;device=null;profile=null;waiting=-1;test=false;testButton.setText("Start test");down.clear();}
         else if(device==null || selected.getId()!=device.getId()){select(selected);return;}
         updateStatus();
         if(focusTag!=null){android.view.View replacement=content.findViewWithTag(focusTag);if(replacement!=null)replacement.requestFocus();}
     }
     private void select(InputDevice selected) {
         if(selected==null)return;
-        cancelCapture();device=selected;descriptor=selected.getDescriptor();profile=ControllerProfiles.load(this,selected);expanded=true;
+        cancelCapture();releaseGate=false;device=selected;descriptor=selected.getDescriptor();profile=ControllerProfiles.load(this,selected);expanded=true;
         down.clear();java.util.Arrays.fill(latest,0);
         for(InputDevice.MotionRange r:device.getMotionRanges())if(joystick(r) && r.getAxis()>=0 && r.getAxis()<64)latest[r.getAxis()]=rest(r);
         test=false;testButton.setText("Start test");refreshDevices();refreshRows();showFunctions();
@@ -194,15 +195,19 @@ public final class ControllerSetupActivity extends ComponentActivity implements 
         assignButtons[i].setText(waiting==i?"Cancel":"Assign");
         assignButtons[i].setActivated(waiting==i);
     }
-        if(pauseValue!=null)pauseValue.setText(profile==null || profile.racePauseModifier==null?"Disabled":
-            "Back + "+ControllerProfiles.keyLabel(profile.racePauseModifier.code));
-        if(pauseAssign!=null)pauseAssign.setText(waiting==6?"Cancel":"Assign extra button");
+        if(pauseValue!=null)pauseValue.setText(profile==null || !profile.hasRacePause()?getString(R.string.controller_shortcut_disabled):
+            getString(R.string.controller_pause_pair,ControllerProfiles.keyLabel(profile.racePauseFirst.code),
+                ControllerProfiles.keyLabel(profile.racePauseSecond.code)));
+        if(pauseAssign!=null)pauseAssign.setText(getString(waiting>=6?R.string.controller_cancel:R.string.controller_assign));
     }
     private void save(){ControllerProfiles.save(this,profile);refreshRows();updateStatus();}
-    private void cancelCapture(){waiting=-1;armed=false;handler.removeCallbacks(arm);refreshRows();}
+    private void cancelCapture(){
+        if(waiting>=0)releaseGate=device!=null && !neutral();
+        waiting=-1;armed=false;pendingPauseFirst=null;handler.removeCallbacks(arm);refreshRows();
+    }
     private void begin(int action) {
         if(profile==null){status.setText("Connect and select a gamepad first.");return;}
-        waiting=action;armed=false;armAt=android.os.SystemClock.uptimeMillis()+300;
+        pendingPauseFirst=null;releaseGate=false;waiting=action;armed=false;armAt=android.os.SystemClock.uptimeMillis()+300;
         handler.removeCallbacks(arm);handler.post(arm);updateStatus();
     }
     private float rest(InputDevice.MotionRange r) {
@@ -222,27 +227,32 @@ public final class ControllerSetupActivity extends ComponentActivity implements 
         else handler.postDelayed(this,100);
     }};
     private void captured(ControllerProfile.Binding binding) {
-        int backCode=profile.bindings[5]==null?97:profile.bindings[5].code;
-        if(waiting==6) {
-            if(binding.axis || ControllerProfile.samePauseButton(binding.code,backCode)) {
-                status.setText("Choose a different button from Back.");return;
+        if(waiting>=6) {
+            if(binding.axis)return;
+            if(waiting==6) {
+                pendingPauseFirst=binding;waiting=7;armed=false;
+                armAt=android.os.SystemClock.uptimeMillis();
+                handler.removeCallbacks(arm);handler.post(arm);updateStatus();return;
             }
-            profile.racePauseModifier=binding;
-            cancelCapture();test=true;testButton.setText("Stop test");save();return;
-        }
-        if(waiting==5 && profile.racePauseModifier!=null && ControllerProfile.samePauseButton(binding.code,profile.racePauseModifier.code)) {
-            status.setText("This is the race pause extra button. Disable or change it first.");return;
+            if(ControllerProfile.samePauseButton(pendingPauseFirst.code,binding.code)) {
+                status.setText(getString(R.string.controller_pause_different));return;
+            }
+            profile.setRacePause(pendingPauseFirst,binding);
+            cancelCapture();profile.release();save();return;
         }
         for(int i=0;i<6;i++)if(i!=waiting && binding.sameInput(profile.bindings[i])) {
             status.setText("Already assigned to "+ControllerProfile.NAMES[i]+". Reset that assignment first, or press another control.");return;
         }
-        profile.assign(waiting,binding);cancelCapture();test=true;testButton.setText("Stop test");save();
+        profile.assign(waiting,binding);cancelCapture();save();
     }
     private void updateStatus() {
         if(status==null)return;
         refreshRows();detailPanel.setVisibility(device!=null && expanded?android.view.View.VISIBLE:android.view.View.GONE);
         if(device!=null){selectedTitle.setText(device.getName());roleLabel.setText(InputDeviceRoles.description(device));}
         if(device==null){status.setText("No selected gamepad connected.");functions.setText("");refreshRows();return;}
+        if(waiting>=6) {
+            status.setText(getString(waiting==6?R.string.controller_pause_first:R.string.controller_pause_second));return;
+        }
         status.setText(waiting>=0?(armed?(waiting<4?"Press a button or move an axis for ":"Press a button for ")+captureName()+".":"Release all controls to assign "+captureName()+"…"):
             device.getName()+(test?" — test active":" — ready"));
     }
@@ -264,9 +274,11 @@ public final class ControllerSetupActivity extends ComponentActivity implements 
             profile.key(event.getKeyCode(),event.getAction()==KeyEvent.ACTION_DOWN);
             raw.setText("Android button: "+KeyEvent.keyCodeToString(event.getKeyCode())+" ("+event.getKeyCode()+"), scan "+event.getScanCode()+
                 (event.getAction()==KeyEvent.ACTION_DOWN?" · pressed":" · released"));
-            boolean reserved=test || waiting>=0;
+            boolean reserved=test || waiting>=0 || releaseGate;
             if(waiting>=0 && armed && event.getAction()==KeyEvent.ACTION_DOWN && event.getRepeatCount()==0)
                 captured(new ControllerProfile.Binding(event.getKeyCode()));
+            if(waiting>=0 && !armed){handler.removeCallbacks(arm);arm.run();}
+            if(releaseGate && neutral()){releaseGate=false;profile.release();}
             showFunctions();if(reserved)return true;
         }
         return super.dispatchKeyEvent(event);
@@ -281,8 +293,10 @@ public final class ControllerSetupActivity extends ComponentActivity implements 
                 if(amount>.05f)description.append(' ').append(MotionEvent.axisToString(a)).append('=').append(String.format(java.util.Locale.ROOT,"%.2f",v));
                 if(amount>.25f && amount>strongest){strongest=amount;candidate=new ControllerProfile.Binding(a,delta>0?1:-1,rest(r),r.getRange());}
             }
-            raw.setText(description.toString());boolean reserved=test || waiting>=0;
+            raw.setText(description.toString());boolean reserved=test || waiting>=0 || releaseGate;
             if(waiting>=0 && waiting<4 && armed && candidate!=null)captured(candidate);
+            if(waiting>=0 && !armed){handler.removeCallbacks(arm);arm.run();}
+            if(releaseGate && neutral()){releaseGate=false;profile.release();}
             showFunctions();if(reserved)return true;
         }
         return super.dispatchGenericMotionEvent(event);

@@ -123,6 +123,34 @@ public class LauncherSettingsTest {
         }
     }
 
+    @Test public void pairRoundTripAndOldV2ImportReplaceTheCurrentShortcut() throws Exception {
+        preferences.edit().putString(profile+"race_pause_first","k:102")
+            .putString(profile+"race_pause_second","k:108").commit();
+        byte[] pair=snapshot();
+        assertEquals(3,new JSONObject(new String(pair,StandardCharsets.UTF_8)).getInt("format"));
+        preferences.edit().clear().commit();restore(pair);
+        assertEquals("k:102",preferences.getString(profile+"race_pause_first",""));
+        assertEquals("k:108",preferences.getString(profile+"race_pause_second",""));
+        JSONObject old=new JSONObject().put("format",2).put("settings",new JSONObject()
+            .put(profile+"5",new JSONObject().put("type","string").put("value","k:109"))
+            .put(profile+"race_pause_modifier",new JSONObject().put("type","string").put("value","k:108")));
+        restore(old.toString().getBytes(StandardCharsets.UTF_8));
+        assertFalse(preferences.contains(profile+"race_pause_first"));
+        assertFalse(preferences.contains(profile+"race_pause_second"));
+        assertEquals("k:108",preferences.getString(profile+"race_pause_modifier",""));
+    }
+
+    @Test public void incompleteOrDuplicatePausePairsCannotChangePreferences() throws Exception {
+        preferences.edit().putInt(GamePreferences.FPS_CAP,60).commit();Map<String,?> before=preferences.getAll();
+        JSONObject first=new JSONObject().put("type","string").put("value","k:109");
+        for(JSONObject settings:Arrays.asList(new JSONObject().put(profile+"race_pause_first",first),
+            new JSONObject().put(profile+"race_pause_first",first).put(profile+"race_pause_second",
+                new JSONObject().put("type","string").put("value","k:4")))) {
+            byte[] bytes=new JSONObject().put("format",3).put("settings",settings).toString().getBytes(StandardCharsets.UTF_8);
+            assertThrows(IOException.class,()->restore(bytes));assertEquals(before,preferences.getAll());
+        }
+    }
+
     @Test public void backupFailureAbortsImport() throws Exception {
         byte[] defaults = snapshot();
         preferences.edit().putInt(GamePreferences.FPS_CAP, 90).commit();

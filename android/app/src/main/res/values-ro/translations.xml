@@ -190,7 +190,7 @@
  <string name="controller_details_hide">Ascunde detaliile intrării</string>
  <string name="controller_reset_menu">Resetează comenzile meniurilor</string>
  <string name="controller_pause_title">Combinație pentru pauză în cursă</string>
- <string name="controller_pause_hint">Ține apăsat butonul Înapoi din meniuri și încă un buton pentru a pune o cursă pe pauză.</string>
+ <string name="controller_pause_hint">Ține apăsate ambele butoane atribuite pentru a pune cursa pe pauză.</string>
  <string name="controller_device_type">Tip de dispozitiv</string>
  <string name="controller_change_type">Schimbă tipul dispozitivului…</string>
  <string name="controller_role_hint">Pentru o telecomandă TV, alege Telecomandă / tastatură ca să nu ocupe un loc de jucător.</string>
@@ -204,4 +204,11 @@
  <string name="faq_screen_data"><b>Afișaj și fișierele jocului</b>\nAfișaj controlează orientarea și limita de cadre pe secundă. O limită mai mică poate reduce consumul. Fișiere și copii de siguranță gestionează fișierele de joc importate, salvările și copiile setărilor lansatorului. Alege fișiere de joc active înainte de a juca.</string>
  <string name="faq_mapping"><b>Gamepaduri</b>\nÎn Comenzi → Gamepaduri, alege un gamepad pentru fiecare jucător, testează intrările și modifică comenzile meniurilor. Automat folosește gamepadurile rămase în ordinea conectării. Atribuirile salvate rămân rezervate când dispozitivele sunt deconectate. Configurează comenzile de cursă în joc. Dacă butonul Înapoi din meniuri este folosit la condus, configurează o Combinație pentru pauză în cursă: ține apăsat Înapoi și încă un buton.</string>
  <string name="controls_automatic_help">Meniuri: folosește crucea direcțională sau maneta stângă pentru deplasare, A / Cross pentru confirmare și B / Circle pentru înapoi. În Gamepaduri poți testa dispozitivele și modifica comenzile meniurilor. În Atingere poți alege Atingere directă sau Touchpad.\n\nCursă: configurează comenzile în meniul Controls al jocului. Butoanele de pe ecran urmează aceste atribuiri. Dacă butonul Înapoi din meniuri este folosit la condus, alege încă un buton în Gamepaduri → Combinație pentru pauză în cursă. Ține-le apăsate pe amândouă pentru pauză.\n\nEcran împărțit: alege un gamepad pentru fiecare jucător în Gamepaduri. Automat le folosește pe cele rămase în ordinea conectării. O atribuire salvată rămâne rezervată cât timp dispozitivul este deconectat. Comenzile tactile de cursă controlează jucătorul 1.</string>
+ <string name="controller_assign">Atribuie</string>
+ <string name="controller_cancel">Anulează</string>
+ <string name="controller_disable">Dezactivează</string>
+ <string name="controller_shortcut_disabled">Dezactivat</string>
+ <string name="controller_pause_first">Apasă primul buton.</string>
+ <string name="controller_pause_second">Apasă un buton diferit.</string>
+ <string name="controller_pause_different">Alege un buton diferit.</string>
 </resources>

@@ -11,8 +11,8 @@ the normal build still targets ARM64. APK identities are in
 
 - Two-player controller assignment, remote/gamepad separation and configurable
   menu controls. Button-only pads and axis-based D-pads are supported.
-- An optional per-controller Back + extra-button combination opens the race
-  pause menu even when the buttons are assigned to racing actions.
+- An optional per-controller combination of two chosen buttons opens the race
+  pause menu even when those buttons are assigned to racing actions.
 - Touch controls follow the game's racing assignments.
 - ARMv7 alignment fixes and a conservative opaque-shader optimization.
 - Advanced tabs for unlocks, performance and debugging. Each bonus car and

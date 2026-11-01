@@ -5,7 +5,7 @@
  <string name="controller_details_hide">Hide input details</string>
  <string name="controller_reset_menu">Reset menu controls</string>
  <string name="controller_pause_title">Race pause shortcut</string>
- <string name="controller_pause_hint">Hold your menu Back button and an extra button to pause a race.</string>
+ <string name="controller_pause_hint">Hold both assigned buttons to pause a race.</string>
  <string name="controller_device_type">Device type</string>
  <string name="controller_change_type">Change device type…</string>
  <string name="controller_role_hint">Use Remote / keyboard for a TV remote so it does not take a player slot.</string>
@@ -14,4 +14,12 @@
  <string name="controller_automatic">Automatic</string>
  <string name="controller_unassigned">Not assigned</string>
  <string name="controls_setup_hint">Choose controllers, test input and change menu controls. Assign racing controls inside the game.</string>
+ <string name="controller_assign">Assign</string>
+ <string name="controller_cancel">Cancel</string>
+ <string name="controller_disable">Disable</string>
+ <string name="controller_shortcut_disabled">Disabled</string>
+ <string name="controller_pause_first">Press the first button.</string>
+ <string name="controller_pause_second">Press a different button.</string>
+ <string name="controller_pause_different">Choose a different button.</string>
+ <string name="controller_pause_pair" translatable="false">%1$s + %2$s</string>
 </resources>

@@ -190,7 +190,7 @@
  <string name="controller_details_hide">Dölj inmatningsdetaljer</string>
  <string name="controller_reset_menu">Återställ menykontroller</string>
  <string name="controller_pause_title">Knappkombination för paus</string>
- <string name="controller_pause_hint">Håll in menyknappen Tillbaka och en extra knapp för att pausa ett lopp.</string>
+ <string name="controller_pause_hint">Håll båda tilldelade knapparna intryckta för att pausa ett lopp.</string>
  <string name="controller_device_type">Enhetstyp</string>
  <string name="controller_change_type">Ändra enhetstyp…</string>
  <string name="controller_role_hint">Välj Fjärrkontroll / tangentbord för en TV-fjärrkontroll så att den inte tar en spelarplats.</string>
@@ -204,4 +204,11 @@
  <string name="faq_screen_data"><b>Skärm och spelfiler</b>\nSkärm styr skärmorienteringen och gränsen för bildfrekvens. En lägre gräns kan minska strömförbrukningen. Filer &amp; säkerhetskopior hanterar importerade spelfiler, sparade spel och säkerhetskopior av startarens inställningar. Välj aktiva spelfiler innan du spelar.</string>
  <string name="faq_mapping"><b>Handkontroller</b>\nUnder Kontroller → Handkontroller kan du välja en kontroll för varje spelare, testa inmatning och ändra menykontroller. Automatiskt använder återstående kontroller i anslutningsordning. Sparade spelarplatser förblir reserverade när kontrollerna är frånkopplade. Körkontroller ställs in i spelet. Om menyknappen Tillbaka används för körning kan du ställa in en Knappkombination för paus och hålla in Tillbaka och en extra knapp för att pausa.</string>
  <string name="controls_automatic_help">Menyer: använd styrkorset eller vänster spak för att flytta, A / Cross för att bekräfta och B / Circle för att gå tillbaka. Under Handkontroller kan du testa och ändra menykontroller. Under Pek kan du välja Direkt pekning eller Pekplatta.\n\nLopp: ställ in kontroller i spelets Controls-meny. Skärmknapparna följer dessa inställningar. Om menyknappen Tillbaka används för körning väljer du en extra knapp under Handkontroller → Knappkombination för paus. Håll in båda för att pausa.\n\nDelad skärm: välj en handkontroll för varje spelare under Handkontroller. Automatiskt använder återstående kontroller i anslutningsordning. En sparad plats förblir reserverad medan kontrollen är frånkopplad. Pekkontrollerna styr spelare 1.</string>
+ <string name="controller_assign">Tilldela</string>
+ <string name="controller_cancel">Avbryt</string>
+ <string name="controller_disable">Inaktivera</string>
+ <string name="controller_shortcut_disabled">Inaktiverad</string>
+ <string name="controller_pause_first">Tryck på den första knappen.</string>
+ <string name="controller_pause_second">Tryck på en annan knapp.</string>
+ <string name="controller_pause_different">Välj en annan knapp.</string>
 </resources>

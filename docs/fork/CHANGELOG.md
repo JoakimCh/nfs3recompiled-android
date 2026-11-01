@@ -31,6 +31,15 @@ Versions now use a numeric format, starting with 0.78.29. ARMv7 downloads use
 shorter filenames, and release titles show the version number. Performance
 profiling remains available without a suffix in the app version.
 
+Assigning a menu control now returns to normal navigation instead of silently
+starting Test input. The assignment press is consumed until the controls are
+released. Race pause shortcuts now use two independently selected buttons.
+Assign captures the first button, then a different second button; Cancel keeps
+the existing pair, and Disable clears both. Old Back-plus-extra shortcuts migrate
+to fixed pairs, so later changes to menu Back do not affect them. Updated all 18
+translations. Settings backup format 3 includes both buttons and still imports
+formats 1 and 2; importing a format 2 setup replaces an existing pair correctly.
+
 ## tv28 — version 105
 
 Joakim reported testing build 28 without problems on 2026-11-01.

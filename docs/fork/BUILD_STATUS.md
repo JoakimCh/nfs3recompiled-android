@@ -3,6 +3,24 @@
 This file records evidence, not a substitute for checking the current source and
 latest Actions run. A new context should read AGENTS.md, BUILD.md and this file.
 
+## Controller assignment and two-button race pause: build pending
+
+Changes on `feature/controller-pause-pair` retain next version 0.78.29/code 106:
+assignment no longer starts input testing automatically, and race pause captures
+two independent buttons. The saved pair is committed only when complete. Old
+Back-plus-extra preferences migrate once, and backup format 3 carries both buttons
+while accepting older exports.
+
+Before publication, the standalone Java ControllerProfileCheck passed, including
+arbitrary pairs, duplicate/alias rejection, unchanged pairs after menu Back edits,
+button release and per-controller isolation. Java syntax parsing passed for all
+seven changed launcher/test files, and all 19 resource sets parsed with matching
+new keys. These checks do not substitute for Android compilation or Robolectric.
+The native regression was extended for a non-Back pair and both press orders.
+Android/Robolectric tests and the SDL native regression have not been run in this
+workspace. Publish first, then use the manual APK workflow on this branch for the
+launcher tests, native compile, signing and packaging checks. No new APK exists yet.
+
 ## Numeric version migration
 
 Selected next ARMv7 version: `0.78.29`, Android version code `106`, fork revision

@@ -190,7 +190,7 @@
  <string name="controller_details_hide">Invoerdetails verbergen</string>
  <string name="controller_reset_menu">Menubediening herstellen</string>
  <string name="controller_pause_title">Knoppencombinatie voor pauze</string>
- <string name="controller_pause_hint">Houd de menuknop Terug en een extra knop ingedrukt om een race te pauzeren.</string>
+ <string name="controller_pause_hint">Houd beide toegewezen knoppen ingedrukt om een race te pauzeren.</string>
  <string name="controller_device_type">Apparaattype</string>
  <string name="controller_change_type">Apparaattype wijzigen…</string>
  <string name="controller_role_hint">Kies Afstandsbediening / toetsenbord voor een tv-afstandsbediening, zodat die geen spelersplek bezet.</string>
@@ -204,4 +204,11 @@
  <string name="faq_screen_data"><b>Beeld en spelbestanden</b>\nBeeld regelt de schermoriëntatie en de limiet voor beeldsnelheid. Een lagere limiet kan stroom besparen. Bestanden en back-ups beheert geïmporteerde spelbestanden, opgeslagen spellen en back-ups van launcherinstellingen. Kies actieve spelbestanden voordat je speelt.</string>
  <string name="faq_mapping"><b>Gamepads</b>\nKies onder Bediening → Gamepads een controller per speler, test invoer en wijzig menubediening. Automatisch gebruikt de overige controllers in verbindingsvolgorde. Opgeslagen toewijzingen blijven gereserveerd voor losgekoppelde controllers. Wijs racebediening in het spel toe. Is de menuknop Terug voor racen ingesteld, kies dan een Knoppencombinatie voor pauze: houd Terug en een extra knop ingedrukt.</string>
  <string name="controls_automatic_help">Menu\'s: gebruik het richtingkruis of de linkerstick om te bewegen, A / Cross om te bevestigen en B / Circle om terug te gaan. Onder Gamepads kun je controllers testen en de menubediening wijzigen. Onder Touch kun je Direct aanraken of Touchpad kiezen.\n\nRacen: wijs bediening toe in het menu Controls van het spel. Schermknoppen volgen die toewijzingen. Is de menuknop Terug voor racen ingesteld, kies dan een extra knop onder Gamepads → Knoppencombinatie voor pauze. Houd beide ingedrukt om te pauzeren.\n\nGesplitst scherm: kies onder Gamepads een controller per speler. Automatisch gebruikt de overige controllers in verbindingsvolgorde. Een opgeslagen toewijzing blijft gereserveerd als de controller is losgekoppeld. De touchbediening bestuurt speler 1.</string>
+ <string name="controller_assign">Toewijzen</string>
+ <string name="controller_cancel">Annuleren</string>
+ <string name="controller_disable">Uitschakelen</string>
+ <string name="controller_shortcut_disabled">Uitgeschakeld</string>
+ <string name="controller_pause_first">Druk op de eerste knop.</string>
+ <string name="controller_pause_second">Druk op een andere knop.</string>
+ <string name="controller_pause_different">Kies een andere knop.</string>
 </resources>

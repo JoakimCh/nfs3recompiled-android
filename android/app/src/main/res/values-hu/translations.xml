@@ -190,7 +190,7 @@
  <string name="controller_details_hide">Bemeneti részletek elrejtése</string>
  <string name="controller_reset_menu">Menüvezérlés alaphelyzetbe állítása</string>
  <string name="controller_pause_title">Versenyszünet-gombkombináció</string>
- <string name="controller_pause_hint">A verseny szüneteltetéséhez tartsa lenyomva a menü Vissza gombját és egy további gombot.</string>
+ <string name="controller_pause_hint">A verseny szüneteltetéséhez tartsd lenyomva mindkét hozzárendelt gombot.</string>
  <string name="controller_device_type">Eszköztípus</string>
  <string name="controller_change_type">Eszköztípus módosítása…</string>
  <string name="controller_role_hint">TV-távirányítóhoz válassza a Távirányító / billentyűzet típust, hogy ne foglaljon játékoshelyet.</string>
@@ -204,4 +204,11 @@
  <string name="faq_screen_data"><b>Kijelző és játékfájlok</b>\nA Kijelző alatt állítható be a tájolás és a képkockasebesség-korlát. Az alacsonyabb korlát csökkentheti az energiafogyasztást. A Fájlok és biztonsági másolatok kezeli az importált játékfájlokat, mentéseket és az indító beállításainak másolatait. Játék előtt válasszon aktív játékfájlokat.</string>
  <string name="faq_mapping"><b>Kontrollerek</b>\nA Vezérlés → Kontrollerek alatt válasszon kontrollert minden játékosnak, tesztelje a bemeneteket és módosítsa a menüvezérlést. Az Automatikus a többi kontrollert csatlakozási sorrendben használja. A mentett hozzárendelések lecsatlakoztatott kontroller esetén is fenntartják a helyet. A verseny vezérlését a játékban állítsa be. Ha a menü Vissza gombja vezetési funkciót kapott, állítson be Versenyszünet-gombkombinációt: tartsa lenyomva a Vissza és egy további gombot.</string>
  <string name="controls_automatic_help">Menük: az iránygombokkal vagy a bal karral mozoghat, az A / Cross gombbal megerősíthet, a B / Circle gombbal visszaléphet. A Kontrollerek alatt tesztelheti az eszközöket és módosíthatja a menüvezérlést. Az Érintés alatt Közvetlen érintés vagy Érintőpad választható.\n\nVerseny: a vezérlést a játék Controls menüjében állítsa be. A képernyőgombok ezeket a hozzárendeléseket követik. Ha a menü Vissza gombja vezetési funkciót kapott, a Kontrollerek → Versenyszünet-gombkombináció alatt válasszon további gombot. Mindkettőt lenyomva tartva szüneteltethet.\n\nOsztott képernyő: a Kontrollerek alatt válasszon kontrollert minden játékosnak. Az Automatikus a többit csatlakozási sorrendben használja. A mentett hely a kontroller lecsatlakoztatásakor is fenntartva marad. Az érintéses versenyvezérlés az 1. játékost irányítja.</string>
+ <string name="controller_assign">Hozzárendelés</string>
+ <string name="controller_cancel">Mégse</string>
+ <string name="controller_disable">Kikapcsolás</string>
+ <string name="controller_shortcut_disabled">Kikapcsolva</string>
+ <string name="controller_pause_first">Nyomd meg az első gombot.</string>
+ <string name="controller_pause_second">Nyomj meg egy másik gombot.</string>
+ <string name="controller_pause_different">Válassz egy másik gombot.</string>
 </resources>

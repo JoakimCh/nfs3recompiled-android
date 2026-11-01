@@ -7,7 +7,7 @@ final class ControllerProfile {
     static final String[] NAMES={"Up","Down","Left","Right","Confirm","Back"};
     final String identity;
     final Binding[] bindings=new Binding[6];
-    Binding racePauseModifier; // null disables the race-only Back combination.
+    Binding racePauseFirst,racePauseSecond; // Both null disables the race-only combination.
     private final HashSet<Integer> keys=new HashSet<>();
     private final float[] axes=new float[64];
     private final boolean[] held=new boolean[6];
@@ -44,13 +44,12 @@ final class ControllerProfile {
     }
     void assign(int action,Binding value) {
         bindings[action]=value;
-        if(action==5 && racePauseModifier!=null &&
-            samePauseButton(racePauseModifier.code,value==null?97:value.code))racePauseModifier=null;
         release();
     }
     boolean usesKey(int code) {
         for(Binding b:bindings)if(b!=null && !b.axis && b.code==code)return true;
-        return racePauseModifier!=null && racePauseModifier.code==code;
+        return (racePauseFirst!=null && racePauseFirst.code==code)
+            || (racePauseSecond!=null && racePauseSecond.code==code);
     }
     void key(int code,boolean down) { keysSeen=true;if(down)keys.add(code);else keys.remove(code); }
     void axis(int code,float value) {
@@ -137,22 +136,30 @@ final class ControllerProfile {
         int logical=logicalButton(first);
         return first==second || (logical>=0 && logical==logicalButton(second));
     }
+    boolean hasRacePause() {
+        return racePauseFirst!=null && racePauseSecond!=null && !racePauseFirst.axis && !racePauseSecond.axis
+            && !samePauseButton(racePauseFirst.code,racePauseSecond.code);
+    }
+    void setRacePause(Binding first,Binding second) {
+        if(first==null && second==null){racePauseFirst=racePauseSecond=null;return;}
+        if(first==null || second==null || first.axis || second.axis || samePauseButton(first.code,second.code))
+            throw new IllegalArgumentException("Choose two different buttons");
+        racePauseFirst=first;racePauseSecond=second;
+    }
     long racePauseSnapshot() {
-        if(racePauseModifier==null)return 0;
-        Binding back=bindings[5];
-        int backCode=back==null?97:back.code;
-        if(samePauseButton(backCode,racePauseModifier.code))return 0;
-        int b=logicalButton(backCode),m=logicalButton(racePauseModifier.code);
+        if(!hasRacePause())return 0;
+        int first=racePauseFirst.code,second=racePauseSecond.code;
+        int b=logicalButton(first),m=logicalButton(second);
         long sources=(b<0?0:1L<<b)|(m<0?0:1L<<m);
-        long menuSources=1L<<1;
+        long menuSources=0;
         for(int i=0;i<6;i++) {
             Binding input=bindings[i];
             int code=input==null?(i<4?19+i:i==4?96:97):input.axis?-1:input.code;
-            if(code==backCode || code==racePauseModifier.code)
+            if(samePauseButton(code,first) || samePauseButton(code,second))
                 menuSources|=1L<<(i<4?10+i:i==4?0:1);
         }
-        return (menuSources<<32)|sources|(1L<<16)|(keys.contains(backCode)?1L<<17:0)
-            |(keys.contains(racePauseModifier.code)?1L<<18:0)
+        return (menuSources<<32)|sources|(1L<<16)|(keys.contains(first)?1L<<17:0)
+            |(keys.contains(second)?1L<<18:0)
             |((long)(b+1)<<20)|((long)(m+1)<<25);
     }
     // Android keycodes -> existing virtual button identity; no vendor IDs.

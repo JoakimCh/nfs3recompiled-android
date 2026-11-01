@@ -190,7 +190,7 @@
  <string name="controller_details_hide">Ocultar detalles de entrada</string>
  <string name="controller_reset_menu">Restablecer controles de menú</string>
  <string name="controller_pause_title">Atajo para pausar la carrera</string>
- <string name="controller_pause_hint">Mantén pulsados el botón Atrás de los menús y otro botón para pausar una carrera.</string>
+ <string name="controller_pause_hint">Mantén pulsados los dos botones asignados para pausar una carrera.</string>
  <string name="controller_device_type">Tipo de dispositivo</string>
  <string name="controller_change_type">Cambiar tipo de dispositivo…</string>
  <string name="controller_role_hint">Elige Mando a distancia / teclado para un mando de TV, para que no ocupe un puesto de jugador.</string>
@@ -204,4 +204,11 @@
  <string name="faq_screen_data"><b>Pantalla y archivos del juego</b>\nPantalla permite elegir la orientación y el límite de fotogramas por segundo. Un límite menor puede reducir el consumo. Archivos y copias de seguridad gestiona los archivos importados del juego, las partidas y las copias de los ajustes del lanzador. Elige archivos del juego activos antes de jugar.</string>
  <string name="faq_mapping"><b>Mandos</b>\nEn Controles → Mandos, elige un mando por jugador, prueba las entradas y cambia los controles de menú. Automático usa los mandos restantes en orden de conexión. Las asignaciones guardadas siguen reservadas cuando se desconectan los mandos. Asigna los controles de carrera dentro del juego. Si el botón Atrás de los menús se usa para conducir, configura un Atajo para pausar la carrera: mantén pulsados Atrás y otro botón.</string>
  <string name="controls_automatic_help">Menús: usa la cruceta o el stick izquierdo para moverte, A / Cross para confirmar y B / Circle para volver. En Mandos puedes probar dispositivos y cambiar sus controles de menú. En Táctil puedes elegir Toque directo o Panel táctil.\n\nCarreras: asigna los controles en el menú Controls del juego. Los botones en pantalla siguen esas asignaciones. Si el botón Atrás de los menús se usa para conducir, elige otro botón en Mandos → Atajo para pausar la carrera. Mantén ambos pulsados para pausar.\n\nPantalla dividida: elige un mando para cada jugador en Mandos. Automático usa los mandos restantes en orden de conexión. Una asignación guardada sigue reservada mientras el mando está desconectado. Los controles táctiles de carrera manejan al jugador 1.</string>
+ <string name="controller_assign">Asignar</string>
+ <string name="controller_cancel">Cancelar</string>
+ <string name="controller_disable">Desactivar</string>
+ <string name="controller_shortcut_disabled">Desactivado</string>
+ <string name="controller_pause_first">Pulsa el primer botón.</string>
+ <string name="controller_pause_second">Pulsa un botón diferente.</string>
+ <string name="controller_pause_different">Elige un botón diferente.</string>
 </resources>
