@@ -12,6 +12,25 @@ import static org.junit.Assert.*;
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk={34,36},qualifiers="w960dp-h540dp-land",application=android.app.Application.class)
 public class ControllerSetupActivityTest {
+    @Test
+    @Config(qualifiers="en-rUS-w960dp-h540dp-land")
+    public void controllerPageUsesChosenLanguageInsteadOfSystemLanguage() {
+        android.content.SharedPreferences preferences = GamePreferences.get(
+            org.robolectric.RuntimeEnvironment.getApplication());
+        preferences.edit().putString(GamePreferences.UI_LANGUAGE, "sv").commit();
+        try (ActivityController<ControllerSetupActivity> controller =
+                Robolectric.buildActivity(ControllerSetupActivity.class).setup()) {
+            ControllerSetupActivity activity = controller.get();
+            assertEquals("sv", activity.getResources().getConfiguration().getLocales().get(0).getLanguage());
+            assertEquals("Handkontroller", activity.getString(R.string.controls_gamepad));
+            assertEquals("Knappkombination för paus", activity.getString(R.string.controller_pause_title));
+            View root = activity.getWindow().getDecorView();
+            layout(root);
+            assertNotNull(find(root, "Välj en handkontroll för varje spelare."));
+        } finally {
+            preferences.edit().remove(GamePreferences.UI_LANGUAGE).commit();
+        }
+    }
     private TextView find(View root,String text) {
         if(root instanceof TextView && ((TextView)root).getText().toString().contains(text))return (TextView)root;
         if(root instanceof ViewGroup)for(int i=0;i<((ViewGroup)root).getChildCount();i++){
@@ -63,7 +82,7 @@ public class ControllerSetupActivityTest {
             assertEquals(99,ControllerProfiles.load(controller.get(),input).bindings[0].code);
             find(root,"Disable").performClick();
             assertNull(ControllerProfiles.load(controller.get(),input).racePauseModifier);
-            View scrolling=find(root,"Save input device report");
+            View scrolling=find(root,"Input device report");
             while(!(scrolling instanceof android.widget.ScrollView)) scrolling=(View)scrolling.getParent();
             android.widget.ScrollView scroll=(android.widget.ScrollView)scrolling;
             assertTrue(scroll.getClipToOutline());
@@ -96,7 +115,7 @@ public class ControllerSetupActivityTest {
         try(ActivityController<ControllerSetupActivity> controller=Robolectric.buildActivity(ControllerSetupActivity.class).setup()) {
             View root=controller.get().getWindow().getDecorView();layout(root);
             assertNotNull(find(root,"No game controller detected"));layout(root);
-            TextView report=find(root,"Save input device report");assertNotNull(report);
+            TextView report=find(root,"Input device report");assertNotNull(report);
             assertTrue(((android.widget.LinearLayout.LayoutParams)report.getLayoutParams()).topMargin>0);
             TextView others=find(root,"Remotes and other inputs");assertNotNull(others);others.performClick();
             controller.pause().stop().restart().start().resume().visible();

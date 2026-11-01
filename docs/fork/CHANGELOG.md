@@ -1,5 +1,23 @@
 # Fork changes
 
+## tv28 — version 105 (test build)
+
+Simplified launcher labels and help, clarified file deletion, and shortened the
+race pause shortcut description. Controller bindings use readable button names;
+raw Android input details can be expanded when troubleshooting. Obsolete
+controller instructions were removed. Updated the revised wording in all 18
+launcher translations. Ordinary controls help and the revised controller-page
+descriptions now use translatable resources; controller setup follows the chosen
+launcher language. Added translation maintenance guidance in TRANSLATIONS.md.
+
+Launcher settings backups now include per-controller menu controls, race pause
+shortcuts, device types, saved player assignments and touch editor snapping.
+Controller identities are preserved exactly, including disconnected devices.
+Version 1 backups remain importable without clearing these newer settings.
+Version 2 can also back up and restore a default setup. Imports validate stored
+types and stop if the automatic backup cannot be written. Game file references
+and launcher language remain local.
+
 ## tv27 — version 104
 
 Updated the build toolchain and SDL from the shared tools/android-toolchain.json.

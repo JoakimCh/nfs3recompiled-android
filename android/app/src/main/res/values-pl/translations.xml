@@ -1,7 +1,5 @@
 <resources>
- <!-- Polski. Etykiety ekranu Controls oraz napisy na przyciskach ekranowych
-      celowo pozostają angielskie: ten ekran zestawia się z ustawieniami samej
-      gry, a gra jest angielska. -->
+ <!-- Launcher translations. Preserve format placeholders and resource names. -->
 
  <string name="language_label">Język</string>
  <string name="language_system">Język systemu</string>
@@ -16,17 +14,15 @@
  <string name="play">Graj</string>
  <string name="active_data_set">Aktywne dane: %1$s</string>
  <string name="no_active_data_set">Brak aktywnego zestawu danych. Zaimportuj go przed grą.</string>
- <string name="data_settings">Dane</string>
- <string name="game_data_title">Dane gry</string>
- <string name="launcher_settings_title">Ustawienia launchera</string>
- <string name="launcher_settings_hint">Zapisz ustawienia launchera — układ sterowania, przypisania przycisków, wibracje — do pliku lub je przywróć. Import zastępuje obecne, tworząc najpierw kopię.</string>
+ <string name="data_settings">Pliki i kopie zapasowe</string>
+ <string name="game_data_title">Pliki gry</string>
+ <string name="launcher_settings_title">Kopia ustawień launchera</string>
+ <string name="launcher_settings_hint">Zapisz kopię sterowania dotykowego, konfiguracji padów, obrazu, wibracji i sieci. Import najpierw tworzy kopię bieżącej konfiguracji, a potem ją zastępuje.</string>
  <string name="import_launcher">Importuj ustawienia...</string>
  <string name="export_launcher">Eksportuj ustawienia...</string>
- <string name="launcher_export_complete">Wyeksportowano ustawień: %1$d.</string>
  <string name="launcher_import_complete">Ustawienia zaimportowane. Poprzednie zapisano jako %1$s.</string>
- <string name="launcher_import_complete_no_backup">Ustawienia zaimportowane. Nie było poprzednich ustawień.</string>
- <string name="launcher_nothing_to_export">Nie ma jeszcze ustawień launchera.</string>
- <string name="launcher_wrong_format">To nie jest plik ustawień launchera.</string>
+ <string name="launcher_import_complete_no_backup">Zaimportowano ustawienia.</string>
+ <string name="launcher_wrong_format">Ten plik nie jest obsługiwaną kopią ustawień launchera.</string>
  <string name="controls_settings">Przypisanie klawiszy</string>
  <string name="touch_settings">Sterowanie dotykiem</string>
  <string name="screen_settings">Ekran</string>
@@ -45,11 +41,10 @@
  <string name="import_folder">Importuj folder…</string>
  <string name="import_zip">Importuj ZIP…</string>
  <string name="import_image">Importuj obraz płyty…</string>
- <string name="data_import_hint">Zaimportuj folder zawierający bezpośrednio \'fedata\' i \'gamedata\' albo ZIP z tymi folderami. Zaimportowane dane są kopiowane do pamięci aplikacji. Można też zaimportować obraz płyty z grą (ISO lub BIN z pary BIN/CUE).</string>
+ <string name="data_import_hint">Importuj folder lub ZIP zawierający \'fedata\' i \'gamedata\' albo obraz płyty (ISO lub BIN). Pliki zostaną skopiowane do pamięci aplikacji.</string>
  <string name="import_complete">Import danych zakończony</string>
- <string name="data_error">Operacja na danych nie powiodła się: %1$s</string>
- <string name="delete_data_title">Usunąć zestaw danych?</string>
- <string name="delete_data_message">Usunąć %1$s z tego urządzenia? Tej operacji nie można cofnąć.</string>
+ <string name="data_error">Nie udało się ukończyć operacji: %1$s</string>
+ <string name="delete_data_title">Usunąć pliki gry?</string>
  <string name="controls_explanation">To warstwa portu między fizycznym padem lub dotykiem a emulowaną klawiaturą. Jest niezależna od menu Controls w samej grze; tamto menu pozostaje bez zmian.</string>
  <string name="controls_row_hint">Dla każdej akcji wybierz fizyczny przycisk pada, a potem emulowany klawisz wysyłany zarówno przez niego, jak i przez przycisk ekranowy.</string>
  <string name="touch_mode_label">Tryb sterowania</string>
@@ -57,10 +52,10 @@
  <string name="touch_mode_wheel">Kierownica (wkrótce)</string>
  <string name="touch_mode_tilt">Skręcanie przechyłem (wkrótce)</string>
  <string name="touch_layout_label">Układ przycisków</string>
- <string name="touch_pointer_label">Wskaźnik w menu</string>
- <string name="touch_pointer_tap">Tam, gdzie dotknie palec</string>
+ <string name="touch_pointer_label">Sterowanie dotykowe w menu</string>
+ <string name="touch_pointer_tap">Dotyk bezpośredni</string>
  <string name="touch_pointer_touchpad">Touchpad</string>
- <string name="touch_pointer_note">Touchpad: przesuwaj palcem w dowolnym miejscu, aby ruszać kursorem, stuknij, aby kliknąć, przytrzymaj palec, aby chwycić i przeciągnąć. Działa od następnego uruchomienia gry.</string>
+ <string name="touch_pointer_note">Touchpad: przesuń palcem, aby poruszyć kursorem, dotknij, aby kliknąć, lub przytrzymaj palec nieruchomo, aby chwycić i przeciągnąć.</string>
  <string name="opacity_label">Krycie przycisków</string>
  <string name="size_label">Wielkość przycisków</string>
  <string name="auto_hide_label">Ukryj po 4 sekundach bezczynności</string>
@@ -72,7 +67,7 @@
  <string name="fps_30">30 FPS</string>
  <string name="fps_60">60 FPS</string>
  <string name="gamma_label">Gamma</string>
- <string name="fps_cap_label">Liczba klatek</string>
+ <string name="fps_cap_label">Limit klatek na sekundę</string>
  <string name="fps_error">Wpisz liczbę całkowitą od 1 do 240</string>
  <string name="save">Zapisz</string>
  <string name="settings_saved">Ustawienia zapisane</string>
@@ -85,7 +80,7 @@
  <string name="editor_drag_title">Przeciągaj elementy</string>
  <string name="editor_resize_hint">Wybierz, aby zmienić rozmiar</string>
  <string name="saves_title">Zapisy gry</string>
- <string name="saves_hint">Wyeksportuj aktywny profil do ZIP-a albo zaimportuj gotowy. Import tworzy lokalną kopię zapasową przed zastąpieniem zapisów.</string>
+ <string name="saves_hint">Eksportuj zapisane gry z aktywnych plików gry do ZIP lub importuj ZIP. Przed zastąpieniem istniejących zapisów tworzona jest ich kopia zapasowa.</string>
  <string name="import_saves">Importuj zapisy…</string>
  <string name="export_saves">Eksportuj zapisy…</string>
  <string name="saves_not_found">W aktywnym zestawie danych nie znaleziono zapisów.</string>
@@ -104,7 +99,6 @@
  <string name="controls_touch">Dotyk</string>
  <string name="controls_gamepad">Pady</string>
  <string name="gamepads_title">Pady</string>
- <string name="gamepads_hint">Gra widzi dwa pady: pad 1 to gracz 1 razem ze sterowaniem dotykiem, pad 2 to gracz 2. Wybierz tu pady i ustaw ich przyciski, a potem raz zapisz sterowanie padami w grze.</string>
  <string name="gamepad_slot_label">Pad %1$d</string>
  <string name="gamepad_slot_auto_now">Automatycznie: %1$s</string>
  <string name="gamepad_slot_auto_none">Automatycznie: brak podłączonego pada</string>
@@ -146,38 +140,17 @@
  <string name="importer_image_cue">To plik CUE: wybierz plik BIN, który leży obok</string>
  <string name="importer_image_missing_files">W obrazie płyty brak folderów fedata/gamedata</string>
  <string name="importer_image_truncated">Obraz płyty kończy się za wcześnie: plik nie został skopiowany w całości</string>
-
- <string name="faq_layout_modes"><b>Menu czy wyścig?</b>\nMówi o tym gra. Podczas jazdy masz układ wyścigowy: przyciski skrętu, pedały, biegi i resztę. W menu, a także gdy menu otworzy się na wyścigu, port nie pokazuje żadnych przycisków: menu same przyjmują dotyk, systemowy Wstecz działa jak Escape, a klawiatura pojawia się sama. Nie ma czego przełączać ręcznie.</string>
- <string name="faq_mouse"><b>Jak działa menu?</b>\nDotykiem. Wskaźnik gry idzie tam, gdzie kładziesz palec, więc stuknięcie naciska element pod nim, a suwak podąża za ciągnącym go palcem. Systemowy przycisk lub gest Wstecz to Escape, a gdy gra prosi o imię, klawiatura telefonu otwiera się sama; przy otwartej klawiaturze Wstecz ją zamyka.</string>
  <string name="faq_size"><b>Co zmienia wielkość?</b>\nWielkość przycisków skaluje domyślne sterowanie. W Edytuj pozycje i rozmiary przeciągnij element i zmień jego wielkość suwakiem rozmiaru; element reaguje dokładnie tam, gdzie jest narysowany, a procenty odnoszą się do elementu domyślnego. Zmiany zapisują się same. Edytor pokazuje siatkę; przy włączonym Przyciągaj do siatki przeciągany element na nią wskakuje.</string>
  <string name="faq_edges"><b>Krawędzie i wysokość</b>\nOdstęp od krawędzi przesuwa domyślne elementy do środka. Wycięcia systemowe są uwzględniane. Elementy ustawione ręcznie zachowują zapisane pozycje.</string>
  <string name="faq_hiding"><b>Krycie i automatyczne ukrywanie</b>\nKrycie ustala zwykłą widoczność. Ukrywanie zaczyna się po oderwaniu wszystkich palców, po 1–30 sekundach. Ukryte przyciski reagują już na pierwsze dotknięcie i znów stają się widoczne. Przytrzymanie elementu wstrzymuje ukrywanie. Naciśnięcie przycisku na padzie gracza 1 od razu ukrywa przyciski; następny dotyk je przywraca. Pad gracza 2 ich nie rusza, więc jeden może jechać po ekranie, a drugi na padzie.</string>
  <string name="faq_vibration"><b>Wibracje</b>\nEfekty Force Feedback gry czuć na telefonie albo na padzie 1, nigdy na obu naraz: wybierz Wyłączone, Telefon lub Pad w Sterowanie → Force Feedback. Gra obsługuje tylko jedno urządzenie z force feedbackiem, więc pad 2 nigdy nie wibruje. Siłę wibracji pada ustawia się w samej grze: Options → Controllers → Force Feedback. Efekty pochodzą z gry, nigdy z naciskania przycisków.</string>
- <string name="faq_mapping"><b>Pady</b>\nGra zawsze widzi dwa pady: pad 1 to gracz 1 razem ze sterowaniem dotykiem, pad 2 to gracz 2. W Sterowanie → Pady wybierz, który pad jest który, naciskając na nim przycisk, ustaw, co robi każdy przycisk, a potem raz naciśnij Pad WŁĄCZONY. Zapisze to pasujące sterowanie w ustawieniach gry i zrobi kopię starego pliku. Lewa gałka skręca, spusty przyspieszają i hamują. Pad ma dwa zestawy przycisków, tak jak sterowanie dotykiem ma dwa układy: wyścigowy, ustawiany tutaj, i stały dla menu i powtórek, gdzie Cross / A zatwierdza, Circle / B cofa, a krzyżak przesuwa wybór. Aby grać na klawiaturze, zapisz zamiast tego Domyślne w grze.</string>
  <string name="faq_lights"><b>Światła i powrót na tor</b>\n☼ wysyła L. ↻ wysyła R, aby wrócić na tor. Klawisze można zmienić w Sterowanie → Dotyk → Klawisze.</string>
- <string name="faq_screen_data"><b>Ekran i dane gry</b>\nPozioma blokuje grę w poziomie; Automatyczna pozwala na obrót. Limit FPS ogranicza liczbę klatek; niższa wartość zmniejsza obciążenie. «Dane gry» zarządzają importami i pokazują aktywny zestaw. Przycisk «Graj» włącza się, gdy zestaw jest gotowy.</string>
  <string name="gamepad_buttons">Przyciski</string>
  <string name="gamepad_buttons_title">Przyciski pada %1$d</string>
- <string name="gamepad_buttons_hint">Co robi każdy przycisk tego pada podczas jazdy. Lewa gałka skręca, prawy spust przyspiesza, a lewy hamuje. W menu i w powtórkach przyciski są stałe i nic się nie ustawia: Cross / A i Options / Menu zatwierdzają, Circle / B i Create / View cofają, krzyżak przesuwa wybór. Działania przycisków docierają do gry, gdy sterowanie padami zostanie do niej zapisane.</string>
  <string name="gamepad_buttons_reset">Domyślne</string>
- <string name="controls_write_gamepads">Pad WŁĄCZONY</string>
- <string name="controls_write_keyboard">Domyślne w grze</string>
- <string name="controls_write_gamepads_message">Zastąpić sterowanie w ustawieniach gry zestawem padów portu: pad 1 i sterowanie dotykiem prowadzą gracza 1, pad 2 gracza 2, w pojedynczych wyścigach i na podzielonym ekranie. Najpierw tworzona jest kopia zapasowa bieżącego pliku ustawień.</string>
- <string name="controls_write_keyboard_message">Zastąpić sterowanie w ustawieniach gry domyślnym sterowaniem klawiaturą samej gry. Najpierw tworzona jest kopia zapasowa bieżącego pliku ustawień.</string>
- <string name="controls_write_done">Sterowanie zapisane w grze. Kopia zapasowa: %1$s</string>
- <string name="controls_write_no_config">Gra nie ma jeszcze pliku ustawień. Uruchom grę raz i spróbuj ponownie.</string>
- <string name="controls_write_game_running">Zamknij grę przed zapisaniem jej sterowania.</string>
- <string name="controls_write_failed">Nie udało się zapisać sterowania: %1$s</string>
- <string name="gamepads_keyboard_note">Gra jest ustawiona na własne sterowanie klawiaturą (Domyślne w grze). Pady nie robią nic w wyścigach na podzielonym ekranie, dopóki nie naciśniesz Pad WŁĄCZONY.</string>
  <string name="pref_touch_enabled">Używaj sterowania dotykiem</string>
  <string name="controls_help">Pomoc: podzielony ekran</string>
  <string name="controls_help_title">Podzielony ekran z dwoma padami</string>
- <string name="help_split_setup"><b>1. Skonfiguruj pady (raz)</b>\nPodłącz oba pady do telefonu. W Sterowanie → Pady naciśnij Przypisz przy padzie 1 i naciśnij dowolny przycisk na padzie gracza 1, a potem zrób to samo dla pada 2. Działa też Automatycznie: pady są brane w kolejności podłączenia. W Przyciski wybierasz, co robi każdy przycisk.</string>
- <string name="help_split_write"><b>2. Zapisz sterowanie w grze</b>\nNa tym samym ekranie naciśnij Pad WŁĄCZONY i potwierdź. Wystarczy raz, a ponownie tylko po zainstalowaniu innych danych gry lub zmianie sterowania w samej grze. Poprzednie ustawienia trafiają do kopii zapasowej.</string>
- <string name="help_split_race"><b>3. Rozpocznij wyścig na podzielonym ekranie</b>\nUruchom grę i wybierz Two Players…. Gracz 1 jedzie padem 1 lub sterowaniem dotykowym, gracz 2 padem 2. Po menu można poruszać się dowolnym padem: krzyżak przesuwa wybór, Cross / A lub Options / Menu zatwierdza, Circle / B lub Create / View cofa.</string>
- <string name="help_split_driving"><b>Jazda</b>\nLewa gałka skręca, prawy spust przyspiesza, a lewy hamuje. Domyślnie Circle / B to hamulec ręczny, Square / X rzuca kolczatkę, Cross / A patrzy do tyłu, Triangle / Y zmienia kamerę, R1 / L1 zmieniają biegi, Create / View przywraca auto na trasę, Options / Menu wstrzymuje wyścig, L3 trąbi, a R3 włącza światła.</string>
- <string name="help_split_digital"><b>Analogowe czy cyfrowe</b>\nKażdy pad ma własny przełącznik Analogowe / Cyfrowe w Sterowanie → Pady. Cyfrowe prowadzi wyścig jak klawiatura: krzyżak w lewo i w prawo skręca, krzyżak w górę i prawy spust przyspieszają, krzyżak w dół i lewy spust hamują, a gałka nie skręca. Menu działa tak samo w obu przypadkach. Dwa pady nigdy nie dzielą żadnego klawisza, więc na podzielonym ekranie każdy prowadzi tylko swój samochód.</string>
- <string name="help_split_notes"><b>Warto wiedzieć</b>\nWibruje tylko pad 1 albo telefon, zależnie od wyboru w Sterowanie → Force Feedback: gra obsługuje tylko jedno urządzenie z force feedbackiem. Jeśli sterowanie przestanie pasować, na przykład po przywróceniu domyślnego w grze, ponownie naciśnij Pad WŁĄCZONY. Aby grać na klawiaturze, naciśnij zamiast tego Domyślne w grze. Sterowanie dotykowe wyłącza się w Sterowanie → Dotyk.</string>
  <string name="gamepad_mode_analog">Analogowe</string>
  <string name="gamepad_mode_digital">Cyfrowe</string>
  <string name="gamepad_analog_note">W wyścigu lewa gałka skręca, prawy spust przyspiesza, a lewy hamuje.</string>
@@ -199,4 +172,36 @@
  <string name="network_port_original">1030 · oryginalna gra</string>
  <string name="network_hint">IPX sam znajduje wyścigi w tej sieci Wi-Fi. TCP/IP łączy z każdym, kto zna adres hosta, także z PC z oryginalną grą lub Modern Patch. Wszyscy gracze używają tego samego portu.</string>
  <string name="fps_unlimited">Bez limitu</string>
+ <string name="launcher_backup_export_complete">Wyeksportowano ustawienia launchera.</string>
+ <string name="delete_game_files_message">Usunąć %1$s wraz z zapisanymi grami i ustawieniami gry z tego urządzenia? Tej operacji nie można cofnąć.</string>
+ <string name="choose_game_files">Wybierz pliki gry</string>
+ <string name="importing_saves">Importowanie zapisów…</string>
+ <string name="exporting_saves">Eksportowanie zapisów…</string>
+ <string name="importing_launcher">Importowanie ustawień launchera…</string>
+ <string name="exporting_launcher">Eksportowanie ustawień launchera…</string>
+ <string name="launcher_file_open_failed">Nie udało się otworzyć wybranego pliku ustawień.</string>
+ <string name="launcher_backup_failed">Nie udało się utworzyć kopii bieżących ustawień. Import został anulowany.</string>
+ <string name="launcher_restore_failed">Nie udało się zapisać zaimportowanych ustawień.</string>
+ <string name="controls_automatic_help_button">Pomoc dotycząca sterowania</string>
+ <string name="controls_automatic_help_title">Dotyk i pady</string>
+ <string name="controller_setup_intro">Wybierz pad dla każdego gracza. Wybierz urządzenie, aby przetestować lub zmienić sterowanie w menu. Sterowanie podczas wyścigu przypisz w grze. Zmiany zapisują się automatycznie.</string>
+ <string name="controller_test_hint">Uruchom test, a następnie naciskaj przyciski lub poruszaj drążkami.</string>
+ <string name="controller_details_show">Pokaż szczegóły wejścia</string>
+ <string name="controller_details_hide">Ukryj szczegóły wejścia</string>
+ <string name="controller_reset_menu">Przywróć sterowanie w menu</string>
+ <string name="controller_pause_title">Skrót pauzy w wyścigu</string>
+ <string name="controller_pause_hint">Przytrzymaj przycisk Wstecz używany w menu i dodatkowy przycisk, aby wstrzymać wyścig.</string>
+ <string name="controller_device_type">Typ urządzenia</string>
+ <string name="controller_change_type">Zmień typ urządzenia…</string>
+ <string name="controller_role_hint">Dla pilota TV wybierz Pilot / klawiatura, aby nie zajmował miejsca gracza.</string>
+ <string name="controller_report">Raport urządzeń wejściowych…</string>
+ <string name="controller_remote">Pilot / klawiatura</string>
+ <string name="controller_automatic">Automatycznie</string>
+ <string name="controller_unassigned">Nieprzypisany</string>
+ <string name="controls_setup_hint">Wybierz pady, przetestuj wejścia i zmień sterowanie w menu. Sterowanie podczas wyścigu przypisz w grze.</string>
+ <string name="faq_layout_modes"><b>Menu czy wyścig?</b>\nPrzyciski wyścigu pojawiają się podczas jazdy i znikają w menu. Układ zmienia się automatycznie.</string>
+ <string name="faq_mouse"><b>Jak działają menu?</b>\nW Sterowanie → Dotyk wybierz Dotyk bezpośredni, aby dotykać opcji menu, lub Touchpad, aby przesuwać kursor palcem. Przycisk lub gest Wstecz Androida cofa. Klawiatura otwiera się, gdy gra prosi o tekst; Wstecz ją zamyka.</string>
+ <string name="faq_screen_data"><b>Ekran i pliki gry</b>\nEkran pozwala ustawić orientację i limit klatek na sekundę. Niższy limit może zmniejszyć zużycie energii. Pliki i kopie zapasowe służą do zarządzania plikami gry, zapisami i kopiami ustawień launchera. Przed graniem wybierz aktywne pliki gry.</string>
+ <string name="faq_mapping"><b>Pady</b>\nW Sterowanie → Pady wybierz pad dla każdego gracza, przetestuj wejścia i zmień sterowanie w menu. Automatycznie używa pozostałych padów w kolejności podłączenia. Zapisane miejsca pozostają zarezerwowane po odłączeniu padów. Sterowanie podczas wyścigu przypisz w grze. Jeśli przycisk Wstecz z menu jest używany do jazdy, ustaw Skrót pauzy w wyścigu: przytrzymaj Wstecz i dodatkowy przycisk.</string>
+ <string name="controls_automatic_help">Menu: poruszaj się krzyżakiem lub lewym drążkiem, zatwierdzaj A / Cross i cofaj B / Circle. W Pady możesz testować urządzenia i zmieniać sterowanie w menu. W Dotyk wybierz Dotyk bezpośredni lub Touchpad.\n\nWyścig: przypisz sterowanie w menu Controls w grze. Przyciski ekranowe korzystają z tych przypisań. Jeśli przycisk Wstecz z menu jest używany do jazdy, wybierz dodatkowy przycisk w Pady → Skrót pauzy w wyścigu. Przytrzymaj oba, aby wstrzymać wyścig.\n\nPodzielony ekran: w Pady wybierz pad dla każdego gracza. Automatycznie używa pozostałych padów w kolejności podłączenia. Zapisane miejsce pozostaje zarezerwowane po odłączeniu pada. Sterowanie dotykowe obsługuje gracza 1.</string>
 </resources>

@@ -1,7 +1,5 @@
 <resources>
- <!-- Српски. Ознаке екрана Controls и натписи на екранским дугмадима намерно
-      остају на енглеском: тај се екран пореди са подешавањима саме игре, а игра
-      је на енглеском. -->
+ <!-- Launcher translations. Preserve format placeholders and resource names. -->
 
  <string name="language_label">Језик</string>
  <string name="language_system">Језик система</string>
@@ -16,17 +14,15 @@
  <string name="play">Играј</string>
  <string name="active_data_set">Активни подаци: %1$s</string>
  <string name="no_active_data_set">Нема активног скупа података. Увези један пре играња.</string>
- <string name="data_settings">Подаци</string>
- <string name="game_data_title">Подаци игре</string>
- <string name="launcher_settings_title">Подешавања покретача</string>
- <string name="launcher_settings_hint">Сачувај подешавања покретача — распоред контрола, доделу тастера, вибрацију — у датотеку или их врати. Увоз замењује тренутна пошто их резервно сачува.</string>
+ <string name="data_settings">Датотеке и резервне копије</string>
+ <string name="game_data_title">Датотеке игре</string>
+ <string name="launcher_settings_title">Резервна копија подешавања покретача</string>
+ <string name="launcher_settings_hint">Сачувајте додирне контроле, подешавања контролера, приказа, вибрације и мреже. Увоз прво прави резервну копију тренутних подешавања, а затим их замењује.</string>
  <string name="import_launcher">Увези подешавања...</string>
  <string name="export_launcher">Извези подешавања...</string>
- <string name="launcher_export_complete">Извезено подешавања: %1$d.</string>
  <string name="launcher_import_complete">Подешавања увезена. Претходна сачувана као %1$s.</string>
- <string name="launcher_import_complete_no_backup">Подешавања увезена. Претходних није било.</string>
- <string name="launcher_nothing_to_export">Још нема подешавања покретача.</string>
- <string name="launcher_wrong_format">Ово није датотека са подешавањима покретача.</string>
+ <string name="launcher_import_complete_no_backup">Подешавања су увезена.</string>
+ <string name="launcher_wrong_format">Датотека није подржана резервна копија подешавања покретача.</string>
  <string name="controls_settings">Распоред тастера</string>
  <string name="touch_settings">Управљање додиром</string>
  <string name="screen_settings">Екран</string>
@@ -45,11 +41,10 @@
  <string name="import_folder">Увези фасциклу…</string>
  <string name="import_zip">Увези ZIP…</string>
  <string name="import_image">Увези слику диска…</string>
- <string name="data_import_hint">Увези фасциклу која директно садржи \'fedata\' и \'gamedata\', или ZIP са тим фасциклама. Увезено се копира у складиште апликације. Може и слика диска игре (ISO или BIN из пара BIN/CUE).</string>
+ <string name="data_import_hint">Увезите фасциклу или ZIP са \'fedata\' и \'gamedata\', или слику диска (ISO или BIN). Датотеке се копирају у складиште апликације.</string>
  <string name="import_complete">Увоз података завршен</string>
- <string name="data_error">Радња са подацима није успела: %1$s</string>
- <string name="delete_data_title">Обрисати скуп података?</string>
- <string name="delete_data_message">Обрисати %1$s са овог уређаја? То се не може поништити.</string>
+ <string name="data_error">Није могуће довршити радњу: %1$s</string>
+ <string name="delete_data_title">Обрисати датотеке игре?</string>
  <string name="controls_explanation">Ово је слој порта између физичког контролера или додира и емулиране тастатуре. Независан је од менија Controls у самој игри; тај мени остаје непромењен.</string>
  <string name="controls_row_hint">За сваку радњу изабери физичко дугме контролера, а затим емулирани тастер који шаљу и оно и екранско дугме.</string>
  <string name="touch_mode_label">Начин уноса</string>
@@ -57,10 +52,10 @@
  <string name="touch_mode_wheel">Волан (ускоро)</string>
  <string name="touch_mode_tilt">Управљање нагибом (ускоро)</string>
  <string name="touch_layout_label">Распоред дугмади</string>
- <string name="touch_pointer_label">Показивач у менијима</string>
- <string name="touch_pointer_tap">Где прст додирне</string>
+ <string name="touch_pointer_label">Додирно управљање менијима</string>
+ <string name="touch_pointer_tap">Директан додир</string>
  <string name="touch_pointer_touchpad">Тачпед</string>
- <string name="touch_pointer_note">Тачпед: превлачи прстом било где да помераш показивач, додирни за клик, задржи прст да ухватиш и превучеш. Важи од следећег покретања игре.</string>
+ <string name="touch_pointer_note">Тачпед: превуците за померање показивача, додирните за клик или држите прст мирно да бисте ухватили и превукли ставку.</string>
  <string name="opacity_label">Непрозирност дугмади</string>
  <string name="size_label">Величина дугмади</string>
  <string name="auto_hide_label">Сакриј после 4 секунде неактивности</string>
@@ -72,7 +67,7 @@
  <string name="fps_30">30 FPS</string>
  <string name="fps_60">60 FPS</string>
  <string name="gamma_label">Гама</string>
- <string name="fps_cap_label">Број слика</string>
+ <string name="fps_cap_label">Ограничење броја кадрова</string>
  <string name="fps_error">Унеси цео број од 1 до 240</string>
  <string name="save">Сачувај</string>
  <string name="settings_saved">Подешавања сачувана</string>
@@ -85,7 +80,7 @@
  <string name="editor_drag_title">Превуци дугмад</string>
  <string name="editor_resize_hint">Изабери за промену величине</string>
  <string name="saves_title">Сачуване игре</string>
- <string name="saves_hint">Извези активни профил у ZIP или увези постојећи. Увоз прави локалну резервну копију пре замене постојећих сачуваних игара.</string>
+ <string name="saves_hint">Извезите сачуване игре из активних датотека игре у ZIP или увезите ZIP. Пре замене се прави резервна копија постојећих сачуваних игара.</string>
  <string name="import_saves">Увези сачуване игре…</string>
  <string name="export_saves">Извези сачуване игре…</string>
  <string name="saves_not_found">У активном скупу података нема сачуваних игара.</string>
@@ -104,7 +99,6 @@
  <string name="controls_touch">Додир</string>
  <string name="controls_gamepad">Контролери</string>
  <string name="gamepads_title">Контролери</string>
- <string name="gamepads_hint">Игра види два контролера: контролер 1 је играч 1 заједно са управљањем додиром, контролер 2 је играч 2. Овде изабери контролере и подеси њихове тастере, затим једном упиши управљање контролерима у игру.</string>
  <string name="gamepad_slot_label">Контролер %1$d</string>
  <string name="gamepad_slot_auto_now">Аутоматски: %1$s</string>
  <string name="gamepad_slot_auto_none">Аутоматски: није повезан ниједан контролер</string>
@@ -146,38 +140,17 @@
  <string name="importer_image_cue">Ово је CUE датотека: изабери BIN датотеку поред ње</string>
  <string name="importer_image_missing_files">У слици диска нема фасцикли fedata/gamedata</string>
  <string name="importer_image_truncated">Слика диска се прерано завршава: датотека није копирана цела</string>
-
- <string name="faq_layout_modes"><b>Мени или трка?</b>\nИгра то каже. Док возиш имаш тркачки распоред: дугмад за скретање, папучице, степене преноса и остало. У менијима, и кад год се мени отвори преко трке, порт не приказује ниједно дугме: менији сами примају додир, системско Назад је Escape, а тастатура се подиже сама. Ручно нема шта да се мења.</string>
- <string name="faq_mouse"><b>Како раде менији?</b>\nДодиром. Где ставиш прст, ту је показивач игре, па додир притиска ставку испод њега, а клизач прати прст који га вуче. Системско дугме или покрет Назад је Escape, а кад игра затражи име, тастатура телефона се отвара сама; док је тастатура отворена, Назад је затвара.</string>
  <string name="faq_size"><b>Шта мења величина?</b>\nВеличина дугмади скалира подразумевано управљање. У Уреди положаје и величине превуци дугме и промени му величину клизачем величине; дугме реагује тачно тамо где је нацртано, а проценти су у односу на подразумевано дугме. Измене се чувају саме. Уређивач приказује мрежу; уз укључено Поравнај са мрежом превучено дугме седа на њу.</string>
  <string name="faq_edges"><b>Ивице и висина</b>\nУдаљеност од ивица помера подразумевану дугмад ка унутра. Системски изрези се поштују. Ручно постављена дугмад задржавају сачуване положаје.</string>
  <string name="faq_hiding"><b>Непрозирност и аутоматско сакривање</b>\nНепрозирност одређује уобичајену видљивост. Сакривање почиње кад подигнеш све прсте, после 1–30 секунди. Скривена дугмад реагују већ на први додир и поново постају видљива. Држање дугмета спречава сакривање. Притисак на контролеру играча 1 одмах скрива дугмад; следећи додир их враћа. Контролер играча 2 их не дира, па један може да вози по екрану док други игра контролером.</string>
  <string name="faq_vibration"><b>Вибрација</b>\nЕфекти Force Feedback игре осећају се на телефону или на контролеру 1, никад на оба одједном: изаберите Искључено, Телефон или Контролер у Управљање → Force Feedback. Игра покреће само један уређај са повратном силом, па контролер 2 никад не вибрира. Јачина вибрације контролера подешава се у самој игри: Options → Controllers → Force Feedback. Ефекти долазе из игре, никад од притисака тастера.</string>
- <string name="faq_mapping"><b>Контролери</b>\nИгра увек види два контролера: контролер 1 је играч 1 заједно са управљањем додиром, контролер 2 је играч 2. У Управљање → Контролери притиском тастера изабери који је контролер чији и подеси шта ради сваки тастер, затим једном притисни Контролер УКЉУЧЕН. То у подешавања игре уписује одговарајуће управљање и резервно копира стару датотеку. Лева палица скреће, окидачи убрзавају и коче. Контролер има два скупа тастера, као што управљање додиром има два распореда: тркачки, који се подешава овде, и непроменљив за меније и снимке, где Cross / A потврђује, Circle / B враћа назад, а крст помера избор. За играње на тастатури уместо тога упиши Подразумевано у игри.</string>
  <string name="faq_lights"><b>Светла и повратак на стазу</b>\n☼ шаље L. ↻ шаље R за повратак на стазу. Тастери могу да се промене у Управљање → Додир → Тастери.</string>
- <string name="faq_screen_data"><b>Екран и подаци игре</b>\nВодоравно закључава игру водоравно; Аутоматски дозвољава ротацију. Ограничење FPS-а смањује број сличица; нижа вредност смањује оптерећење. «Подаци игре» управљају увозима и показују који је скуп активан. «Играј» се омогућава кад је скуп спреман.</string>
  <string name="gamepad_buttons">Тастери</string>
  <string name="gamepad_buttons_title">Тастери контролера %1$d</string>
- <string name="gamepad_buttons_hint">Шта ради сваки тастер овог контролера док возиш. Лева палица скреће, десни окидач убрзава, а леви кочи. У менијима и снимцима тастери су непроменљиви и не подешавају се: Cross / A и Options / Menu потврђују, Circle / B и Create / View враћају назад, крст помера избор. Радње тастера стижу до игре кад се у њу упише управљање контролерима.</string>
  <string name="gamepad_buttons_reset">Подразумевано</string>
- <string name="controls_write_gamepads">Контролер УКЉУЧЕН</string>
- <string name="controls_write_keyboard">Подразумевано у игри</string>
- <string name="controls_write_gamepads_message">Заменити управљање у подешавањима игре скупом контролера овог порта: контролер 1 и управљање додиром воде играча 1, контролер 2 играча 2, у појединачним тркама и на подељеном екрану. Тренутна датотека подешавања прво се резервно копира.</string>
- <string name="controls_write_keyboard_message">Заменити управљање у подешавањима игре подразумеваним управљањем тастатуром саме игре. Тренутна датотека подешавања прво се резервно копира.</string>
- <string name="controls_write_done">Управљање је уписано у игру. Резервна копија: %1$s</string>
- <string name="controls_write_no_config">Игра још нема датотеку подешавања. Покрени игру једном, па покушај поново.</string>
- <string name="controls_write_game_running">Затвори игру пре уписивања њеног управљања.</string>
- <string name="controls_write_failed">Управљање није могуће уписати: %1$s</string>
- <string name="gamepads_keyboard_note">Игра је подешена на сопствено управљање тастатуром (Подразумевано у игри). Контролери у тркама на подељеном екрану не раде ништа док не притиснеш Контролер УКЉУЧЕН.</string>
  <string name="pref_touch_enabled">Користи управљање додиром</string>
  <string name="controls_help">Помоћ: подељени екран</string>
  <string name="controls_help_title">Подељени екран са два контролера</string>
- <string name="help_split_setup"><b>1. Подеси контролере (једном)</b>\nПовежи оба контролера са телефоном. У Управљање → Контролери притисни Додели код контролера 1 и притисни било који тастер на контролеру играча 1, затим исто уради за контролер 2. Ради и Аутоматски: контролери се узимају редоследом повезивања. У Тастери бираш шта ради сваки тастер.</string>
- <string name="help_split_write"><b>2. Упиши управљање у игру</b>\nНа истом екрану притисни Контролер УКЉУЧЕН и потврди. Потребно је једном, а поново само после инсталирања других података игре или промене управљања у самој игри. Претходна подешавања се резервно копирају.</string>
- <string name="help_split_race"><b>3. Покрени трку на подељеном екрану</b>\nПокрени игру и изабери Two Players…. Играч 1 вози контролером 1 или управљањем додиром, играч 2 контролером 2. Кроз меније се креће било којим контролером: крст помера избор, Cross / A или Options / Menu потврђује, Circle / B или Create / View враћа назад.</string>
- <string name="help_split_driving"><b>Вожња</b>\nЛева палица скреће, десни окидач убрзава, а леви кочи. Подразумевано је Circle / B ручна кочница, Square / X баца траку са шиљцима, Cross / A гледа уназад, Triangle / Y мења камеру, R1 / L1 мењају брзине, Create / View враћа ауто на стазу, Options / Menu паузира трку, L3 труби, а R3 пали светла.</string>
- <string name="help_split_digital"><b>Аналогно или дигитално</b>\nСваки контролер има сопствени прекидач Аналогно / Дигитално у Управљање → Контролери. Дигитално вози трку као тастатура: крст лево и десно скреће, крст горе и десни окидач убрзавају, крст доле и леви окидач коче, а палица не скреће. Менији раде исто у оба случаја. Два контролера никад не деле ниједан тастер, па на подељеном екрану сваки вози само свој аутомобил.</string>
- <string name="help_split_notes"><b>Добро је знати</b>\nВибрира само контролер 1 или телефон, у зависности од избора у Управљање → Force Feedback: игра покреће само један уређај са повратном силом. Ако управљање престане да одговара, на пример после враћања подразумеваног у игри, поново притисни Контролер УКЉУЧЕН. За играње на тастатури уместо тога притисни Подразумевано у игри. Управљање додиром се искључује у Управљање → Додир.</string>
  <string name="gamepad_mode_analog">Аналогно</string>
  <string name="gamepad_mode_digital">Дигитално</string>
  <string name="gamepad_analog_note">У трци лева палица скреће, десни окидач убрзава, а леви кочи.</string>
@@ -199,4 +172,36 @@
  <string name="network_port_original">1030 · оригинална игра</string>
  <string name="network_hint">IPX сам проналази трке у овој Wi-Fi мрежи. TCP/IP повезује са сваким ко зна адресу домаћина, и са PC-јем са оригиналном игром или Modern Patch-ом. Сви играчи користе исти порт.</string>
  <string name="fps_unlimited">Без ограничења</string>
+ <string name="launcher_backup_export_complete">Подешавања покретача су извезена.</string>
+ <string name="delete_game_files_message">Обрисати %1$s и припадајуће сачуване игре и подешавања игре са овог уређаја? Ова радња се не може опозвати.</string>
+ <string name="choose_game_files">Изабери датотеке игре</string>
+ <string name="importing_saves">Увоз сачуваних игара…</string>
+ <string name="exporting_saves">Извоз сачуваних игара…</string>
+ <string name="importing_launcher">Увоз подешавања покретача…</string>
+ <string name="exporting_launcher">Извоз подешавања покретача…</string>
+ <string name="launcher_file_open_failed">Није могуће отворити изабрану датотеку подешавања.</string>
+ <string name="launcher_backup_failed">Није могуће направити резервну копију тренутних подешавања. Увоз је отказан.</string>
+ <string name="launcher_restore_failed">Није могуће сачувати увезена подешавања.</string>
+ <string name="controls_automatic_help_button">Помоћ за управљање</string>
+ <string name="controls_automatic_help_title">Додир и контролери</string>
+ <string name="controller_setup_intro">Изаберите контролер за сваког играча. Изаберите уређај да бисте тестирали или променили контроле менија. Контроле трке подесите у игри. Промене се чувају аутоматски.</string>
+ <string name="controller_test_hint">Покрените тест, а затим притискајте дугмад или померајте палице.</string>
+ <string name="controller_details_show">Прикажи детаље улаза</string>
+ <string name="controller_details_hide">Сакриј детаље улаза</string>
+ <string name="controller_reset_menu">Ресетуј контроле менија</string>
+ <string name="controller_pause_title">Пречица за паузу трке</string>
+ <string name="controller_pause_hint">Држите дугме Назад за меније и додатно дугме да бисте паузирали трку.</string>
+ <string name="controller_device_type">Тип уређаја</string>
+ <string name="controller_change_type">Промени тип уређаја…</string>
+ <string name="controller_role_hint">За даљински управљач телевизора изаберите Даљински управљач / тастатура како не би заузимао место играча.</string>
+ <string name="controller_report">Извештај о улазним уређајима…</string>
+ <string name="controller_remote">Даљински управљач / тастатура</string>
+ <string name="controller_automatic">Аутоматски</string>
+ <string name="controller_unassigned">Није додељен</string>
+ <string name="controls_setup_hint">Изаберите контролере, тестирајте улазе и промените контроле менија. Контроле трке подесите у игри.</string>
+ <string name="faq_layout_modes"><b>Мени или трка?</b>\nКонтроле трке се приказују током вожње и скривају у менијима. Распоред се мења аутоматски.</string>
+ <string name="faq_mouse"><b>Како раде менији?</b>\nУ Управљање → Додир изаберите Директан додир за додиривање ставки или Тачпед за померање показивача превлачењем. Android дугме или гест Назад враћа вас назад. Тастатура се отвара када игра затражи текст; Назад је затвара.</string>
+ <string name="faq_screen_data"><b>Екран и датотеке игре</b>\nЕкран подешава оријентацију и ограничење броја кадрова. Ниже ограничење може смањити потрошњу. Датотеке и резервне копије управљају увезеним датотекама игре, сачуваним играма и копијама подешавања покретача. Пре играња изаберите активне датотеке игре.</string>
+ <string name="faq_mapping"><b>Контролери</b>\nУ Управљање → Контролери изаберите контролер за сваког играча, тестирајте улазе и промените контроле менија. Аутоматски користи преостале контролере редоследом повезивања. Сачуване доделе остају резервисане када су контролери искључени. Контроле трке подесите у игри. Ако дугме Назад за меније служи за вожњу, подесите Пречицу за паузу трке: држите Назад и додатно дугме.</string>
+ <string name="controls_automatic_help">Менији: крећите се крстићем или левом палицом, потврдите помоћу A / Cross и вратите се помоћу B / Circle. У Контролери можете тестирати уређаје и мењати контроле менија. У Додир изаберите Директан додир или Тачпед.\n\nТрка: доделите контроле у менију Controls у игри. Дугмад на екрану прате те доделе. Ако дугме Назад за меније служи за вожњу, изаберите додатно дугме у Контролери → Пречица за паузу трке. Држите оба за паузу.\n\nПодељени екран: у Контролери изаберите контролер за сваког играча. Аутоматски користи преостале по редоследу повезивања. Сачувана додела остаје резервисана док је контролер искључен. Додирне контроле трке управљају играчем 1.</string>
 </resources>

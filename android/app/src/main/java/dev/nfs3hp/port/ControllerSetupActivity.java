@@ -17,6 +17,9 @@ import java.util.List;
 
 /** Interactive Android input test and per-controller normalization. No game files edited. */
 public final class ControllerSetupActivity extends ComponentActivity implements InputManager.InputDeviceListener {
+    @Override protected void attachBaseContext(android.content.Context base) {
+        super.attachBaseContext(LocaleHelper.wrap(base));
+    }
     private LinearLayout content,devices,players,otherDevices,detailPanel;
     private TextView selectedTitle,roleLabel;
     private final TextView[] indicators=new TextView[6];
@@ -57,6 +60,7 @@ public final class ControllerSetupActivity extends ComponentActivity implements 
         v.setBackground(panelBackground(0xff19204b,0xff46528d));
         LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-1,-2);lp.setMargins(0,dp(8),0,dp(8));v.setLayoutParams(lp);return v;
     }
+    private android.widget.Button inputDetailsButton;
     private void weighted(LinearLayout row,android.view.View view) {
         LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(0,-2,1);lp.setMargins(dp(4),dp(4),dp(4),dp(4));row.addView(view,lp);
     }
@@ -69,7 +73,7 @@ public final class ControllerSetupActivity extends ComponentActivity implements 
         LinearLayout center=column();center.setGravity(android.view.Gravity.CENTER_HORIZONTAL);scroll.addView(center);
         content=column();content.setPadding(0,0,0,dp(12));
         center.addView(content,new LinearLayout.LayoutParams(-1,-2));ControllerSetupScreenKt.showControllerSetup(this,scroll);
-        content.addView(text("Choose a player’s controller above, or select a device below to test and adjust its menu controls. Racing controls are assigned inside the game.",16));
+        content.addView(text(getString(R.string.controller_setup_intro),16));
         players=row();content.addView(players);
         heading(content,"Connected controllers");devices=column();content.addView(devices);
         detailPanel=panel();content.addView(detailPanel);selectedTitle=text("",21);detailPanel.addView(selectedTitle);
@@ -80,7 +84,13 @@ public final class ControllerSetupActivity extends ComponentActivity implements 
             chip.setMinHeight(dp(44));chip.setBackgroundResource(R.drawable.ui_input_indicator);indicators[i]=chip;weighted(chipRow,chip);
         }chips.addView(chipRow);}detailPanel.addView(chips);
         functions=text("Active functions: none",16);functions.setVisibility(android.view.View.GONE);detailPanel.addView(functions);
-        raw=text("Press a button or move a stick to see its Android input.",15);raw.setMinLines(2);raw.setMaxLines(3);raw.setEllipsize(android.text.TextUtils.TruncateAt.END);detailPanel.addView(raw);
+        detailPanel.addView(text(getString(R.string.controller_test_hint),14));
+        raw=text("No input yet.",15);raw.setVisibility(android.view.View.GONE);raw.setMinLines(2);raw.setMaxLines(3);raw.setEllipsize(android.text.TextUtils.TruncateAt.END);detailPanel.addView(raw);
+        inputDetailsButton=button(getString(R.string.controller_details_show),()->{
+            boolean show=raw.getVisibility()!=android.view.View.VISIBLE;
+            raw.setVisibility(show?android.view.View.VISIBLE:android.view.View.GONE);
+            inputDetailsButton.setText(show?getString(R.string.controller_details_hide):getString(R.string.controller_details_show));
+        });detailPanel.addView(inputDetailsButton);
         testButton=button("Start test",()->{cancelCapture();test=!test;testButton.setText(test?"Stop test":"Start test");if(!test){profile.release();down.clear();showFunctions();}updateStatus();});detailPanel.addView(testButton);
         detailPanel.addView(text("During a test, use touch or the TV remote to operate this page. Remote Back stops the test or cancels an assignment.",14));
         heading(detailPanel,"Menu controls");
@@ -90,26 +100,26 @@ public final class ControllerSetupActivity extends ComponentActivity implements 
             bindingRow.addView(label,new LinearLayout.LayoutParams(0,-2,1));
             assignButtons[i]=button("Assign",()->{if(waiting==action){cancelCapture();updateStatus();}else begin(action);});
             LinearLayout.LayoutParams assignLP=new LinearLayout.LayoutParams(dp(100),-2);assignLP.setMargins(dp(4),dp(8),dp(4),dp(8));bindingRow.addView(assignButtons[i],assignLP);
-            Button defaults=button("Default",()->{cancelCapture();profile.assign(action,null);save();});
+            Button defaults=button("Reset",()->{cancelCapture();profile.assign(action,null);save();});
             LinearLayout.LayoutParams defaultLP=new LinearLayout.LayoutParams(dp(100),-2);defaultLP.setMargins(dp(4),dp(8),0,dp(8));bindingRow.addView(defaults,defaultLP);
             detailPanel.addView(bindingRow);
         }
-        detailPanel.addView(button("Reset this controller’s menu controls",()->{
+        detailPanel.addView(button(getString(R.string.controller_reset_menu),()->{
             cancelCapture();for(int i=0;i<6;i++)profile.assign(i,null);profile.release();save();showFunctions();
         }));
-        heading(detailPanel,"During race");
-        detailPanel.addView(text("Pause with Back + an extra button, even when either is assigned to racing. Hold both on this controller; release both before using it again.",14));
+        heading(detailPanel,getString(R.string.controller_pause_title));
+        detailPanel.addView(text(getString(R.string.controller_pause_hint),14));
         pauseValue=text("",14);detailPanel.addView(pauseValue);
         LinearLayout pauseRow=row();
         pauseAssign=button("Assign extra button",()->{if(waiting==6){cancelCapture();updateStatus();}else begin(6);});
         weighted(pauseRow,pauseAssign);
         weighted(pauseRow,button("Disable",()->{cancelCapture();profile.racePauseModifier=null;save();}));
         detailPanel.addView(pauseRow);
-        heading(detailPanel,"Device role");roleLabel=text("",15);detailPanel.addView(roleLabel);
-        detailPanel.addView(button("Change device role…",()->showRole(device)));
-        detailPanel.addView(text("Use Remote / keyboard for a TV remote. Remotes navigate with keyboard keys and cannot occupy gamepad slots. Choices save for this device.",14));
+        heading(detailPanel,getString(R.string.controller_device_type));roleLabel=text("",15);detailPanel.addView(roleLabel);
+        detailPanel.addView(button(getString(R.string.controller_change_type),()->showRole(device)));
+        detailPanel.addView(text(getString(R.string.controller_role_hint),14));
         otherDevices=column();content.addView(otherDevices);
-        Button report=button("Save input device report…",()->InputDeviceReport.show(this));
+        Button report=button(getString(R.string.controller_report),()->InputDeviceReport.show(this));
         LinearLayout.LayoutParams reportLayout=new LinearLayout.LayoutParams(-1,-2);
         reportLayout.topMargin=dp(12);content.addView(report,reportLayout);
         refreshDevices();
@@ -118,7 +128,7 @@ public final class ControllerSetupActivity extends ComponentActivity implements 
     @Override protected void onPause(){((InputManager)getSystemService(INPUT_SERVICE)).unregisterInputDeviceListener(this);handler.removeCallbacks(arm);cancelCapture();test=false;testButton.setText("Start test");if(profile!=null){profile.release();showFunctions();}down.clear();super.onPause();}
     @Override protected void onSaveInstanceState(Bundle out){super.onSaveInstanceState(out);out.putString("controller",descriptor);out.putBoolean("show_others",showOthers);out.putBoolean("expanded",expanded);}
     private void choosePlayer(int slot) {
-        List<GamepadSlots.Pad> pads=GamepadSlots.attached();String[] names=new String[pads.size()+1];names[0]="Automatic";
+        List<GamepadSlots.Pad> pads=GamepadSlots.attached();String[] names=new String[pads.size()+1];names[0]=getString(R.string.controller_automatic);
         int checked=0;String pin=GamepadSlots.assigned(GamePreferences.get(this),slot);
         for(int i=0;i<pads.size();i++){names[i+1]=pads.get(i).name;if(pads.get(i).descriptor.equals(pin))checked=i+1;}
         new android.app.AlertDialog.Builder(this).setTitle("Player "+(slot+1)+" controller")
@@ -131,7 +141,7 @@ public final class ControllerSetupActivity extends ComponentActivity implements 
     private void showRole(InputDevice input) {
         if(input==null)return;
         new android.app.AlertDialog.Builder(this).setTitle(input.getName())
-            .setItems(new String[]{"Default (detect from capabilities)","Game controller (including button-only)","Remote / keyboard"},(dialog,choice)->{
+            .setItems(new String[]{getString(R.string.controller_automatic),"Gamepad",getString(R.string.controller_remote)},(dialog,choice)->{
                 cancelCapture();InputDeviceRoles.set(input,new String[]{InputDeviceRoles.DEFAULT,InputDeviceRoles.CONTROLLER,InputDeviceRoles.REMOTE}[choice]);
                 if(!InputDeviceRoles.isController(input) && descriptor.equals(input.getDescriptor())){device=null;profile=null;descriptor="";}
                 refreshDevices();
@@ -150,7 +160,7 @@ public final class ControllerSetupActivity extends ComponentActivity implements 
         }
         int otherCount=0;for(InputDevice input:InputDeviceRoles.candidates())if(!InputDeviceRoles.isController(input))otherCount++;
         for(InputDevice input:InputDeviceRoles.candidates())if(InputDeviceRoles.isController(input)) {
-            String player="Available";for(int slot=0;slot<2;slot++)if(assigned[slot]!=null && assigned[slot].id==input.getId())player="Player "+(slot+1);
+            String player=getString(R.string.controller_unassigned);for(int slot=0;slot<2;slot++)if(assigned[slot]!=null && assigned[slot].id==input.getId())player="Player "+(slot+1);
             boolean active=input.getDescriptor().equals(descriptor);if(active)selected=input;
             Button card=button(input.getName()+"\n"+player+(active?(expanded?" · Hide controls":" · Show controls"):" · Test / configure"),()->{
                 if(input.getDescriptor().equals(descriptor)) {
@@ -160,11 +170,11 @@ public final class ControllerSetupActivity extends ComponentActivity implements 
             });card.setTag("device:"+input.getDescriptor());card.setSelected(active);card.setMinHeight(dp(64));
             LinearLayout.LayoutParams cardLP=new LinearLayout.LayoutParams(-1,-2);cardLP.setMargins(0,dp(5),0,dp(5));devices.addView(card,cardLP);
         }
-        if(pads.isEmpty())devices.addView(text("No game controller detected. If a controller is misidentified, expand the inputs below and change its device role.",16));
+        if(pads.isEmpty())devices.addView(text("No game controller detected. If a controller is misidentified, expand the inputs below and change its device type.",16));
         final int count=otherCount;Button toggle=button((showOthers?"▾  ":"▸  ")+"Remotes and other inputs ("+count+")",()->{showOthers=!showOthers;refreshDevices();});toggle.setTag("others");otherDevices.addView(toggle);
         if(showOthers)for(InputDevice input:InputDeviceRoles.candidates())if(!InputDeviceRoles.isController(input)) {
             LinearLayout card=panel();card.addView(text(input.getName(),17));card.addView(text(InputDeviceRoles.description(input),14));
-            Button role=button("Change role…",()->showRole(input));role.setTag("role:"+input.getDescriptor());card.addView(role);otherDevices.addView(card);
+            Button role=button(getString(R.string.controller_change_type),()->showRole(input));role.setTag("role:"+input.getDescriptor());card.addView(role);otherDevices.addView(card);
         }
         if(selected==null && !pads.isEmpty()){select(GamepadSlots.device(pads.get(0)));return;}
         if(selected==null){device=null;profile=null;waiting=-1;test=false;testButton.setText("Start test");down.clear();}
@@ -224,7 +234,7 @@ public final class ControllerSetupActivity extends ComponentActivity implements 
             status.setText("This is the race pause extra button. Disable or change it first.");return;
         }
         for(int i=0;i<6;i++)if(i!=waiting && binding.sameInput(profile.bindings[i])) {
-            status.setText("Already assigned to "+ControllerProfile.NAMES[i]+". Clear that assignment first, or press another control.");return;
+            status.setText("Already assigned to "+ControllerProfile.NAMES[i]+". Reset that assignment first, or press another control.");return;
         }
         profile.assign(waiting,binding);cancelCapture();test=true;testButton.setText("Stop test");save();
     }

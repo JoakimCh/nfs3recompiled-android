@@ -4,7 +4,7 @@ import java.util.HashSet;
 
 /** Device-independent profile state. No Android calls; shared by setup and play. */
 final class ControllerProfile {
-    static final String[] NAMES={"Up","Down","Left","Right","Confirm / press","Back"};
+    static final String[] NAMES={"Up","Down","Left","Right","Confirm","Back"};
     final String identity;
     final Binding[] bindings=new Binding[6];
     Binding racePauseModifier; // null disables the race-only Back combination.

@@ -1,7 +1,5 @@
 <resources>
- <!-- Čeština. Popisky obrazovky Controls a nápisy na tlačítkách na obrazovce
-      zůstávají záměrně anglicky: tato obrazovka se porovnává s nastavením samé
-      hry, a ta je anglická. -->
+ <!-- Launcher translations. Preserve format placeholders and resource names. -->
 
  <string name="language_label">Jazyk</string>
  <string name="language_system">Jazyk systému</string>
@@ -16,17 +14,15 @@
  <string name="play">Hrát</string>
  <string name="active_data_set">Aktivní data: %1$s</string>
  <string name="no_active_data_set">Žádná aktivní datová sada. Před hraním ji importuj.</string>
- <string name="data_settings">Data</string>
- <string name="game_data_title">Data hry</string>
- <string name="launcher_settings_title">Nastavení launcheru</string>
- <string name="launcher_settings_hint">Ulož nastavení launcheru — rozložení ovládání, přiřazení tlačítek, vibrace — do souboru, nebo je obnov. Import nahradí současná a předtím je zálohuje.</string>
+ <string name="data_settings">Soubory a zálohy</string>
+ <string name="game_data_title">Herní soubory</string>
+ <string name="launcher_settings_title">Záloha nastavení spouštěče</string>
+ <string name="launcher_settings_hint">Zálohujte dotykové ovládání, nastavení gamepadů, obrazu, vibrací a sítě. Při importu se současné nastavení nejprve zálohuje a poté nahradí.</string>
  <string name="import_launcher">Importovat nastavení...</string>
  <string name="export_launcher">Exportovat nastavení...</string>
- <string name="launcher_export_complete">Exportováno nastavení: %1$d.</string>
  <string name="launcher_import_complete">Nastavení importováno. Předchozí uložena jako %1$s.</string>
- <string name="launcher_import_complete_no_backup">Nastavení importováno. Žádná předchozí nebyla.</string>
- <string name="launcher_nothing_to_export">Zatím nejsou žádná nastavení launcheru.</string>
- <string name="launcher_wrong_format">Toto není soubor s nastavením launcheru.</string>
+ <string name="launcher_import_complete_no_backup">Nastavení bylo importováno.</string>
+ <string name="launcher_wrong_format">Soubor není podporovanou zálohou nastavení spouštěče.</string>
  <string name="controls_settings">Přiřazení kláves</string>
  <string name="touch_settings">Dotykové ovládání</string>
  <string name="screen_settings">Obrazovka</string>
@@ -45,11 +41,10 @@
  <string name="import_folder">Importovat složku…</string>
  <string name="import_zip">Importovat ZIP…</string>
  <string name="import_image">Import obrazu disku…</string>
- <string name="data_import_hint">Importuj složku, která přímo obsahuje \'fedata\' a \'gamedata\', nebo ZIP s těmito složkami. Importovaná data se zkopírují do úložiště aplikace. Lze importovat i obraz herního disku (ISO nebo BIN z dvojice BIN/CUE).</string>
+ <string name="data_import_hint">Importujte složku nebo ZIP se složkami \'fedata\' a \'gamedata\', případně obraz disku (ISO nebo BIN). Soubory se zkopírují do úložiště aplikace.</string>
  <string name="import_complete">Import dat dokončen</string>
- <string name="data_error">Operace s daty selhala: %1$s</string>
- <string name="delete_data_title">Smazat datovou sadu?</string>
- <string name="delete_data_message">Smazat %1$s z tohoto zařízení? Nelze vrátit zpět.</string>
+ <string name="data_error">Operaci se nepodařilo dokončit: %1$s</string>
+ <string name="delete_data_title">Smazat herní soubory?</string>
  <string name="controls_explanation">Toto je vrstva portu mezi fyzickým gamepadem nebo dotykem a emulovanou klávesnicí. Je nezávislá na nabídce Controls v samotné hře; ta zůstává beze změny.</string>
  <string name="controls_row_hint">Pro každou akci vyber fyzické tlačítko gamepadu a poté emulovanou klávesu, kterou posílá jak ono, tak dotykové tlačítko na obrazovce.</string>
  <string name="touch_mode_label">Režim vstupu</string>
@@ -57,10 +52,10 @@
  <string name="touch_mode_wheel">Volant (brzy)</string>
  <string name="touch_mode_tilt">Řízení nakláněním (brzy)</string>
  <string name="touch_layout_label">Rozložení tlačítek</string>
- <string name="touch_pointer_label">Ukazatel v nabídkách</string>
- <string name="touch_pointer_tap">Tam, kam se dotkne prst</string>
+ <string name="touch_pointer_label">Dotykové ovládání nabídek</string>
+ <string name="touch_pointer_tap">Přímý dotyk</string>
  <string name="touch_pointer_touchpad">Touchpad</string>
- <string name="touch_pointer_note">Touchpad: táhni prstem kdekoli pro pohyb kurzoru, klepni pro kliknutí, podrž prst pro uchopení a tažení. Platí od příštího spuštění hry.</string>
+ <string name="touch_pointer_note">Touchpad: posunutím pohybujete kurzorem, klepnutím kliknete a podržením prstu na místě uchopíte položku k přetažení.</string>
  <string name="opacity_label">Krytí tlačítek</string>
  <string name="size_label">Velikost tlačítek</string>
  <string name="auto_hide_label">Skrýt po 4 sekundách nečinnosti</string>
@@ -72,7 +67,7 @@
  <string name="fps_30">30 FPS</string>
  <string name="fps_60">60 FPS</string>
  <string name="gamma_label">Gama</string>
- <string name="fps_cap_label">Snímková frekvence</string>
+ <string name="fps_cap_label">Limit snímkové frekvence</string>
  <string name="fps_error">Zadej celé číslo od 1 do 240</string>
  <string name="save">Uložit</string>
  <string name="settings_saved">Nastavení uloženo</string>
@@ -85,7 +80,7 @@
  <string name="editor_drag_title">Táhni prvky</string>
  <string name="editor_resize_hint">Vyber pro změnu velikosti</string>
  <string name="saves_title">Uložené hry</string>
- <string name="saves_hint">Exportuj aktivní profil do ZIPu, nebo nějaký importuj. Import před nahrazením vytvoří místní zálohu.</string>
+ <string name="saves_hint">Exportujte uložené hry z aktivních herních souborů do ZIPu nebo importujte ZIP. Stávající uložené hry se před nahrazením zálohují.</string>
  <string name="import_saves">Importovat uložené hry…</string>
  <string name="export_saves">Exportovat uložené hry…</string>
  <string name="saves_not_found">V aktivní datové sadě nebyly nalezeny žádné uložené hry.</string>
@@ -104,7 +99,6 @@
  <string name="controls_touch">Dotyk</string>
  <string name="controls_gamepad">Gamepady</string>
  <string name="gamepads_title">Gamepady</string>
- <string name="gamepads_hint">Hra vidí dva gamepady: gamepad 1 je první hráč spolu s dotykovým ovládáním, gamepad 2 je druhý hráč. Zde vyberte ovladače a nastavte jejich tlačítka, pak jednou zapište ovládání gamepadů do hry.</string>
  <string name="gamepad_slot_label">Gamepad %1$d</string>
  <string name="gamepad_slot_auto_now">Automaticky: %1$s</string>
  <string name="gamepad_slot_auto_none">Automaticky: není připojen žádný gamepad</string>
@@ -146,38 +140,17 @@
  <string name="importer_image_cue">Toto je soubor CUE: vyberte soubor BIN vedle něj</string>
  <string name="importer_image_missing_files">V obrazu disku chybí složky fedata/gamedata</string>
  <string name="importer_image_truncated">Obraz disku končí předčasně: soubor se nezkopíroval celý</string>
-
- <string name="faq_layout_modes"><b>Menu, nebo závod?</b>\nŘíká to hra. Při jízdě máš závodní rozložení: tlačítka řízení, pedály, převody a zbytek. V nabídkách, a kdykoli se nabídka otevře přes závod, port nezobrazuje žádná tlačítka: nabídky přijímají dotyk samy, systémové Zpět funguje jako Escape a klávesnice se vysune sama. Ručně není co přepínat.</string>
- <string name="faq_mouse"><b>Jak fungují nabídky?</b>\nDotykem. Kam položíš prst, tam je ukazatel hry, takže ťuknutí stiskne položku pod ním a posuvník jde za prstem, který ho táhne. Systémové tlačítko nebo gesto Zpět je Escape, a když si hra řekne o jméno, klávesnice telefonu se otevře sama; při otevřené klávesnici ji Zpět zavře.</string>
  <string name="faq_size"><b>Co mění velikost?</b>\nVelikost tlačítek škáluje výchozí ovládání. V Upravit pozice a velikosti přetáhni prvek a změň jeho velikost posuvníkem velikosti; prvek reaguje na dotyk přesně tam, kde je vykreslen, a procenta jsou vztažena k výchozímu prvku. Změny se ukládají samy. Editor ukazuje mřížku; se zapnutým Přichytit k mřížce na ni tažený prvek dosedne.</string>
  <string name="faq_edges"><b>Okraje a výška</b>\nOdstup od okrajů posouvá výchozí prvky dovnitř. Systémové výřezy se respektují. Ručně umístěné prvky si drží uložené pozice.</string>
  <string name="faq_hiding"><b>Krytí a automatické skrývání</b>\nKrytí určuje běžnou viditelnost. Skrývání začne po zvednutí všech prstů, po 1–30 sekundách. Skrytá tlačítka reagují už na první dotek a znovu se zobrazí. Podržení prvku skrývání zabrání. Stisk na padu prvního hráče ovládání okamžitě skryje; další dotyk ho vrátí. Pad druhého hráče se ho nedotkne, takže jeden hráč může jezdit po displeji, zatímco druhý hraje na padu.</string>
  <string name="faq_vibration"><b>Vibrace</b>\nEfekty Force Feedback hry se projeví na telefonu, nebo na gamepadu 1, nikdy na obou zároveň: v Ovládání → Force Feedback zvolte Vypnuto, Telefon nebo Gamepad. Hra ovládá jen jedno zařízení se silovou zpětnou vazbou, takže gamepad 2 nikdy nevibruje. Síla vibrací gamepadu se nastavuje přímo ve hře: Options → Controllers → Force Feedback. Efekty přicházejí ze hry, nikdy ze stisku tlačítek.</string>
- <string name="faq_mapping"><b>Gamepady</b>\nHra vždy vidí dva gamepady: gamepad 1 je první hráč spolu s dotykovým ovládáním, gamepad 2 je druhý hráč. V Ovládání → Gamepady stiskem tlačítka vyberte, který ovladač je který, nastavte, co dělá každé tlačítko, a pak jednou stiskněte Gamepad ZAPNUTO. Tím se do nastavení hry zapíše odpovídající ovládání a starý soubor se zálohuje. Levá páčka zatáčí, spouště přidávají plyn a brzdí. Pad má dvě sady tlačítek, stejně jako má dotykové ovládání dvě rozložení: závodní, kterou nastavíte zde, a pevnou pro nabídky a záznamy, kde Cross / A potvrzuje, Circle / B se vrací a kříž posouvá výběr. Pro hru na klávesnici zapište místo toho Výchozí ve hře.</string>
  <string name="faq_lights"><b>Světla a návrat na trať</b>\n☼ posílá L. ↻ posílá R pro návrat na trať. Klávesy lze změnit v Ovládání → Dotyk → Klávesy.</string>
- <string name="faq_screen_data"><b>Obrazovka a herní data</b>\nNa šířku uzamkne hru vodorovně; Automaticky povolí otáčení. Limit FPS omezuje snímkovou frekvenci; nižší hodnota sníží zátěž. «Herní data» spravují importy a ukazují aktivní sadu. Tlačítko «Hrát» se zpřístupní, jakmile je sada připravená.</string>
  <string name="gamepad_buttons">Tlačítka</string>
  <string name="gamepad_buttons_title">Tlačítka gamepadu %1$d</string>
- <string name="gamepad_buttons_hint">Co dělá každé tlačítko tohoto padu při jízdě. Levá páčka zatáčí, pravá spoušť přidává plyn a levá brzdí. V nabídkách a v záznamech jsou tlačítka pevná a nic se nenastavuje: Cross / A a Options / Menu potvrzují, Circle / B a Create / View se vracejí, kříž posouvá výběr. Akce tlačítek se do hry dostanou, jakmile je do ní zapsáno ovládání gamepady.</string>
  <string name="gamepad_buttons_reset">Výchozí</string>
- <string name="controls_write_gamepads">Gamepad ZAPNUTO</string>
- <string name="controls_write_keyboard">Výchozí ve hře</string>
- <string name="controls_write_gamepads_message">Nahradit ovládání v nastavení hry sadou gamepadů portu: gamepad 1 a dotykové ovládání řídí prvního hráče, gamepad 2 druhého, v jednotlivých závodech i na rozdělené obrazovce. Současný soubor nastavení se nejprve zálohuje.</string>
- <string name="controls_write_keyboard_message">Nahradit ovládání v nastavení hry výchozím ovládáním klávesnicí samotné hry. Současný soubor nastavení se nejprve zálohuje.</string>
- <string name="controls_write_done">Ovládání bylo zapsáno do hry. Záloha: %1$s</string>
- <string name="controls_write_no_config">Hra zatím nemá soubor nastavení. Jednou hru spusťte a zkuste to znovu.</string>
- <string name="controls_write_game_running">Před zápisem ovládání hru zavřete.</string>
- <string name="controls_write_failed">Ovládání se nepodařilo zapsat: %1$s</string>
- <string name="gamepads_keyboard_note">Hra je nastavená na vlastní klávesnicové ovládání (Výchozí ve hře). Gamepady v závodech na rozdělené obrazovce nic nedělají, dokud nestisknete Gamepad ZAPNUTO.</string>
  <string name="pref_touch_enabled">Používat dotykové ovládání</string>
  <string name="controls_help">Nápověda: rozdělená obrazovka</string>
  <string name="controls_help_title">Rozdělená obrazovka se dvěma gamepady</string>
- <string name="help_split_setup"><b>1. Nastavte gamepady (jednou)</b>\nPřipojte k telefonu oba gamepady. V Ovládání → Gamepady stiskněte Přiřadit u gamepadu 1 a stiskněte libovolné tlačítko na ovladači prvního hráče, pak totéž udělejte pro gamepad 2. Funguje i Automaticky: ovladače se berou v pořadí připojení. V Tlačítka zvolíte, co které tlačítko dělá.</string>
- <string name="help_split_write"><b>2. Zapište ovládání do hry</b>\nNa stejné obrazovce stiskněte Gamepad ZAPNUTO a potvrďte. Stačí to jednou a znovu jen po instalaci jiných herních dat nebo po změně ovládání přímo ve hře. Předchozí nastavení se zálohuje.</string>
- <string name="help_split_race"><b>3. Spusťte závod na rozdělené obrazovce</b>\nSpusťte hru a zvolte Two Players…. První hráč řídí gamepadem 1 nebo dotykovým ovládáním, druhý gamepadem 2. Nabídkami lze procházet kterýmkoli ovladačem: kříž posouvá výběr, Cross / A nebo Options / Menu potvrzuje, Circle / B nebo Create / View se vrací zpět.</string>
- <string name="help_split_driving"><b>Řízení</b>\nLevá páčka zatáčí, pravá spoušť přidává plyn a levá brzdí. Ve výchozím nastavení je Circle / B ruční brzda, Square / X pokládá pás s hroty, Cross / A se ohlédne dozadu, Triangle / Y přepíná kameru, R1 / L1 řadí, Create / View vrací vůz na trať, Options / Menu pozastaví závod, L3 troubí a R3 zapíná světla.</string>
- <string name="help_split_digital"><b>Analogové, nebo digitální</b>\nKaždý gamepad má v Ovládání → Gamepady vlastní přepínač Analogové / Digitální. Digitální řídí závod jako klávesnice: kříž doleva a doprava zatáčí, kříž nahoru a pravá spoušť přidávají plyn, kříž dolů a levá spoušť brzdí a páčka nezatáčí. Nabídky fungují v obou režimech stejně. Oba gamepady nikdy nesdílejí žádnou klávesu, takže při rozdělené obrazovce každý řídí jen své auto.</string>
- <string name="help_split_notes"><b>Dobré vědět</b>\nVibruje jen gamepad 1, nebo telefon – podle volby v Ovládání → Force Feedback: hra ovládá jen jedno zařízení se silovou zpětnou vazbou. Pokud ovládání přestane odpovídat, například po obnovení výchozího ovládání ve hře, stiskněte znovu Gamepad ZAPNUTO. Pro hru na klávesnici stiskněte místo toho Výchozí ve hře. Dotykové ovládání lze vypnout v Ovládání → Dotyk.</string>
  <string name="gamepad_mode_analog">Analogové</string>
  <string name="gamepad_mode_digital">Digitální</string>
  <string name="gamepad_analog_note">V závodě levá páčka zatáčí, pravá spoušť přidává plyn a levá brzdí.</string>
@@ -199,4 +172,36 @@
  <string name="network_port_original">1030 · původní hra</string>
  <string name="network_hint">IPX sám najde závody v této síti Wi-Fi. TCP/IP spojí s každým, kdo zná adresu hostitele, i s PC s původní hrou nebo Modern Patchem. Všichni hráči používají stejný port.</string>
  <string name="fps_unlimited">Bez omezení</string>
+ <string name="launcher_backup_export_complete">Nastavení spouštěče bylo exportováno.</string>
+ <string name="delete_game_files_message">Smazat %1$s včetně příslušných uložených her a herního nastavení z tohoto zařízení? Tuto akci nelze vrátit zpět.</string>
+ <string name="choose_game_files">Vybrat herní soubory</string>
+ <string name="importing_saves">Import uložených her…</string>
+ <string name="exporting_saves">Export uložených her…</string>
+ <string name="importing_launcher">Import nastavení spouštěče…</string>
+ <string name="exporting_launcher">Export nastavení spouštěče…</string>
+ <string name="launcher_file_open_failed">Vybraný soubor nastavení se nepodařilo otevřít.</string>
+ <string name="launcher_backup_failed">Současné nastavení se nepodařilo zálohovat. Import byl zrušen.</string>
+ <string name="launcher_restore_failed">Importované nastavení se nepodařilo uložit.</string>
+ <string name="controls_automatic_help_button">Nápověda k ovládání</string>
+ <string name="controls_automatic_help_title">Dotyk a gamepady</string>
+ <string name="controller_setup_intro">Vyberte gamepad pro každého hráče. Výběrem gamepadu můžete otestovat nebo změnit jeho ovládání nabídek. Ovládání závodu nastavte ve hře. Změny se ukládají automaticky.</string>
+ <string name="controller_test_hint">Spusťte test a poté mačkejte tlačítka nebo pohybujte páčkami.</string>
+ <string name="controller_details_show">Zobrazit podrobnosti vstupu</string>
+ <string name="controller_details_hide">Skrýt podrobnosti vstupu</string>
+ <string name="controller_reset_menu">Obnovit ovládání nabídek</string>
+ <string name="controller_pause_title">Zkratka pro pozastavení závodu</string>
+ <string name="controller_pause_hint">Závod pozastavíte podržením tlačítka Zpět pro nabídky a dalšího tlačítka.</string>
+ <string name="controller_device_type">Typ zařízení</string>
+ <string name="controller_change_type">Změnit typ zařízení…</string>
+ <string name="controller_role_hint">Pro televizní ovladač zvolte Dálkový ovladač / klávesnice, aby nezabíral místo hráče.</string>
+ <string name="controller_report">Zpráva o vstupních zařízeních…</string>
+ <string name="controller_remote">Dálkový ovladač / klávesnice</string>
+ <string name="controller_automatic">Automaticky</string>
+ <string name="controller_unassigned">Nepřiřazeno</string>
+ <string name="controls_setup_hint">Vyberte gamepady, otestujte vstupy a změňte ovládání nabídek. Ovládání závodu nastavte ve hře.</string>
+ <string name="faq_layout_modes"><b>Nabídka, nebo závod?</b>\nOvládání závodu se zobrazuje při jízdě a v nabídkách se skrývá. Rozložení se přepíná automaticky.</string>
+ <string name="faq_mouse"><b>Jak fungují nabídky?</b>\nV Ovládání → Dotyk vyberte Přímý dotyk pro klepání na položky nebo Touchpad pro posouvání kurzoru tažením. Tlačítko či gesto Zpět v Androidu se vrací zpět. Klávesnice se otevře, když hra požádá o text; Zpět ji zavře.</string>
+ <string name="faq_screen_data"><b>Obraz a herní soubory</b>\nObraz nastavuje orientaci obrazovky a limit snímkové frekvence. Nižší limit může snížit spotřebu. Soubory a zálohy spravují importované herní soubory, uložené hry a zálohy nastavení spouštěče. Před hraním vyberte aktivní herní soubory.</string>
+ <string name="faq_mapping"><b>Gamepady</b>\nV Ovládání → Gamepady vyberte gamepad pro každého hráče, otestujte vstupy a změňte ovládání nabídek. Automaticky používá zbývající gamepady v pořadí připojení. Uložená přiřazení zůstávají rezervovaná i po odpojení gamepadu. Ovládání závodu nastavte ve hře. Pokud tlačítko Zpět pro nabídky slouží k řízení, nastavte Zkratku pro pozastavení závodu: podržte Zpět a další tlačítko.</string>
+ <string name="controls_automatic_help">Nabídky: pohybujte se směrovým křížem nebo levou páčkou, potvrzujte A / Cross a vracejte se pomocí B / Circle. V Gamepady můžete testovat zařízení a měnit ovládání nabídek. V Dotyk zvolte Přímý dotyk nebo Touchpad.\n\nZávod: nastavte ovládání v nabídce Controls ve hře. Tlačítka na obrazovce tato přiřazení následují. Pokud tlačítko Zpět pro nabídky slouží k řízení, vyberte další tlačítko v Gamepady → Zkratka pro pozastavení závodu. Podržením obou závod pozastavíte.\n\nRozdělená obrazovka: v Gamepady vyberte gamepad pro každého hráče. Automaticky používá zbývající gamepady v pořadí připojení. Uložené přiřazení zůstává rezervované i po odpojení gamepadu. Dotykové ovládání řídí hráče 1.</string>
 </resources>

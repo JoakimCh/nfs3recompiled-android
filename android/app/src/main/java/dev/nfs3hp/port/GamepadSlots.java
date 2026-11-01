@@ -21,6 +21,13 @@ final class GamepadSlots
 
     private GamepadSlots() {}
 
+    static boolean assignmentPreference(String key)
+    {
+        for (int slot = 0; slot < COUNT; ++slot)
+            if (DESCRIPTOR[slot].equals(key) || NAME[slot].equals(key)) return true;
+        return false;
+    }
+
     /** A pad as the resolver needs it -- nothing Android-specific, so the
      *  rules below can be checked without real hardware. */
     static final class Pad

@@ -22,10 +22,10 @@ import java.util.Map;
  *
  *  What travels is everything that describes how the player set the launcher up
  *  -- the touch layout down to each control's position, the control mappings,
- *  vibration, orientation and the frame cap.  What does not travel is anything
- *  that describes *this device*: the active data set and the names of the data
- *  sets installed on it would point a different phone at things it does not
- *  have.  The interface language is left out on purpose too.
+ *  vibration, orientation, frame cap and per-controller setup. Controller
+ *  identities travel unchanged: disconnected controllers keep their setup,
+ *  and unrelated controllers never inherit it through a name/model guess.
+ *  Installed game-data references and the interface language stay local.
  *
  *  Control positions are stored as fractions of the play area rather than
  *  pixels, so a layout built on one screen lands correctly on another -- which
@@ -34,14 +34,13 @@ final class LauncherSettings {
     private LauncherSettings() {}
 
     /** Bumped only if the meaning of the contents changes, not their spelling. */
-    private static final int FORMAT = 1;
+    private static final int FORMAT = 2;
     private static final String FORMAT_KEY = "format", SETTINGS_KEY = "settings";
     private static final String TYPE = "type", VALUE = "value";
 
     /** Settings carried one by one. */
-    /* Gamepad slot assignments are left out on purpose, like the data-set
-     * keys: they name pads attached to this particular phone, and a
-     * descriptor from one device means nothing on another. */
+    // Version 1's whitelist stays separate so old imports do not clear new
+    // controller settings or editor options that those exports never carried.
     private static final String[] KEYS = {
         GamePreferences.ORIENTATION, GamePreferences.FPS_CAP, GamePreferences.GAMMA,
         GamePreferences.BRIGHTNESS, GamePreferences.CONTRAST,
@@ -57,21 +56,27 @@ final class LauncherSettings {
         GamePreferences.NETWORK_PORT,
     };
 
-    /** Families whose every member travels: control geometry and mappings.
-     *  What a pad's buttons do travels; which pad is which does not. */
+    /** Legacy touch geometry, retained for version 1 imports. */
     private static final String[] PREFIXES = {
         "touch_position_",
     };
 
-    private static boolean carried(String key) {
+    private static boolean carried(String key, int format) {
         for (String known : KEYS) if (known.equals(key)) return true;
         for (String prefix : PREFIXES) if (key.startsWith(prefix)) return true;
-        return false;
+        return format >= 2 && (GamePreferences.TOUCH_SNAP.equals(key)
+            || controllerSetting(key));
+    }
+
+    private static boolean controllerSetting(String key) {
+        return GamepadSlots.assignmentPreference(key)
+            || key.matches("input_role_[0-9a-f]{64}")
+            || key.matches("controller_profile_[0-9a-f]{64}_([0-5]|race_pause_modifier)");
     }
 
     static int export(Context context, Uri uri) throws IOException {
         OutputStream raw = context.getContentResolver().openOutputStream(uri, "wt");
-        if (raw == null) throw new IOException(context.getString(R.string.saves_open_failed));
+        if (raw == null) throw new IOException(context.getString(R.string.launcher_file_open_failed));
         try (OutputStream out = raw) { return export(context, out); }
     }
 
@@ -80,7 +85,7 @@ final class LauncherSettings {
         int count = 0;
         try {
             for (Map.Entry<String, ?> entry : GamePreferences.get(context).getAll().entrySet()) {
-                if (!carried(entry.getKey())) continue;
+                if (!carried(entry.getKey(), FORMAT)) continue;
                 JSONObject typed = describe(entry.getValue());
                 if (typed == null) continue;
                 settings.put(entry.getKey(), typed);
@@ -93,7 +98,7 @@ final class LauncherSettings {
         } catch (JSONException malformed) {
             throw new IOException(malformed);
         }
-        if (count == 0) throw new IOException(context.getString(R.string.launcher_nothing_to_export));
+        // An empty v2 snapshot is useful too: importing it restores defaults.
         return count;
     }
 
@@ -112,21 +117,24 @@ final class LauncherSettings {
 
     static String importFrom(Context context, Uri uri, File dataRoot) throws IOException {
         InputStream raw = context.getContentResolver().openInputStream(uri);
-        if (raw == null) throw new IOException(context.getString(R.string.saves_open_failed));
+        if (raw == null) throw new IOException(context.getString(R.string.launcher_file_open_failed));
         try (InputStream in = raw) { return importFrom(context, in, dataRoot); }
     }
 
     static String importFrom(Context context, InputStream raw, File dataRoot) throws IOException {
         JSONObject settings;
+        int format;
         try {
             JSONObject root = new JSONObject(readAll(raw));
-            if (root.optInt(FORMAT_KEY, -1) != FORMAT)
+            Object version = root.opt(FORMAT_KEY);
+            format = version instanceof Number ? ((Number) version).intValue() : -1;
+            if (format < 1 || format > FORMAT || ((Number) version).doubleValue() != format)
                 throw new IOException(context.getString(R.string.launcher_wrong_format));
             settings = root.optJSONObject(SETTINGS_KEY);
         } catch (JSONException malformed) {
             throw new IOException(context.getString(R.string.launcher_wrong_format));
         }
-        if (settings == null || settings.length() == 0)
+        if (settings == null || (format == 1 && settings.length() == 0))
             throw new IOException(context.getString(R.string.launcher_wrong_format));
 
         SharedPreferences preferences = GamePreferences.get(context);
@@ -136,26 +144,68 @@ final class LauncherSettings {
          * first.  Keys outside the whitelist -- the active data set, the
          * language -- are never touched either way. */
         for (String key : preferences.getAll().keySet())
-            if (carried(key)) edit.remove(key);
+            if (carried(key, format)) edit.remove(key);
 
         int applied = 0;
         for (java.util.Iterator<String> keys = settings.keys(); keys.hasNext(); ) {
             String key = keys.next();
-            // An unknown or device-specific key in the file is skipped, not trusted.
-            if (!carried(key)) continue;
+            // Only the selected schema's preferences are restored. Controller
+            // hashes/descriptors are preserved exactly, including absent pads.
+            if (!carried(key, format)) continue;
             JSONObject typed = settings.optJSONObject(key);
-            if (typed != null && apply(edit, key, typed)) applied++;
+            if (typed == null || !valid(key, typed) || !apply(edit, key, typed))
+                throw new IOException(context.getString(R.string.launcher_wrong_format));
+            applied++;
         }
-        if (applied == 0) throw new IOException(context.getString(R.string.launcher_wrong_format));
+        if (applied == 0 && settings.length() != 0)
+            throw new IOException(context.getString(R.string.launcher_wrong_format));
 
         String backup = writeBackup(context, dataRoot);
-        edit.apply();
+        if (!edit.commit()) throw new IOException(context.getString(R.string.launcher_restore_failed));
+        InputDeviceRoles.initialize(context);
         return backup;
     }
 
-    /** Returns whether the entry was understood; a wrong type is dropped rather
-     *  than stored, since it would otherwise surface as a ClassCastException far
-     *  from here, the next time something read that setting. */
+    private static boolean valid(String key, JSONObject typed) {
+        String expected;
+        if (controllerSetting(key) || key.equals(GamePreferences.ORIENTATION)
+                || key.equals(GamePreferences.TOUCH_MODE) || key.equals(GamePreferences.TOUCH_LAYOUT)
+                || key.equals(GamePreferences.TOUCH_POINTER) || key.equals(GamePreferences.FORCE_FEEDBACK))
+            expected = "string";
+        else if (key.equals(GamePreferences.TOUCH_ENABLED) || key.equals(GamePreferences.TOUCH_AUTO_HIDE)
+                || key.equals(GamePreferences.TOUCH_VIBRATION) || key.equals(GamePreferences.TOUCH_SNAP)
+                || key.equals(GamePreferences.SAVES_INCLUDE_SETTINGS)
+                || key.endsWith("_from_right") || key.endsWith("_from_bottom"))
+            expected = "boolean";
+        else expected = key.startsWith("touch_position_") ? "float" : "int";
+        if (!expected.equals(typed.optString(TYPE))) return false;
+        Object value = typed.opt(VALUE);
+        if (expected.equals("boolean")) return value instanceof Boolean;
+        if (expected.equals("int")) {
+            if (!(value instanceof Number)) return false;
+            double number = ((Number)value).doubleValue();
+            return Double.isFinite(number) && number >= Integer.MIN_VALUE
+                && number <= Integer.MAX_VALUE && number == Math.rint(number);
+        }
+        if (expected.equals("float"))
+            return value instanceof Number && Float.isFinite(((Number)value).floatValue());
+        if (!(value instanceof String)) return false;
+        String text = (String)value;
+        if (key.startsWith("input_role_"))
+            return InputDeviceRoles.DEFAULT.equals(text) || InputDeviceRoles.CONTROLLER.equals(text)
+                || InputDeviceRoles.REMOTE.equals(text);
+        if (key.startsWith("controller_profile_")) {
+            if (text.isEmpty()) return true; // Explicit default in older preferences.
+            ControllerProfile.Binding binding = ControllerProfile.Binding.decode(text);
+            if (binding == null) return false;
+            boolean buttonOnly = key.endsWith("_4") || key.endsWith("_5")
+                || key.endsWith("_race_pause_modifier");
+            return !buttonOnly || !binding.axis;
+        }
+        return true;
+    }
+
+    /** Store only values already validated against their preference type. */
     private static boolean apply(SharedPreferences.Editor edit, String key, JSONObject typed) {
         String type = typed.optString(TYPE, "");
         switch (type) {
@@ -190,16 +240,17 @@ final class LauncherSettings {
     private static String writeBackup(Context context, File dataRoot) throws IOException {
         File folder = new File(dataRoot, ".launcher-backups");
         if (!folder.isDirectory() && !folder.mkdirs())
-            throw new IOException("Could not create " + folder);
+            throw new IOException(context.getString(R.string.launcher_backup_failed),
+                new IOException("Could not create " + folder));
+        // Defaults are a valid snapshot too, so the first import can be undone.
         String stamp = new SimpleDateFormat("yyyyMMdd-HHmmss", Locale.ROOT).format(new Date());
         File file = new File(folder, stamp + ".json");
         for (int suffix = 1; file.exists(); ++suffix) file = new File(folder, stamp + "-" + suffix + ".json");
         try (OutputStream out = new java.io.FileOutputStream(file)) { export(context, out); }
-        catch (IOException empty) {
-            /* Nothing configured yet, so there is nothing to lose -- and no
-             * point leaving the half-written file behind either. */
+        catch (IOException failure) {
+            // Never replace preferences after a failed backup write.
             if (!file.delete()) file.deleteOnExit();
-            return "";
+            throw new IOException(context.getString(R.string.launcher_backup_failed), failure);
         }
         return file.getName();
     }

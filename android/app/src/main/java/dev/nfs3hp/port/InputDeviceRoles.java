@@ -95,8 +95,8 @@ public final class InputDeviceRoles {
     public static boolean isController(InputDevice d){return role(d)==InputDevicePolicy.CONTROLLER;}
     public static boolean isRemote(InputDevice d){return role(d)==InputDevicePolicy.REMOTE;}
     static String description(InputDevice d) {
-        String type=isController(d)?"Game controller":isRemote(d)?"Remote / keyboard":"Keyboard / unclassified";
-        return type+(DEFAULT.equals(setting(d))?" (default)":" (chosen)");
+        String type=isController(d)?"Gamepad":isRemote(d)?"Remote / keyboard":"Keyboard / unclassified";
+        return type+(DEFAULT.equals(setting(d))?" (automatic)":" (selected)");
     }
     static List<InputDevice> candidates() {
         List<InputDevice> list=new ArrayList<>();int[] ids=InputDevice.getDeviceIds();java.util.Arrays.sort(ids);

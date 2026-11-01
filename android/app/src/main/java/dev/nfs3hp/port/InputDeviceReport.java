@@ -30,7 +30,7 @@ public final class InputDeviceReport {
     private static final AtomicBoolean exporting=new AtomicBoolean();
     public static void show(Activity a) {
         new AlertDialog.Builder(a).setTitle("Input device report")
-            .setMessage("Save a snapshot of every connected input device: buttons, axes, role detection reasons, saved menu controls and player assignments. Includes app and Android/device information. Works without starting the game or enabling recording.")
+            .setMessage("Share or save connected input details and controller setup for troubleshooting. Includes app and device information.")
             .setPositiveButton("Share",(d,w)->export(a,false))
             .setNeutralButton("Save to Downloads",(d,w)->export(a,true)).setNegativeButton("Close",null).show();
     }
@@ -108,7 +108,7 @@ public final class InputDeviceReport {
                 String name="nfs3-input-devices-"+System.currentTimeMillis()+".zip";File zip=new File(folder,name);partial=new File(folder,name+".partial");
                 try(ZipOutputStream out=new ZipOutputStream(new FileOutputStream(partial))) {
                     out.putNextEntry(new ZipEntry("report.json"));out.write(report.toString(2).getBytes(StandardCharsets.UTF_8));out.closeEntry();
-                    out.putNextEntry(new ZipEntry("README.txt"));out.write(("NFS III input device capabilities snapshot\n\nGenerated from the launcher without game execution or input recording.\nIncludes every Android device returned by InputDevice.getDeviceIds, supported keycodes, motion ranges, classification reasons, role overrides and player resolution. Device capabilities are reported by Android firmware and may be inaccurate.\n\nThis report contains Android inventory, not a native SDL live-state capture. The role policy is the same one used by the SDL Android bridge and player assignment. Advanced Controller input report remains available for live SDL/game routing diagnostics.\n").getBytes(StandardCharsets.UTF_8));out.closeEntry();
+                    out.putNextEntry(new ZipEntry("README.txt"));out.write(("NFS III input device capabilities snapshot\n\nGenerated from the launcher without game execution or input recording.\nIncludes every Android device returned by InputDevice.getDeviceIds, supported keycodes, motion ranges, classification reasons, role overrides and player resolution. Device capabilities are reported by Android firmware and may be inaccurate.\n\nThis report contains Android inventory, not a native SDL live-state capture. The role policy is the same one used by the SDL Android bridge and player assignment.\n").getBytes(StandardCharsets.UTF_8));out.closeEntry();
                 }
                 if(!partial.renameTo(zip))throw new IOException("Cannot finish report file");partial=null;
                 if(downloads) {

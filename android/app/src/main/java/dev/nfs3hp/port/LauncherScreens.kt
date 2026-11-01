@@ -426,7 +426,7 @@ private fun GameDataScreen(a: LauncherActivity) {
 /* Every data set on the device: make one the game's, or delete one. */
 @Composable
 private fun DataSetsScreen(a: LauncherActivity) {
-    ScreenFrame(stringResource(R.string.game_data_title), onBack = { a.go(LauncherActivity.Screen.GameData) }) {
+    ScreenFrame(stringResource(R.string.choose_game_files), onBack = { a.go(LauncherActivity.Screen.GameData) }) {
         a.dataSets.forEach { set ->
             Panel(Modifier.widthIn(max = 640.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -494,10 +494,10 @@ private fun ControlsScreen(a: LauncherActivity) {
     ScreenFrame(stringResource(R.string.controls_hub), onBack = { a.go(LauncherActivity.Screen.Main) }) {
         Column(Modifier.widthIn(max = MENU_WIDTH), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             MainMenuButton(stringResource(R.string.controls_touch)) { a.go(LauncherActivity.Screen.Touch) }
-            MainMenuButton("Gamepad test and setup") {
+            MainMenuButton(stringResource(R.string.controls_gamepad)) {
                 a.startActivity(android.content.Intent(a, ControllerSetupActivity::class.java))
             }
-            Hint("Gamepads are detected automatically. Use Gamepad test and setup if directions or menu buttons need adjusting. Racing controls are assigned inside the game.")
+            Hint(stringResource(R.string.controls_setup_hint))
             MainMenuButton(stringResource(R.string.controls_automatic_help_button)) { a.go(LauncherActivity.Screen.ControlsHelp) }
             MainMenuButton(stringResource(R.string.controls_force_feedback)) { a.go(LauncherActivity.Screen.ForceFeedback) }
         }
@@ -1036,7 +1036,7 @@ private fun AdvancedScreen(a: LauncherActivity) {
                 verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 when (tab) {
                     0 -> Panel(width) {
-                        Hint("Change the active data set's saved unlocks. Turning a toggle off relocks that content, including earned unlocks. Race results and controls stay unchanged.")
+                        Hint("Change unlocks for the active game files. Turning a switch off locks that content again, including earned unlocks.")
                         val bonus = a.bonusContent
                         if (bonus != null) {
                             Label("Bonus cars")
@@ -1075,10 +1075,9 @@ private fun AdvancedScreen(a: LauncherActivity) {
                                 BooleanSetting(preferences, PerformanceSession.OVERLAY, false,
                                     "Performance overlay", "FPS, frame intervals, draw calls and opaque-shader coverage.") {}
                                 BooleanSetting(preferences, PerformanceSession.COLLECT, false,
-                                    "Collect performance statistics", "Saves timing and rendering statistics once per second. Works with Debug mode off.") {}
+                                    "Record performance data", "Saves timing and rendering data for performance reports.") {}
                                 BooleanSetting(preferences, PerformanceSession.OPAQUE, true,
-                                    "Opaque shader optimization · Experimental", "Default on. Uses a faster shader for proven opaque draws, with the original shader as fallback.") {}
-                                Hint("Frame intervals measure presentation pacing, not GPU execution time.")
+                                    "Rendering optimization (experimental)", "May improve rendering performance. Disable if you notice graphical problems.") {}
                             }
                         }
                         MenuButton("Share performance report", { PerformanceSession.showReport(a) }, width)

@@ -1,9 +1,5 @@
 <resources>
- <!-- Deutsch. Die Beschriftungen des Controls-Bildschirms und die Aufschriften
-      der Bildschirmtasten bleiben bewusst englisch: dieser Bildschirm wird mit
-      den Einstellungen des Spiels selbst abgeglichen, und das Spiel ist
-      englisch.  Die vier Schaltflaechen im Startbildschirm haben eine feste
-      Hoehe von 56dp - ihre Beschriftungen bleiben deshalb kurz. -->
+ <!-- Launcher translations. Preserve format placeholders and resource names. -->
 
  <string name="language_label">Sprache</string>
  <string name="language_system">Systemsprache</string>
@@ -18,17 +14,15 @@
  <string name="play">Spielen</string>
  <string name="active_data_set">Aktive Daten: %1$s</string>
  <string name="no_active_data_set">Kein aktiver Datensatz. Importiere zuerst einen.</string>
- <string name="data_settings">Daten</string>
- <string name="game_data_title">Spieldaten</string>
- <string name="launcher_settings_title">Launcher-Einstellungen</string>
- <string name="launcher_settings_hint">Sichere die Einstellungen des Launchers — Touch-Layout, Tastenbelegung, Vibration — in eine Datei oder stelle sie wieder her. Der Import ersetzt die aktuellen und sichert sie zuvor.</string>
+ <string name="data_settings">Dateien &amp; Sicherungen</string>
+ <string name="game_data_title">Spieldateien</string>
+ <string name="launcher_settings_title">Sicherung der Launcher-Einstellungen</string>
+ <string name="launcher_settings_hint">Touch-Steuerung, Controller-Konfiguration, Anzeige, Vibration und Netzwerkeinstellungen sichern. Beim Import wird die aktuelle Konfiguration zuerst gesichert und dann ersetzt.</string>
  <string name="import_launcher">Einstellungen laden...</string>
  <string name="export_launcher">Einstellungen sichern...</string>
- <string name="launcher_export_complete">%1$d Einstellungen gesichert.</string>
  <string name="launcher_import_complete">Einstellungen geladen. Vorherige gesichert als %1$s.</string>
- <string name="launcher_import_complete_no_backup">Einstellungen geladen. Es gab keine vorherigen.</string>
- <string name="launcher_nothing_to_export">Es gibt noch keine Launcher-Einstellungen.</string>
- <string name="launcher_wrong_format">Das ist keine Launcher-Einstellungsdatei.</string>
+ <string name="launcher_import_complete_no_backup">Einstellungen importiert.</string>
+ <string name="launcher_wrong_format">Diese Datei ist keine unterstützte Sicherung der Launcher-Einstellungen.</string>
  <string name="controls_settings">Tastenbelegung</string>
  <string name="touch_settings">Touch-Steuerung</string>
  <string name="screen_settings">Bildschirm</string>
@@ -47,11 +41,10 @@
  <string name="import_folder">Ordner importieren…</string>
  <string name="import_zip">ZIP importieren…</string>
  <string name="import_image">Disk-Image importieren…</string>
- <string name="data_import_hint">Importiere einen Ordner, der \'fedata\' und \'gamedata\' direkt enthält, oder ein ZIP mit diesen Ordnern. Importiertes wird in den App-Speicher kopiert. Auch ein Image der Spiel-CD geht (ISO oder die BIN eines BIN/CUE-Paars).</string>
+ <string name="data_import_hint">Einen Ordner oder eine ZIP-Datei mit \'fedata\' und \'gamedata\' oder ein Disc-Abbild (ISO oder BIN) importieren. Die Dateien werden in den App-Speicher kopiert.</string>
  <string name="import_complete">Datenimport abgeschlossen</string>
- <string name="data_error">Datenvorgang fehlgeschlagen: %1$s</string>
- <string name="delete_data_title">Datensatz löschen?</string>
- <string name="delete_data_message">%1$s von diesem Gerät löschen? Das lässt sich nicht rückgängig machen.</string>
+ <string name="data_error">Der Vorgang konnte nicht abgeschlossen werden: %1$s</string>
+ <string name="delete_data_title">Spieldateien löschen?</string>
  <string name="controls_explanation">Dies ist die Schicht des Ports zwischen physischem Gamepad oder Touch und der emulierten Tastatur. Sie ist unabhängig vom Controls-Menü im Spiel selbst; jenes Menü bleibt unverändert.</string>
  <string name="controls_row_hint">Wähle für jede Aktion eine physische Gamepad-Taste und danach die emulierte Taste, die sowohl sie als auch die Bildschirmtaste sendet.</string>
  <string name="touch_mode_label">Eingabemodus</string>
@@ -59,10 +52,10 @@
  <string name="touch_mode_wheel">Lenkrad (in Arbeit)</string>
  <string name="touch_mode_tilt">Neigungslenkung (in Arbeit)</string>
  <string name="touch_layout_label">Tastenanordnung</string>
- <string name="touch_pointer_label">Zeiger in Menüs</string>
- <string name="touch_pointer_tap">Wo der Finger tippt</string>
+ <string name="touch_pointer_label">Touch-Eingabe in Menüs</string>
+ <string name="touch_pointer_tap">Direkte Berührung</string>
  <string name="touch_pointer_touchpad">Touchpad</string>
- <string name="touch_pointer_note">Touchpad: Wische irgendwo, um den Cursor zu bewegen, tippe zum Klicken, halte still zum Greifen und Ziehen. Gilt ab dem nächsten Spielstart.</string>
+ <string name="touch_pointer_note">Touchpad: Zum Bewegen des Zeigers wischen, zum Klicken tippen oder zum Greifen und Ziehen den Finger kurz stillhalten.</string>
  <string name="opacity_label">Deckkraft der Tasten</string>
  <string name="size_label">Tastengröße</string>
  <string name="auto_hide_label">Nach 4 Sekunden Untätigkeit ausblenden</string>
@@ -74,7 +67,7 @@
  <string name="fps_30">30 FPS</string>
  <string name="fps_60">60 FPS</string>
  <string name="gamma_label">Gamma</string>
- <string name="fps_cap_label">Bildrate</string>
+ <string name="fps_cap_label">Bildratenlimit</string>
  <string name="fps_error">Gib eine ganze Zahl von 1 bis 240 ein</string>
  <string name="save">Speichern</string>
  <string name="settings_saved">Einstellungen gespeichert</string>
@@ -87,7 +80,7 @@
  <string name="editor_drag_title">Elemente ziehen</string>
  <string name="editor_resize_hint">Auswählen zum Ändern der Größe</string>
  <string name="saves_title">Spielstände</string>
- <string name="saves_hint">Exportiere das aktive Profil in ein ZIP oder importiere eines. Beim Import wird vor dem Ersetzen eine lokale Sicherung angelegt.</string>
+ <string name="saves_hint">Spielstände der aktiven Spieldateien als ZIP exportieren oder eine ZIP importieren. Vor dem Ersetzen werden die vorhandenen Spielstände gesichert.</string>
  <string name="import_saves">Spielstände importieren…</string>
  <string name="export_saves">Spielstände exportieren…</string>
  <string name="saves_not_found">Im aktiven Datensatz wurden keine Spielstände gefunden.</string>
@@ -106,7 +99,6 @@
  <string name="controls_touch">Touch</string>
  <string name="controls_gamepad">Gamepads</string>
  <string name="gamepads_title">Gamepads</string>
- <string name="gamepads_hint">Das Spiel sieht zwei Gamepads: Gamepad 1 ist Spieler 1 zusammen mit der Touch-Steuerung, Gamepad 2 ist Spieler 2. Wähle hier die Pads und ihre Tastenbelegung, dann schreibe die Gamepad-Steuerung einmal ins Spiel.</string>
  <string name="gamepad_slot_label">Gamepad %1$d</string>
  <string name="gamepad_slot_auto_now">Automatisch: %1$s</string>
  <string name="gamepad_slot_auto_none">Automatisch: kein Gamepad verbunden</string>
@@ -148,38 +140,17 @@
  <string name="importer_image_cue">Das ist die CUE-Datei: Wähle die BIN-Datei daneben</string>
  <string name="importer_image_missing_files">Im Disk-Image fehlen die Ordner fedata/gamedata</string>
  <string name="importer_image_truncated">Das Disk-Image endet zu früh: Die Datei wurde nicht vollständig kopiert</string>
-
- <string name="faq_layout_modes"><b>Menü oder Rennen?</b>\nDas sagt das Spiel. Beim Fahren bekommst du die Rennanordnung: Lenktasten, Pedale, Gänge und den Rest. In den Menüs, und sobald sich ein Menü über ein Rennen legt, zeigt der Port überhaupt keine Tasten: Die Menüs nehmen die Berührung selbst an, das Zurück des Telefons ist Escape, und die Tastatur kommt von allein. Von Hand ist nichts umzuschalten.</string>
- <string name="faq_mouse"><b>Wie funktionieren die Menüs?</b>\nDurch Berühren. Wo der Finger liegt, ist der Zeiger des Spiels, also drückt ein Tippen den Eintrag darunter und ein Regler folgt dem Finger, der ihn zieht. Die Zurück-Taste oder -Geste des Telefons ist Escape, und wenn das Spiel nach einem Namen fragt, öffnet sich die Tastatur des Telefons von selbst; bei offener Tastatur schließt Zurück sie.</string>
  <string name="faq_size"><b>Was ändert die Größe?</b>\nDie Tastengröße skaliert die Standardsteuerung. Ziehe unter Positionen und Größen bearbeiten ein Element und ändere seine Größe mit dem Größenregler; ein Element reagiert genau dort, wo es gezeichnet wird, und die Prozente beziehen sich auf das Standardelement. Änderungen werden automatisch gespeichert. Der Editor zeigt ein Raster; ist Am Raster ausrichten an, rastet ein gezogenes Element darauf ein.</string>
  <string name="faq_edges"><b>Ränder und Höhe</b>\nDer Abstand zu den Rändern schiebt die Standardelemente nach innen. Systemaussparungen werden berücksichtigt. Von Hand platzierte Elemente behalten ihre gespeicherten Positionen.</string>
  <string name="faq_hiding"><b>Deckkraft und automatisches Ausblenden</b>\nDie Deckkraft legt die normale Sichtbarkeit fest. Das Ausblenden beginnt, sobald alle Finger abgehoben sind, nach 1 bis 30 Sekunden. Ausgeblendete Tasten reagieren schon auf die erste Berührung und werden wieder sichtbar. Wer ein Element hält, verhindert das Ausblenden. Ein Druck auf dem Pad von Spieler 1 blendet die Steuerung sofort aus; die nächste Berührung holt sie zurück. Das Pad von Spieler 2 lässt sie in Ruhe, damit einer auf dem Bildschirm fahren kann, während der andere am Pad spielt.</string>
  <string name="faq_vibration"><b>Vibration</b>\nDie Force-Feedback-Effekte des Spiels spürst du am Telefon oder an Gamepad 1, nie an beiden zugleich: Wähle unter Steuerung → Force Feedback Aus, Telefon oder Gamepad. Das Spiel steuert nur ein Force-Feedback-Gerät, daher vibriert Gamepad 2 nie. Die Stärke am Gamepad stellst du im Spiel selbst ein: Options → Controllers → Force Feedback. Die Effekte kommen vom Spiel, nie von Tastendrücken.</string>
- <string name="faq_mapping"><b>Gamepads</b>\nDas Spiel sieht immer zwei Gamepads: Gamepad 1 ist Spieler 1 zusammen mit der Touch-Steuerung, Gamepad 2 ist Spieler 2. Wähle unter Steuerung → Gamepads per Tastendruck, welches Pad welches ist, lege fest, was jede Taste tut, und tippe dann einmal auf Gamepad AN. Das schreibt die passende Steuerung in die Spieleinstellungen und sichert die alte Datei. Der linke Stick lenkt, die Trigger geben Gas und bremsen. Ein Pad hat zwei Tastensätze, so wie die Touch-Steuerung zwei Anordnungen hat: die Rennanordnung, die du hier einstellst, und eine feste für Menüs und Wiederholungen, in der Cross / A bestätigt, Circle / B zurückgeht und das Steuerkreuz die Auswahl bewegt. Zum Spielen mit Tastatur schreibe stattdessen Spielstandard.</string>
  <string name="faq_lights"><b>Licht und Rückkehr zur Strecke</b>\n☼ sendet L. ↻ sendet R, um auf die Strecke zurückzukehren. Die Tasten lassen sich unter Steuerung → Touch → Tasten ändern.</string>
- <string name="faq_screen_data"><b>Bildschirm und Spieldaten</b>\nQuerformat sperrt das Spiel waagerecht; Automatisch erlaubt das Drehen. Die FPS-Grenze begrenzt die Bildrate; ein niedrigerer Wert senkt die Last. „Spieldaten“ verwaltet die Importe und zeigt den aktiven Datensatz. „Spielen“ wird verfügbar, sobald ein Datensatz bereit ist.</string>
  <string name="gamepad_buttons">Tasten</string>
  <string name="gamepad_buttons_title">Tasten von Gamepad %1$d</string>
- <string name="gamepad_buttons_hint">Was jede Taste dieses Pads beim Fahren tut. Der linke Stick lenkt, der rechte Trigger gibt Gas und der linke bremst. In den Menüs und in Wiederholungen sind die Tasten fest und müssen nicht eingestellt werden: Cross / A und Options / Menu bestätigen, Circle / B und Create / View gehen zurück, das Steuerkreuz bewegt die Auswahl. Die Tastenaktionen erreichen das Spiel, sobald die Gamepad-Steuerung hineingeschrieben wurde.</string>
  <string name="gamepad_buttons_reset">Standard</string>
- <string name="controls_write_gamepads">Gamepad AN</string>
- <string name="controls_write_keyboard">Spielstandard</string>
- <string name="controls_write_gamepads_message">Die Steuerung in den Spieleinstellungen durch den Gamepad-Satz des Ports ersetzen: Gamepad 1 und die Touch-Steuerung steuern Spieler 1, Gamepad 2 steuert Spieler 2, in Einzelrennen und im Splitscreen. Die aktuelle Einstellungsdatei wird vorher gesichert.</string>
- <string name="controls_write_keyboard_message">Die Steuerung in den Spieleinstellungen durch die Standard-Tastaturbelegung des Spiels ersetzen. Die aktuelle Einstellungsdatei wird vorher gesichert.</string>
- <string name="controls_write_done">Steuerung ins Spiel geschrieben. Sicherung: %1$s</string>
- <string name="controls_write_no_config">Das Spiel hat noch keine Einstellungsdatei. Starte das Spiel einmal und versuche es dann erneut.</string>
- <string name="controls_write_game_running">Schließe das Spiel, bevor du seine Steuerung schreibst.</string>
- <string name="controls_write_failed">Die Steuerung konnte nicht geschrieben werden: %1$s</string>
- <string name="gamepads_keyboard_note">Das Spiel ist auf seine eigene Tastatursteuerung eingestellt (Spielstandard). Die Gamepads tun in Splitscreen-Rennen nichts, bis du Gamepad AN drückst.</string>
  <string name="pref_touch_enabled">Touch-Steuerung verwenden</string>
  <string name="controls_help">Hilfe: Splitscreen</string>
  <string name="controls_help_title">Splitscreen mit zwei Gamepads</string>
- <string name="help_split_setup"><b>1. Gamepads einrichten (einmalig)</b>\nVerbinde beide Gamepads mit dem Telefon. Tippe unter Steuerung → Gamepads bei Gamepad 1 auf Zuweisen und drücke eine beliebige Taste auf dem Pad von Spieler 1, danach dasselbe für Gamepad 2. Automatisch geht auch: Die Pads werden in der Reihenfolge übernommen, in der sie verbunden wurden. Unter Tasten legst du fest, was jede Taste tut.</string>
- <string name="help_split_write"><b>2. Steuerung ins Spiel schreiben</b>\nTippe auf demselben Bildschirm auf Gamepad AN und bestätige. Das ist einmal nötig und danach nur nach dem Installieren anderer Spieldaten oder wenn die Steuerung im Spiel selbst geändert wurde. Die bisherigen Einstellungen werden gesichert.</string>
- <string name="help_split_race"><b>3. Splitscreen-Rennen starten</b>\nStarte das Spiel und wähle Two Players…. Spieler 1 fährt mit Gamepad 1 oder der Touch-Steuerung, Spieler 2 mit Gamepad 2. Durch die Menüs geht es mit jedem der beiden Pads: Das Steuerkreuz bewegt die Auswahl, Cross / A oder Options / Menu bestätigt, Circle / B oder Create / View geht zurück.</string>
- <string name="help_split_driving"><b>Fahren</b>\nDer linke Stick lenkt, der rechte Trigger gibt Gas und der linke bremst. Standardmäßig ist Circle / B die Handbremse, Square / X legt ein Nagelband, Cross / A blickt zurück, Triangle / Y wechselt die Kamera, R1 / L1 schalten, Create / View setzt den Wagen auf die Strecke zurück, Options / Menu pausiert das Rennen, L3 hupt und R3 schaltet das Licht.</string>
- <string name="help_split_digital"><b>Analog oder Digital</b>\nJedes Gamepad hat unter Steuerung → Gamepads einen eigenen Schalter Analog / Digital. Digital fährt ein Rennen wie mit Tastatur: Steuerkreuz links und rechts lenken, Steuerkreuz oben und der rechte Trigger geben Gas, Steuerkreuz unten und der linke Trigger bremsen, und der Stick lenkt nicht. Die Menüs funktionieren in beiden Fällen gleich. Die beiden Gamepads teilen sich nie eine Taste, im Splitscreen steuert also jedes nur sein eigenes Auto.</string>
- <string name="help_split_notes"><b>Gut zu wissen</b>\nNur Gamepad 1 oder das Telefon vibriert, je nachdem, was unter Steuerung → Force Feedback gewählt ist: Das Spiel steuert nur ein Force-Feedback-Gerät. Passt die Steuerung nicht mehr, etwa nach einem Zurücksetzen im Spiel, tippe erneut auf Gamepad AN. Zum Spielen mit Tastatur tippe stattdessen auf Spielstandard. Die Touch-Steuerung lässt sich unter Steuerung → Touch ausschalten.</string>
  <string name="gamepad_mode_analog">Analog</string>
  <string name="gamepad_mode_digital">Digital</string>
  <string name="gamepad_analog_note">Im Rennen lenkt der linke Stick, der rechte Trigger gibt Gas und der linke bremst.</string>
@@ -201,4 +172,36 @@
  <string name="network_port_original">1030 · Originalspiel</string>
  <string name="network_hint">IPX findet Rennen in diesem WLAN von selbst. TCP/IP verbindet mit allen, die die Adresse des Hosts kennen, auch mit einem PC mit dem Originalspiel oder dem Modern Patch. Alle Spieler verwenden denselben Port.</string>
  <string name="fps_unlimited">Unbegrenzt</string>
+ <string name="launcher_backup_export_complete">Launcher-Einstellungen exportiert.</string>
+ <string name="delete_game_files_message">%1$s samt zugehörigen Spielständen und Spieleinstellungen von diesem Gerät löschen? Dies kann nicht rückgängig gemacht werden.</string>
+ <string name="choose_game_files">Spieldateien auswählen</string>
+ <string name="importing_saves">Spielstände werden importiert…</string>
+ <string name="exporting_saves">Spielstände werden exportiert…</string>
+ <string name="importing_launcher">Launcher-Einstellungen werden importiert…</string>
+ <string name="exporting_launcher">Launcher-Einstellungen werden exportiert…</string>
+ <string name="launcher_file_open_failed">Die gewählte Einstellungsdatei konnte nicht geöffnet werden.</string>
+ <string name="launcher_backup_failed">Die aktuellen Einstellungen konnten nicht gesichert werden. Der Import wurde abgebrochen.</string>
+ <string name="launcher_restore_failed">Die importierten Einstellungen konnten nicht gespeichert werden.</string>
+ <string name="controls_automatic_help_button">Hilfe zur Steuerung</string>
+ <string name="controls_automatic_help_title">Touch und Controller</string>
+ <string name="controller_setup_intro">Für jeden Spieler einen Controller wählen. Einen Controller auswählen, um seine Menüsteuerung zu testen oder zu ändern. Die Rennsteuerung wird im Spiel zugewiesen. Änderungen hier werden automatisch gespeichert.</string>
+ <string name="controller_test_hint">Den Test starten und dann Tasten drücken oder Sticks bewegen.</string>
+ <string name="controller_details_show">Eingabedetails anzeigen</string>
+ <string name="controller_details_hide">Eingabedetails ausblenden</string>
+ <string name="controller_reset_menu">Menüsteuerung zurücksetzen</string>
+ <string name="controller_pause_title">Tastenkombination zum Pausieren</string>
+ <string name="controller_pause_hint">Die Zurück-Taste für Menüs und eine weitere Taste gedrückt halten, um ein Rennen zu pausieren.</string>
+ <string name="controller_device_type">Gerätetyp</string>
+ <string name="controller_change_type">Gerätetyp ändern…</string>
+ <string name="controller_role_hint">Für eine TV-Fernbedienung Fernbedienung / Tastatur wählen, damit sie keinen Spielerplatz belegt.</string>
+ <string name="controller_report">Bericht zu Eingabegeräten…</string>
+ <string name="controller_remote">Fernbedienung / Tastatur</string>
+ <string name="controller_automatic">Automatisch</string>
+ <string name="controller_unassigned">Nicht zugewiesen</string>
+ <string name="controls_setup_hint">Controller wählen, Eingaben testen und Menüsteuerung ändern. Die Rennsteuerung wird im Spiel zugewiesen.</string>
+ <string name="faq_layout_modes"><b>Menü oder Rennen?</b>\nDie Rennsteuerung erscheint beim Fahren und wird in Menüs ausgeblendet. Das Layout wechselt automatisch.</string>
+ <string name="faq_mouse"><b>Wie funktionieren die Menüs?</b>\nUnter Steuerung → Touch Direkte Berührung wählen, um Menüpunkte anzutippen, oder Touchpad, um den Zeiger durch Wischen zu bewegen. Die Android-Zurück-Taste oder -Geste geht zurück. Die Tastatur öffnet sich, wenn das Spiel Text anfordert; Zurück schließt sie.</string>
+ <string name="faq_screen_data"><b>Anzeige und Spieldateien</b>\nUnter Anzeige werden Bildschirmausrichtung und Bildratenlimit eingestellt. Ein niedrigeres Limit kann den Stromverbrauch senken. Dateien &amp; Sicherungen verwaltet importierte Spieldateien, Spielstände und Sicherungen der Launcher-Einstellungen. Vor dem Spielen aktive Spieldateien auswählen.</string>
+ <string name="faq_mapping"><b>Controller</b>\nUnter Steuerung → Gamepads lassen sich Controller für jeden Spieler wählen, Eingaben testen und Menüsteuerungen ändern. Automatisch verwendet die übrigen Controller in Verbindungsreihenfolge. Gespeicherte Spielerzuweisungen bleiben bei getrennten Controllern reserviert. Die Rennsteuerung wird im Spiel zugewiesen. Wenn die Zurück-Taste für Menüs beim Fahren belegt ist, eine Tastenkombination zum Pausieren festlegen: Zurück und eine weitere Taste gedrückt halten.</string>
+ <string name="controls_automatic_help">Menüs: Steuerkreuz oder linken Stick zum Bewegen, A / Cross zum Bestätigen und B / Circle zum Zurückgehen verwenden. Unter Gamepads lassen sich Geräte testen und Menüsteuerungen ändern. Unter Touch stehen Direkte Berührung und Touchpad zur Wahl.\n\nRennen: Die Steuerung im Controls-Menü des Spiels zuweisen. Die Bildschirmtasten folgen diesen Zuweisungen. Ist die Zurück-Taste für Menüs beim Fahren belegt, unter Gamepads → Tastenkombination zum Pausieren eine weitere Taste wählen. Beide zum Pausieren gedrückt halten.\n\nGeteilter Bildschirm: Unter Gamepads für jeden Spieler einen Controller wählen. Automatisch verwendet die übrigen Controller in Verbindungsreihenfolge. Eine gespeicherte Zuweisung bleibt bei getrenntem Controller reserviert. Die Touch-Rennsteuerung bedient Spieler 1.</string>
 </resources>

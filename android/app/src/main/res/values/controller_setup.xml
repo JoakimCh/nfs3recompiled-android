@@ -1,0 +1,17 @@
+<resources>
+ <string name="controller_setup_intro">Choose a controller for each player. Select a controller to test or change its menu controls. Assign racing controls inside the game. Changes here save automatically.</string>
+ <string name="controller_test_hint">Start the test, then press buttons or move the sticks.</string>
+ <string name="controller_details_show">Show input details</string>
+ <string name="controller_details_hide">Hide input details</string>
+ <string name="controller_reset_menu">Reset menu controls</string>
+ <string name="controller_pause_title">Race pause shortcut</string>
+ <string name="controller_pause_hint">Hold your menu Back button and an extra button to pause a race.</string>
+ <string name="controller_device_type">Device type</string>
+ <string name="controller_change_type">Change device type…</string>
+ <string name="controller_role_hint">Use Remote / keyboard for a TV remote so it does not take a player slot.</string>
+ <string name="controller_report">Input device report…</string>
+ <string name="controller_remote">Remote / keyboard</string>
+ <string name="controller_automatic">Automatic</string>
+ <string name="controller_unassigned">Not assigned</string>
+ <string name="controls_setup_hint">Choose controllers, test input and change menu controls. Assign racing controls inside the game.</string>
+</resources>

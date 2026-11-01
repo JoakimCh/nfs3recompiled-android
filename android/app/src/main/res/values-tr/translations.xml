@@ -1,7 +1,5 @@
 <resources>
- <!-- Türkçe. Controls ekranındaki etiketler ve ekran düğmelerinin yazıları
-      bilerek İngilizce kalıyor: bu ekran oyunun kendi ayarlarıyla karşılaştırılır,
-      oyun ise İngilizce. -->
+ <!-- Launcher translations. Preserve format placeholders and resource names. -->
 
  <string name="language_label">Dil</string>
  <string name="language_system">Sistem dili</string>
@@ -16,17 +14,15 @@
  <string name="play">Oyna</string>
  <string name="active_data_set">Etkin veri: %1$s</string>
  <string name="no_active_data_set">Etkin veri kümesi yok. Oynamadan önce bir tane içe aktar.</string>
- <string name="data_settings">Veriler</string>
- <string name="game_data_title">Oyun verileri</string>
- <string name="launcher_settings_title">Başlatıcı ayarları</string>
- <string name="launcher_settings_hint">Başlatıcı ayarlarını — dokunmatik yerleşimi, tuş atamalarını, titreşimi — bir dosyaya kaydet veya geri yükle. İçe aktarma mevcut ayarları önce yedekleyip değiştirir.</string>
+ <string name="data_settings">Dosyalar ve yedekler</string>
+ <string name="game_data_title">Oyun dosyaları</string>
+ <string name="launcher_settings_title">Başlatıcı ayarları yedeği</string>
+ <string name="launcher_settings_hint">Dokunmatik kontrolleri, kumanda yapılandırmasını, ekran, titreşim ve ağ ayarlarını yedekleyin. İçe aktarma, mevcut yapılandırmayı değiştirmeden önce yedekler.</string>
  <string name="import_launcher">Ayarları içe aktar...</string>
  <string name="export_launcher">Ayarları dışa aktar...</string>
- <string name="launcher_export_complete">%1$d ayar dışa aktarıldı.</string>
  <string name="launcher_import_complete">Ayarlar içe aktarıldı. Öncekiler %1$s olarak yedeklendi.</string>
- <string name="launcher_import_complete_no_backup">Ayarlar içe aktarıldı. Önceki ayar yoktu.</string>
- <string name="launcher_nothing_to_export">Henüz başlatıcı ayarı yok.</string>
- <string name="launcher_wrong_format">Bu bir başlatıcı ayar dosyası değil.</string>
+ <string name="launcher_import_complete_no_backup">Ayarlar içe aktarıldı.</string>
+ <string name="launcher_wrong_format">Bu dosya desteklenen bir başlatıcı ayarları yedeği değil.</string>
  <string name="controls_settings">Tuş atamaları</string>
  <string name="touch_settings">Dokunmatik kontroller</string>
  <string name="screen_settings">Ekran</string>
@@ -45,11 +41,10 @@
  <string name="import_folder">Klasör içe aktar…</string>
  <string name="import_zip">ZIP içe aktar…</string>
  <string name="import_image">Disk görüntüsü içe aktar…</string>
- <string name="data_import_hint">Doğrudan \'fedata\' ve \'gamedata\' içeren bir klasörü ya da bu klasörleri barındıran bir ZIP dosyasını içe aktar. İçe aktarılanlar uygulama deposuna kopyalanır. Oyun diskinin görüntüsü de olur (ISO ya da BIN/CUE çiftinin BIN dosyası).</string>
+ <string name="data_import_hint">\'fedata\' ve \'gamedata\' içeren bir klasör veya ZIP ya da disk kalıbı (ISO veya BIN) içe aktarın. Dosyalar uygulama depolamasına kopyalanır.</string>
  <string name="import_complete">Veri içe aktarma tamamlandı</string>
- <string name="data_error">Veri işlemi başarısız: %1$s</string>
- <string name="delete_data_title">Veri kümesi silinsin mi?</string>
- <string name="delete_data_message">%1$s bu cihazdan silinsin mi? Bu işlem geri alınamaz.</string>
+ <string name="data_error">İşlem tamamlanamadı: %1$s</string>
+ <string name="delete_data_title">Oyun dosyaları silinsin mi?</string>
  <string name="controls_explanation">Bu, fiziksel oyun kumandası veya dokunma ile öykünülen klavye arasındaki port katmanıdır. Oyunun kendi Controls menüsünden bağımsızdır; o menü değişmeden kalır.</string>
  <string name="controls_row_hint">Her eylem için önce fiziksel bir kumanda düğmesi, sonra hem o düğmenin hem de ekrandaki dokunmatik düğmenin gönderdiği öykünülen tuşu seç.</string>
  <string name="touch_mode_label">Giriş kipi</string>
@@ -57,10 +52,10 @@
  <string name="touch_mode_wheel">Direksiyon (yakında)</string>
  <string name="touch_mode_tilt">Eğerek direksiyon (yakında)</string>
  <string name="touch_layout_label">Düğme yerleşimi</string>
- <string name="touch_pointer_label">Menülerde imleç</string>
- <string name="touch_pointer_tap">Parmağın dokunduğu yer</string>
+ <string name="touch_pointer_label">Menülerde dokunmatik giriş</string>
+ <string name="touch_pointer_tap">Doğrudan dokunma</string>
  <string name="touch_pointer_touchpad">Dokunmatik yüzey</string>
- <string name="touch_pointer_note">Dokunmatik yüzey: imleci taşımak için herhangi bir yerde kaydır, tıklamak için dokun, tutup sürüklemek için parmağını sabit tut. Oyunun bir sonraki başlatılışında geçerli olur.</string>
+ <string name="touch_pointer_note">Dokunmatik yüzey: imleci hareket ettirmek için kaydırın, tıklamak için dokunun veya tutup sürüklemek için parmağınızı sabit tutun.</string>
  <string name="opacity_label">Düğme saydamlığı</string>
  <string name="size_label">Düğme boyutu</string>
  <string name="auto_hide_label">4 saniye hareketsizlikten sonra gizle</string>
@@ -72,7 +67,7 @@
  <string name="fps_30">30 FPS</string>
  <string name="fps_60">60 FPS</string>
  <string name="gamma_label">Gama</string>
- <string name="fps_cap_label">Kare hızı</string>
+ <string name="fps_cap_label">Kare hızı sınırı</string>
  <string name="fps_error">1 ile 240 arasında bir tam sayı gir</string>
  <string name="save">Kaydet</string>
  <string name="settings_saved">Ayarlar kaydedildi</string>
@@ -85,7 +80,7 @@
  <string name="editor_drag_title">Düğmeleri sürükle</string>
  <string name="editor_resize_hint">Boyutlandırmak için seç</string>
  <string name="saves_title">Kayıtlı oyunlar</string>
- <string name="saves_hint">Etkin profili bir ZIP dosyasına aktar ya da bir tanesini içe aktar. İçe aktarma, mevcut kayıtların üzerine yazmadan önce yerel bir yedek oluşturur.</string>
+ <string name="saves_hint">Etkin oyun dosyalarındaki kayıtlı oyunları ZIP olarak dışa aktarın veya bir ZIP içe aktarın. Mevcut kayıtlar değiştirilmeden önce yedeklenir.</string>
  <string name="import_saves">Kayıtları içe aktar…</string>
  <string name="export_saves">Kayıtları dışa aktar…</string>
  <string name="saves_not_found">Etkin veri kümesinde kayıt bulunamadı.</string>
@@ -104,7 +99,6 @@
  <string name="controls_touch">Dokunma</string>
  <string name="controls_gamepad">Kumandalar</string>
  <string name="gamepads_title">Kumandalar</string>
- <string name="gamepads_hint">Oyun iki kumanda görür: Kumanda 1, dokunmatik kontrollerle birlikte 1. oyuncudur, Kumanda 2 ise 2. oyuncudur. Kumandaları burada seç ve düğmelerini ayarla, ardından kumanda kontrollerini oyuna bir kez yaz.</string>
  <string name="gamepad_slot_label">Kumanda %1$d</string>
  <string name="gamepad_slot_auto_now">Otomatik: %1$s</string>
  <string name="gamepad_slot_auto_none">Otomatik: bağlı kumanda yok</string>
@@ -146,38 +140,17 @@
  <string name="importer_image_cue">Bu CUE dosyası: yanındaki BIN dosyasını seçin</string>
  <string name="importer_image_missing_files">Disk görüntüsünde fedata/gamedata klasörleri yok</string>
  <string name="importer_image_truncated">Disk görüntüsü erken bitiyor: dosya tamamen kopyalanmamış</string>
-
- <string name="faq_layout_modes"><b>Menü mü, yarış mı?</b>\nBunu oyun söyler. Sürerken yarış yerleşimini alırsın: direksiyon düğmeleri, pedallar, vitesler ve gerisi. Menülerde ve bir menü yarışın üzerine açıldığında port hiç düğme göstermez: menüler dokunuşu kendileri alır, telefonun Geri tuşu Escape olur ve klavye kendiliğinden açılır. Elle değiştirilecek bir şey yok.</string>
- <string name="faq_mouse"><b>Menüler nasıl çalışır?</b>\nDokunarak. Parmağını nereye koyarsan oyunun imleci oraya gider; dokunuş altındaki öğeye basar, kaydırıcı da onu sürükleyen parmağı izler. Telefonun Geri tuşu ya da hareketi Escape\'tir; oyun bir ad istediğinde telefonun klavyesi kendiliğinden açılır, klavye açıkken Geri onu kapatır.</string>
  <string name="faq_size"><b>Boyut neyi değiştirir?</b>\nDüğme boyutu varsayılan kontrolleri ölçekler. Konumları ve boyutları düzenle ekranında bir kontrolü sürükle ve boyut kaydırıcısıyla boyutunu değiştir; kontrol tam çizildiği yerde tepki verir ve yüzdeler varsayılan kontrole göredir. Değişiklikler kendiliğinden kaydedilir. Düzenleyici bir ızgara gösterir; Izgaraya hizala açıkken sürüklenen kontrol ızgaraya oturur.</string>
  <string name="faq_edges"><b>Kenarlar ve yükseklik</b>\nKenarlardan uzaklık varsayılan düğmeleri içe kaydırır. Sistem çentikleri gözetilir. Elle yerleştirilen düğmeler kayıtlı konumlarını korur.</string>
  <string name="faq_hiding"><b>Saydamlık ve otomatik gizleme</b>\nSaydamlık normal görünürlüğü belirler. Otomatik gizleme tüm parmaklar kaldırıldıktan sonra, 1–30 saniyelik gecikmeyle başlar. Gizli düğmeler ilk dokunuşta zaten tepki verir ve yeniden görünür olur. Bir düğmeyi basılı tutmak gizlemeyi engeller. 1. oyuncunun kumandasında bir tuşa basmak düğmeleri hemen gizler; bir sonraki dokunuş onları geri getirir. 2. oyuncunun kumandası onlara dokunmaz, böylece biri ekrandan sürerken diğeri kumandayla oynayabilir.</string>
  <string name="faq_vibration"><b>Titreşim</b>\nOyunun Force Feedback efektleri telefonda ya da Kumanda 1\'de hissedilir, asla ikisinde birden değil: Kontroller → Force Feedback bölümünde Kapalı, Telefon ya da Kumanda\'yı seç. Oyun yalnızca bir force feedback cihazını sürer, bu yüzden Kumanda 2 hiç titreşmez. Kumandanın titreşim gücü oyunun kendisinde ayarlanır: Options → Controllers → Force Feedback. Efektler oyundan gelir, asla düğmeye basmaktan gelmez.</string>
- <string name="faq_mapping"><b>Kumandalar</b>\nOyun her zaman iki kumanda görür: Kumanda 1, dokunmatik kontrollerle birlikte 1. oyuncudur, Kumanda 2 ise 2. oyuncudur. Kontroller → Kumandalar bölümünde üzerindeki bir düğmeye basarak hangi kumandanın hangisi olduğunu seç, her düğmenin ne yaptığını ayarla, ardından Kumanda AÇIK düğmesine bir kez bas. Bu, uygun kontrolleri oyun ayarlarına yazar ve eski dosyanın yedeğini alır. Sol çubuk direksiyonu çevirir, tetikler gaz verir ve fren yapar. Kumandanın iki düğme takımı vardır, tıpkı dokunmatik kontrollerin iki yerleşimi olduğu gibi: burada ayarladığın yarış takımı ve menülerle tekrarlar için sabit olan takım — orada Cross / A onaylar, Circle / B geri gider, yön tuşları seçimi taşır. Klavyeyle oynamak için bunun yerine Oyun varsayılanı seçeneğini yaz.</string>
  <string name="faq_lights"><b>Farlar ve piste dönüş</b>\n☼ L gönderir. ↻ piste dönmek için R gönderir. Tuşlar Kontroller → Dokunma → Tuşlar bölümünde değiştirilebilir.</string>
- <string name="faq_screen_data"><b>Ekran ve oyun verileri</b>\nYatay oyunu yatayda kilitler; Otomatik dönüşe izin verir. FPS sınırı kare hızını kısar; daha düşük bir değer saniyedeki işi azaltır. «Oyun verileri» içe aktarmaları yönetir ve hangi kümenin etkin olduğunu gösterir. Bir küme hazır olduğunda «Oyna» etkinleşir.</string>
  <string name="gamepad_buttons">Düğmeler</string>
  <string name="gamepad_buttons_title">Kumanda %1$d düğmeleri</string>
- <string name="gamepad_buttons_hint">Bu kumandanın her düğmesinin sürerken ne yaptığı. Sol çubuk direksiyonu çevirir, sağ tetik gaz verir, sol tetik fren yapar. Menülerde ve tekrarlarda düğmeler sabittir ve ayar gerektirmez: Cross / A ile Options / Menu onaylar, Circle / B ile Create / View geri gider, yön tuşları seçimi taşır. Düğme işlemleri, kumanda kontrolleri oyuna yazıldıktan sonra oyuna ulaşır.</string>
  <string name="gamepad_buttons_reset">Varsayılanlar</string>
- <string name="controls_write_gamepads">Kumanda AÇIK</string>
- <string name="controls_write_keyboard">Oyun varsayılanı</string>
- <string name="controls_write_gamepads_message">Oyun ayarlarındaki kontroller portun kumanda setiyle değiştirilir: Kumanda 1 ve dokunmatik kontroller 1. oyuncuyu, Kumanda 2 ise 2. oyuncuyu sürer; hem tekli yarışlarda hem bölünmüş ekranda. Önce mevcut ayar dosyasının yedeği alınır.</string>
- <string name="controls_write_keyboard_message">Oyun ayarlarındaki kontroller oyunun kendi varsayılan klavye kontrolleriyle değiştirilir. Önce mevcut ayar dosyasının yedeği alınır.</string>
- <string name="controls_write_done">Kontroller oyuna yazıldı. Yedek: %1$s</string>
- <string name="controls_write_no_config">Oyunun henüz bir ayar dosyası yok. Oyunu bir kez başlat, sonra yeniden dene.</string>
- <string name="controls_write_game_running">Kontrollerini yazmadan önce oyunu kapat.</string>
- <string name="controls_write_failed">Kontroller yazılamadı: %1$s</string>
- <string name="gamepads_keyboard_note">Oyun kendi klavye kontrollerine ayarlı (Oyun varsayılanı). Kumanda AÇIK düğmesine basana kadar kumandalar bölünmüş ekran yarışlarında hiçbir şey yapmaz.</string>
  <string name="pref_touch_enabled">Dokunmatik kontrolleri kullan</string>
  <string name="controls_help">Yardım: bölünmüş ekran</string>
  <string name="controls_help_title">İki kumandayla bölünmüş ekran</string>
- <string name="help_split_setup"><b>1. Kumandaları ayarla (bir kez)</b>\nİki kumandayı da telefona bağla. Kontroller → Kumandalar bölümünde Kumanda 1 altındaki Ata düğmesine bas ve 1. oyuncunun kumandasında herhangi bir düğmeye bas, sonra aynısını Kumanda 2 için yap. Otomatik de çalışır: kumandalar bağlanma sırasına göre alınır. Düğmeler bölümünde her düğmenin ne yapacağını seçersin.</string>
- <string name="help_split_write"><b>2. Kontrolleri oyuna yaz</b>\nAynı ekranda Kumanda AÇIK düğmesine bas ve onayla. Bu bir kez gerekir; tekrar yalnızca başka oyun verileri kurduktan ya da kontrolleri oyunun içinde değiştirdikten sonra gerekir. Önceki ayarların yedeği alınır.</string>
- <string name="help_split_race"><b>3. Bölünmüş ekranda yarış başlat</b>\nOyunu başlat ve Two Players… seçeneğini seç. 1. oyuncu Kumanda 1 ya da dokunmatik kontrollerle, 2. oyuncu Kumanda 2 ile sürer. Menülerde iki kumandadan biriyle gezinilebilir: yön tuşları seçimi taşır, Cross / A ya da Options / Menu onaylar, Circle / B ya da Create / View geri gider.</string>
- <string name="help_split_driving"><b>Sürüş</b>\nSol çubuk direksiyonu çevirir, sağ tetik gaz verir, sol tetik fren yapar. Varsayılan olarak Circle / B el freni, Square / X çivili şerit bırakır, Cross / A arkaya bakar, Triangle / Y kamerayı değiştirir, R1 / L1 vites değiştirir, Create / View arabayı piste geri koyar, Options / Menu yarışı duraklatır, L3 korna çalar, R3 farları yakar.</string>
- <string name="help_split_digital"><b>Analog ya da Dijital</b>\nHer kumandanın Kontroller → Kumandalar bölümünde kendi Analog / Dijital anahtarı vardır. Dijital, yarışı klavye gibi sürer: yön tuşları sol ve sağ direksiyonu çevirir, yön tuşu yukarı ve sağ tetik gaz verir, yön tuşu aşağı ve sol tetik fren yapar, çubuk ise direksiyonu çevirmez. Menüler iki durumda da aynı çalışır. İki kumanda hiçbir tuşu paylaşmaz, bu yüzden bölünmüş ekranda her biri yalnızca kendi arabasını sürer.</string>
- <string name="help_split_notes"><b>Bilmekte fayda var</b>\nKontroller → Force Feedback bölümünde hangisi seçildiyse yalnızca Kumanda 1 ya da telefon titreşir: oyun yalnızca bir force feedback cihazını sürer. Kontroller artık uyuşmazsa, örneğin oyunun içinde sıfırladıktan sonra, Kumanda AÇIK düğmesine yeniden bas. Klavyeyle oynamak için bunun yerine Oyun varsayılanı düğmesine bas. Dokunmatik kontroller Kontroller → Dokunma bölümünden kapatılır.</string>
  <string name="gamepad_mode_analog">Analog</string>
  <string name="gamepad_mode_digital">Dijital</string>
  <string name="gamepad_analog_note">Yarışta sol çubuk direksiyonu çevirir, sağ tetik gaz verir, sol tetik fren yapar.</string>
@@ -199,4 +172,36 @@
  <string name="network_port_original">1030 · orijinal oyun</string>
  <string name="network_hint">IPX bu Wi-Fi ağındaki yarışları kendisi bulur. TCP/IP, sunucunun adresini bilen herkese bağlanır; orijinal oyunu ya da Modern Patch\'i çalıştıran bir PC\'ye de. Tüm oyuncular aynı bağlantı noktasını kullanır.</string>
  <string name="fps_unlimited">Sınırsız</string>
+ <string name="launcher_backup_export_complete">Başlatıcı ayarları dışa aktarıldı.</string>
+ <string name="delete_game_files_message">%1$s ve buna ait kayıtlı oyunlar ile oyun ayarları bu cihazdan silinsin mi? Bu işlem geri alınamaz.</string>
+ <string name="choose_game_files">Oyun dosyalarını seç</string>
+ <string name="importing_saves">Kayıtlar içe aktarılıyor…</string>
+ <string name="exporting_saves">Kayıtlar dışa aktarılıyor…</string>
+ <string name="importing_launcher">Başlatıcı ayarları içe aktarılıyor…</string>
+ <string name="exporting_launcher">Başlatıcı ayarları dışa aktarılıyor…</string>
+ <string name="launcher_file_open_failed">Seçilen ayar dosyası açılamadı.</string>
+ <string name="launcher_backup_failed">Mevcut ayarlar yedeklenemedi. İçe aktarma iptal edildi.</string>
+ <string name="launcher_restore_failed">İçe aktarılan ayarlar kaydedilemedi.</string>
+ <string name="controls_automatic_help_button">Kontrol yardımı</string>
+ <string name="controls_automatic_help_title">Dokunma ve kumandalar</string>
+ <string name="controller_setup_intro">Her oyuncu için bir kumanda seçin. Menü kontrollerini test etmek veya değiştirmek için bir kumanda seçin. Yarış kontrollerini oyunun içinden atayın. Değişiklikler otomatik kaydedilir.</string>
+ <string name="controller_test_hint">Testi başlatın, ardından düğmelere basın veya çubukları hareket ettirin.</string>
+ <string name="controller_details_show">Giriş ayrıntılarını göster</string>
+ <string name="controller_details_hide">Giriş ayrıntılarını gizle</string>
+ <string name="controller_reset_menu">Menü kontrollerini sıfırla</string>
+ <string name="controller_pause_title">Yarışı duraklatma kısayolu</string>
+ <string name="controller_pause_hint">Yarışı duraklatmak için menüdeki Geri düğmesini ve ek bir düğmeyi basılı tutun.</string>
+ <string name="controller_device_type">Cihaz türü</string>
+ <string name="controller_change_type">Cihaz türünü değiştir…</string>
+ <string name="controller_role_hint">TV kumandasının oyuncu yuvasını kullanmaması için Uzaktan kumanda / klavye seçin.</string>
+ <string name="controller_report">Giriş cihazları raporu…</string>
+ <string name="controller_remote">Uzaktan kumanda / klavye</string>
+ <string name="controller_automatic">Otomatik</string>
+ <string name="controller_unassigned">Atanmamış</string>
+ <string name="controls_setup_hint">Kumandaları seçin, girişleri test edin ve menü kontrollerini değiştirin. Yarış kontrollerini oyunun içinden atayın.</string>
+ <string name="faq_layout_modes"><b>Menü mü, yarış mı?</b>\nYarış kontrolleri sürüş sırasında görünür ve menülerde gizlenir. Düzen otomatik değişir.</string>
+ <string name="faq_mouse"><b>Menüler nasıl kullanılır?</b>\nKontroller → Dokunma bölümünde, menü öğelerine dokunmak için Doğrudan dokunma veya kaydırarak imleci hareket ettirmek için Dokunmatik yüzey seçin. Android\'in Geri düğmesi veya hareketi geri gider. Oyun metin istediğinde klavye açılır; Geri klavyeyi kapatır.</string>
+ <string name="faq_screen_data"><b>Ekran ve oyun dosyaları</b>\nEkran, yönü ve kare hızı sınırını belirler. Daha düşük bir sınır güç tüketimini azaltabilir. Dosyalar ve yedekler, içe aktarılan oyun dosyalarını, kayıtları ve başlatıcı ayarları yedeklerini yönetir. Oynamadan önce etkin oyun dosyalarını seçin.</string>
+ <string name="faq_mapping"><b>Kumandalar</b>\nKontroller → Kumandalar bölümünde her oyuncu için bir kumanda seçin, girişleri test edin ve menü kontrollerini değiştirin. Otomatik, kalan kumandaları bağlantı sırasıyla kullanır. Kaydedilen atamalar, kumandalar bağlı olmadığında da ayrılmış kalır. Yarış kontrollerini oyunun içinden atayın. Menüdeki Geri düğmesi sürüş için atanmışsa Yarışı duraklatma kısayolu ayarlayın: Geri ve ek bir düğmeyi basılı tutun.</string>
+ <string name="controls_automatic_help">Menüler: hareket etmek için yön tuşlarını veya sol çubuğu, onaylamak için A / Cross ve geri gitmek için B / Circle kullanın. Kumandalar bölümünde cihazları test edip menü kontrollerini değiştirebilirsiniz. Dokunma bölümünde Doğrudan dokunma veya Dokunmatik yüzey seçebilirsiniz.\n\nYarış: kontrolleri oyunun Controls menüsünden atayın. Ekran düğmeleri bu atamaları izler. Menüdeki Geri düğmesi sürüş için atanmışsa Kumandalar → Yarışı duraklatma kısayolu bölümünde ek bir düğme seçin. Duraklatmak için ikisini de basılı tutun.\n\nBölünmüş ekran: Kumandalar bölümünde her oyuncu için bir kumanda seçin. Otomatik, kalanları bağlantı sırasıyla kullanır. Kumanda bağlı değilken kaydedilmiş yuvası ayrılmış kalır. Dokunmatik yarış kontrolleri oyuncu 1\'i yönetir.</string>
 </resources>

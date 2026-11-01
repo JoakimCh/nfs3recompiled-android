@@ -1,7 +1,5 @@
 <resources>
- <!-- Română. Etichetele ecranului Controls și inscripțiile de pe butoanele de pe
-      ecran rămân intenționat în engleză: acel ecran se compară cu setările
-      jocului însuși, iar jocul este în engleză. -->
+ <!-- Launcher translations. Preserve format placeholders and resource names. -->
 
  <string name="language_label">Limbă</string>
  <string name="language_system">Limba sistemului</string>
@@ -16,17 +14,15 @@
  <string name="play">Joacă</string>
  <string name="active_data_set">Date active: %1$s</string>
  <string name="no_active_data_set">Niciun set de date activ. Importă unul înainte de a juca.</string>
- <string name="data_settings">Date</string>
- <string name="game_data_title">Datele jocului</string>
- <string name="launcher_settings_title">Setările lansatorului</string>
- <string name="launcher_settings_hint">Salvează setările lansatorului — dispunerea comenzilor, atribuirea butoanelor, vibrația — într-un fișier sau restaurează-le. Importul le înlocuiește pe cele curente, după ce le copiază.</string>
+ <string name="data_settings">Fișiere și copii de siguranță</string>
+ <string name="game_data_title">Fișierele jocului</string>
+ <string name="launcher_settings_title">Copie a setărilor lansatorului</string>
+ <string name="launcher_settings_hint">Salvează comenzile tactile, configurarea gamepadurilor, afișajul, vibrațiile și rețeaua. Importul creează o copie a configurației actuale înainte de a o înlocui.</string>
  <string name="import_launcher">Importă setările...</string>
  <string name="export_launcher">Exportă setările...</string>
- <string name="launcher_export_complete">%1$d setări exportate.</string>
  <string name="launcher_import_complete">Setări importate. Cele anterioare au fost salvate ca %1$s.</string>
- <string name="launcher_import_complete_no_backup">Setări importate. Nu existau setări anterioare.</string>
- <string name="launcher_nothing_to_export">Încă nu există setări ale lansatorului.</string>
- <string name="launcher_wrong_format">Acesta nu este un fișier cu setările lansatorului.</string>
+ <string name="launcher_import_complete_no_backup">Setările au fost importate.</string>
+ <string name="launcher_wrong_format">Fișierul nu este o copie compatibilă a setărilor lansatorului.</string>
  <string name="controls_settings">Alocarea comenzilor</string>
  <string name="touch_settings">Comenzi tactile</string>
  <string name="screen_settings">Ecran</string>
@@ -45,11 +41,10 @@
  <string name="import_folder">Importă folder…</string>
  <string name="import_zip">Importă ZIP…</string>
  <string name="import_image">Importă imagine de disc…</string>
- <string name="data_import_hint">Importă un folder care conține direct \'fedata\' și \'gamedata\', sau un ZIP cu aceste foldere. Ce imporți se copiază în stocarea aplicației. Merge și o imagine a discului jocului (ISO sau BIN-ul unei perechi BIN/CUE).</string>
+ <string name="data_import_hint">Importă un dosar sau un ZIP cu \'fedata\' și \'gamedata\' ori o imagine de disc (ISO sau BIN). Fișierele sunt copiate în spațiul aplicației.</string>
  <string name="import_complete">Importul datelor s-a încheiat</string>
- <string name="data_error">Operația cu datele a eșuat: %1$s</string>
- <string name="delete_data_title">Ștergi setul de date?</string>
- <string name="delete_data_message">Ștergi %1$s de pe acest dispozitiv? Operația nu poate fi anulată.</string>
+ <string name="data_error">Operația nu a putut fi finalizată: %1$s</string>
+ <string name="delete_data_title">Ștergi fișierele jocului?</string>
  <string name="controls_explanation">Acesta este stratul portului dintre gamepadul fizic sau atingere și tastatura emulată. Este independent de meniul Controls din joc; acel meniu rămâne neschimbat.</string>
  <string name="controls_row_hint">Pentru fiecare acțiune alege un buton fizic de gamepad, apoi tasta emulată trimisă atât de el, cât și de butonul tactil de pe ecran.</string>
  <string name="touch_mode_label">Mod de comandă</string>
@@ -57,10 +52,10 @@
  <string name="touch_mode_wheel">Volan (în curând)</string>
  <string name="touch_mode_tilt">Direcție prin înclinare (în curând)</string>
  <string name="touch_layout_label">Aranjarea butoanelor</string>
- <string name="touch_pointer_label">Indicator în meniuri</string>
- <string name="touch_pointer_tap">Unde atinge degetul</string>
+ <string name="touch_pointer_label">Comenzi tactile în meniuri</string>
+ <string name="touch_pointer_tap">Atingere directă</string>
  <string name="touch_pointer_touchpad">Touchpad</string>
- <string name="touch_pointer_note">Touchpad: glisează oriunde pentru a mișca cursorul, atinge pentru clic, ține degetul nemișcat pentru a apuca și a trage. Se aplică la următoarea pornire a jocului.</string>
+ <string name="touch_pointer_note">Touchpad: glisează pentru a mișca indicatorul, atinge pentru clic sau ține degetul nemișcat pentru a prinde și a trage.</string>
  <string name="opacity_label">Opacitatea butoanelor</string>
  <string name="size_label">Mărimea butoanelor</string>
  <string name="auto_hide_label">Ascunde după 4 secunde de inactivitate</string>
@@ -72,7 +67,7 @@
  <string name="fps_30">30 FPS</string>
  <string name="fps_60">60 FPS</string>
  <string name="gamma_label">Gama</string>
- <string name="fps_cap_label">Rata de cadre</string>
+ <string name="fps_cap_label">Limită de cadre pe secundă</string>
  <string name="fps_error">Introdu un număr întreg de la 1 la 240</string>
  <string name="save">Salvează</string>
  <string name="settings_saved">Setări salvate</string>
@@ -85,7 +80,7 @@
  <string name="editor_drag_title">Trage comenzile</string>
  <string name="editor_resize_hint">Alege pentru redimensionare</string>
  <string name="saves_title">Salvări</string>
- <string name="saves_hint">Exportă profilul activ într-un ZIP sau importă unul. Importul creează o copie locală înainte de a înlocui salvările existente.</string>
+ <string name="saves_hint">Exportă jocurile salvate din fișierele de joc active într-un ZIP sau importă un ZIP. Se creează o copie a salvărilor existente înainte de înlocuire.</string>
  <string name="import_saves">Importă salvări…</string>
  <string name="export_saves">Exportă salvări…</string>
  <string name="saves_not_found">Nu s-au găsit salvări în setul de date activ.</string>
@@ -104,7 +99,6 @@
  <string name="controls_touch">Atingere</string>
  <string name="controls_gamepad">Gamepaduri</string>
  <string name="gamepads_title">Gamepaduri</string>
- <string name="gamepads_hint">Jocul vede două gamepaduri: gamepadul 1 este jucătorul 1, împreună cu comenzile tactile, gamepadul 2 este jucătorul 2. Alege aici gamepadurile și setează-le butoanele, apoi scrie o dată comenzile de gamepad în joc.</string>
  <string name="gamepad_slot_label">Gamepad %1$d</string>
  <string name="gamepad_slot_auto_now">Automat: %1$s</string>
  <string name="gamepad_slot_auto_none">Automat: niciun gamepad conectat</string>
@@ -146,38 +140,17 @@
  <string name="importer_image_cue">Acesta este fișierul CUE: alege fișierul BIN de lângă el</string>
  <string name="importer_image_missing_files">Imaginea de disc nu are folderele fedata/gamedata</string>
  <string name="importer_image_truncated">Imaginea de disc se termină prea devreme: fișierul nu a fost copiat întreg</string>
-
- <string name="faq_layout_modes"><b>Meniu sau cursă?</b>\nSpune jocul. Cât conduci ai aranjamentul de cursă: butoane de viraj, pedale, trepte și restul. În meniuri, și ori de câte ori se deschide un meniu peste o cursă, portul nu arată niciun buton: meniurile primesc singure atingerea, butonul Înapoi al telefonului este Escape, iar tastatura apare singură. Nu e nimic de comutat manual.</string>
- <string name="faq_mouse"><b>Cum funcționează meniurile?</b>\nPrin atingere. Unde pui degetul, acolo ajunge indicatorul jocului, așa că o atingere apasă elementul de dedesubt, iar un cursor urmează degetul care îl trage. Butonul sau gestul Înapoi al telefonului este Escape, iar când jocul cere un nume, tastatura telefonului se deschide singură; cu tastatura deschisă, Înapoi o închide.</string>
  <string name="faq_size"><b>Ce schimbă mărimea?</b>\nMărimea butoanelor scalează comenzile implicite. În Editează pozițiile și mărimile trage o comandă și schimbă-i mărimea cu cursorul de mărime; o comandă răspunde exact unde este desenată, iar procentele sunt raportate la comanda implicită. Modificările se salvează singure. Editorul arată o grilă; cu Aliniere la grilă activă, comanda trasă se așază pe ea.</string>
  <string name="faq_edges"><b>Margini și înălțime</b>\nDistanța față de margini mută comenzile implicite spre interior. Decupajele sistemului sunt respectate. Comenzile plasate manual își păstrează pozițiile salvate.</string>
  <string name="faq_hiding"><b>Opacitate și ascundere automată</b>\nOpacitatea stabilește vizibilitatea normală. Ascunderea automată începe după ce ridici toate degetele, cu o întârziere de 1–30 de secunde. Butoanele ascunse răspund deja la prima atingere și redevin vizibile. Ținerea apăsată a unei comenzi împiedică ascunderea. O apăsare pe gamepadul jucătorului 1 ascunde imediat butoanele; următoarea atingere le readuce. Gamepadul jucătorului 2 nu le atinge, așa că unul poate conduce pe ecran în timp ce celălalt joacă pe gamepad.</string>
  <string name="faq_vibration"><b>Vibrații</b>\nEfectele Force Feedback ale jocului se simt pe telefon sau pe gamepadul 1, niciodată pe amândouă deodată: alege Oprit, Telefon sau Gamepad în Comenzi → Force Feedback. Jocul controlează un singur dispozitiv force feedback, așa că gamepadul 2 nu vibrează niciodată. Intensitatea gamepadului se setează în joc: Options → Controllers → Force Feedback. Efectele vin din joc, niciodată din apăsarea butoanelor.</string>
- <string name="faq_mapping"><b>Gamepaduri</b>\nJocul vede mereu două gamepaduri: gamepadul 1 este jucătorul 1, împreună cu comenzile tactile, gamepadul 2 este jucătorul 2. În Comenzi → Gamepaduri alegi care gamepad e care apăsând un buton pe el și setezi ce face fiecare buton, apoi apeși o dată Gamepad ACTIV. Acesta scrie comenzile potrivite în setările jocului și face o copie a fișierului vechi. Stick-ul stâng virează, trăgaciele accelerează și frânează. Un gamepad are două seturi de butoane, așa cum comenzile tactile au două aranjamente: cel de cursă, pe care îl setezi aici, și unul fix pentru meniuri și reluări, unde Cross / A confirmă, Circle / B revine, iar crucea mută selecția. Pentru a juca de la tastatură, scrie în schimb Implicit în joc.</string>
  <string name="faq_lights"><b>Faruri și revenire pe pistă</b>\n☼ trimite L. ↻ trimite R pentru a reveni pe pistă. Tastele se pot schimba în Comenzi → Atingere → Taste.</string>
- <string name="faq_screen_data"><b>Ecran și datele jocului</b>\nPeisaj blochează jocul pe orizontală; Automat permite rotirea. Limita FPS restrânge rata de cadre; o valoare mai mică reduce munca pe secundă. «Datele jocului» gestionează importurile și arată setul activ. «Joacă» devine disponibil când un set este gata.</string>
  <string name="gamepad_buttons">Butoane</string>
  <string name="gamepad_buttons_title">Butoanele gamepadului %1$d</string>
- <string name="gamepad_buttons_hint">Ce face fiecare buton al acestui gamepad cât conduci. Stick-ul stâng virează, trăgaciul drept accelerează, iar cel stâng frânează. În meniuri și în reluări butoanele sunt fixe și nu se setează: Cross / A și Options / Menu confirmă, Circle / B și Create / View revin, crucea mută selecția. Acțiunile butoanelor ajung în joc după ce comenzile pentru gamepad sunt scrise în el.</string>
  <string name="gamepad_buttons_reset">Implicite</string>
- <string name="controls_write_gamepads">Gamepad ACTIV</string>
- <string name="controls_write_keyboard">Implicit în joc</string>
- <string name="controls_write_gamepads_message">Înlocuiește comenzile din setările jocului cu setul de gamepad al portului: gamepadul 1 și comenzile tactile conduc jucătorul 1, gamepadul 2 jucătorul 2, în curse individuale și pe ecran împărțit. Mai întâi se face o copie de rezervă a fișierului de setări actual.</string>
- <string name="controls_write_keyboard_message">Înlocuiește comenzile din setările jocului cu comenzile implicite de tastatură ale jocului. Mai întâi se face o copie de rezervă a fișierului de setări actual.</string>
- <string name="controls_write_done">Comenzile au fost scrise în joc. Copie de rezervă: %1$s</string>
- <string name="controls_write_no_config">Jocul nu are încă un fișier de setări. Pornește jocul o dată, apoi încearcă din nou.</string>
- <string name="controls_write_game_running">Închide jocul înainte de a-i scrie comenzile.</string>
- <string name="controls_write_failed">Comenzile nu au putut fi scrise: %1$s</string>
- <string name="gamepads_keyboard_note">Jocul este setat pe propriile comenzi de tastatură (Implicit în joc). Gamepadurile nu fac nimic în cursele pe ecran împărțit până nu apeși Gamepad ACTIV.</string>
  <string name="pref_touch_enabled">Folosește comenzile tactile</string>
  <string name="controls_help">Ajutor: ecran împărțit</string>
  <string name="controls_help_title">Ecran împărțit cu două gamepaduri</string>
- <string name="help_split_setup"><b>1. Configurează gamepadurile (o dată)</b>\nConectează ambele gamepaduri la telefon. În Comenzi → Gamepaduri apasă Atribuie la gamepadul 1 și apasă orice buton de pe gamepadul jucătorului 1, apoi fă la fel pentru gamepadul 2. Merge și Automat: gamepadurile sunt luate în ordinea conectării. În Butoane alegi ce face fiecare buton.</string>
- <string name="help_split_write"><b>2. Scrie comenzile în joc</b>\nPe același ecran apasă Gamepad ACTIV și confirmă. E nevoie o dată și din nou doar după instalarea altor date de joc sau după schimbarea comenzilor în joc. Setările anterioare sunt salvate într-o copie de rezervă.</string>
- <string name="help_split_race"><b>3. Pornește o cursă pe ecran împărțit</b>\nPornește jocul și alege Two Players…. Jucătorul 1 conduce cu gamepadul 1 sau cu comenzile tactile, jucătorul 2 cu gamepadul 2. Prin meniuri te poți deplasa cu oricare gamepad: crucea mută selecția, Cross / A sau Options / Menu confirmă, Circle / B sau Create / View revine.</string>
- <string name="help_split_driving"><b>Condus</b>\nStick-ul stâng virează, trăgaciul drept accelerează, iar cel stâng frânează. Implicit Circle / B este frâna de mână, Square / X aruncă o bandă cu țepi, Cross / A privește în spate, Triangle / Y schimbă camera, R1 / L1 schimbă treptele, Create / View readuce mașina pe pistă, Options / Menu pune cursa pe pauză, L3 claxonează, iar R3 aprinde farurile.</string>
- <string name="help_split_digital"><b>Analogic sau Digital</b>\nFiecare gamepad are propriul comutator Analogic / Digital în Comenzi → Gamepaduri. Digital conduce cursa ca o tastatură: crucea stânga și dreapta virează, crucea sus și trăgaciul drept accelerează, crucea jos și trăgaciul stâng frânează, iar stick-ul nu virează. Meniurile funcționează la fel în ambele cazuri. Cele două gamepaduri nu împart niciodată o tastă, așa că pe ecranul împărțit fiecare conduce doar propria mașină.</string>
- <string name="help_split_notes"><b>Bine de știut</b>\nVibrează doar gamepadul 1 sau telefonul, după alegerea din Comenzi → Force Feedback: jocul controlează un singur dispozitiv force feedback. Dacă comenzile nu se mai potrivesc, de exemplu după resetarea lor în joc, apasă din nou Gamepad ACTIV. Pentru a juca de la tastatură, apasă în schimb Implicit în joc. Comenzile tactile se opresc în Comenzi → Atingere.</string>
  <string name="gamepad_mode_analog">Analogic</string>
  <string name="gamepad_mode_digital">Digital</string>
  <string name="gamepad_analog_note">În cursă stick-ul stâng virează, trăgaciul drept accelerează, iar cel stâng frânează.</string>
@@ -199,4 +172,36 @@
  <string name="network_port_original">1030 · jocul original</string>
  <string name="network_hint">IPX găsește singur cursele din această rețea Wi-Fi. TCP/IP conectează cu oricine știe adresa gazdei, inclusiv cu un PC cu jocul original sau cu Modern Patch. Toți jucătorii folosesc același port.</string>
  <string name="fps_unlimited">Nelimitat</string>
+ <string name="launcher_backup_export_complete">Setările lansatorului au fost exportate.</string>
+ <string name="delete_game_files_message">Ștergi %1$s și salvările și setările de joc asociate de pe acest dispozitiv? Acțiunea nu poate fi anulată.</string>
+ <string name="choose_game_files">Alege fișierele jocului</string>
+ <string name="importing_saves">Se importă salvările…</string>
+ <string name="exporting_saves">Se exportă salvările…</string>
+ <string name="importing_launcher">Se importă setările lansatorului…</string>
+ <string name="exporting_launcher">Se exportă setările lansatorului…</string>
+ <string name="launcher_file_open_failed">Fișierul de setări ales nu a putut fi deschis.</string>
+ <string name="launcher_backup_failed">Nu s-a putut crea o copie a setărilor actuale. Importul a fost anulat.</string>
+ <string name="launcher_restore_failed">Setările importate nu au putut fi salvate.</string>
+ <string name="controls_automatic_help_button">Ajutor pentru comenzi</string>
+ <string name="controls_automatic_help_title">Atingere și gamepaduri</string>
+ <string name="controller_setup_intro">Alege un gamepad pentru fiecare jucător. Selectează un dispozitiv pentru a testa sau modifica comenzile meniurilor. Configurează comenzile de cursă în joc. Modificările se salvează automat.</string>
+ <string name="controller_test_hint">Pornește testul, apoi apasă butoane sau mișcă manetele.</string>
+ <string name="controller_details_show">Arată detaliile intrării</string>
+ <string name="controller_details_hide">Ascunde detaliile intrării</string>
+ <string name="controller_reset_menu">Resetează comenzile meniurilor</string>
+ <string name="controller_pause_title">Combinație pentru pauză în cursă</string>
+ <string name="controller_pause_hint">Ține apăsat butonul Înapoi din meniuri și încă un buton pentru a pune o cursă pe pauză.</string>
+ <string name="controller_device_type">Tip de dispozitiv</string>
+ <string name="controller_change_type">Schimbă tipul dispozitivului…</string>
+ <string name="controller_role_hint">Pentru o telecomandă TV, alege Telecomandă / tastatură ca să nu ocupe un loc de jucător.</string>
+ <string name="controller_report">Raport despre dispozitivele de intrare…</string>
+ <string name="controller_remote">Telecomandă / tastatură</string>
+ <string name="controller_automatic">Automat</string>
+ <string name="controller_unassigned">Neatribuit</string>
+ <string name="controls_setup_hint">Alege gamepaduri, testează intrările și modifică comenzile meniurilor. Configurează comenzile de cursă în joc.</string>
+ <string name="faq_layout_modes"><b>Meniu sau cursă?</b>\nComenzile de cursă apar în timpul conducerii și se ascund în meniuri. Dispunerea se schimbă automat.</string>
+ <string name="faq_mouse"><b>Cum funcționează meniurile?</b>\nÎn Comenzi → Atingere, alege Atingere directă pentru a atinge opțiunile sau Touchpad pentru a mișca indicatorul prin glisare. Butonul sau gestul Înapoi din Android revine la ecranul anterior. Tastatura se deschide când jocul cere text; Înapoi o închide.</string>
+ <string name="faq_screen_data"><b>Afișaj și fișierele jocului</b>\nAfișaj controlează orientarea și limita de cadre pe secundă. O limită mai mică poate reduce consumul. Fișiere și copii de siguranță gestionează fișierele de joc importate, salvările și copiile setărilor lansatorului. Alege fișiere de joc active înainte de a juca.</string>
+ <string name="faq_mapping"><b>Gamepaduri</b>\nÎn Comenzi → Gamepaduri, alege un gamepad pentru fiecare jucător, testează intrările și modifică comenzile meniurilor. Automat folosește gamepadurile rămase în ordinea conectării. Atribuirile salvate rămân rezervate când dispozitivele sunt deconectate. Configurează comenzile de cursă în joc. Dacă butonul Înapoi din meniuri este folosit la condus, configurează o Combinație pentru pauză în cursă: ține apăsat Înapoi și încă un buton.</string>
+ <string name="controls_automatic_help">Meniuri: folosește crucea direcțională sau maneta stângă pentru deplasare, A / Cross pentru confirmare și B / Circle pentru înapoi. În Gamepaduri poți testa dispozitivele și modifica comenzile meniurilor. În Atingere poți alege Atingere directă sau Touchpad.\n\nCursă: configurează comenzile în meniul Controls al jocului. Butoanele de pe ecran urmează aceste atribuiri. Dacă butonul Înapoi din meniuri este folosit la condus, alege încă un buton în Gamepaduri → Combinație pentru pauză în cursă. Ține-le apăsate pe amândouă pentru pauză.\n\nEcran împărțit: alege un gamepad pentru fiecare jucător în Gamepaduri. Automat le folosește pe cele rămase în ordinea conectării. O atribuire salvată rămâne rezervată cât timp dispozitivul este deconectat. Comenzile tactile de cursă controlează jucătorul 1.</string>
 </resources>

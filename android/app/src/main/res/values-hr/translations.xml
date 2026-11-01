@@ -1,7 +1,5 @@
 <resources>
- <!-- Hrvatski. Oznake zaslona Controls i natpisi na zaslonskim gumbima namjerno
-      ostaju na engleskom: taj se zaslon uspoređuje s postavkama same igre, a
-      igra je na engleskom. -->
+ <!-- Launcher translations. Preserve format placeholders and resource names. -->
 
  <string name="language_label">Jezik</string>
  <string name="language_system">Jezik sustava</string>
@@ -16,17 +14,15 @@
  <string name="play">Igraj</string>
  <string name="active_data_set">Aktivni podaci: %1$s</string>
  <string name="no_active_data_set">Nema aktivnog skupa podataka. Uvezi jedan prije igranja.</string>
- <string name="data_settings">Podaci</string>
- <string name="game_data_title">Podaci igre</string>
- <string name="launcher_settings_title">Postavke pokretača</string>
- <string name="launcher_settings_hint">Spremi postavke pokretača — raspored kontrola, dodjelu tipki, vibraciju — u datoteku ili ih vrati. Uvoz zamjenjuje trenutne nakon što ih sigurnosno kopira.</string>
+ <string name="data_settings">Datoteke i sigurnosne kopije</string>
+ <string name="game_data_title">Datoteke igre</string>
+ <string name="launcher_settings_title">Sigurnosna kopija postavki pokretača</string>
+ <string name="launcher_settings_hint">Izradite sigurnosnu kopiju dodirnih kontrola, postavki kontrolera, prikaza, vibracije i mreže. Uvoz prvo sprema kopiju trenutačnih postavki, a zatim ih zamjenjuje.</string>
  <string name="import_launcher">Uvezi postavke...</string>
  <string name="export_launcher">Izvezi postavke...</string>
- <string name="launcher_export_complete">Izvezeno postavki: %1$d.</string>
  <string name="launcher_import_complete">Postavke uvezene. Prethodne spremljene kao %1$s.</string>
- <string name="launcher_import_complete_no_backup">Postavke uvezene. Prethodnih nije bilo.</string>
- <string name="launcher_nothing_to_export">Još nema postavki pokretača.</string>
- <string name="launcher_wrong_format">Ovo nije datoteka s postavkama pokretača.</string>
+ <string name="launcher_import_complete_no_backup">Postavke su uvezene.</string>
+ <string name="launcher_wrong_format">Datoteka nije podržana sigurnosna kopija postavki pokretača.</string>
  <string name="controls_settings">Raspored tipki</string>
  <string name="touch_settings">Upravljanje dodirom</string>
  <string name="screen_settings">Zaslon</string>
@@ -45,11 +41,10 @@
  <string name="import_folder">Uvezi mapu…</string>
  <string name="import_zip">Uvezi ZIP…</string>
  <string name="import_image">Uvoz slike diska…</string>
- <string name="data_import_hint">Uvezi mapu koja izravno sadrži \'fedata\' i \'gamedata\', ili ZIP s tim mapama. Uvezeno se kopira u pohranu aplikacije. Može se uvesti i slika diska igre (ISO ili BIN iz para BIN/CUE).</string>
+ <string name="data_import_hint">Uvezite mapu ili ZIP s mapama \'fedata\' i \'gamedata\' ili sliku diska (ISO ili BIN). Datoteke se kopiraju u pohranu aplikacije.</string>
  <string name="import_complete">Uvoz podataka dovršen</string>
- <string name="data_error">Radnja s podacima nije uspjela: %1$s</string>
- <string name="delete_data_title">Izbrisati skup podataka?</string>
- <string name="delete_data_message">Izbrisati %1$s s ovog uređaja? To se ne može poništiti.</string>
+ <string name="data_error">Radnja nije dovršena: %1$s</string>
+ <string name="delete_data_title">Izbrisati datoteke igre?</string>
  <string name="controls_explanation">Ovo je sloj porta između fizičkog kontrolera ili dodira i emulirane tipkovnice. Neovisan je o izborniku Controls u samoj igri; taj izbornik ostaje nepromijenjen.</string>
  <string name="controls_row_hint">Za svaku radnju odaberi fizički gumb kontrolera, a zatim emuliranu tipku koju šalju i on i zaslonski gumb.</string>
  <string name="touch_mode_label">Način unosa</string>
@@ -57,10 +52,10 @@
  <string name="touch_mode_wheel">Volan (uskoro)</string>
  <string name="touch_mode_tilt">Upravljanje nagibom (uskoro)</string>
  <string name="touch_layout_label">Raspored gumba</string>
- <string name="touch_pointer_label">Pokazivač u izbornicima</string>
- <string name="touch_pointer_tap">Gdje prst dodirne</string>
+ <string name="touch_pointer_label">Dodirno upravljanje izbornicima</string>
+ <string name="touch_pointer_tap">Izravan dodir</string>
  <string name="touch_pointer_touchpad">Touchpad</string>
- <string name="touch_pointer_note">Touchpad: kliži prstom bilo gdje za pomicanje pokazivača, dodirni za klik, zadrži prst za hvatanje i povlačenje. Vrijedi od sljedećeg pokretanja igre.</string>
+ <string name="touch_pointer_note">Touchpad: povucite za pomicanje pokazivača, dodirnite za klik ili držite prst mirno za hvatanje i povlačenje.</string>
  <string name="opacity_label">Neprozirnost gumba</string>
  <string name="size_label">Veličina gumba</string>
  <string name="auto_hide_label">Sakrij nakon 4 sekunde neaktivnosti</string>
@@ -72,7 +67,7 @@
  <string name="fps_30">30 FPS</string>
  <string name="fps_60">60 FPS</string>
  <string name="gamma_label">Gama</string>
- <string name="fps_cap_label">Broj sličica</string>
+ <string name="fps_cap_label">Ograničenje broja sličica</string>
  <string name="fps_error">Unesi cijeli broj od 1 do 240</string>
  <string name="save">Spremi</string>
  <string name="settings_saved">Postavke spremljene</string>
@@ -85,7 +80,7 @@
  <string name="editor_drag_title">Povuci gumbe</string>
  <string name="editor_resize_hint">Odaberi za promjenu veličine</string>
  <string name="saves_title">Spremljene igre</string>
- <string name="saves_hint">Izvezi aktivni profil u ZIP ili uvezi postojeći. Uvoz stvara lokalnu sigurnosnu kopiju prije zamjene postojećih spremljenih igara.</string>
+ <string name="saves_hint">Izvezite spremljene igre iz aktivnih datoteka igre u ZIP ili uvezite ZIP. Prije zamjene izrađuje se sigurnosna kopija postojećih spremljenih igara.</string>
  <string name="import_saves">Uvezi spremljene igre…</string>
  <string name="export_saves">Izvezi spremljene igre…</string>
  <string name="saves_not_found">U aktivnom skupu podataka nema spremljenih igara.</string>
@@ -104,7 +99,6 @@
  <string name="controls_touch">Dodir</string>
  <string name="controls_gamepad">Kontroleri</string>
  <string name="gamepads_title">Kontroleri</string>
- <string name="gamepads_hint">Igra vidi dva kontrolera: kontroler 1 je igrač 1 zajedno s upravljanjem dodirom, kontroler 2 je igrač 2. Ovdje odaberi kontrolere i podesi njihove tipke, zatim jednom zapiši upravljanje kontrolerima u igru.</string>
  <string name="gamepad_slot_label">Kontroler %1$d</string>
  <string name="gamepad_slot_auto_now">Automatski: %1$s</string>
  <string name="gamepad_slot_auto_none">Automatski: nije spojen nijedan kontroler</string>
@@ -146,38 +140,17 @@
  <string name="importer_image_cue">Ovo je CUE datoteka: odaberite BIN datoteku pokraj nje</string>
  <string name="importer_image_missing_files">U slici diska nema mapa fedata/gamedata</string>
  <string name="importer_image_truncated">Slika diska završava prerano: datoteka nije kopirana cijela</string>
-
- <string name="faq_layout_modes"><b>Izbornik ili utrka?</b>\nIgra to govori. Dok voziš imaš utrkivački raspored: gumbe za skretanje, papučice, stupnjeve prijenosa i ostalo. U izbornicima, i kad god se izbornik otvori preko utrke, port ne prikazuje nijedan gumb: izbornici sami primaju dodir, sistemski Natrag je Escape, a tipkovnica se pojavljuje sama. Ručno nema što mijenjati.</string>
- <string name="faq_mouse"><b>Kako rade izbornici?</b>\nDodirom. Gdje staviš prst, ondje je pokazivač igre, pa dodir pritišće stavku ispod njega, a klizač prati prst koji ga vuče. Sistemski gumb ili gesta Natrag je Escape, a kad igra zatraži ime, tipkovnica telefona otvara se sama; dok je tipkovnica otvorena, Natrag je zatvara.</string>
  <string name="faq_size"><b>Što mijenja veličina?</b>\nVeličina gumba skalira zadano upravljanje. U Uredi položaje i veličine povuci gumb i promijeni mu veličinu klizačem veličine; gumb reagira točno ondje gdje je nacrtan, a postoci su u odnosu na zadani gumb. Promjene se spremaju same. Uređivač prikazuje mrežu; uz uključeno Poravnaj s mrežom povučeni gumb sjeda na nju.</string>
  <string name="faq_edges"><b>Rubovi i visina</b>\nUdaljenost od rubova pomiče zadane gumbe prema unutra. Sistemski izrezi se poštuju. Ručno postavljeni gumbi zadržavaju spremljene položaje.</string>
  <string name="faq_hiding"><b>Neprozirnost i automatsko skrivanje</b>\nNeprozirnost određuje uobičajenu vidljivost. Skrivanje počinje kad podigneš sve prste, nakon 1–30 sekundi. Skriveni gumbi reagiraju već na prvi dodir i ponovno postaju vidljivi. Držanje gumba sprječava skrivanje. Pritisak na kontroleru igrača 1 odmah skriva gumbe; sljedeći dodir ih vraća. Kontroler igrača 2 ih ne dira, pa jedan može voziti po zaslonu dok drugi igra kontrolerom.</string>
  <string name="faq_vibration"><b>Vibracija</b>\nEfekti Force Feedback igre osjete se na telefonu ili na kontroleru 1, nikad na oba odjednom: odaberite Isključeno, Telefon ili Kontroler u Upravljanje → Force Feedback. Igra pokreće samo jedan uređaj s povratnom silom, pa kontroler 2 nikad ne vibrira. Jačina vibracije kontrolera podešava se u samoj igri: Options → Controllers → Force Feedback. Efekti dolaze iz igre, nikad od pritisaka tipki.</string>
- <string name="faq_mapping"><b>Kontroleri</b>\nIgra uvijek vidi dva kontrolera: kontroler 1 je igrač 1 zajedno s upravljanjem dodirom, kontroler 2 je igrač 2. U Upravljanje → Kontroleri pritiskom tipke odaberi koji je kontroler čiji i podesi što radi svaka tipka, zatim jednom pritisni Kontroler UKLJUČEN. To u postavke igre zapisuje odgovarajuće upravljanje i sigurnosno kopira staru datoteku. Lijeva palica skreće, okidači ubrzavaju i koče. Kontroler ima dva skupa tipki, kao što upravljanje dodirom ima dva rasporeda: utrkivački, koji ovdje podesiš, i nepromjenjiv za izbornike i snimke, gdje Cross / A potvrđuje, Circle / B vraća natrag, a križ pomiče odabir. Za igranje tipkovnicom umjesto toga zapiši Zadano u igri.</string>
  <string name="faq_lights"><b>Svjetla i povratak na stazu</b>\n☼ šalje L. ↻ šalje R za povratak na stazu. Tipke se mogu promijeniti u Upravljanje → Dodir → Tipke.</string>
- <string name="faq_screen_data"><b>Zaslon i podaci igre</b>\nVodoravno zaključava igru vodoravno; Automatski dopušta rotaciju. Ograničenje FPS-a smanjuje broj sličica; niža vrijednost smanjuje opterećenje. «Podaci igre» upravljaju uvozima i pokazuju koji je skup aktivan. «Igraj» se omogućuje kad je skup spreman.</string>
  <string name="gamepad_buttons">Tipke</string>
  <string name="gamepad_buttons_title">Tipke kontrolera %1$d</string>
- <string name="gamepad_buttons_hint">Što svaka tipka ovog kontrolera radi dok voziš. Lijeva palica skreće, desni okidač ubrzava, a lijevi koči. U izbornicima i snimkama tipke su nepromjenjive i ne treba ih podešavati: Cross / A i Options / Menu potvrđuju, Circle / B i Create / View vraćaju natrag, križ pomiče odabir. Radnje tipki dolaze do igre kad se u nju zapiše upravljanje kontrolerima.</string>
  <string name="gamepad_buttons_reset">Zadano</string>
- <string name="controls_write_gamepads">Kontroler UKLJUČEN</string>
- <string name="controls_write_keyboard">Zadano u igri</string>
- <string name="controls_write_gamepads_message">Zamijeniti upravljanje u postavkama igre kompletom kontrolera ovog porta: kontroler 1 i upravljanje dodirom vode igrača 1, kontroler 2 igrača 2, u pojedinačnim utrkama i na podijeljenom zaslonu. Trenutačna datoteka postavki prvo se sigurnosno kopira.</string>
- <string name="controls_write_keyboard_message">Zamijeniti upravljanje u postavkama igre zadanim upravljanjem tipkovnicom same igre. Trenutačna datoteka postavki prvo se sigurnosno kopira.</string>
- <string name="controls_write_done">Upravljanje je zapisano u igru. Sigurnosna kopija: %1$s</string>
- <string name="controls_write_no_config">Igra još nema datoteku postavki. Pokreni igru jednom pa pokušaj ponovno.</string>
- <string name="controls_write_game_running">Zatvori igru prije zapisivanja njezina upravljanja.</string>
- <string name="controls_write_failed">Upravljanje nije moguće zapisati: %1$s</string>
- <string name="gamepads_keyboard_note">Igra je postavljena na vlastito upravljanje tipkovnicom (Zadano u igri). Kontroleri u utrkama na podijeljenom zaslonu ne rade ništa dok ne pritisneš Kontroler UKLJUČEN.</string>
  <string name="pref_touch_enabled">Koristi upravljanje dodirom</string>
  <string name="controls_help">Pomoć: podijeljeni zaslon</string>
  <string name="controls_help_title">Podijeljeni zaslon s dva kontrolera</string>
- <string name="help_split_setup"><b>1. Postavi kontrolere (jednom)</b>\nSpoji oba kontrolera s telefonom. U Upravljanje → Kontroleri pritisni Dodijeli kod kontrolera 1 i pritisni bilo koju tipku na kontroleru igrača 1, zatim isto učini za kontroler 2. Radi i Automatski: kontroleri se uzimaju redoslijedom spajanja. U Tipke biraš što radi svaka tipka.</string>
- <string name="help_split_write"><b>2. Zapiši upravljanje u igru</b>\nNa istom zaslonu pritisni Kontroler UKLJUČEN i potvrdi. Potrebno je jednom, a ponovno samo nakon instaliranja drugih podataka igre ili promjene upravljanja u samoj igri. Prethodne postavke sigurnosno se kopiraju.</string>
- <string name="help_split_race"><b>3. Pokreni utrku na podijeljenom zaslonu</b>\nPokreni igru i odaberi Two Players…. Igrač 1 vozi kontrolerom 1 ili upravljanjem dodirom, igrač 2 kontrolerom 2. Izbornicima se kreće bilo kojim kontrolerom: križ pomiče odabir, Cross / A ili Options / Menu potvrđuje, Circle / B ili Create / View vraća natrag.</string>
- <string name="help_split_driving"><b>Vožnja</b>\nLijeva palica skreće, desni okidač ubrzava, a lijevi koči. Zadano je Circle / B ručna kočnica, Square / X baca traku sa šiljcima, Cross / A gleda unatrag, Triangle / Y mijenja kameru, R1 / L1 mijenjaju brzine, Create / View vraća auto na stazu, Options / Menu pauzira utrku, L3 trubi, a R3 pali svjetla.</string>
- <string name="help_split_digital"><b>Analogno ili digitalno</b>\nSvaki kontroler ima vlastiti prekidač Analogno / Digitalno u Upravljanje → Kontroleri. Digitalno vozi utrku kao tipkovnica: križ lijevo i desno skreće, križ gore i desni okidač ubrzavaju, križ dolje i lijevi okidač koče, a palica ne skreće. Izbornici rade jednako u oba slučaja. Dva kontrolera nikad ne dijele nijednu tipku, pa na podijeljenom zaslonu svaki vozi samo svoj automobil.</string>
- <string name="help_split_notes"><b>Dobro je znati</b>\nVibrira samo kontroler 1 ili telefon, ovisno o odabiru u Upravljanje → Force Feedback: igra pokreće samo jedan uređaj s povratnom silom. Ako upravljanje prestane odgovarati, na primjer nakon vraćanja zadanog u igri, ponovno pritisni Kontroler UKLJUČEN. Za igranje tipkovnicom umjesto toga pritisni Zadano u igri. Upravljanje dodirom isključuje se u Upravljanje → Dodir.</string>
  <string name="gamepad_mode_analog">Analogno</string>
  <string name="gamepad_mode_digital">Digitalno</string>
  <string name="gamepad_analog_note">U utrci lijeva palica skreće, desni okidač ubrzava, a lijevi koči.</string>
@@ -199,4 +172,36 @@
  <string name="network_port_original">1030 · izvorna igra</string>
  <string name="network_hint">IPX sam pronalazi utrke u ovoj Wi-Fi mreži. TCP/IP povezuje sa svakim tko zna adresu domaćina, i s PC-jem s izvornom igrom ili Modern Patchom. Svi igrači koriste isti port.</string>
  <string name="fps_unlimited">Bez ograničenja</string>
+ <string name="launcher_backup_export_complete">Postavke pokretača izvezene su.</string>
+ <string name="delete_game_files_message">Izbrisati %1$s i pripadajuće spremljene igre i postavke igre s ovog uređaja? Ova se radnja ne može poništiti.</string>
+ <string name="choose_game_files">Odaberi datoteke igre</string>
+ <string name="importing_saves">Uvoz spremljenih igara…</string>
+ <string name="exporting_saves">Izvoz spremljenih igara…</string>
+ <string name="importing_launcher">Uvoz postavki pokretača…</string>
+ <string name="exporting_launcher">Izvoz postavki pokretača…</string>
+ <string name="launcher_file_open_failed">Odabranu datoteku postavki nije moguće otvoriti.</string>
+ <string name="launcher_backup_failed">Nije moguće izraditi sigurnosnu kopiju trenutačnih postavki. Uvoz je otkazan.</string>
+ <string name="launcher_restore_failed">Uvezene postavke nije moguće spremiti.</string>
+ <string name="controls_automatic_help_button">Pomoć za upravljanje</string>
+ <string name="controls_automatic_help_title">Dodir i kontroleri</string>
+ <string name="controller_setup_intro">Odaberite kontroler za svakog igrača. Odaberite uređaj za testiranje ili promjenu upravljanja izbornicima. Kontrole za utrku dodijelite u igri. Promjene se spremaju automatski.</string>
+ <string name="controller_test_hint">Pokrenite test, a zatim pritišćite tipke ili pomičite palice.</string>
+ <string name="controller_details_show">Prikaži pojedinosti ulaza</string>
+ <string name="controller_details_hide">Sakrij pojedinosti ulaza</string>
+ <string name="controller_reset_menu">Vrati kontrole izbornika</string>
+ <string name="controller_pause_title">Prečac za pauzu utrke</string>
+ <string name="controller_pause_hint">Držite tipku Natrag za izbornike i dodatnu tipku kako biste pauzirali utrku.</string>
+ <string name="controller_device_type">Vrsta uređaja</string>
+ <string name="controller_change_type">Promijeni vrstu uređaja…</string>
+ <string name="controller_role_hint">Za daljinski upravljač televizora odaberite Daljinski upravljač / tipkovnica kako ne bi zauzimao mjesto igrača.</string>
+ <string name="controller_report">Izvješće o ulaznim uređajima…</string>
+ <string name="controller_remote">Daljinski upravljač / tipkovnica</string>
+ <string name="controller_automatic">Automatski</string>
+ <string name="controller_unassigned">Nije dodijeljen</string>
+ <string name="controls_setup_hint">Odaberite kontrolere, testirajte ulaze i promijenite kontrole izbornika. Kontrole za utrku dodijelite u igri.</string>
+ <string name="faq_layout_modes"><b>Izbornik ili utrka?</b>\nKontrole utrke prikazuju se tijekom vožnje, a skrivaju u izbornicima. Raspored se mijenja automatski.</string>
+ <string name="faq_mouse"><b>Kako rade izbornici?</b>\nU Upravljanje → Dodir odaberite Izravan dodir za dodirivanje stavki ili Touchpad za pomicanje pokazivača povlačenjem prsta. Androidova tipka ili gesta Natrag vraća vas natrag. Tipkovnica se otvara kada igra zatraži tekst; Natrag je zatvara.</string>
+ <string name="faq_screen_data"><b>Zaslon i datoteke igre</b>\nZaslon određuje orijentaciju i ograničenje broja sličica. Niže ograničenje može smanjiti potrošnju. Datoteke i sigurnosne kopije služe za upravljanje uvezenim datotekama igre, spremljenim igrama i sigurnosnim kopijama postavki pokretača. Prije igranja odaberite aktivne datoteke igre.</string>
+ <string name="faq_mapping"><b>Kontroleri</b>\nU Upravljanje → Kontroleri odaberite kontroler za svakog igrača, testirajte ulaze i promijenite kontrole izbornika. Automatski koristi preostale kontrolere redoslijedom povezivanja. Spremljene dodjele ostaju rezervirane kada se kontroleri odspoje. Kontrole utrke dodijelite u igri. Ako tipka Natrag za izbornike služi za vožnju, postavite Prečac za pauzu utrke: držite Natrag i dodatnu tipku.</string>
+ <string name="controls_automatic_help">Izbornici: krećite se križnim tipkama ili lijevom palicom, potvrdite s A / Cross, a vratite se s B / Circle. U Kontroleri možete testirati uređaje i mijenjati kontrole izbornika. U Dodir odaberite Izravan dodir ili Touchpad.\n\nUtrka: dodijelite kontrole u izborniku Controls u igri. Zaslonske tipke prate te dodjele. Ako tipka Natrag za izbornike služi za vožnju, odaberite dodatnu tipku u Kontroleri → Prečac za pauzu utrke. Držite obje za pauzu.\n\nPodijeljeni zaslon: u Kontroleri odaberite kontroler za svakog igrača. Automatski koristi preostale kontrolere redoslijedom povezivanja. Spremljena dodjela ostaje rezervirana kada je kontroler odspojen. Dodirne kontrole utrke upravljaju igračem 1.</string>
 </resources>

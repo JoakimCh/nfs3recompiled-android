@@ -1,7 +1,5 @@
 <resources>
- <!-- Português (Portugal). As etiquetas do ecrã Controls e as inscrições dos
-      botões no ecrã ficam propositadamente em inglês: esse ecrã compara-se com
-      as definições do próprio jogo, que está em inglês. -->
+ <!-- Launcher translations. Preserve format placeholders and resource names. -->
 
  <string name="language_label">Idioma</string>
  <string name="language_system">Idioma do sistema</string>
@@ -16,17 +14,15 @@
  <string name="play">Jogar</string>
  <string name="active_data_set">Dados ativos: %1$s</string>
  <string name="no_active_data_set">Não há nenhum conjunto de dados ativo. Importa um antes de jogar.</string>
- <string name="data_settings">Dados</string>
- <string name="game_data_title">Dados do jogo</string>
- <string name="launcher_settings_title">Definições do lançador</string>
- <string name="launcher_settings_hint">Guarda as definições do lançador — disposição tátil, atribuição de botões, vibração — num ficheiro, ou restaura-as. A importação substitui as atuais depois de as copiar.</string>
+ <string name="data_settings">Ficheiros e cópias de segurança</string>
+ <string name="game_data_title">Ficheiros do jogo</string>
+ <string name="launcher_settings_title">Cópia das definições do iniciador</string>
+ <string name="launcher_settings_hint">Guarde os controlos táteis, a configuração dos comandos, o ecrã, a vibração e a rede. A importação faz uma cópia da configuração atual antes de a substituir.</string>
  <string name="import_launcher">Importar definições...</string>
  <string name="export_launcher">Exportar definições...</string>
- <string name="launcher_export_complete">%1$d definições exportadas.</string>
  <string name="launcher_import_complete">Definições importadas. As anteriores foram guardadas como %1$s.</string>
- <string name="launcher_import_complete_no_backup">Definições importadas. Não havia definições anteriores.</string>
- <string name="launcher_nothing_to_export">Ainda não há definições do lançador.</string>
- <string name="launcher_wrong_format">Este não é um ficheiro de definições do lançador.</string>
+ <string name="launcher_import_complete_no_backup">Definições importadas.</string>
+ <string name="launcher_wrong_format">Este ficheiro não é uma cópia compatível das definições do iniciador.</string>
  <string name="controls_settings">Atribuição de comandos</string>
  <string name="touch_settings">Comandos táteis</string>
  <string name="screen_settings">Definições do ecrã</string>
@@ -45,11 +41,10 @@
  <string name="import_folder">Importar pasta…</string>
  <string name="import_zip">Importar ZIP…</string>
  <string name="import_image">Importar imagem de disco…</string>
- <string name="data_import_hint">Importa uma pasta que contenha diretamente \'fedata\' e \'gamedata\', ou um ZIP com essas pastas. O que for importado é copiado para o armazenamento da aplicação. Também serve uma imagem do disco do jogo (ISO, ou o BIN de um par BIN/CUE).</string>
+ <string name="data_import_hint">Importe uma pasta ou um ZIP com \'fedata\' e \'gamedata\', ou uma imagem de disco (ISO ou BIN). Os ficheiros são copiados para o armazenamento da aplicação.</string>
  <string name="import_complete">Importação de dados concluída</string>
- <string name="data_error">A operação com os dados falhou: %1$s</string>
- <string name="delete_data_title">Eliminar o conjunto de dados?</string>
- <string name="delete_data_message">Eliminar %1$s deste dispositivo? Não é possível anular.</string>
+ <string name="data_error">Não foi possível concluir a operação: %1$s</string>
+ <string name="delete_data_title">Eliminar os ficheiros do jogo?</string>
  <string name="controls_explanation">Esta é a camada do port entre o comando físico ou o toque e o teclado emulado. É independente do menu Controls do próprio jogo; esse menu mantém-se inalterado.</string>
  <string name="controls_row_hint">Para cada ação, escolhe um botão físico do comando e depois a tecla emulada enviada tanto por esse botão como pelo botão tátil no ecrã.</string>
  <string name="touch_mode_label">Modo de entrada</string>
@@ -57,10 +52,10 @@
  <string name="touch_mode_wheel">Volante (em breve)</string>
  <string name="touch_mode_tilt">Direção por inclinação (em breve)</string>
  <string name="touch_layout_label">Disposição dos botões</string>
- <string name="touch_pointer_label">Ponteiro nos menus</string>
- <string name="touch_pointer_tap">Onde o dedo toca</string>
+ <string name="touch_pointer_label">Entrada tátil nos menus</string>
+ <string name="touch_pointer_tap">Toque direto</string>
  <string name="touch_pointer_touchpad">Touchpad</string>
- <string name="touch_pointer_note">Touchpad: desliza em qualquer lado para mover o cursor, toca para clicar, mantém o dedo parado para agarrar e arrastar. Aplica-se no próximo arranque do jogo.</string>
+ <string name="touch_pointer_note">Touchpad: deslize para mover o cursor, toque para clicar ou mantenha o dedo imóvel para agarrar e arrastar.</string>
  <string name="opacity_label">Opacidade dos botões</string>
  <string name="size_label">Tamanho dos botões</string>
  <string name="auto_hide_label">Ocultar automaticamente após 4 segundos de inatividade</string>
@@ -72,7 +67,7 @@
  <string name="fps_30">30 FPS</string>
  <string name="fps_60">60 FPS</string>
  <string name="gamma_label">Gama</string>
- <string name="fps_cap_label">Taxa de imagens</string>
+ <string name="fps_cap_label">Limite de fotogramas por segundo</string>
  <string name="fps_error">Introduz um número inteiro de 1 a 240</string>
  <string name="save">Guardar</string>
  <string name="settings_saved">Definições guardadas</string>
@@ -85,7 +80,7 @@
  <string name="editor_drag_title">Arrasta os comandos</string>
  <string name="editor_resize_hint">Seleciona para redimensionar</string>
  <string name="saves_title">Jogos guardados</string>
- <string name="saves_hint">Exporta o perfil ativo para um ZIP, ou importa um. A importação cria uma cópia local antes de substituir os jogos guardados.</string>
+ <string name="saves_hint">Exporte os jogos guardados dos ficheiros do jogo ativos para um ZIP ou importe um ZIP. É feita uma cópia dos jogos guardados existentes antes de os substituir.</string>
  <string name="import_saves">Importar jogos guardados…</string>
  <string name="export_saves">Exportar jogos guardados…</string>
  <string name="saves_not_found">Não foram encontrados jogos guardados no conjunto de dados ativo.</string>
@@ -104,7 +99,6 @@
  <string name="controls_touch">Toque</string>
  <string name="controls_gamepad">Comandos de jogo</string>
  <string name="gamepads_title">Comandos de jogo</string>
- <string name="gamepads_hint">O jogo vê dois comandos: o comando 1 é o jogador 1, juntamente com os controlos táteis, e o comando 2 é o jogador 2. Escolhe aqui os comandos e define os seus botões; depois escreve uma vez os controlos de comando no jogo.</string>
  <string name="gamepad_slot_label">Comando %1$d</string>
  <string name="gamepad_slot_auto_now">Automático: %1$s</string>
  <string name="gamepad_slot_auto_none">Automático: nenhum comando ligado</string>
@@ -146,38 +140,17 @@
  <string name="importer_image_cue">Este é o ficheiro CUE: escolhe o ficheiro BIN ao lado</string>
  <string name="importer_image_missing_files">A imagem de disco não tem as pastas fedata/gamedata</string>
  <string name="importer_image_truncated">A imagem de disco acaba antes do tempo: o ficheiro não foi copiado inteiro</string>
-
- <string name="faq_layout_modes"><b>Menu ou corrida?</b>\nÉ o jogo que o diz. Enquanto conduzes tens a disposição de corrida: botões de direção, pedais, mudanças e o resto. Nos menus, e sempre que um menu abre por cima de uma corrida, o port não mostra botão nenhum: os menus aceitam o toque por si, o Recuar do telemóvel é Escape e o teclado aparece sozinho. Não há nada para trocar à mão.</string>
- <string name="faq_mouse"><b>Como funcionam os menus?</b>\nAo toque. O ponteiro do jogo vai para onde pousas o dedo, por isso um toque carrega no item por baixo e um cursor segue o dedo que o arrasta. O botão ou gesto Recuar do telemóvel é Escape e, quando o jogo pede um nome, o teclado do telemóvel abre sozinho; com o teclado aberto, Recuar fecha-o.</string>
  <string name="faq_size"><b>O que muda o tamanho?</b>\nO tamanho dos botões dimensiona os controlos predefinidos. Em Editar posições e tamanhos arrasta um controlo e muda-lhe o tamanho com o cursor de tamanho; um controlo responde exatamente onde é desenhado e as percentagens são relativas ao controlo predefinido. As alterações guardam-se sozinhas. O editor mostra uma grelha; com Ajustar à grelha ativo, o controlo arrastado assenta nela.</string>
  <string name="faq_edges"><b>Margens e posição vertical</b>\nA distância às margens desloca os comandos predefinidos para dentro. Os recortes do sistema são respeitados. Os comandos colocados à mão mantêm as posições guardadas.</string>
  <string name="faq_hiding"><b>Opacidade e ocultação automática</b>\nA opacidade define a visibilidade normal. A ocultação automática começa depois de levantares todos os dedos, após um atraso de 1 a 30 segundos. Os botões ocultos respondem logo ao primeiro toque e voltam a ficar visíveis. Manter um comando premido impede a ocultação. Premir o comando do jogador 1 esconde logo os controlos; o toque seguinte trá-los de volta. O comando do jogador 2 não lhes toca, por isso um pode conduzir no ecrã enquanto o outro joga com comando.</string>
  <string name="faq_vibration"><b>Vibração</b>\nOs efeitos Force Feedback do jogo sentem-se no telemóvel ou no comando 1, nunca nos dois ao mesmo tempo: escolhe Desligado, Telemóvel ou Comando em Comandos → Force Feedback. O jogo só controla um dispositivo de force feedback, por isso o comando 2 nunca vibra. A intensidade do comando define-se no próprio jogo: Options → Controllers → Force Feedback. Os efeitos vêm do jogo, nunca de premir botões.</string>
- <string name="faq_mapping"><b>Comandos de jogo</b>\nO jogo vê sempre dois comandos: o comando 1 é o jogador 1, juntamente com os controlos táteis, e o comando 2 é o jogador 2. Em Comandos → Comandos de jogo escolhe qual é qual premindo um botão nele e define o que faz cada botão; depois prime uma vez Comando LIGADO, que escreve os controlos correspondentes nas definições do jogo e guarda uma cópia do ficheiro antigo. O stick esquerdo vira e os gatilhos aceleram e travam. Um comando tem dois conjuntos de botões, tal como os controlos táteis têm duas disposições: o de corrida, que defines aqui, e um fixo para os menus e as repetições, onde Cross / A confirma, Circle / B recua e o direcional move a seleção. Para jogar com teclado, escreve antes Predefinição do jogo.</string>
  <string name="faq_lights"><b>Luzes e regresso à pista</b>\n☼ envia L. ↻ envia R para voltar à pista. As teclas podem ser alteradas em Comandos → Toque → Teclas.</string>
- <string name="faq_screen_data"><b>Ecrã e dados do jogo</b>\nHorizontal bloqueia o jogo na horizontal; Automática permite a rotação. O limite de FPS restringe a taxa de imagens; um valor menor reduz o trabalho por segundo. «Dados do jogo» gere as importações e mostra o conjunto ativo. «Jogar» fica disponível quando um conjunto estiver pronto.</string>
  <string name="gamepad_buttons">Botões</string>
  <string name="gamepad_buttons_title">Botões do comando %1$d</string>
- <string name="gamepad_buttons_hint">O que faz cada botão deste comando enquanto conduzes. O stick esquerdo vira, o gatilho direito acelera e o esquerdo trava. Nos menus e nas repetições os botões são fixos e não se configuram: Cross / A e Options / Menu confirmam, Circle / B e Create / View recuam, o direcional move a seleção. As ações dos botões chegam ao jogo assim que os controlos de comando forem escritos nele.</string>
  <string name="gamepad_buttons_reset">Predefinições</string>
- <string name="controls_write_gamepads">Comando LIGADO</string>
- <string name="controls_write_keyboard">Predefinição do jogo</string>
- <string name="controls_write_gamepads_message">Substituir os controlos nas definições do jogo pelo conjunto de comandos do port: o comando 1 e os controlos táteis conduzem o jogador 1 e o comando 2 o jogador 2, em corridas individuais e em ecrã dividido. Primeiro é feita uma cópia de segurança do ficheiro de definições atual.</string>
- <string name="controls_write_keyboard_message">Substituir os controlos nas definições do jogo pelos controlos de teclado predefinidos do próprio jogo. Primeiro é feita uma cópia de segurança do ficheiro de definições atual.</string>
- <string name="controls_write_done">Controlos escritos no jogo. Cópia de segurança: %1$s</string>
- <string name="controls_write_no_config">O jogo ainda não tem ficheiro de definições. Inicia o jogo uma vez e tenta de novo.</string>
- <string name="controls_write_game_running">Fecha o jogo antes de escrever os seus controlos.</string>
- <string name="controls_write_failed">Não foi possível escrever os controlos: %1$s</string>
- <string name="gamepads_keyboard_note">O jogo está definido para os seus próprios controlos de teclado (Predefinição do jogo). Os comandos não fazem nada em corridas de ecrã dividido até premires Comando LIGADO.</string>
  <string name="pref_touch_enabled">Usar controlos táteis</string>
  <string name="controls_help">Ajuda: ecrã dividido</string>
  <string name="controls_help_title">Ecrã dividido com dois comandos</string>
- <string name="help_split_setup"><b>1. Configurar os comandos (uma vez)</b>\nLiga os dois comandos ao telemóvel. Em Comandos → Comandos de jogo prime Atribuir no comando 1 e prime qualquer botão no comando do jogador 1; depois faz o mesmo para o comando 2. Automático também funciona: os comandos são usados pela ordem em que se ligam. Em Botões escolhes o que faz cada botão.</string>
- <string name="help_split_write"><b>2. Escrever os controlos no jogo</b>\nNo mesmo ecrã prime Comando LIGADO e confirma. É preciso uma vez, e de novo só depois de instalar outros dados do jogo ou de mudar os controlos dentro do jogo. As definições anteriores ficam numa cópia de segurança.</string>
- <string name="help_split_race"><b>3. Começar uma corrida em ecrã dividido</b>\nInicia o jogo e escolhe Two Players…. O jogador 1 conduz com o comando 1 ou com os controlos táteis, o jogador 2 com o comando 2. Qualquer um dos comandos navega nos menus: o direcional move a seleção, Cross / A ou Options / Menu confirma, Circle / B ou Create / View recua.</string>
- <string name="help_split_driving"><b>Condução</b>\nO stick esquerdo vira, o gatilho direito acelera e o esquerdo trava. Por predefinição Circle / B é o travão de mão, Square / X larga uma faixa de pregos, Cross / A olha para trás, Triangle / Y muda a câmara, R1 / L1 mudam de mudança, Create / View devolve o carro à pista, Options / Menu pausa a corrida, L3 buzina e R3 liga os faróis.</string>
- <string name="help_split_digital"><b>Analógico ou Digital</b>\nCada comando tem o seu próprio interruptor Analógico / Digital em Comandos → Comandos de jogo. Digital conduz a corrida como um teclado: o direcional para a esquerda e para a direita vira, o direcional para cima e o gatilho direito aceleram, o direcional para baixo e o gatilho esquerdo travam, e o stick não vira. Os menus funcionam da mesma forma nos dois casos. Os dois comandos nunca partilham uma tecla, por isso em ecrã dividido cada um conduz só o seu carro.</string>
- <string name="help_split_notes"><b>É bom saber</b>\nSó vibra o comando 1 ou o telemóvel, conforme o escolhido em Comandos → Force Feedback: o jogo só controla um dispositivo de force feedback. Se os controlos deixarem de corresponder, por exemplo depois de os repor no jogo, prime de novo Comando LIGADO. Para jogar com teclado, prime antes Predefinição do jogo. Os controlos táteis desligam-se em Comandos → Toque.</string>
  <string name="gamepad_mode_analog">Analógico</string>
  <string name="gamepad_mode_digital">Digital</string>
  <string name="gamepad_analog_note">Na corrida o stick esquerdo vira, o gatilho direito acelera e o esquerdo trava.</string>
@@ -199,4 +172,36 @@
  <string name="network_port_original">1030 · jogo original</string>
  <string name="network_hint">O IPX encontra sozinho as corridas nesta rede Wi-Fi. O TCP/IP liga a quem souber o endereço do anfitrião, incluindo um PC com o jogo original ou o Modern Patch. Todos os jogadores usam a mesma porta.</string>
  <string name="fps_unlimited">Sem limite</string>
+ <string name="launcher_backup_export_complete">Definições do iniciador exportadas.</string>
+ <string name="delete_game_files_message">Eliminar %1$s e os respetivos jogos guardados e definições do jogo deste dispositivo? Esta ação não pode ser anulada.</string>
+ <string name="choose_game_files">Escolher ficheiros do jogo</string>
+ <string name="importing_saves">A importar jogos guardados…</string>
+ <string name="exporting_saves">A exportar jogos guardados…</string>
+ <string name="importing_launcher">A importar definições do iniciador…</string>
+ <string name="exporting_launcher">A exportar definições do iniciador…</string>
+ <string name="launcher_file_open_failed">Não foi possível abrir o ficheiro de definições selecionado.</string>
+ <string name="launcher_backup_failed">Não foi possível fazer uma cópia das definições atuais. A importação foi cancelada.</string>
+ <string name="launcher_restore_failed">Não foi possível guardar as definições importadas.</string>
+ <string name="controls_automatic_help_button">Ajuda dos controlos</string>
+ <string name="controls_automatic_help_title">Toque e comandos de jogo</string>
+ <string name="controller_setup_intro">Escolha um comando para cada jogador. Selecione um comando para testar ou alterar os seus controlos dos menus. Atribua os controlos de corrida dentro do jogo. As alterações são guardadas automaticamente.</string>
+ <string name="controller_test_hint">Inicie o teste e depois prima botões ou mova os manípulos.</string>
+ <string name="controller_details_show">Mostrar detalhes de entrada</string>
+ <string name="controller_details_hide">Ocultar detalhes de entrada</string>
+ <string name="controller_reset_menu">Repor controlos dos menus</string>
+ <string name="controller_pause_title">Atalho de pausa na corrida</string>
+ <string name="controller_pause_hint">Mantenha premidos o botão Voltar dos menus e um botão adicional para pausar uma corrida.</string>
+ <string name="controller_device_type">Tipo de dispositivo</string>
+ <string name="controller_change_type">Alterar tipo de dispositivo…</string>
+ <string name="controller_role_hint">Escolha Telecomando / teclado para um telecomando de TV, para que não ocupe um lugar de jogador.</string>
+ <string name="controller_report">Relatório de dispositivos de entrada…</string>
+ <string name="controller_remote">Telecomando / teclado</string>
+ <string name="controller_automatic">Automático</string>
+ <string name="controller_unassigned">Não atribuído</string>
+ <string name="controls_setup_hint">Escolha comandos, teste as entradas e altere os controlos dos menus. Atribua os controlos de corrida dentro do jogo.</string>
+ <string name="faq_layout_modes"><b>Menu ou corrida?</b>\nOs controlos de corrida aparecem durante a condução e são ocultados nos menus. A disposição muda automaticamente.</string>
+ <string name="faq_mouse"><b>Como funcionam os menus?</b>\nEm Comandos → Toque, escolha Toque direto para tocar nas opções dos menus ou Touchpad para mover o cursor ao deslizar o dedo. O botão ou gesto Voltar do Android permite recuar. O teclado abre quando o jogo pede texto; Voltar fecha-o.</string>
+ <string name="faq_screen_data"><b>Ecrã e ficheiros do jogo</b>\nEcrã permite definir a orientação e o limite de fotogramas por segundo. Um limite inferior pode reduzir o consumo. Ficheiros e cópias de segurança gere os ficheiros do jogo importados, jogos guardados e cópias das definições do iniciador. Escolha ficheiros do jogo ativos antes de jogar.</string>
+ <string name="faq_mapping"><b>Comandos de jogo</b>\nEm Comandos → Comandos de jogo, escolha um comando por jogador, teste as entradas e altere os controlos dos menus. Automático usa os comandos restantes por ordem de ligação. As atribuições guardadas ficam reservadas quando os comandos estão desligados. Atribua os controlos de corrida dentro do jogo. Se o botão Voltar dos menus estiver atribuído à condução, defina um Atalho de pausa na corrida: mantenha premidos Voltar e um botão adicional.</string>
+ <string name="controls_automatic_help">Menus: use o direcional ou o manípulo esquerdo para se mover, A / Cross para confirmar e B / Circle para voltar. Em Comandos de jogo pode testar dispositivos e alterar os controlos dos menus. Em Toque pode escolher Toque direto ou Touchpad.\n\nCorridas: atribua os controlos no menu Controls do jogo. Os botões no ecrã seguem essas atribuições. Se o botão Voltar dos menus estiver atribuído à condução, escolha um botão adicional em Comandos de jogo → Atalho de pausa na corrida. Mantenha ambos premidos para pausar.\n\nEcrã dividido: escolha um comando por jogador em Comandos de jogo. Automático usa os restantes por ordem de ligação. Uma atribuição guardada fica reservada enquanto o comando está desligado. Os controlos táteis de corrida controlam o jogador 1.</string>
 </resources>

@@ -1,7 +1,5 @@
 <resources>
- <!-- Magyar. A Controls képernyő címkéi és a képernyőgombok feliratai szándékosan
-      angolul maradnak: ezt a képernyőt a játék saját beállításaival kell
-      összevetni, a játék pedig angol. -->
+ <!-- Launcher translations. Preserve format placeholders and resource names. -->
 
  <string name="language_label">Nyelv</string>
  <string name="language_system">Rendszernyelv</string>
@@ -16,17 +14,15 @@
  <string name="play">Játék</string>
  <string name="active_data_set">Aktív adatok: %1$s</string>
  <string name="no_active_data_set">Nincs aktív adatkészlet. Importálj egyet a játék előtt.</string>
- <string name="data_settings">Adatok</string>
- <string name="game_data_title">Játékadatok</string>
- <string name="launcher_settings_title">Indító beállításai</string>
- <string name="launcher_settings_hint">Mentsd az indító beállításait — az érintőelrendezést, a gombkiosztást, a rezgést — fájlba, vagy állítsd vissza őket. Az importálás lecseréli a jelenlegieket, előtte másolatot készít.</string>
+ <string name="data_settings">Fájlok és biztonsági másolatok</string>
+ <string name="game_data_title">Játékfájlok</string>
+ <string name="launcher_settings_title">Az indító beállításainak mentése</string>
+ <string name="launcher_settings_hint">Mentse az érintéses vezérlés, a kontrollerek, a kijelző, a rezgés és a hálózat beállításait. Importáláskor a jelenlegi beállításokról a felülírás előtt biztonsági másolat készül.</string>
  <string name="import_launcher">Beállítások importálása...</string>
  <string name="export_launcher">Beállítások exportálása...</string>
- <string name="launcher_export_complete">%1$d beállítás exportálva.</string>
  <string name="launcher_import_complete">Beállítások importálva. A korábbiak mentve: %1$s.</string>
- <string name="launcher_import_complete_no_backup">Beállítások importálva. Nem voltak korábbi beállítások.</string>
- <string name="launcher_nothing_to_export">Még nincsenek indítóbeállítások.</string>
- <string name="launcher_wrong_format">Ez nem indítóbeállítás-fájl.</string>
+ <string name="launcher_import_complete_no_backup">Beállítások importálva.</string>
+ <string name="launcher_wrong_format">A fájl nem az indító beállításainak támogatott biztonsági másolata.</string>
  <string name="controls_settings">Gombkiosztás</string>
  <string name="touch_settings">Érintővezérlés</string>
  <string name="screen_settings">Képernyő</string>
@@ -45,11 +41,10 @@
  <string name="import_folder">Mappa importálása…</string>
  <string name="import_zip">ZIP importálása…</string>
  <string name="import_image">Lemezkép importálása…</string>
- <string name="data_import_hint">Olyan mappát importálj, amely közvetlenül tartalmazza a \'fedata\' és \'gamedata\' mappát, vagy egy ZIP-et ezekkel a mappákkal. Az importált adatok az alkalmazás tárhelyére másolódnak. A játéklemez képe is jó (ISO, vagy egy BIN/CUE pár BIN fájlja).</string>
+ <string name="data_import_hint">Importáljon egy \'fedata\' és \'gamedata\' mappát tartalmazó mappát vagy ZIP-et, illetve lemezképet (ISO vagy BIN). A fájlok az alkalmazás tárhelyére kerülnek.</string>
  <string name="import_complete">Az adatimportálás kész</string>
- <string name="data_error">Az adatművelet nem sikerült: %1$s</string>
- <string name="delete_data_title">Törlöd az adatkészletet?</string>
- <string name="delete_data_message">Törlöd a(z) %1$s készletet erről az eszközről? Ez nem vonható vissza.</string>
+ <string name="data_error">A művelet nem fejezhető be: %1$s</string>
+ <string name="delete_data_title">Törli a játékfájlokat?</string>
  <string name="controls_explanation">Ez a port rétege a fizikai kontroller vagy az érintés és az emulált billentyűzet között. Független a játék saját Controls menüjétől; az a menü változatlan marad.</string>
  <string name="controls_row_hint">Minden művelethez válassz egy fizikai kontrollergombot, majd az emulált billentyűt, amelyet a gomb és a képernyőgomb is küld.</string>
  <string name="touch_mode_label">Beviteli mód</string>
@@ -57,10 +52,10 @@
  <string name="touch_mode_wheel">Kormány (hamarosan)</string>
  <string name="touch_mode_tilt">Döntéses kormányzás (hamarosan)</string>
  <string name="touch_layout_label">Gombelrendezés</string>
- <string name="touch_pointer_label">Mutató a menükben</string>
- <string name="touch_pointer_tap">Ahová az ujj ér</string>
+ <string name="touch_pointer_label">Érintéses menüvezérlés</string>
+ <string name="touch_pointer_tap">Közvetlen érintés</string>
  <string name="touch_pointer_touchpad">Érintőpad</string>
- <string name="touch_pointer_note">Érintőpad: húzd az ujjad bárhol a kurzor mozgatásához, koppints a kattintáshoz, tartsd az ujjad mozdulatlanul a megfogáshoz és húzáshoz. A játék következő indításától érvényes.</string>
+ <string name="touch_pointer_note">Érintőpad: csúsztatással mozgathatja a kurzort, koppintással kattinthat, az ujját mozdulatlanul tartva pedig megfoghat és húzhat elemeket.</string>
  <string name="opacity_label">Gombok átlátszatlansága</string>
  <string name="size_label">Gombméret</string>
  <string name="auto_hide_label">Elrejtés 4 másodperc tétlenség után</string>
@@ -72,7 +67,7 @@
  <string name="fps_30">30 FPS</string>
  <string name="fps_60">60 FPS</string>
  <string name="gamma_label">Gamma</string>
- <string name="fps_cap_label">Képfrissítés</string>
+ <string name="fps_cap_label">Képkockasebesség-korlát</string>
  <string name="fps_error">Adj meg egy egész számot 1 és 240 között</string>
  <string name="save">Mentés</string>
  <string name="settings_saved">Beállítások mentve</string>
@@ -85,7 +80,7 @@
  <string name="editor_drag_title">Húzd az elemeket</string>
  <string name="editor_resize_hint">Válassz az átméretezéshez</string>
  <string name="saves_title">Mentések</string>
- <string name="saves_hint">Exportáld az aktív profilt ZIP-be, vagy importálj egyet. Az importálás a meglévő mentések felülírása előtt helyi biztonsági másolatot készít.</string>
+ <string name="saves_hint">Exportálja az aktív játékfájlok mentéseit ZIP-be, vagy importáljon egy ZIP-et. A meglévő mentésekről a felülírás előtt biztonsági másolat készül.</string>
  <string name="import_saves">Mentések importálása…</string>
  <string name="export_saves">Mentések exportálása…</string>
  <string name="saves_not_found">Az aktív adatkészletben nem található mentés.</string>
@@ -104,7 +99,6 @@
  <string name="controls_touch">Érintés</string>
  <string name="controls_gamepad">Kontrollerek</string>
  <string name="gamepads_title">Kontrollerek</string>
- <string name="gamepads_hint">A játék két kontrollert lát: az 1. kontroller az 1. játékos az érintővezérléssel együtt, a 2. kontroller a 2. játékos. Itt válaszd ki a kontrollereket és állítsd be a gombjaikat, majd egyszer írd be a kontrolleres vezérlést a játékba.</string>
  <string name="gamepad_slot_label">%1$d. kontroller</string>
  <string name="gamepad_slot_auto_now">Automatikus: %1$s</string>
  <string name="gamepad_slot_auto_none">Automatikus: nincs csatlakoztatott kontroller</string>
@@ -146,38 +140,17 @@
  <string name="importer_image_cue">Ez a CUE fájl: válaszd a mellette lévő BIN fájlt</string>
  <string name="importer_image_missing_files">A lemezképben nincsenek fedata/gamedata mappák</string>
  <string name="importer_image_truncated">A lemezkép túl korán véget ér: a fájl nem másolódott át teljesen</string>
-
- <string name="faq_layout_modes"><b>Menü vagy verseny?</b>\nA játék mondja meg. Vezetés közben a versenyelrendezést kapod: kormánygombok, pedálok, sebességváltás és a többi. A menükben, és valahányszor menü nyílik a verseny fölé, a port egyetlen gombot sem mutat: a menük maguk fogadják az érintést, a telefon Vissza gombja az Escape, a billentyűzet pedig magától feljön. Kézzel nincs mit átkapcsolni.</string>
- <string name="faq_mouse"><b>Hogyan működnek a menük?</b>\nÉrintéssel. Ahová az ujjadat teszed, oda kerül a játék mutatója, így a koppintás az alatta lévő elemet nyomja meg, a csúszka pedig követi a húzó ujjat. A telefon Vissza gombja vagy mozdulata az Escape, és amikor a játék nevet kér, a telefon billentyűzete magától megnyílik; nyitott billentyűzetnél a Vissza bezárja.</string>
  <string name="faq_size"><b>Mit változtat a méret?</b>\nA gombméret a gyári vezérlőket méretezi. A Pozíciók és méretek alatt húzd el az elemet, és a méretcsúszkával állítsd a méretét; az elem pontosan ott reagál, ahol meg van rajzolva, a százalékok pedig a gyári elemhez képest értendők. A változások maguktól mentődnek. A szerkesztő rácsot mutat; bekapcsolt Rácshoz igazítás mellett a húzott elem rápattan.</string>
  <string name="faq_edges"><b>Szélek és magasság</b>\nA szélektől mért távolság befelé tolja az alapértelmezett elemeket. A rendszerkivágásokat figyelembe veszi. A kézzel elhelyezett elemek megtartják mentett helyüket.</string>
  <string name="faq_hiding"><b>Átlátszatlanság és automatikus elrejtés</b>\nAz átlátszatlanság a szokásos láthatóságot állítja be. Az elrejtés akkor indul, amikor minden ujjat felemeltél, 1–30 másodperc késleltetéssel. A rejtett gombok már az első érintésre reagálnak, és újra láthatóvá válnak. Egy elem nyomva tartása megakadályozza az elrejtést. Az 1. játékos kontrollerén egy gombnyomás azonnal elrejti a gombokat; a következő érintés visszahozza őket. A 2. játékos kontrollere nem nyúl hozzájuk, így az egyik a képernyőn vezethet, míg a másik kontrollerrel játszik.</string>
  <string name="faq_vibration"><b>Rezgés</b>\nA játék Force Feedback-effektjei a telefonon vagy az 1. kontrolleren érezhetők, sosem mindkettőn egyszerre: a Vezérlés → Force Feedback alatt válaszd a Ki, a Telefon vagy a Kontroller lehetőséget. A játék csak egy erő-visszacsatolásos eszközt vezérel, ezért a 2. kontroller soha nem rezeg. A kontroller rezgésének erősségét magában a játékban állítod be: Options → Controllers → Force Feedback. Az effektek a játékból jönnek, soha nem gombnyomásból.</string>
- <string name="faq_mapping"><b>Kontrollerek</b>\nA játék mindig két kontrollert lát: az 1. kontroller az 1. játékos az érintővezérléssel együtt, a 2. kontroller a 2. játékos. A Vezérlés → Kontrollerek alatt egy gombja megnyomásával válaszd ki, melyik kontroller melyik, állítsd be, mit csinál az egyes gomb, majd egyszer nyomd meg a Kontroller BE gombot. Ez beírja a megfelelő vezérlést a játék beállításaiba, és elmenti a régi fájlt. A bal kar kormányoz, a ravaszok gázt adnak és fékeznek. A kontrollernek két gombkészlete van, ahogy az érintővezérlésnek két elrendezése: a versenyhez való, amit itt állítasz be, és egy rögzített a menükhöz és a visszajátszásokhoz, ahol a Cross / A megerősít, a Circle / B visszalép, a kereszt pedig mozgatja a kijelölést. Billentyűzetes játékhoz inkább a Játék alapértelmezése beállítást írd be.</string>
  <string name="faq_lights"><b>Lámpák és visszatérés</b>\nA ☼ az L billentyűt küldi. A ↻ az R billentyűt küldi, hogy visszatérj a pályára. A billentyűk a Vezérlés → Érintés → Billentyűk alatt módosíthatók.</string>
- <string name="faq_screen_data"><b>Képernyő és játékadatok</b>\nA fekvő rögzíti a játékot vízszintesen; az Automatikus engedi a forgatást. Az FPS-korlát a képkockaszámot korlátozza; alacsonyabb érték kevesebb munkát jelent másodpercenként. A «Játékadatok» kezeli az importálásokat, és mutatja, melyik készlet aktív. A «Játék» akkor válik elérhetővé, ha egy készlet készen áll.</string>
  <string name="gamepad_buttons">Gombok</string>
  <string name="gamepad_buttons_title">%1$d. kontroller gombjai</string>
- <string name="gamepad_buttons_hint">Mit csinál ennek a kontrollernek minden gombja vezetés közben. A bal kar kormányoz, a jobb ravasz gázt ad, a bal fékez. A menükben és a visszajátszásokban a gombok rögzítettek, nem kell állítani őket: a Cross / A és az Options / Menu megerősít, a Circle / B és a Create / View visszalép, a kereszt mozgatja a kijelölést. A gombok műveletei akkor jutnak el a játékhoz, ha a kontrollervezérlés bele lett írva.</string>
  <string name="gamepad_buttons_reset">Alapértelmezés</string>
- <string name="controls_write_gamepads">Kontroller BE</string>
- <string name="controls_write_keyboard">Játék alapértelmezése</string>
- <string name="controls_write_gamepads_message">A játék beállításaiban lévő vezérlés lecserélése a port kontrolleres készletére: az 1. kontroller és az érintővezérlés az 1. játékost irányítja, a 2. kontroller a 2. játékost, egyéni versenyen és osztott képernyőn is. Előbb biztonsági mentés készül a jelenlegi beállításfájlról.</string>
- <string name="controls_write_keyboard_message">A játék beállításaiban lévő vezérlés lecserélése a játék saját alapértelmezett billentyűzetes vezérlésére. Előbb biztonsági mentés készül a jelenlegi beállításfájlról.</string>
- <string name="controls_write_done">A vezérlés beírva a játékba. Biztonsági mentés: %1$s</string>
- <string name="controls_write_no_config">A játéknak még nincs beállításfájlja. Indítsd el egyszer a játékot, majd próbáld újra.</string>
- <string name="controls_write_game_running">A vezérlés beírása előtt zárd be a játékot.</string>
- <string name="controls_write_failed">A vezérlést nem sikerült beírni: %1$s</string>
- <string name="gamepads_keyboard_note">A játék a saját billentyűzetes vezérlésére van állítva (Játék alapértelmezése). A kontrollerek osztott képernyős versenyben addig nem csinálnak semmit, amíg meg nem nyomod a Kontroller BE gombot.</string>
  <string name="pref_touch_enabled">Érintővezérlés használata</string>
  <string name="controls_help">Súgó: osztott képernyő</string>
  <string name="controls_help_title">Osztott képernyő két kontrollerrel</string>
- <string name="help_split_setup"><b>1. A kontrollerek beállítása (egyszer)</b>\nCsatlakoztasd mindkét kontrollert a telefonhoz. A Vezérlés → Kontrollerek alatt nyomd meg az 1. kontroller Hozzárendelés gombját, majd bármelyik gombot az 1. játékos kontrollerén, aztán tedd ugyanezt a 2. kontrollerrel. Az Automatikus is működik: a kontrollereket a csatlakozás sorrendjében veszi. A Gombok alatt választhatod ki, mit csináljon az egyes gomb.</string>
- <string name="help_split_write"><b>2. A vezérlés beírása a játékba</b>\nUgyanezen a képernyőn nyomd meg a Kontroller BE gombot, és erősítsd meg. Ez egyszer kell, és újra csak más játékadatok telepítése vagy a játékon belüli vezérlésmódosítás után. Az előző beállításokról biztonsági mentés készül.</string>
- <string name="help_split_race"><b>3. Osztott képernyős verseny indítása</b>\nIndítsd el a játékot, és válaszd a Two Players… pontot. Az 1. játékos az 1. kontrollerrel vagy az érintővezérléssel vezet, a 2. játékos a 2. kontrollerrel. A menükben bármelyik kontroller használható: a kereszt mozgatja a kijelölést, a Cross / A vagy az Options / Menu megerősít, a Circle / B vagy a Create / View visszalép.</string>
- <string name="help_split_driving"><b>Vezetés</b>\nA bal kar kormányoz, a jobb ravasz gázt ad, a bal fékez. Alapértelmezés szerint a Circle / B a kézifék, a Square / X tüskés szalagot dob, a Cross / A hátranéz, a Triangle / Y kamerát vált, az R1 / L1 vált, a Create / View visszarakja az autót a pályára, az Options / Menu szünetelteti a versenyt, az L3 dudál, az R3 pedig fényszórót kapcsol.</string>
- <string name="help_split_digital"><b>Analóg vagy digitális</b>\nMinden kontrollernek saját Analóg / Digitális kapcsolója van a Vezérlés → Kontrollerek alatt. A Digitális úgy vezeti a versenyt, mint egy billentyűzet: a kereszt balra és jobbra kormányoz, a kereszt fel és a jobb ravasz gázt ad, a kereszt le és a bal ravasz fékez, a kar pedig nem kormányoz. A menük mindkét esetben ugyanúgy működnek. A két kontroller soha nem osztozik egy billentyűn sem, így osztott képernyőn mindegyik csak a saját autóját vezeti.</string>
- <string name="help_split_notes"><b>Jó tudni</b>\nCsak az 1. kontroller vagy a telefon rezeg, aszerint, hogy mi van kiválasztva a Vezérlés → Force Feedback alatt: a játék csak egy erő-visszacsatolásos eszközt vezérel. kontroller és a telefon rezeg: a játék csak egy erő-visszacsatolásos eszközt vezérel. Ha a vezérlés már nem egyezik, például a játékban végzett alaphelyzetbe állítás után, nyomd meg újra a Kontroller BE gombot. Billentyűzetes játékhoz inkább a Játék alapértelmezése gombot nyomd meg. Az érintővezérlés a Vezérlés → Érintés alatt kapcsolható ki.</string>
  <string name="gamepad_mode_analog">Analóg</string>
  <string name="gamepad_mode_digital">Digitális</string>
  <string name="gamepad_analog_note">Versenyben a bal kar kormányoz, a jobb ravasz gázt ad, a bal fékez.</string>
@@ -199,4 +172,36 @@
  <string name="network_port_original">1030 · eredeti játék</string>
  <string name="network_hint">Az IPX magától megtalálja a versenyeket ezen a Wi-Fi-hálózaton. A TCP/IP bárkivel összeköt, aki ismeri a gazdagép címét, akár az eredeti játékot vagy a Modern Patchet futtató PC-vel is. Minden játékos ugyanazt a portot használja.</string>
  <string name="fps_unlimited">Korlátlan</string>
+ <string name="launcher_backup_export_complete">Az indító beállításai exportálva.</string>
+ <string name="delete_game_files_message">Törli a(z) %1$s fájljait, valamint a hozzájuk tartozó mentéseket és játékbeállításokat erről az eszközről? Ez nem vonható vissza.</string>
+ <string name="choose_game_files">Játékfájlok kiválasztása</string>
+ <string name="importing_saves">Mentések importálása…</string>
+ <string name="exporting_saves">Mentések exportálása…</string>
+ <string name="importing_launcher">Az indító beállításainak importálása…</string>
+ <string name="exporting_launcher">Az indító beállításainak exportálása…</string>
+ <string name="launcher_file_open_failed">A kiválasztott beállításfájl nem nyitható meg.</string>
+ <string name="launcher_backup_failed">A jelenlegi beállításokról nem készíthető biztonsági másolat. Az importálás megszakadt.</string>
+ <string name="launcher_restore_failed">Az importált beállítások nem menthetők.</string>
+ <string name="controls_automatic_help_button">Vezérlési súgó</string>
+ <string name="controls_automatic_help_title">Érintés és kontrollerek</string>
+ <string name="controller_setup_intro">Válasszon kontrollert minden játékosnak. Egy kontroller kiválasztásával tesztelheti vagy módosíthatja a menüvezérlését. A verseny vezérlését a játékban állítsa be. A változások automatikusan mentődnek.</string>
+ <string name="controller_test_hint">Indítsa el a tesztet, majd nyomjon gombokat vagy mozgassa a karokat.</string>
+ <string name="controller_details_show">Bemeneti részletek megjelenítése</string>
+ <string name="controller_details_hide">Bemeneti részletek elrejtése</string>
+ <string name="controller_reset_menu">Menüvezérlés alaphelyzetbe állítása</string>
+ <string name="controller_pause_title">Versenyszünet-gombkombináció</string>
+ <string name="controller_pause_hint">A verseny szüneteltetéséhez tartsa lenyomva a menü Vissza gombját és egy további gombot.</string>
+ <string name="controller_device_type">Eszköztípus</string>
+ <string name="controller_change_type">Eszköztípus módosítása…</string>
+ <string name="controller_role_hint">TV-távirányítóhoz válassza a Távirányító / billentyűzet típust, hogy ne foglaljon játékoshelyet.</string>
+ <string name="controller_report">Jelentés a beviteli eszközökről…</string>
+ <string name="controller_remote">Távirányító / billentyűzet</string>
+ <string name="controller_automatic">Automatikus</string>
+ <string name="controller_unassigned">Nincs hozzárendelve</string>
+ <string name="controls_setup_hint">Válasszon kontrollereket, tesztelje a bemeneteket és módosítsa a menüvezérlést. A verseny vezérlését a játékban állítsa be.</string>
+ <string name="faq_layout_modes"><b>Menü vagy verseny?</b>\nA verseny vezérlői vezetés közben megjelennek, a menükben eltűnnek. Az elrendezés automatikusan vált.</string>
+ <string name="faq_mouse"><b>Hogyan működnek a menük?</b>\nA Vezérlés → Érintés alatt a Közvetlen érintés a menüpontok megérintésére, az Érintőpad a kurzor csúsztatásos mozgatására szolgál. Az Android Vissza gombja vagy kézmozdulata visszalép. A billentyűzet szövegkéréskor megnyílik; a Vissza bezárja.</string>
+ <string name="faq_screen_data"><b>Kijelző és játékfájlok</b>\nA Kijelző alatt állítható be a tájolás és a képkockasebesség-korlát. Az alacsonyabb korlát csökkentheti az energiafogyasztást. A Fájlok és biztonsági másolatok kezeli az importált játékfájlokat, mentéseket és az indító beállításainak másolatait. Játék előtt válasszon aktív játékfájlokat.</string>
+ <string name="faq_mapping"><b>Kontrollerek</b>\nA Vezérlés → Kontrollerek alatt válasszon kontrollert minden játékosnak, tesztelje a bemeneteket és módosítsa a menüvezérlést. Az Automatikus a többi kontrollert csatlakozási sorrendben használja. A mentett hozzárendelések lecsatlakoztatott kontroller esetén is fenntartják a helyet. A verseny vezérlését a játékban állítsa be. Ha a menü Vissza gombja vezetési funkciót kapott, állítson be Versenyszünet-gombkombinációt: tartsa lenyomva a Vissza és egy további gombot.</string>
+ <string name="controls_automatic_help">Menük: az iránygombokkal vagy a bal karral mozoghat, az A / Cross gombbal megerősíthet, a B / Circle gombbal visszaléphet. A Kontrollerek alatt tesztelheti az eszközöket és módosíthatja a menüvezérlést. Az Érintés alatt Közvetlen érintés vagy Érintőpad választható.\n\nVerseny: a vezérlést a játék Controls menüjében állítsa be. A képernyőgombok ezeket a hozzárendeléseket követik. Ha a menü Vissza gombja vezetési funkciót kapott, a Kontrollerek → Versenyszünet-gombkombináció alatt válasszon további gombot. Mindkettőt lenyomva tartva szüneteltethet.\n\nOsztott képernyő: a Kontrollerek alatt válasszon kontrollert minden játékosnak. Az Automatikus a többit csatlakozási sorrendben használja. A mentett hely a kontroller lecsatlakoztatásakor is fenntartva marad. Az érintéses versenyvezérlés az 1. játékost irányítja.</string>
 </resources>

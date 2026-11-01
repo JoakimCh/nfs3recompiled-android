@@ -1,7 +1,5 @@
 <resources>
- <!-- Nederlands. De labels van het Controls-scherm en de opschriften op de
-      schermknoppen blijven bewust Engels: dat scherm wordt vergeleken met de
-      instellingen van het spel zelf, en dat spel is Engels. -->
+ <!-- Launcher translations. Preserve format placeholders and resource names. -->
 
  <string name="language_label">Taal</string>
  <string name="language_system">Systeemtaal</string>
@@ -16,17 +14,15 @@
  <string name="play">Spelen</string>
  <string name="active_data_set">Actieve gegevens: %1$s</string>
  <string name="no_active_data_set">Geen actieve gegevensset. Importeer er een voor je speelt.</string>
- <string name="data_settings">Gegevens</string>
- <string name="game_data_title">Spelgegevens</string>
- <string name="launcher_settings_title">Launcher-instellingen</string>
- <string name="launcher_settings_hint">Bewaar de instellingen van de launcher — bedieningsindeling, knoptoewijzingen, trillen — in een bestand, of zet ze terug. Importeren vervangt de huidige en maakt eerst een back-up.</string>
+ <string name="data_settings">Bestanden en back-ups</string>
+ <string name="game_data_title">Spelbestanden</string>
+ <string name="launcher_settings_title">Back-up van launcherinstellingen</string>
+ <string name="launcher_settings_hint">Maak een back-up van touchbediening, controllers, beeld, trillingen en netwerk. Bij import wordt de huidige configuratie eerst opgeslagen en daarna vervangen.</string>
  <string name="import_launcher">Instellingen importeren...</string>
  <string name="export_launcher">Instellingen exporteren...</string>
- <string name="launcher_export_complete">%1$d instellingen geëxporteerd.</string>
  <string name="launcher_import_complete">Instellingen geïmporteerd. Vorige bewaard als %1$s.</string>
- <string name="launcher_import_complete_no_backup">Instellingen geïmporteerd. Er waren geen vorige instellingen.</string>
- <string name="launcher_nothing_to_export">Er zijn nog geen launcher-instellingen.</string>
- <string name="launcher_wrong_format">Dit is geen bestand met launcher-instellingen.</string>
+ <string name="launcher_import_complete_no_backup">Instellingen geïmporteerd.</string>
+ <string name="launcher_wrong_format">Dit bestand is geen ondersteunde back-up van launcherinstellingen.</string>
  <string name="controls_settings">Toetsindeling</string>
  <string name="touch_settings">Touchbediening</string>
  <string name="screen_settings">Scherm</string>
@@ -45,11 +41,10 @@
  <string name="import_folder">Map importeren…</string>
  <string name="import_zip">ZIP importeren…</string>
  <string name="import_image">Schijfkopie importeren…</string>
- <string name="data_import_hint">Importeer een map die \'fedata\' en \'gamedata\' rechtstreeks bevat, of een ZIP met die mappen. Wat je importeert wordt naar de app-opslag gekopieerd. Een kopie van de spelschijf kan ook (ISO, of de BIN van een BIN/CUE-paar).</string>
+ <string name="data_import_hint">Importeer een map of ZIP met \'fedata\' en \'gamedata\', of een schijfkopie (ISO of BIN). Bestanden worden naar de appopslag gekopieerd.</string>
  <string name="import_complete">Gegevensimport voltooid</string>
- <string name="data_error">Gegevensbewerking mislukt: %1$s</string>
- <string name="delete_data_title">Gegevensset verwijderen?</string>
- <string name="delete_data_message">%1$s van dit apparaat verwijderen? Dit kan niet ongedaan worden gemaakt.</string>
+ <string name="data_error">De bewerking kon niet worden voltooid: %1$s</string>
+ <string name="delete_data_title">Spelbestanden verwijderen?</string>
  <string name="controls_explanation">Dit is de laag van de port tussen een fysieke gamepad of touch en het geëmuleerde toetsenbord. Ze staat los van het Controls-menu in het spel zelf; dat menu blijft ongewijzigd.</string>
  <string name="controls_row_hint">Kies per actie een fysieke gamepadknop en daarna de geëmuleerde toets die zowel die knop als de schermknop verstuurt.</string>
  <string name="touch_mode_label">Invoermodus</string>
@@ -57,10 +52,10 @@
  <string name="touch_mode_wheel">Stuur (binnenkort)</string>
  <string name="touch_mode_tilt">Sturen door kantelen (binnenkort)</string>
  <string name="touch_layout_label">Knopindeling</string>
- <string name="touch_pointer_label">Aanwijzer in menu\'s</string>
- <string name="touch_pointer_tap">Waar de vinger tikt</string>
+ <string name="touch_pointer_label">Touchbediening in menu\'s</string>
+ <string name="touch_pointer_tap">Direct aanraken</string>
  <string name="touch_pointer_touchpad">Touchpad</string>
- <string name="touch_pointer_note">Touchpad: veeg ergens om de cursor te bewegen, tik om te klikken, houd stil om te pakken en te slepen. Geldt vanaf de volgende keer dat het spel start.</string>
+ <string name="touch_pointer_note">Touchpad: veeg om de aanwijzer te bewegen, tik om te klikken of houd je vinger stil om vast te pakken en te slepen.</string>
  <string name="opacity_label">Dekking van de knoppen</string>
  <string name="size_label">Knopgrootte</string>
  <string name="auto_hide_label">Verbergen na 4 seconden inactiviteit</string>
@@ -72,7 +67,7 @@
  <string name="fps_30">30 FPS</string>
  <string name="fps_60">60 FPS</string>
  <string name="gamma_label">Gamma</string>
- <string name="fps_cap_label">Beeldsnelheid</string>
+ <string name="fps_cap_label">Limiet voor beeldsnelheid</string>
  <string name="fps_error">Voer een geheel getal van 1 tot 240 in</string>
  <string name="save">Opslaan</string>
  <string name="settings_saved">Instellingen opgeslagen</string>
@@ -85,7 +80,7 @@
  <string name="editor_drag_title">Sleep de knoppen</string>
  <string name="editor_resize_hint">Kies om te schalen</string>
  <string name="saves_title">Opgeslagen spellen</string>
- <string name="saves_hint">Exporteer het actieve profiel naar een ZIP, of importeer er een. Bij importeren wordt eerst een lokale back-up gemaakt.</string>
+ <string name="saves_hint">Exporteer opgeslagen spellen van de actieve spelbestanden naar een ZIP, of importeer een ZIP. Bestaande opgeslagen spellen worden eerst geback-upt en daarna vervangen.</string>
  <string name="import_saves">Opgeslagen spellen importeren…</string>
  <string name="export_saves">Opgeslagen spellen exporteren…</string>
  <string name="saves_not_found">Geen opgeslagen spellen gevonden in de actieve gegevensset.</string>
@@ -104,7 +99,6 @@
  <string name="controls_touch">Touch</string>
  <string name="controls_gamepad">Gamepads</string>
  <string name="gamepads_title">Gamepads</string>
- <string name="gamepads_hint">Het spel ziet twee gamepads: gamepad 1 is speler 1 samen met de touchbediening, gamepad 2 is speler 2. Kies hier de pads en stel hun knoppen in, en schrijf daarna eenmalig de gamepadbediening naar het spel.</string>
  <string name="gamepad_slot_label">Gamepad %1$d</string>
  <string name="gamepad_slot_auto_now">Automatisch: %1$s</string>
  <string name="gamepad_slot_auto_none">Automatisch: geen gamepad verbonden</string>
@@ -146,38 +140,17 @@
  <string name="importer_image_cue">Dit is het CUE-bestand: kies het BIN-bestand ernaast</string>
  <string name="importer_image_missing_files">De schijfkopie heeft geen mappen fedata/gamedata</string>
  <string name="importer_image_truncated">De schijfkopie houdt te vroeg op: het bestand is niet helemaal gekopieerd</string>
-
- <string name="faq_layout_modes"><b>Menu of race?</b>\nDat zegt het spel. Tijdens het rijden krijg je de race-indeling: stuurknoppen, pedalen, versnellingen en de rest. In de menu\'s, en zodra er een menu over een race opent, toont de port helemaal geen knoppen: de menu\'s nemen de aanraking zelf aan, de Terug van de telefoon is Escape en het toetsenbord komt vanzelf op. Er valt niets met de hand om te schakelen.</string>
- <string name="faq_mouse"><b>Hoe werken de menu\'s?</b>\nMet aanraken. Waar je je vinger neerzet, staat de aanwijzer van het spel, dus een tik drukt het item eronder in en een schuifregelaar volgt de vinger die hem sleept. De Terug-knop of -veeg van de telefoon is Escape, en als het spel om een naam vraagt, gaat het toetsenbord van de telefoon vanzelf open; met open toetsenbord sluit Terug het.</string>
  <string name="faq_size"><b>Wat verandert de grootte?</b>\nDe knopgrootte schaalt de standaardbediening. Sleep bij Posities en groottes bewerken een knop en wijzig de grootte met de groottebalk; een knop reageert precies waar hij getekend is en de percentages gelden ten opzichte van de standaardknop. Wijzigingen worden vanzelf bewaard. De editor toont een raster; met Uitlijnen op raster aan komt een gesleepte knop erop te liggen.</string>
  <string name="faq_edges"><b>Randen en hoogte</b>\nDe afstand tot de randen schuift de standaardknoppen naar binnen. Uitsparingen van het systeem worden gerespecteerd. Handmatig geplaatste knoppen houden hun bewaarde positie.</string>
  <string name="faq_hiding"><b>Dekking en automatisch verbergen</b>\nDe dekking bepaalt de normale zichtbaarheid. Het verbergen begint zodra alle vingers zijn opgetild, na 1 tot 30 seconden. Verborgen knoppen reageren al op de eerste aanraking en worden weer zichtbaar. Een knop vasthouden voorkomt het verbergen. Een druk op de gamepad van speler 1 verbergt de knoppen meteen; de volgende aanraking brengt ze terug. De gamepad van speler 2 laat ze met rust, zodat de een op het scherm kan rijden terwijl de ander met een pad speelt.</string>
  <string name="faq_vibration"><b>Trilling</b>\nDe Force Feedback-effecten van het spel voel je op de telefoon of op gamepad 1, nooit op allebei tegelijk: kies Uit, Telefoon of Gamepad bij Bediening → Force Feedback. Het spel stuurt maar één force-feedbackapparaat aan, dus gamepad 2 trilt nooit. De sterkte van de gamepad stel je in het spel zelf in: Options → Controllers → Force Feedback. De effecten komen van het spel, nooit van knopdrukken.</string>
- <string name="faq_mapping"><b>Gamepads</b>\nHet spel ziet altijd twee gamepads: gamepad 1 is speler 1 samen met de touchbediening, gamepad 2 is speler 2. Kies bij Bediening → Gamepads welke pad welke is door er een knop op in te drukken, stel in wat elke knop doet en druk daarna eenmalig op Gamepad AAN. Dat schrijft de bijpassende bediening naar de spelinstellingen en maakt een back-up van het oude bestand. De linkerstick stuurt, de triggers geven gas en remmen. Een pad heeft twee knoppensets, net zoals de touchbediening twee indelingen heeft: die van de race, die je hier instelt, en een vaste voor de menu\'s en herhalingen, waarin Cross / A bevestigt, Circle / B teruggaat en het kruis de selectie verplaatst. Wil je met een toetsenbord spelen, schrijf dan Standaard van het spel.</string>
  <string name="faq_lights"><b>Licht en terug naar de baan</b>\n☼ stuurt L. ↻ stuurt R om terug te keren naar de baan. De toetsen kun je wijzigen bij Bediening → Touch → Toetsen.</string>
- <string name="faq_screen_data"><b>Scherm en spelgegevens</b>\nLiggend vergrendelt het spel horizontaal; Automatisch staat draaien toe. De FPS-limiet beperkt de beeldsnelheid; een lagere waarde vermindert het werk per seconde. «Spelgegevens» beheert de imports en toont welke set actief is. Spelen wordt beschikbaar zodra een set klaar is.</string>
  <string name="gamepad_buttons">Knoppen</string>
  <string name="gamepad_buttons_title">Knoppen van gamepad %1$d</string>
- <string name="gamepad_buttons_hint">Wat elke knop van dit pad doet tijdens het rijden. De linkerstick stuurt, de rechtertrigger geeft gas en de linker remt. In de menu\'s en in herhalingen liggen de knoppen vast en valt er niets in te stellen: Cross / A en Options / Menu bevestigen, Circle / B en Create / View gaan terug, het kruis verplaatst de selectie. De knopacties bereiken het spel zodra de gamepadbediening erin is geschreven.</string>
  <string name="gamepad_buttons_reset">Standaard</string>
- <string name="controls_write_gamepads">Gamepad AAN</string>
- <string name="controls_write_keyboard">Standaard van het spel</string>
- <string name="controls_write_gamepads_message">De bediening in de spelinstellingen vervangen door de gamepadset van de port: gamepad 1 en de touchbediening besturen speler 1, gamepad 2 bestuurt speler 2, in losse races en in splitscreen. Van het huidige instellingenbestand wordt eerst een back-up gemaakt.</string>
- <string name="controls_write_keyboard_message">De bediening in de spelinstellingen vervangen door de standaard toetsenbordbediening van het spel zelf. Van het huidige instellingenbestand wordt eerst een back-up gemaakt.</string>
- <string name="controls_write_done">Bediening naar het spel geschreven. Back-up: %1$s</string>
- <string name="controls_write_no_config">Het spel heeft nog geen instellingenbestand. Start het spel één keer en probeer het opnieuw.</string>
- <string name="controls_write_game_running">Sluit het spel voordat je de bediening schrijft.</string>
- <string name="controls_write_failed">Kon de bediening niet schrijven: %1$s</string>
- <string name="gamepads_keyboard_note">Het spel staat op zijn eigen toetsenbordbediening (Standaard van het spel). De gamepads doen niets in splitscreenraces totdat je op Gamepad AAN drukt.</string>
  <string name="pref_touch_enabled">Touchbediening gebruiken</string>
  <string name="controls_help">Help: splitscreen</string>
  <string name="controls_help_title">Splitscreen met twee gamepads</string>
- <string name="help_split_setup"><b>1. De gamepads instellen (eenmalig)</b>\nVerbind beide gamepads met de telefoon. Druk bij Bediening → Gamepads onder gamepad 1 op Toewijzen en druk op een willekeurige knop van de pad van speler 1; doe daarna hetzelfde voor gamepad 2. Automatisch werkt ook: de pads worden genomen in de volgorde waarin ze verbinden. Bij Knoppen kies je wat elke knop doet.</string>
- <string name="help_split_write"><b>2. De bediening naar het spel schrijven</b>\nDruk op hetzelfde scherm op Gamepad AAN en bevestig. Dat is één keer nodig, en opnieuw alleen na het installeren van andere spelgegevens of als de bediening in het spel zelf is veranderd. Van de vorige instellingen wordt een back-up gemaakt.</string>
- <string name="help_split_race"><b>3. Een splitscreenrace starten</b>\nStart het spel en kies Two Players…. Speler 1 rijdt met gamepad 1 of de touchbediening, speler 2 met gamepad 2. Door de menu\'s gaat het met elk van beide pads: het kruis verplaatst de selectie, Cross / A of Options / Menu bevestigt, Circle / B of Create / View gaat terug.</string>
- <string name="help_split_driving"><b>Rijden</b>\nDe linkerstick stuurt, de rechtertrigger geeft gas en de linker remt. Standaard is Circle / B de handrem, legt Square / X een spijkermat, kijkt Cross / A achterom, wisselt Triangle / Y de camera, schakelen R1 / L1, zet Create / View de auto terug op de baan, pauzeert Options / Menu de race, toetert L3 en schakelt R3 de lichten.</string>
- <string name="help_split_digital"><b>Analoog of Digitaal</b>\nElke gamepad heeft een eigen schakelaar Analoog / Digitaal bij Bediening → Gamepads. Digitaal rijdt een race als een toetsenbord: het kruis links en rechts stuurt, het kruis omhoog en de rechtertrigger geven gas, het kruis omlaag en de linkertrigger remmen, en de stick stuurt niet. De menu\'s werken in beide gevallen hetzelfde. De twee gamepads delen nooit een toets, dus in splitscreen bestuurt elk alleen zijn eigen auto.</string>
- <string name="help_split_notes"><b>Goed om te weten</b>\nAlleen gamepad 1 of de telefoon trilt, afhankelijk van de keuze bij Bediening → Force Feedback: het spel stuurt maar één force-feedbackapparaat aan. Klopt de bediening niet meer, bijvoorbeeld na terugzetten in het spel, druk dan opnieuw op Gamepad AAN. Om met een toetsenbord te spelen druk je in plaats daarvan op Standaard van het spel. De touchbediening zet je uit bij Bediening → Touch.</string>
  <string name="gamepad_mode_analog">Analoog</string>
  <string name="gamepad_mode_digital">Digitaal</string>
  <string name="gamepad_analog_note">In een race stuurt de linkerstick, geeft de rechtertrigger gas en remt de linker.</string>
@@ -199,4 +172,36 @@
  <string name="network_port_original">1030 · origineel spel</string>
  <string name="network_hint">IPX vindt zelf races op deze wifi. TCP/IP verbindt met iedereen die het adres van de host kent, ook met een pc met het originele spel of de Modern Patch. Alle spelers gebruiken dezelfde poort.</string>
  <string name="fps_unlimited">Onbeperkt</string>
+ <string name="launcher_backup_export_complete">Launcherinstellingen geëxporteerd.</string>
+ <string name="delete_game_files_message">%1$s en de bijbehorende opgeslagen spellen en spelinstellingen van dit apparaat verwijderen? Dit kan niet ongedaan worden gemaakt.</string>
+ <string name="choose_game_files">Spelbestanden kiezen</string>
+ <string name="importing_saves">Opgeslagen spellen importeren…</string>
+ <string name="exporting_saves">Opgeslagen spellen exporteren…</string>
+ <string name="importing_launcher">Launcherinstellingen importeren…</string>
+ <string name="exporting_launcher">Launcherinstellingen exporteren…</string>
+ <string name="launcher_file_open_failed">Het gekozen instellingenbestand kon niet worden geopend.</string>
+ <string name="launcher_backup_failed">De huidige instellingen konden niet worden geback-upt. De import is geannuleerd.</string>
+ <string name="launcher_restore_failed">De geïmporteerde instellingen konden niet worden opgeslagen.</string>
+ <string name="controls_automatic_help_button">Hulp bij bediening</string>
+ <string name="controls_automatic_help_title">Touch en gamepads</string>
+ <string name="controller_setup_intro">Kies een controller voor elke speler. Selecteer een controller om de menubediening te testen of te wijzigen. Wijs racebediening in het spel toe. Wijzigingen worden automatisch opgeslagen.</string>
+ <string name="controller_test_hint">Start de test en druk daarna op knoppen of beweeg de sticks.</string>
+ <string name="controller_details_show">Invoerdetails tonen</string>
+ <string name="controller_details_hide">Invoerdetails verbergen</string>
+ <string name="controller_reset_menu">Menubediening herstellen</string>
+ <string name="controller_pause_title">Knoppencombinatie voor pauze</string>
+ <string name="controller_pause_hint">Houd de menuknop Terug en een extra knop ingedrukt om een race te pauzeren.</string>
+ <string name="controller_device_type">Apparaattype</string>
+ <string name="controller_change_type">Apparaattype wijzigen…</string>
+ <string name="controller_role_hint">Kies Afstandsbediening / toetsenbord voor een tv-afstandsbediening, zodat die geen spelersplek bezet.</string>
+ <string name="controller_report">Rapport over invoerapparaten…</string>
+ <string name="controller_remote">Afstandsbediening / toetsenbord</string>
+ <string name="controller_automatic">Automatisch</string>
+ <string name="controller_unassigned">Niet toegewezen</string>
+ <string name="controls_setup_hint">Kies controllers, test invoer en wijzig de menubediening. Wijs racebediening in het spel toe.</string>
+ <string name="faq_layout_modes"><b>Menu of race?</b>\nRacebediening verschijnt tijdens het rijden en verdwijnt in menu\'s. De indeling wisselt automatisch.</string>
+ <string name="faq_mouse"><b>Hoe werken de menu\'s?</b>\nKies onder Bediening → Touch voor Direct aanraken om menuopties aan te tikken, of Touchpad om de aanwijzer met veegbewegingen te verplaatsen. De Android-knop of het gebaar Terug gaat terug. Het toetsenbord verschijnt wanneer het spel om tekst vraagt; Terug sluit het.</string>
+ <string name="faq_screen_data"><b>Beeld en spelbestanden</b>\nBeeld regelt de schermoriëntatie en de limiet voor beeldsnelheid. Een lagere limiet kan stroom besparen. Bestanden en back-ups beheert geïmporteerde spelbestanden, opgeslagen spellen en back-ups van launcherinstellingen. Kies actieve spelbestanden voordat je speelt.</string>
+ <string name="faq_mapping"><b>Gamepads</b>\nKies onder Bediening → Gamepads een controller per speler, test invoer en wijzig menubediening. Automatisch gebruikt de overige controllers in verbindingsvolgorde. Opgeslagen toewijzingen blijven gereserveerd voor losgekoppelde controllers. Wijs racebediening in het spel toe. Is de menuknop Terug voor racen ingesteld, kies dan een Knoppencombinatie voor pauze: houd Terug en een extra knop ingedrukt.</string>
+ <string name="controls_automatic_help">Menu\'s: gebruik het richtingkruis of de linkerstick om te bewegen, A / Cross om te bevestigen en B / Circle om terug te gaan. Onder Gamepads kun je controllers testen en de menubediening wijzigen. Onder Touch kun je Direct aanraken of Touchpad kiezen.\n\nRacen: wijs bediening toe in het menu Controls van het spel. Schermknoppen volgen die toewijzingen. Is de menuknop Terug voor racen ingesteld, kies dan een extra knop onder Gamepads → Knoppencombinatie voor pauze. Houd beide ingedrukt om te pauzeren.\n\nGesplitst scherm: kies onder Gamepads een controller per speler. Automatisch gebruikt de overige controllers in verbindingsvolgorde. Een opgeslagen toewijzing blijft gereserveerd als de controller is losgekoppeld. De touchbediening bestuurt speler 1.</string>
 </resources>

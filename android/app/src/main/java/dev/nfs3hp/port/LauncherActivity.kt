@@ -235,7 +235,7 @@ class LauncherActivity : ComponentActivity() {
     fun confirmDelete(set: DataSetManager.DataSet) {
         dialog = Dialog(
             getString(R.string.delete_data_title),
-            getString(R.string.delete_data_message, set.name),
+            getString(R.string.delete_game_files_message, set.name),
             getString(R.string.delete),
             {
                 try {
@@ -342,7 +342,7 @@ class LauncherActivity : ComponentActivity() {
             }
             REQUEST_IMPORT_SAVES -> {
                 val withSettings = includeSettings()
-                startOperation {
+                startOperation(getString(R.string.importing_saves)) {
                     val backup = SaveGameManager.importZip(applicationContext, uri, dataRoot(), withSettings)
                     if (backup.isEmpty()) getString(R.string.saves_import_complete_no_backup)
                     else getString(R.string.saves_import_complete, backup)
@@ -350,15 +350,16 @@ class LauncherActivity : ComponentActivity() {
             }
             REQUEST_EXPORT_SAVES -> {
                 val withSettings = includeSettings()
-                startOperation {
+                startOperation(getString(R.string.exporting_saves)) {
                     getString(R.string.saves_export_complete,
                         SaveGameManager.exportZip(applicationContext, uri, dataRoot(), withSettings))
                 }
             }
-            REQUEST_EXPORT_LAUNCHER -> startOperation {
-                getString(R.string.launcher_export_complete, LauncherSettings.export(applicationContext, uri))
+            REQUEST_EXPORT_LAUNCHER -> startOperation(getString(R.string.exporting_launcher)) {
+                LauncherSettings.export(applicationContext, uri)
+                getString(R.string.launcher_backup_export_complete)
             }
-            REQUEST_IMPORT_LAUNCHER -> startOperation {
+            REQUEST_IMPORT_LAUNCHER -> startOperation(getString(R.string.importing_launcher)) {
                 /* No recreate() afterwards: every screen reads these settings
                  * when it is shown, and the language is deliberately not
                  * carried, so nothing already on screen can go stale. */
@@ -383,10 +384,10 @@ class LauncherActivity : ComponentActivity() {
         return fallback
     }
 
-    private fun begin() {
+    private fun begin(message: String = getString(R.string.checking_game_data)) {
         busy = true
         importPercent = -1
-        status = getString(R.string.checking_game_data)
+        status = message
     }
 
     /** How far along an import is: the bar fills to the percentage and the
@@ -404,9 +405,9 @@ class LauncherActivity : ComponentActivity() {
         }
     }
 
-    private fun startOperation(operation: () -> String) {
+    private fun startOperation(message: String, operation: () -> String) {
         if (busy) return
-        begin()
+        begin(message)
         val thread = Thread({
             val running = Thread.currentThread()
             try {

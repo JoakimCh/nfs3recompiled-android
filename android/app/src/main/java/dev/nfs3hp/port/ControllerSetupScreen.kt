@@ -7,6 +7,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.unit.dp
@@ -18,7 +19,7 @@ fun showControllerSetup(activity: ComponentActivity, controls: View) {
     LauncherActivity.hideStatusBar(activity)
     activity.setContent {
         GameTheme {
-            ScreenFrame("Gamepads", onBack = { activity.finish() }, scroll = false) {
+            ScreenFrame(stringResource(R.string.controls_gamepad), onBack = { activity.finish() }, scroll = false) {
                 Box(Modifier.widthIn(max = 1000.dp).fillMaxWidth().weight(1f).clipToBounds()) {
                     AndroidView(factory = { controls }, modifier = Modifier.matchParentSize())
                 }

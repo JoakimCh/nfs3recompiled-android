@@ -1,7 +1,5 @@
 <resources>
- <!-- Français. Les libellés de l’écran Controls et les inscriptions des boutons
-      à l’écran restent volontairement en anglais : cet écran se compare aux
-      réglages du jeu lui-même, qui est en anglais. -->
+ <!-- Launcher translations. Preserve format placeholders and resource names. -->
 
  <string name="language_label">Langue</string>
  <string name="language_system">Langue du système</string>
@@ -16,17 +14,15 @@
  <string name="play">Jouer</string>
  <string name="active_data_set">Données actives : %1$s</string>
  <string name="no_active_data_set">Aucun jeu de données actif. Importez-en un avant de jouer.</string>
- <string name="data_settings">Données</string>
- <string name="game_data_title">Données du jeu</string>
- <string name="launcher_settings_title">Réglages du lanceur</string>
- <string name="launcher_settings_hint">Enregistrez les réglages du lanceur — disposition tactile, affectation des touches, vibration — dans un fichier, ou restaurez-les. L\'import remplace les réglages actuels après les avoir sauvegardés.</string>
+ <string name="data_settings">Fichiers et sauvegardes</string>
+ <string name="game_data_title">Fichiers du jeu</string>
+ <string name="launcher_settings_title">Sauvegarde des paramètres du lanceur</string>
+ <string name="launcher_settings_hint">Sauvegardez les commandes tactiles, la configuration des manettes, l\'affichage, les vibrations et le réseau. L\'importation sauvegarde la configuration actuelle avant de la remplacer.</string>
  <string name="import_launcher">Importer les réglages...</string>
  <string name="export_launcher">Exporter les réglages...</string>
- <string name="launcher_export_complete">%1$d réglages exportés.</string>
  <string name="launcher_import_complete">Réglages importés. Les précédents sont sauvegardés sous %1$s.</string>
- <string name="launcher_import_complete_no_backup">Réglages importés. Il n\'y avait pas de réglages précédents.</string>
- <string name="launcher_nothing_to_export">Il n\'y a pas encore de réglages du lanceur.</string>
- <string name="launcher_wrong_format">Ce n\'est pas un fichier de réglages du lanceur.</string>
+ <string name="launcher_import_complete_no_backup">Paramètres importés.</string>
+ <string name="launcher_wrong_format">Ce fichier n\'est pas une sauvegarde compatible des paramètres du lanceur.</string>
  <string name="controls_settings">Affectation des commandes</string>
  <string name="touch_settings">Commandes tactiles</string>
  <string name="screen_settings">Réglages d\'écran</string>
@@ -45,11 +41,10 @@
  <string name="import_folder">Importer un dossier…</string>
  <string name="import_zip">Importer un ZIP…</string>
  <string name="import_image">Importer une image disque…</string>
- <string name="data_import_hint">Importez un dossier contenant directement \'fedata\' et \'gamedata\', ou un ZIP contenant ces dossiers. Les données importées sont copiées dans le stockage de l\'application. Une image du disque du jeu convient aussi (ISO, ou le BIN d\'une paire BIN/CUE).</string>
+ <string name="data_import_hint">Importez un dossier ou un ZIP contenant \'fedata\' et \'gamedata\', ou une image de disque (ISO ou BIN). Les fichiers sont copiés dans le stockage de l\'application.</string>
  <string name="import_complete">Importation des données terminée</string>
- <string name="data_error">L\'opération sur les données a échoué : %1$s</string>
- <string name="delete_data_title">Supprimer ce jeu de données ?</string>
- <string name="delete_data_message">Supprimer %1$s de cet appareil ? Cette action est irréversible.</string>
+ <string name="data_error">Impossible de terminer l\'opération : %1$s</string>
+ <string name="delete_data_title">Supprimer les fichiers du jeu ?</string>
  <string name="controls_explanation">Il s\'agit de la couche du portage entre la manette physique ou le tactile et le clavier émulé. Elle est indépendante du menu Controls du jeu lui-même ; ce menu reste inchangé.</string>
  <string name="controls_row_hint">Pour chaque action, choisissez un bouton physique de la manette, puis la touche émulée envoyée à la fois par ce bouton et par son bouton tactile à l\'écran.</string>
  <string name="touch_mode_label">Mode de saisie</string>
@@ -57,10 +52,10 @@
  <string name="touch_mode_wheel">Volant (bientôt)</string>
  <string name="touch_mode_tilt">Direction par inclinaison (bientôt)</string>
  <string name="touch_layout_label">Disposition des boutons</string>
- <string name="touch_pointer_label">Pointeur dans les menus</string>
- <string name="touch_pointer_tap">Là où le doigt touche</string>
+ <string name="touch_pointer_label">Commandes tactiles des menus</string>
+ <string name="touch_pointer_tap">Toucher direct</string>
  <string name="touch_pointer_touchpad">Pavé tactile</string>
- <string name="touch_pointer_note">Pavé tactile : glissez n\'importe où pour déplacer le curseur, touchez pour cliquer, maintenez le doigt immobile pour saisir et faire glisser. Prend effet au prochain lancement du jeu.</string>
+ <string name="touch_pointer_note">Pavé tactile : faites glisser pour déplacer le curseur, touchez pour cliquer ou maintenez le doigt immobile pour saisir et faire glisser.</string>
  <string name="opacity_label">Opacité des boutons</string>
  <string name="size_label">Taille des boutons</string>
  <string name="auto_hide_label">Masquage automatique après 4 secondes d\'inactivité</string>
@@ -72,7 +67,7 @@
  <string name="fps_30">30 FPS</string>
  <string name="fps_60">60 FPS</string>
  <string name="gamma_label">Gamma</string>
- <string name="fps_cap_label">Fréquence d\'images</string>
+ <string name="fps_cap_label">Limite d\'images par seconde</string>
  <string name="fps_error">Saisissez un nombre entier de 1 à 240</string>
  <string name="save">Enregistrer</string>
  <string name="settings_saved">Réglages enregistrés</string>
@@ -85,7 +80,7 @@
  <string name="editor_drag_title">Faites glisser les commandes</string>
  <string name="editor_resize_hint">Sélectionnez pour redimensionner</string>
  <string name="saves_title">Sauvegardes</string>
- <string name="saves_hint">Exportez le profil actif dans un ZIP, ou importez-en un. L\'import crée une sauvegarde locale avant de remplacer les sauvegardes existantes.</string>
+ <string name="saves_hint">Exportez les parties sauvegardées des fichiers du jeu actifs dans un ZIP, ou importez un ZIP. Les sauvegardes existantes sont copiées avant d\'être remplacées.</string>
  <string name="import_saves">Importer des sauvegardes…</string>
  <string name="export_saves">Exporter les sauvegardes…</string>
  <string name="saves_not_found">Aucune sauvegarde dans le jeu de données actif.</string>
@@ -104,7 +99,6 @@
  <string name="controls_touch">Tactile</string>
  <string name="controls_gamepad">Manettes</string>
  <string name="gamepads_title">Manettes</string>
- <string name="gamepads_hint">Le jeu voit deux manettes : la manette 1 est le joueur 1 avec les commandes tactiles, la manette 2 est le joueur 2. Choisissez ici les manettes et réglez leurs boutons, puis écrivez une fois les commandes manette dans le jeu.</string>
  <string name="gamepad_slot_label">Manette %1$d</string>
  <string name="gamepad_slot_auto_now">Automatique : %1$s</string>
  <string name="gamepad_slot_auto_none">Automatique : aucune manette connectée</string>
@@ -146,38 +140,17 @@
  <string name="importer_image_cue">C\'est le fichier CUE : choisissez le fichier BIN à côté</string>
  <string name="importer_image_missing_files">L\'image disque ne contient pas les dossiers fedata/gamedata</string>
  <string name="importer_image_truncated">L\'image disque s\'arrête trop tôt : le fichier n\'a pas été copié en entier</string>
-
- <string name="faq_layout_modes"><b>Menu ou course ?</b>\nC\'est le jeu qui le dit. Au volant, vous avez la disposition de course : boutons de direction, pédales, vitesses et le reste. Dans les menus, et dès qu\'un menu s\'ouvre par-dessus une course, le portage n\'affiche aucun bouton : les menus acceptent le toucher d\'eux-mêmes, le Retour du téléphone fait Échap et le clavier apparaît tout seul. Il n\'y a rien à basculer à la main.</string>
- <string name="faq_mouse"><b>Comment fonctionnent les menus ?</b>\nAu toucher. Le pointeur du jeu va là où se pose le doigt : une tape appuie sur l\'élément en dessous et un curseur suit le doigt qui le fait glisser. Le bouton ou le geste Retour du téléphone fait Échap et, quand le jeu demande un nom, le clavier du téléphone s\'ouvre tout seul ; clavier ouvert, Retour le referme.</string>
  <string name="faq_size"><b>Que change la taille ?</b>\nLa taille des boutons met à l\'échelle les commandes par défaut. Dans Modifier les positions et tailles, faites glisser une commande et changez sa taille avec le curseur de taille ; une commande répond exactement là où elle est dessinée et les pourcentages sont relatifs à la commande par défaut. Les changements sont enregistrés tout seuls. L\'éditeur affiche une grille ; avec Aligner sur la grille, la commande déplacée s\'y pose.</string>
  <string name="faq_edges"><b>Bords et position verticale</b>\nLa distance aux bords rapproche les commandes par défaut du centre. Les découpes système sont respectées. Les commandes placées à la main gardent leurs positions enregistrées.</string>
  <string name="faq_hiding"><b>Opacité et masquage automatique</b>\nL\'opacité fixe la visibilité normale. Le masquage automatique démarre une fois tous les doigts levés, après un délai de 1 à 30 secondes. Les boutons masqués répondent dès le premier contact et redeviennent visibles. Maintenir une commande empêche le masquage. Un appui sur la manette du joueur 1 masque aussitôt les commandes ; le toucher suivant les fait revenir. La manette du joueur 2 n\'y touche pas : l\'un peut conduire sur l\'écran pendant que l\'autre joue à la manette.</string>
  <string name="faq_vibration"><b>Vibration</b>\nLes effets Force Feedback du jeu se ressentent sur le téléphone ou sur la manette 1, jamais sur les deux à la fois : choisissez Désactivé, Téléphone ou Manette dans Commandes → Force Feedback. Le jeu ne pilote qu\'un seul périphérique à retour de force, donc la manette 2 ne vibre jamais. L\'intensité de la manette se règle dans le jeu lui-même : Options → Controllers → Force Feedback. Les effets viennent du jeu, jamais des appuis sur les boutons.</string>
- <string name="faq_mapping"><b>Manettes</b>\nLe jeu voit toujours deux manettes : la manette 1 est le joueur 1 avec les commandes tactiles, la manette 2 est le joueur 2. Dans Commandes → Manettes, choisissez quelle manette est laquelle en appuyant sur un de ses boutons et réglez ce que fait chaque bouton, puis appuyez une fois sur Manette ACTIVE. Les commandes correspondantes sont alors écrites dans les réglages du jeu et l\'ancien fichier est sauvegardé. Le stick gauche dirige, les gâchettes accélèrent et freinent. Une manette a deux jeux de boutons, comme les commandes tactiles ont deux dispositions : celui de la course, réglé ici, et un jeu fixe pour les menus et les replays, où Cross / A valide, Circle / B revient en arrière et la croix déplace la sélection. Pour jouer au clavier, écrivez plutôt Défaut du jeu.</string>
  <string name="faq_lights"><b>Phares et remise en piste</b>\n☼ envoie L. ↻ envoie R pour revenir sur la piste. Les touches se modifient dans Commandes → Tactile → Touches.</string>
- <string name="faq_screen_data"><b>Écran et données du jeu</b>\nPaysage verrouille le jeu à l\'horizontale ; Automatique autorise la rotation. La limite d\'IPS restreint la fréquence d\'images ; une valeur plus basse réduit le travail par seconde. « Données du jeu » gère les importations et indique le jeu de données actif. Jouer devient disponible dès qu\'un jeu de données est prêt.</string>
  <string name="gamepad_buttons">Boutons</string>
  <string name="gamepad_buttons_title">Boutons de la manette %1$d</string>
- <string name="gamepad_buttons_hint">Ce que fait chaque bouton de cette manette au volant. Le stick gauche dirige, la gâchette droite accélère et la gauche freine. Dans les menus et les replays, les boutons sont fixes et ne se règlent pas : Cross / A et Options / Menu valident, Circle / B et Create / View reviennent en arrière, la croix déplace la sélection. Les actions des boutons atteignent le jeu une fois les commandes manette écrites dedans.</string>
  <string name="gamepad_buttons_reset">Par défaut</string>
- <string name="controls_write_gamepads">Manette ACTIVE</string>
- <string name="controls_write_keyboard">Défaut du jeu</string>
- <string name="controls_write_gamepads_message">Remplacer les commandes des réglages du jeu par le jeu de commandes manette du portage : la manette 1 et les commandes tactiles pilotent le joueur 1, la manette 2 le joueur 2, en course simple comme en écran partagé. Le fichier de réglages actuel est d\'abord sauvegardé.</string>
- <string name="controls_write_keyboard_message">Remplacer les commandes des réglages du jeu par les commandes clavier par défaut du jeu. Le fichier de réglages actuel est d\'abord sauvegardé.</string>
- <string name="controls_write_done">Commandes écrites dans le jeu. Sauvegarde : %1$s</string>
- <string name="controls_write_no_config">Le jeu n\'a pas encore de fichier de réglages. Lancez le jeu une fois, puis réessayez.</string>
- <string name="controls_write_game_running">Fermez le jeu avant d\'écrire ses commandes.</string>
- <string name="controls_write_failed">Impossible d\'écrire les commandes : %1$s</string>
- <string name="gamepads_keyboard_note">Le jeu est réglé sur ses propres commandes clavier (Défaut du jeu). Les manettes ne font rien dans les courses en écran partagé tant que vous n\'appuyez pas sur Manette ACTIVE.</string>
  <string name="pref_touch_enabled">Utiliser les commandes tactiles</string>
  <string name="controls_help">Aide : écran partagé</string>
  <string name="controls_help_title">Écran partagé avec deux manettes</string>
- <string name="help_split_setup"><b>1. Configurer les manettes (une fois)</b>\nConnectez les deux manettes au téléphone. Dans Commandes → Manettes, appuyez sur Attribuer sous la manette 1 puis sur n\'importe quel bouton de la manette du joueur 1, et faites de même pour la manette 2. Automatique fonctionne aussi : les manettes sont prises dans l\'ordre de connexion. Boutons permet de choisir ce que fait chaque bouton.</string>
- <string name="help_split_write"><b>2. Écrire les commandes dans le jeu</b>\nSur le même écran, appuyez sur Manette ACTIVE et confirmez. C\'est nécessaire une fois, puis seulement après avoir installé d\'autres données de jeu ou modifié les commandes dans le jeu. Les réglages précédents sont sauvegardés.</string>
- <string name="help_split_race"><b>3. Lancer une course en écran partagé</b>\nLancez le jeu et choisissez Two Players…. Le joueur 1 conduit avec la manette 1 ou les commandes tactiles, le joueur 2 avec la manette 2. Les deux manettes parcourent les menus : la croix déplace la sélection, Cross / A ou Options / Menu valide, Circle / B ou Create / View revient en arrière.</string>
- <string name="help_split_driving"><b>Conduite</b>\nLe stick gauche dirige, la gâchette droite accélère et la gauche freine. Par défaut, Circle / B est le frein à main, Square / X pose une herse, Cross / A regarde derrière, Triangle / Y change de caméra, R1 / L1 passent les vitesses, Create / View replace la voiture sur la piste, Options / Menu met la course en pause, L3 klaxonne et R3 allume les phares.</string>
- <string name="help_split_digital"><b>Analogique ou Numérique</b>\nChaque manette a son propre sélecteur Analogique / Numérique dans Commandes → Manettes. Numérique conduit la course comme un clavier : la croix à gauche et à droite dirige, la croix en haut et la gâchette droite accélèrent, la croix en bas et la gâchette gauche freinent, et le stick ne dirige pas. Les menus fonctionnent de la même façon dans les deux cas. Les deux manettes ne partagent jamais une touche, donc en écran partagé chacune ne conduit que sa propre voiture.</string>
- <string name="help_split_notes"><b>Bon à savoir</b>\nSeule la manette 1 ou le téléphone vibre, selon le choix fait dans Commandes → Force Feedback : le jeu ne pilote qu\'un seul périphérique à retour de force. Si les commandes ne correspondent plus, par exemple après les avoir réinitialisées dans le jeu, appuyez à nouveau sur Manette ACTIVE. Pour jouer au clavier, appuyez plutôt sur Défaut du jeu. Les commandes tactiles se désactivent dans Commandes → Tactile.</string>
  <string name="gamepad_mode_analog">Analogique</string>
  <string name="gamepad_mode_digital">Numérique</string>
  <string name="gamepad_analog_note">En course, le stick gauche dirige, la gâchette droite accélère et la gauche freine.</string>
@@ -199,4 +172,36 @@
  <string name="network_port_original">1030 · jeu original</string>
  <string name="network_hint">IPX trouve seul les courses sur ce Wi-Fi. TCP/IP relie à quiconque connaît l\'adresse de l\'hôte, y compris un PC avec le jeu original ou le Modern Patch. Tous les joueurs utilisent le même port.</string>
  <string name="fps_unlimited">Illimité</string>
+ <string name="launcher_backup_export_complete">Paramètres du lanceur exportés.</string>
+ <string name="delete_game_files_message">Supprimer %1$s et les parties sauvegardées et paramètres associés de cet appareil ? Cette action est irréversible.</string>
+ <string name="choose_game_files">Choisir les fichiers du jeu</string>
+ <string name="importing_saves">Importation des sauvegardes…</string>
+ <string name="exporting_saves">Exportation des sauvegardes…</string>
+ <string name="importing_launcher">Importation des paramètres du lanceur…</string>
+ <string name="exporting_launcher">Exportation des paramètres du lanceur…</string>
+ <string name="launcher_file_open_failed">Impossible d\'ouvrir le fichier de paramètres sélectionné.</string>
+ <string name="launcher_backup_failed">Impossible de sauvegarder les paramètres actuels. L\'importation a été annulée.</string>
+ <string name="launcher_restore_failed">Impossible d\'enregistrer les paramètres importés.</string>
+ <string name="controls_automatic_help_button">Aide sur les commandes</string>
+ <string name="controls_automatic_help_title">Tactile et manettes</string>
+ <string name="controller_setup_intro">Choisissez une manette par joueur. Sélectionnez une manette pour tester ou modifier ses commandes de menu. Configurez les commandes de course dans le jeu. Les modifications sont enregistrées automatiquement.</string>
+ <string name="controller_test_hint">Lancez le test, puis appuyez sur des boutons ou déplacez les sticks.</string>
+ <string name="controller_details_show">Afficher les détails des entrées</string>
+ <string name="controller_details_hide">Masquer les détails des entrées</string>
+ <string name="controller_reset_menu">Réinitialiser les commandes de menu</string>
+ <string name="controller_pause_title">Raccourci de pause en course</string>
+ <string name="controller_pause_hint">Maintenez le bouton Retour des menus et un bouton supplémentaire pour mettre une course en pause.</string>
+ <string name="controller_device_type">Type d\'appareil</string>
+ <string name="controller_change_type">Changer le type d\'appareil…</string>
+ <string name="controller_role_hint">Choisissez Télécommande / clavier pour une télécommande de téléviseur afin qu\'elle n\'occupe pas une place de joueur.</string>
+ <string name="controller_report">Rapport sur les périphériques d\'entrée…</string>
+ <string name="controller_remote">Télécommande / clavier</string>
+ <string name="controller_automatic">Automatique</string>
+ <string name="controller_unassigned">Non attribuée</string>
+ <string name="controls_setup_hint">Choisissez les manettes, testez les entrées et modifiez les commandes de menu. Configurez les commandes de course dans le jeu.</string>
+ <string name="faq_layout_modes"><b>Menu ou course ?</b>\nLes commandes de course apparaissent pendant la conduite et se masquent dans les menus. La disposition change automatiquement.</string>
+ <string name="faq_mouse"><b>Comment fonctionnent les menus ?</b>\nDans Commandes → Tactile, choisissez Toucher direct pour toucher les éléments de menu, ou Pavé tactile pour déplacer le curseur en faisant glisser le doigt. Le bouton ou geste Retour d\'Android permet de revenir en arrière. Le clavier s\'ouvre lorsque le jeu demande du texte ; Retour le ferme.</string>
+ <string name="faq_screen_data"><b>Affichage et fichiers du jeu</b>\nAffichage permet de choisir l\'orientation de l\'écran et la limite d\'images par seconde. Une limite plus basse peut réduire la consommation. Fichiers et sauvegardes gère les fichiers du jeu importés, les parties sauvegardées et les sauvegardes du lanceur. Choisissez des fichiers du jeu actifs avant de jouer.</string>
+ <string name="faq_mapping"><b>Manettes</b>\nDans Commandes → Manettes, choisissez une manette par joueur, testez les entrées et modifiez les commandes de menu. Automatique utilise les autres manettes dans leur ordre de connexion. Les attributions enregistrées restent réservées lorsque les manettes sont déconnectées. Configurez les commandes de course dans le jeu. Si le bouton Retour des menus sert à la conduite, définissez un Raccourci de pause en course : maintenez Retour et un bouton supplémentaire.</string>
+ <string name="controls_automatic_help">Menus : utilisez la croix directionnelle ou le stick gauche pour vous déplacer, A / Cross pour confirmer et B / Circle pour revenir en arrière. Dans Manettes, testez les appareils et modifiez leurs commandes de menu. Dans Tactile, choisissez Toucher direct ou Pavé tactile.\n\nCourse : configurez les commandes dans le menu Controls du jeu. Les boutons tactiles suivent ces attributions. Si le bouton Retour des menus sert à la conduite, choisissez un bouton supplémentaire dans Manettes → Raccourci de pause en course. Maintenez les deux pour mettre en pause.\n\nÉcran partagé : choisissez une manette par joueur dans Manettes. Automatique utilise les autres manettes dans leur ordre de connexion. Une attribution enregistrée reste réservée pendant la déconnexion de la manette. Les commandes tactiles de course contrôlent le joueur 1.</string>
 </resources>

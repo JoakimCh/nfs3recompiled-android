@@ -104,7 +104,7 @@ public final class CrashReports {
             Toast.makeText(a, "No crash report yet. After a crash, reopen the launcher.", Toast.LENGTH_LONG).show(); return;
         }
         new AlertDialog.Builder(a).setTitle("App crash report")
-            .setMessage("A report is ready. Share it, or save it to Downloads and attach it to our chat. It includes device information and the crash trace; no game files.")
+            .setMessage("Share the crash report or save it to Downloads. It includes device information and the crash trace; no game files.")
             .setPositiveButton("Share report", (d,w) -> share(a))
             .setNeutralButton("Save to Downloads", (d,w) -> save(a))
             .setNegativeButton("Close", null).show();

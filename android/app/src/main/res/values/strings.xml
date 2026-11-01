@@ -11,17 +11,16 @@
     <string name="play">Play</string>
     <string name="active_data_set">Active data: %1$s</string>
     <string name="no_active_data_set">No active data set. Import one before playing.</string>
-    <string name="data_settings">Data</string>
-    <string name="game_data_title">Game data</string>
-    <string name="launcher_settings_title">Launcher settings</string>
-    <string name="launcher_settings_hint">Export the launcher\'s own setup - touch layout, control mappings, vibration - to a file, or restore one. Import replaces the current setup and backs it up first.</string>
+    <string name="data_settings">Files &amp; backups</string>
+    <string name="game_data_title">Game files</string>
+    <string name="launcher_settings_title">Launcher settings backup</string>
+    <string name="launcher_settings_hint">Back up touch controls, controller setup, display, vibration and network settings. Import replaces the current setup and backs it up first.</string>
     <string name="import_launcher">Import settings...</string>
     <string name="export_launcher">Export settings...</string>
-    <string name="launcher_export_complete">Exported %1$d settings.</string>
+    <string name="launcher_backup_export_complete">Launcher settings exported.</string>
     <string name="launcher_import_complete">Settings imported. Previous ones backed up as %1$s.</string>
-    <string name="launcher_import_complete_no_backup">Settings imported. There were no previous settings to back up.</string>
-    <string name="launcher_nothing_to_export">There are no launcher settings to export yet.</string>
-    <string name="launcher_wrong_format">This is not a launcher settings file.</string>
+    <string name="launcher_import_complete_no_backup">Settings imported.</string>
+    <string name="launcher_wrong_format">This file is not a supported launcher settings backup.</string>
     <string name="controls_settings">Controls mapping</string>
     <string name="touch_settings">Touch controls</string>
     <string name="screen_settings">Screen settings</string>
@@ -41,10 +40,10 @@
     <string name="import_folder">Import folder...</string>
     <string name="import_zip">Import ZIP...</string>
     <string name="import_image">Import disc image...</string>
-    <string name="data_import_hint">Import a folder that directly contains \'fedata\' and \'gamedata\', or a ZIP containing those folders. Imports are copied into app storage. An image of the game disc works too (ISO, or the BIN of a BIN/CUE).</string>
+    <string name="data_import_hint">Import a folder or ZIP containing \'fedata\' and \'gamedata\', or a disc image (ISO or BIN). Files are copied into app storage.</string>
     <string name="import_complete">Data import complete</string>
     <string name="saves_title">Game saves</string>
-    <string name="saves_hint">Export the active profile to a ZIP, or import one. Import creates a local backup before replacing existing saves.</string>
+    <string name="saves_hint">Export saved games from the active game files to a ZIP, or import a ZIP. Import backs up existing saves before replacing them.</string>
     <string name="import_saves">Import saves...</string>
     <string name="export_saves">Export saves...</string>
     <string name="saves_not_found">No saves were found in the active data set.</string>
@@ -55,9 +54,9 @@
     <string name="saves_export_complete">Exported %1$d save files.</string>
     <string name="saves_import_complete">Saves imported. Previous saves backed up as %1$s.</string>
     <string name="saves_import_complete_no_backup">Saves imported. There were no previous saves to back up.</string>
-    <string name="data_error">Data operation failed: %1$s</string>
-    <string name="delete_data_title">Delete data set?</string>
-    <string name="delete_data_message">Delete %1$s from this device? This cannot be undone.</string>
+    <string name="data_error">Could not complete the operation: %1$s</string>
+    <string name="delete_data_title">Delete game files?</string>
+    <string name="delete_game_files_message">Delete %1$s and its saved games and game settings from this device? This cannot be undone.</string>
 
     <string name="controls_explanation">Set racing assignments in the game\'s Controls menu. Touch buttons follow those assignments. Gamepads connect automatically; X/Y axes and the D-pad navigate menus.</string>
     <string name="controls_row_hint">Choose the physical gamepad button and the key it sends. Racing touch buttons follow the assignments in the game\'s Controls menu.</string>
@@ -67,10 +66,10 @@
     <string name="touch_mode_wheel">Steering wheel (coming soon)</string>
     <string name="touch_mode_tilt">Tilt steering (coming soon)</string>
     <string name="touch_layout_label">Button layout</string>
-    <string name="touch_pointer_label">Pointer in menus</string>
-    <string name="touch_pointer_tap">Where the finger lands</string>
+    <string name="touch_pointer_label">Menu touch input</string>
+    <string name="touch_pointer_tap">Direct touch</string>
     <string name="touch_pointer_touchpad">Touchpad</string>
-    <string name="touch_pointer_note">Touchpad: slide anywhere to move the cursor, tap to click, hold still to grab and drag. Applies the next time the game starts.</string>
+    <string name="touch_pointer_note">Touchpad: slide to move the cursor, tap to click, or hold still to grab and drag.</string>
     <string name="opacity_label">Button opacity</string>
     <string name="size_label">Button size</string>
     <string name="auto_hide_label">Auto-hide after 4 seconds idle</string>
@@ -83,7 +82,7 @@
     <string name="fps_30">30 FPS</string>
     <string name="fps_60">60 FPS</string>
     <string name="gamma_label">Gamma</string>
-    <string name="fps_cap_label">Frame rate</string>
+    <string name="fps_cap_label">Frame rate limit</string>
     <string name="fps_error">Enter a whole number from 1 to 240</string>
     <string name="save">Save</string>
     <string name="settings_saved">Settings saved</string>
@@ -99,19 +98,27 @@
          screen is in English everywhere (it is for the people testing). -->
     <string name="advanced_title" translatable="false">Advanced</string>
     <string name="debug_mode" translatable="false">Debug mode</string>
-    <string name="debug_mode_note" translatable="false">Off: nothing is written to the log and the game starts as a player has it. On: logging and the debug options below are enabled. Launch extras (adb, the names under each switch) still win for that one start.</string>
+    <string name="debug_mode_note" translatable="false">Enable detailed logging and the diagnostic options below.</string>
     <string name="debug_traces" translatable="false">Traces</string>
     <string name="debug_code" translatable="false">Natives and experiments</string>
     <string name="debug_picture" translatable="false">Picture and renderer</string>
-    <string name="debug_depth16" translatable="false">Depth in the Voodoo\'s 16-bit steps (depth16)</string>
-    <string name="debug_depth16_auto" translatable="false">As the renderer chooses</string>
+    <string name="debug_depth16" translatable="false">16-bit depth emulation</string>
+    <string name="debug_depth16_auto" translatable="false">Automatic</string>
     <string name="debug_depth16_off" translatable="false">Off</string>
     <string name="debug_depth16_on" translatable="false">On</string>
-    <string name="debug_depth16_ab" translatable="false">Five seconds each, in turns [GPU]</string>
-    <string name="debug_reset" translatable="false">Reset every switch</string>
+    <string name="debug_depth16_ab" translatable="false">Alternate every 5 seconds</string>
+    <string name="debug_reset" translatable="false">Reset debug options</string>
     <string name="touch_live_bindings_hint" translatable="false">Racing touch buttons follow the game’s current control assignments, including gamepad buttons and axes. Menu controls use automatic defaults.</string>
     <string name="controls_automatic_note" translatable="false">Gamepads connect automatically. Set racing buttons and axes in the game’s Controls menu. On-screen racing buttons follow those assignments.</string>
-    <string name="controls_automatic_help" translatable="false">Menus: by default, use the X/Y axes or D-pad to move, A / Cross to confirm, and B / Circle to go back. Use Gamepad test and setup to test a controller and customize directions, confirm and back. Assignments save per controller; configured directions also work in the game’s remapping screen. Touch users can tap menu items directly.\n\nRacing: assign buttons, D-pad directions and axes in the game’s Controls menu. Axes retain proportional input; buttons remain digital. On-screen racing buttons automatically follow the current game assignments.\n\nSplit screen: connected gamepads are assigned automatically in connection order: the first to player 1 and the second to player 2. Touch racing controls operate player 1. Reconnecting pads can change their order.\n\nThe launcher does not overwrite your custom in-game bindings. Use Touch controls to change the on-screen layout, size and visibility.</string>
-    <string name="controls_automatic_help_button" translatable="false">Controls help</string>
-    <string name="controls_automatic_help_title" translatable="false">Touch and gamepads</string>
+    <string name="controls_automatic_help">Menus: use the D-pad or left stick to move, A / Cross to confirm, and B / Circle to go back. In Gamepads, you can test controllers and change their menu controls. Touch users can choose Direct touch or Touchpad in Touch controls.\n\nRacing: assign controls in the game’s Controls menu. On-screen racing buttons follow those assignments. If your menu Back button is assigned to racing, choose an extra button under Gamepads → Race pause shortcut. Hold both to pause.\n\nSplit screen: choose a controller for each player in Gamepads. Automatic uses the remaining controllers in connection order. A saved assignment stays reserved while its controller is disconnected. Touch racing controls operate player 1.</string>
+    <string name="controls_automatic_help_button">Controls help</string>
+    <string name="controls_automatic_help_title">Touch and gamepads</string>
+    <string name="choose_game_files">Choose game files</string>
+    <string name="importing_saves">Importing saves…</string>
+    <string name="exporting_saves">Exporting saves…</string>
+    <string name="importing_launcher">Importing launcher settings…</string>
+    <string name="exporting_launcher">Exporting launcher settings…</string>
+    <string name="launcher_file_open_failed">Could not open the selected settings file.</string>
+    <string name="launcher_backup_failed">Could not back up the current settings. Import was cancelled.</string>
+    <string name="launcher_restore_failed">Could not save the imported settings.</string>
 </resources>

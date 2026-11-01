@@ -1,7 +1,5 @@
 <resources>
- <!-- Italiano. Le etichette della schermata Controls e le scritte sui pulsanti
-      a schermo restano volutamente in inglese: quella schermata si confronta
-      con le impostazioni del gioco stesso, che è in inglese. -->
+ <!-- Launcher translations. Preserve format placeholders and resource names. -->
 
  <string name="language_label">Lingua</string>
  <string name="language_system">Lingua di sistema</string>
@@ -16,17 +14,15 @@
  <string name="play">Gioca</string>
  <string name="active_data_set">Dati attivi: %1$s</string>
  <string name="no_active_data_set">Nessun set di dati attivo. Importane uno prima di giocare.</string>
- <string name="data_settings">Dati</string>
- <string name="game_data_title">Dati di gioco</string>
- <string name="launcher_settings_title">Impostazioni del launcher</string>
- <string name="launcher_settings_hint">Salva le impostazioni del launcher — disposizione dei comandi, assegnazioni, vibrazione — in un file, o ripristinale. L\'importazione sostituisce quelle attuali dopo averle copiate.</string>
+ <string name="data_settings">File e backup</string>
+ <string name="game_data_title">File di gioco</string>
+ <string name="launcher_settings_title">Backup delle impostazioni del launcher</string>
+ <string name="launcher_settings_hint">Salva comandi touch, configurazione dei gamepad, schermo, vibrazione e rete. L\'importazione salva la configurazione attuale prima di sostituirla.</string>
  <string name="import_launcher">Importa impostazioni...</string>
  <string name="export_launcher">Esporta impostazioni...</string>
- <string name="launcher_export_complete">%1$d impostazioni esportate.</string>
  <string name="launcher_import_complete">Impostazioni importate. Le precedenti sono salvate come %1$s.</string>
- <string name="launcher_import_complete_no_backup">Impostazioni importate. Non c\'erano impostazioni precedenti.</string>
- <string name="launcher_nothing_to_export">Non ci sono ancora impostazioni del launcher.</string>
- <string name="launcher_wrong_format">Questo non è un file di impostazioni del launcher.</string>
+ <string name="launcher_import_complete_no_backup">Impostazioni importate.</string>
+ <string name="launcher_wrong_format">Il file non è un backup supportato delle impostazioni del launcher.</string>
  <string name="controls_settings">Mappatura comandi</string>
  <string name="touch_settings">Comandi touch</string>
  <string name="screen_settings">Schermo</string>
@@ -45,11 +41,10 @@
  <string name="import_folder">Importa cartella…</string>
  <string name="import_zip">Importa ZIP…</string>
  <string name="import_image">Importa immagine disco…</string>
- <string name="data_import_hint">Importa una cartella che contenga direttamente \'fedata\' e \'gamedata\', oppure uno ZIP con quelle cartelle. Ciò che importi viene copiato nella memoria dell\'app. Va bene anche un\'immagine del disco del gioco (ISO, o il BIN di una coppia BIN/CUE).</string>
+ <string name="data_import_hint">Importa una cartella o un file ZIP con \'fedata\' e \'gamedata\', oppure un\'immagine disco (ISO o BIN). I file vengono copiati nella memoria dell\'app.</string>
  <string name="import_complete">Importazione dei dati completata</string>
- <string name="data_error">Operazione sui dati non riuscita: %1$s</string>
- <string name="delete_data_title">Eliminare il set di dati?</string>
- <string name="delete_data_message">Eliminare %1$s da questo dispositivo? L\'operazione è irreversibile.</string>
+ <string name="data_error">Impossibile completare l\'operazione: %1$s</string>
+ <string name="delete_data_title">Eliminare i file di gioco?</string>
  <string name="controls_explanation">Questo è il livello del port fra il gamepad fisico o il touch e la tastiera emulata. È indipendente dal menu Controls del gioco stesso; quel menu resta invariato.</string>
  <string name="controls_row_hint">Per ogni azione scegli un pulsante fisico del gamepad e poi il tasto emulato inviato sia da quel pulsante sia dal suo pulsante touch a schermo.</string>
  <string name="touch_mode_label">Modalità di input</string>
@@ -57,10 +52,10 @@
  <string name="touch_mode_wheel">Volante (in arrivo)</string>
  <string name="touch_mode_tilt">Sterzo con inclinazione (in arrivo)</string>
  <string name="touch_layout_label">Disposizione dei pulsanti</string>
- <string name="touch_pointer_label">Puntatore nei menu</string>
- <string name="touch_pointer_tap">Dove tocca il dito</string>
+ <string name="touch_pointer_label">Input touch nei menu</string>
+ <string name="touch_pointer_tap">Tocco diretto</string>
  <string name="touch_pointer_touchpad">Touchpad</string>
- <string name="touch_pointer_note">Touchpad: scorri ovunque per muovere il cursore, tocca per cliccare, tieni fermo il dito per afferrare e trascinare. Vale dal prossimo avvio del gioco.</string>
+ <string name="touch_pointer_note">Touchpad: scorri per spostare il cursore, tocca per fare clic o tieni fermo il dito per afferrare e trascinare.</string>
  <string name="opacity_label">Opacità dei pulsanti</string>
  <string name="size_label">Dimensione dei pulsanti</string>
  <string name="auto_hide_label">Nascondi dopo 4 secondi di inattività</string>
@@ -72,7 +67,7 @@
  <string name="fps_30">30 FPS</string>
  <string name="fps_60">60 FPS</string>
  <string name="gamma_label">Gamma</string>
- <string name="fps_cap_label">Frequenza fotogrammi</string>
+ <string name="fps_cap_label">Limite di fotogrammi al secondo</string>
  <string name="fps_error">Inserisci un numero intero da 1 a 240</string>
  <string name="save">Salva</string>
  <string name="settings_saved">Impostazioni salvate</string>
@@ -85,7 +80,7 @@
  <string name="editor_drag_title">Trascina i comandi</string>
  <string name="editor_resize_hint">Seleziona per ridimensionare</string>
  <string name="saves_title">Salvataggi</string>
- <string name="saves_hint">Esporta il profilo attivo in uno ZIP, oppure importane uno. L\'importazione crea una copia locale prima di sostituire i salvataggi esistenti.</string>
+ <string name="saves_hint">Esporta in uno ZIP i salvataggi dei file di gioco attivi, oppure importa uno ZIP. I salvataggi esistenti vengono salvati in una copia di backup prima di essere sostituiti.</string>
  <string name="import_saves">Importa salvataggi…</string>
  <string name="export_saves">Esporta salvataggi…</string>
  <string name="saves_not_found">Nessun salvataggio trovato nel set di dati attivo.</string>
@@ -104,7 +99,6 @@
  <string name="controls_touch">Touch</string>
  <string name="controls_gamepad">Gamepad</string>
  <string name="gamepads_title">Gamepad</string>
- <string name="gamepads_hint">Il gioco vede due gamepad: il gamepad 1 è il giocatore 1 insieme ai comandi touch, il gamepad 2 è il giocatore 2. Scegli qui i pad e imposta i loro tasti, poi scrivi una volta i comandi gamepad nel gioco.</string>
  <string name="gamepad_slot_label">Gamepad %1$d</string>
  <string name="gamepad_slot_auto_now">Automatico: %1$s</string>
  <string name="gamepad_slot_auto_none">Automatico: nessun gamepad collegato</string>
@@ -146,38 +140,17 @@
  <string name="importer_image_cue">Questo è il file CUE: scegli il file BIN accanto</string>
  <string name="importer_image_missing_files">L\'immagine disco non contiene le cartelle fedata/gamedata</string>
  <string name="importer_image_truncated">L\'immagine disco finisce troppo presto: il file non è stato copiato per intero</string>
-
- <string name="faq_layout_modes"><b>Menu o gara?</b>\nLo dice il gioco. Mentre guidi hai la disposizione da gara: pulsanti di sterzo, pedali, marce e il resto. Nei menu, e ogni volta che un menu si apre sopra una gara, il port non mostra alcun pulsante: i menu accettano il tocco da soli, l\'Indietro del telefono è Escape e la tastiera compare da sé. Non c\'è nulla da cambiare a mano.</string>
- <string name="faq_mouse"><b>Come funzionano i menu?</b>\nCon il tocco. Il puntatore del gioco va dove metti il dito, così un tocco preme la voce sottostante e un cursore segue il dito che lo trascina. Il pulsante o il gesto Indietro del telefono è Escape e, quando il gioco chiede un nome, la tastiera del telefono si apre da sola; con la tastiera aperta, Indietro la chiude.</string>
  <string name="faq_size"><b>Cosa cambia la dimensione?</b>\nLa dimensione dei pulsanti scala i comandi predefiniti. In Modifica posizioni e dimensioni trascina un comando e cambiane la dimensione con il cursore della dimensione; un comando risponde esattamente dov\'è disegnato e le percentuali sono relative al comando predefinito. Le modifiche si salvano da sole. L\'editor mostra una griglia; con Aggancia alla griglia attivo, il comando trascinato ci si posa.</string>
  <string name="faq_edges"><b>Bordi e posizione verticale</b>\nLa distanza dai bordi sposta i comandi predefiniti verso l\'interno. I ritagli di sistema sono rispettati. I comandi collocati a mano mantengono le posizioni salvate.</string>
  <string name="faq_hiding"><b>Opacità e scomparsa automatica</b>\nL\'opacità imposta la visibilità normale. La scomparsa automatica parte quando tutte le dita si sollevano, dopo un ritardo da 1 a 30 secondi. I pulsanti nascosti rispondono già al primo tocco e tornano visibili. Tenendo premuto un comando la scomparsa non avviene. Una pressione sul pad del giocatore 1 nasconde subito i comandi; il tocco successivo li riporta. Il pad del giocatore 2 non li tocca, così uno può guidare sullo schermo mentre l\'altro gioca con il pad.</string>
  <string name="faq_vibration"><b>Vibrazione</b>\nGli effetti Force Feedback del gioco si sentono sul telefono o sul gamepad 1, mai su entrambi insieme: scegli Disattivato, Telefono o Gamepad in Comandi → Force Feedback. Il gioco gestisce un solo dispositivo force feedback, quindi il gamepad 2 non vibra mai. L\'intensità del gamepad si imposta nel gioco stesso: Options → Controllers → Force Feedback. Gli effetti arrivano dal gioco, mai dalla pressione dei tasti.</string>
- <string name="faq_mapping"><b>Gamepad</b>\nIl gioco vede sempre due gamepad: il gamepad 1 è il giocatore 1 insieme ai comandi touch, il gamepad 2 è il giocatore 2. In Comandi → Gamepad scegli quale pad è quale premendo un suo tasto e imposta cosa fa ogni tasto, poi premi una volta Gamepad ATTIVO, che scrive i comandi corrispondenti nelle impostazioni del gioco e fa un backup del vecchio file. Lo stick sinistro sterza, i grilletti accelerano e frenano. Un pad ha due set di tasti, come i comandi touch hanno due disposizioni: quello da gara che imposti qui e uno fisso per i menu e i replay, dove Cross / A conferma, Circle / B torna indietro e la croce sposta la selezione. Per giocare con la tastiera, scrivi invece Predefinito del gioco.</string>
  <string name="faq_lights"><b>Fari e rientro in pista</b>\n☼ invia L. ↻ invia R per tornare in pista. I tasti si possono cambiare in Comandi → Touch → Tasti.</string>
- <string name="faq_screen_data"><b>Schermo e dati di gioco</b>\nOrizzontale blocca il gioco in landscape; Automatico consente la rotazione. Il limite FPS riduce la frequenza dei fotogrammi; un valore più basso alleggerisce il lavoro al secondo. «Dati di gioco» gestisce le importazioni e mostra il set attivo. «Gioca» si abilita quando un set è pronto.</string>
  <string name="gamepad_buttons">Tasti</string>
  <string name="gamepad_buttons_title">Tasti del gamepad %1$d</string>
- <string name="gamepad_buttons_hint">Cosa fa ogni tasto di questo pad mentre guidi. Lo stick sinistro sterza, il grilletto destro accelera e quello sinistro frena. Nei menu e nei replay i tasti sono fissi e non si impostano: Cross / A e Options / Menu confermano, Circle / B e Create / View tornano indietro, la croce sposta la selezione. Le azioni dei tasti arrivano al gioco una volta scritti in esso i comandi del gamepad.</string>
  <string name="gamepad_buttons_reset">Predefiniti</string>
- <string name="controls_write_gamepads">Gamepad ATTIVO</string>
- <string name="controls_write_keyboard">Predefinito del gioco</string>
- <string name="controls_write_gamepads_message">Sostituire i comandi nelle impostazioni del gioco con il set gamepad del port: il gamepad 1 e i comandi touch guidano il giocatore 1, il gamepad 2 il giocatore 2, nelle gare singole e a schermo diviso. Prima viene fatto un backup del file di impostazioni attuale.</string>
- <string name="controls_write_keyboard_message">Sostituire i comandi nelle impostazioni del gioco con i comandi da tastiera predefiniti del gioco stesso. Prima viene fatto un backup del file di impostazioni attuale.</string>
- <string name="controls_write_done">Comandi scritti nel gioco. Backup: %1$s</string>
- <string name="controls_write_no_config">Il gioco non ha ancora un file di impostazioni. Avvia il gioco una volta, poi riprova.</string>
- <string name="controls_write_game_running">Chiudi il gioco prima di scriverne i comandi.</string>
- <string name="controls_write_failed">Impossibile scrivere i comandi: %1$s</string>
- <string name="gamepads_keyboard_note">Il gioco è impostato sui propri comandi da tastiera (Predefinito del gioco). I gamepad non fanno nulla nelle gare a schermo diviso finché non premi Gamepad ATTIVO.</string>
  <string name="pref_touch_enabled">Usa i comandi touch</string>
  <string name="controls_help">Aiuto: schermo diviso</string>
  <string name="controls_help_title">Schermo diviso con due gamepad</string>
- <string name="help_split_setup"><b>1. Configura i gamepad (una volta)</b>\nCollega entrambi i gamepad al telefono. In Comandi → Gamepad premi Assegna sotto il gamepad 1 e premi un tasto qualsiasi sul pad del giocatore 1, poi fai lo stesso per il gamepad 2. Funziona anche Automatico: i pad vengono presi nell\'ordine in cui si collegano. In Tasti scegli cosa fa ogni tasto.</string>
- <string name="help_split_write"><b>2. Scrivi i comandi nel gioco</b>\nNella stessa schermata premi Gamepad ATTIVO e conferma. Serve una volta, e di nuovo solo dopo aver installato altri dati di gioco o cambiato i comandi dentro il gioco. Le impostazioni precedenti vengono salvate in un backup.</string>
- <string name="help_split_race"><b>3. Avvia una gara a schermo diviso</b>\nAvvia il gioco e scegli Two Players…. Il giocatore 1 guida con il gamepad 1 o con i comandi touch, il giocatore 2 con il gamepad 2. Nei menu ci si muove con uno qualsiasi dei due pad: la croce sposta la selezione, Cross / A o Options / Menu conferma, Circle / B o Create / View torna indietro.</string>
- <string name="help_split_driving"><b>Guida</b>\nLo stick sinistro sterza, il grilletto destro accelera e quello sinistro frena. Di base Circle / B è il freno a mano, Square / X lancia la striscia chiodata, Cross / A guarda indietro, Triangle / Y cambia la visuale, R1 / L1 cambiano marcia, Create / View riporta l\'auto in pista, Options / Menu mette in pausa la gara, L3 suona il clacson e R3 accende i fari.</string>
- <string name="help_split_digital"><b>Analogico o Digitale</b>\nOgni gamepad ha il proprio selettore Analogico / Digitale in Comandi → Gamepad. Digitale guida la gara come una tastiera: la croce a sinistra e a destra sterza, la croce in alto e il grilletto destro accelerano, la croce in basso e il grilletto sinistro frenano, e lo stick non sterza. I menu funzionano allo stesso modo in entrambi i casi. I due gamepad non condividono mai un tasto, quindi in schermo diviso ognuno guida solo la propria auto.</string>
- <string name="help_split_notes"><b>Buono a sapersi</b>\nVibra solo il gamepad 1 o il telefono, a seconda di cosa è scelto in Comandi → Force Feedback: il gioco gestisce un solo dispositivo force feedback. Se i comandi non corrispondono più, per esempio dopo averli ripristinati nel gioco, premi di nuovo Gamepad ATTIVO. Per giocare con la tastiera premi invece Predefinito del gioco. I comandi touch si disattivano in Comandi → Touch.</string>
  <string name="gamepad_mode_analog">Analogico</string>
  <string name="gamepad_mode_digital">Digitale</string>
  <string name="gamepad_analog_note">In gara lo stick sinistro sterza, il grilletto destro accelera e quello sinistro frena.</string>
@@ -199,4 +172,36 @@
  <string name="network_port_original">1030 · gioco originale</string>
  <string name="network_hint">IPX trova da solo le gare su questa rete Wi-Fi. TCP/IP collega chiunque conosca l\'indirizzo dell\'host, anche un PC con il gioco originale o il Modern Patch. Tutti i giocatori usano la stessa porta.</string>
  <string name="fps_unlimited">Illimitato</string>
+ <string name="launcher_backup_export_complete">Impostazioni del launcher esportate.</string>
+ <string name="delete_game_files_message">Eliminare %1$s e i relativi salvataggi e impostazioni di gioco da questo dispositivo? L\'operazione non può essere annullata.</string>
+ <string name="choose_game_files">Scegli i file di gioco</string>
+ <string name="importing_saves">Importazione dei salvataggi…</string>
+ <string name="exporting_saves">Esportazione dei salvataggi…</string>
+ <string name="importing_launcher">Importazione delle impostazioni del launcher…</string>
+ <string name="exporting_launcher">Esportazione delle impostazioni del launcher…</string>
+ <string name="launcher_file_open_failed">Impossibile aprire il file di impostazioni selezionato.</string>
+ <string name="launcher_backup_failed">Impossibile creare il backup delle impostazioni attuali. Importazione annullata.</string>
+ <string name="launcher_restore_failed">Impossibile salvare le impostazioni importate.</string>
+ <string name="controls_automatic_help_button">Guida ai comandi</string>
+ <string name="controls_automatic_help_title">Touch e gamepad</string>
+ <string name="controller_setup_intro">Scegli un gamepad per ogni giocatore. Seleziona un gamepad per provare o modificare i comandi dei menu. Assegna i comandi di gara nel gioco. Le modifiche vengono salvate automaticamente.</string>
+ <string name="controller_test_hint">Avvia il test, poi premi i pulsanti o muovi gli stick.</string>
+ <string name="controller_details_show">Mostra dettagli di input</string>
+ <string name="controller_details_hide">Nascondi dettagli di input</string>
+ <string name="controller_reset_menu">Ripristina comandi dei menu</string>
+ <string name="controller_pause_title">Scorciatoia per la pausa in gara</string>
+ <string name="controller_pause_hint">Tieni premuti il pulsante Indietro dei menu e un pulsante aggiuntivo per mettere in pausa una gara.</string>
+ <string name="controller_device_type">Tipo di dispositivo</string>
+ <string name="controller_change_type">Cambia tipo di dispositivo…</string>
+ <string name="controller_role_hint">Scegli Telecomando / tastiera per un telecomando TV, così non occuperà un posto giocatore.</string>
+ <string name="controller_report">Rapporto sui dispositivi di input…</string>
+ <string name="controller_remote">Telecomando / tastiera</string>
+ <string name="controller_automatic">Automatico</string>
+ <string name="controller_unassigned">Non assegnato</string>
+ <string name="controls_setup_hint">Scegli i gamepad, prova gli input e modifica i comandi dei menu. Assegna i comandi di gara nel gioco.</string>
+ <string name="faq_layout_modes"><b>Menu o gara?</b>\nI comandi di gara appaiono durante la guida e si nascondono nei menu. La disposizione cambia automaticamente.</string>
+ <string name="faq_mouse"><b>Come funzionano i menu?</b>\nIn Comandi → Touch, scegli Tocco diretto per toccare le voci dei menu, oppure Touchpad per spostare il cursore scorrendo il dito. Il pulsante o gesto Indietro di Android torna indietro. La tastiera si apre quando il gioco richiede del testo; Indietro la chiude.</string>
+ <string name="faq_screen_data"><b>Schermo e file di gioco</b>\nSchermo controlla l\'orientamento e il limite di fotogrammi al secondo. Un limite inferiore può ridurre il consumo. File e backup gestisce i file di gioco importati, i salvataggi e i backup delle impostazioni del launcher. Scegli i file di gioco attivi prima di giocare.</string>
+ <string name="faq_mapping"><b>Gamepad</b>\nIn Comandi → Gamepad, scegli un gamepad per ogni giocatore, prova gli input e modifica i comandi dei menu. Automatico usa i gamepad rimanenti nell\'ordine di connessione. Le assegnazioni salvate restano riservate quando i gamepad sono scollegati. Assegna i comandi di gara nel gioco. Se il pulsante Indietro dei menu è assegnato alla guida, imposta una Scorciatoia per la pausa in gara: tieni premuti Indietro e un pulsante aggiuntivo.</string>
+ <string name="controls_automatic_help">Menu: usa la croce direzionale o lo stick sinistro per spostarti, A / Cross per confermare e B / Circle per tornare indietro. In Gamepad puoi provare i dispositivi e modificarne i comandi dei menu. In Touch puoi scegliere Tocco diretto o Touchpad.\n\nGara: assegna i comandi nel menu Controls del gioco. I pulsanti sullo schermo seguono queste assegnazioni. Se il pulsante Indietro dei menu è assegnato alla guida, scegli un pulsante aggiuntivo in Gamepad → Scorciatoia per la pausa in gara. Tieni premuti entrambi per mettere in pausa.\n\nSchermo diviso: scegli un gamepad per ogni giocatore in Gamepad. Automatico usa quelli rimanenti nell\'ordine di connessione. Un\'assegnazione salvata resta riservata mentre il gamepad è scollegato. I comandi touch di gara controllano il giocatore 1.</string>
 </resources>

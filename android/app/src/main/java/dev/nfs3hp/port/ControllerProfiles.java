@@ -47,7 +47,7 @@ final class ControllerProfiles {
     static String label(ControllerProfile profile,int action) {
         ControllerProfile.Binding b=profile==null?null:profile.bindings[action];
         if(b==null) {
-            if(action<4)return "Default: D-pad / hat / X–Y";
+            if(action<4)return "Default: D-pad or left stick";
             int code=action==4?96:97;
             String label="Default: "+keyLabel(code);
             if(profile!=null)for(int i=0;i<6;i++) {
@@ -57,9 +57,45 @@ final class ControllerProfiles {
             }
             return label;
         }
-        return b.axis?MotionEvent.axisToString(b.code)+(b.sign>0?" +":" −"):keyLabel(b.code);
+        return b.axis?axisLabel(b.code)+(b.sign>0?" +":" −"):keyLabel(b.code);
     }
     static String keyLabel(int code) {
-        return android.view.KeyEvent.keyCodeToString(code).replace("KEYCODE_","")+" ("+code+")";
+        switch(code) {
+        case 96:return "A / Cross";
+        case 97:return "B / Circle";
+        case 98:return "C";
+        case 99:return "X / Square";
+        case 100:return "Y / Triangle";
+        case 101:return "Z";
+        case 102:return "L1 / Left shoulder";
+        case 103:return "R1 / Right shoulder";
+        case 104:return "L2 / Left trigger";
+        case 105:return "R2 / Right trigger";
+        case 106:return "L3 / Left stick press";
+        case 107:return "R3 / Right stick press";
+        case 108:return "Start / Menu / Options";
+        case 109:return "Select / View / Create";
+        case 110:return "Mode / Guide";
+        case 19:return "D-pad up";
+        case 20:return "D-pad down";
+        case 21:return "D-pad left";
+        case 22:return "D-pad right";
+        case 23:return "D-pad center";
+        default:return android.view.KeyEvent.keyCodeToString(code).replace("KEYCODE_","")
+            .replace('_',' ');
+        }
+    }
+    private static String axisLabel(int axis) {
+        switch(axis) {
+        case MotionEvent.AXIS_X:return "Left stick horizontal";
+        case MotionEvent.AXIS_Y:return "Left stick vertical";
+        case MotionEvent.AXIS_Z:return "Right stick horizontal";
+        case MotionEvent.AXIS_RZ:return "Right stick vertical";
+        case MotionEvent.AXIS_HAT_X:return "D-pad horizontal";
+        case MotionEvent.AXIS_HAT_Y:return "D-pad vertical";
+        case MotionEvent.AXIS_LTRIGGER:return "Left trigger";
+        case MotionEvent.AXIS_RTRIGGER:return "Right trigger";
+        default:return MotionEvent.axisToString(axis).replace("AXIS_","").replace('_',' ');
+        }
     }
 }
