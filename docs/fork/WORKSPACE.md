@@ -22,10 +22,10 @@ workspace are not required to reconstruct the process.
 ## Bootstrap behavior
 
 `tools/setup_android.py` owns installation; `tools/android.py` owns execution.
-Setup by itself never authorizes tests, builds, signing or publication. The new
-scripts have not yet been validated; the compatibility fixes below were observed
-and used manually for tv28. Validate the integrated scripts before treating them
-as a proven replacement for those manual steps.
+Setup by itself never authorizes tests, builds, signing or publication. The shared
+scripts have now been exercised locally, including an isolated launcher SDK
+bootstrap and native build. See BUILD_STATUS.md for the exact evidence and the
+remaining hosted workflow validation.
 
 - Prefer compatible installed JDKs and complete SDK/CMake installations. Otherwise
   fetch the selected JDK from Adoptium, SDK installer from Google and CMake/Ninja

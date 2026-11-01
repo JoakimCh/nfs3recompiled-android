@@ -30,5 +30,6 @@ When a local workspace build is requested, use python3 tools/android.py rather
 than reconstructing setup by hand. It bootstraps missing tools from the manifest
 and applies documented proxy/CA/SDK fixes. It does not recover signing credentials;
 keep those private and outside source/caches. Preserve compatible installed tools
-and caches. The new automation still needs validation; see BUILD_STATUS.md. Record
+and caches. The shared runner has local validation; hosted modes still need validation.
+See BUILD_STATUS.md. Record
 newly verified runs and device feedback there and in docs/fork/releases/.

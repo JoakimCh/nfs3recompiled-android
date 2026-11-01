@@ -144,8 +144,7 @@ profileable/non-debug state, packaged R fields and matching native BuildID.
 
 ## Validation state
 
-The revised automation is implemented but has not yet been executed. Follow-up
-validation should exercise tooling tests, a cold bootstrap, a warm rerun, all
-three Actions modes and a local check. Keep their results distinct from the
-previously tested tv28 application and legacy Actions workflow recorded in
-BUILD_STATUS.md. Do not mark the new automation verified merely because tv28 ran.
+Local validation of the shared runner is recorded in [BUILD_STATUS.md](BUILD_STATUS.md).
+The hosted workflow still needs manual runs of all three modes, including a warm
+cache rerun. Keep local results distinct from hosted Actions results and from
+Joakim's device test of the earlier tv28 APK.

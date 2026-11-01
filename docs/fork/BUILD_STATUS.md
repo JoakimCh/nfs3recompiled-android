@@ -32,15 +32,41 @@ secrets worked at that time. Their values are not available through GitHub reads
 An earlier feature-branch run was skipped by the old main-only job condition. It
 never checked credentials. The revised workflow removes that restriction.
 
-## New automation: implementation awaiting validation
+## New automation: locally validated; hosted runs pending
 
-The branch adds `tests`, `check` and `apk` manual modes, caching, the complete local
-bootstrap/wrapper, tests-only native exclusion and compilation job pools. These
-new paths have **not yet been run**. Do not transfer the legacy workflow's verified
-status to them. Keep execution manual, with `tests` as the default.
+Published automation commit: `f674acd863ccb3f86bc4052a00e58d39e849f0b9` on
+`feature/launcher-wording-backups-translations`. Local checks on 2026-11-01:
 
-When execution is authorized, validate the three modes and local recovery path,
-then update this section with actual run URLs, source commits, cache observations
-and test counts. Retain failures as diagnostic evidence; do not infer success from
-a queued, skipped or old run. After publication, confirm the branch contains the
-intended workflow revision before directing the user to its mode selector.
+- All three setup-helper tests passed, including safe SDK layout repair and
+  archive path traversal rejection. Workflow structure checks passed.
+- The shared bootstrap installed an isolated launcher-only SDK. A fresh Android
+  test run with caching disabled passed all 14 tests, with no NDK installed.
+- Tests mode passed again with installed tools and warm dependency caches.
+- The launcher-only guard rejected an APK assembly request.
+- Check mode passed launcher tests and compiled/linked the native game. The
+  existing APK's size and modification time were unchanged.
+- APK mode passed tests, packaging and signing with the original certificate.
+  All 301 packaged R fields matched; ARMv7 ABI, 16K alignment,
+  non-debuggable/profileable state and matching native symbols were verified.
+- Simulated GitHub secret handling accepted wrapped base64, rejected a wrong
+  password and removed temporary signing files on success and failure.
+
+The rebuilt APK has SHA-256
+`6eed8ff7da37fc300ab1c2f8a4c21425d8cfee7645e330e489a75565b6fc55a1`
+and native BuildID `ef5e94be11704f3c0ce36bd9b7cf9db7b583e64f`.
+It has not been device tested. Reports identify source commit `f674acd` and a
+working tree with unrelated untracked content (and documentation edits during
+packaging); no application source changes were included. This is distinct from
+Joakim's successfully tested original tv28 binary above.
+
+A complete cold native-toolchain installation has not been exercised through the
+new bootstrap; native tools were reused locally. The isolated launcher bootstrap
+reused the verified SDK installer archive, then installed fresh SDK packages.
+
+The revised **hosted workflow has not run yet**. The only feature-branch run found
+was the previously skipped legacy run. Start manual `tests`, `check` and `apk`
+runs on the intended branch, plus a repeat run to confirm cache restoration:
+[Android checks and builds](https://github.com/JoakimCh/nfs3recompiled-android/actions/workflows/armv7-release.yml).
+Keep execution manual, with `tests` as the default. Record actual run URLs, source
+commits, job outcomes and cache observations here. A skipped or old run is not
+validation of the revised workflow.
