@@ -94,7 +94,7 @@ jobs:
         with:
           name: armv7-apk
           path: |
-            out/*-release.apk
+            out/nfs3-*.apk
             out/*-release.json
             out/validation.json
           if-no-files-found: error

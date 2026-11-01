@@ -76,17 +76,19 @@ example `armv7-v105-run41324391872`, and points to that build's exact source com
 A prerelease does not replace the repository's latest regular release.
 Selecting either type leaves the original build metadata unchanged.
 
-Release titles use the TV version, such as **NFS III ARMv7 TV — tv28**. Notes come
+New release titles use the numeric version, such as **0.78.29**. Historical TV
+builds retain titles such as **NFS III ARMv7 TV — tv28**. Notes come
 from `docs/fork/CHANGELOG.md` at the **APK's source commit**, even when the workflow
 itself runs from a newer commit. They include versioned entries after the previous
 published ARMv7 release through the APK version: tv25–tv28 when updating from tv24.
 The previous release's tag must be in the APK's source history. Regular releases
 compare against the previous regular release; prereleases can compare against an
-earlier prerelease too. Rebuilds of the same TV version use the preceding lower
+earlier prerelease too. Rebuilds of the same fork revision use the preceding lower
 version. With no earlier release, only the current version's changes are included.
 
-Maintain a heading such as `## tv28 — version 105` for every TV version, matching
-the APK's version name and version code. Keep these entries about game/launcher
+Maintain a heading such as `## 0.78.29 — version 106` for each new version,
+matching the release manifest. Historical headings such as `## tv28 — version 105`
+remain supported. Keep these entries about game/launcher
 changes. Put device feedback and validation records in BUILD_STATUS.md and
 unreleased workflow work in separate Unreleased sections. Legacy personal
 feedback and known maintenance-only notes are omitted when reading older entries.
@@ -110,40 +112,42 @@ automatically supplies a temporary `GITHUB_TOKEN`, passed to the CLI as `GH_TOKE
 No personal token, new secret or change to repository-wide default token
 permissions is needed. It runs only when manually started.
 
-The initial hosted publication succeeded. The revised changelog-based notes have
-local test coverage and an exact-source preview; their first hosted run remains
-pending. See BUILD_STATUS.md for the recorded evidence.
+The initial hosted publication succeeded, and Joakim reported successfully trying
+the revised changelog-based notes. The numeric naming migration still needs its
+first APK build and hosted publication. See BUILD_STATUS.md for the evidence.
 
-## Version naming: agreed plan for the next build
+## Version naming
 
-The next build should replace names such as `0.78-armv7-tv28-profile` with a
-numeric version. This is an agreed convention, **not yet implemented**; the
-current build and publishing scripts still use the TV naming described above.
+Numeric versions come from
+[android-release.json](../../tools/android-release.json), shared by Gradle and
+signing. The first APK build and hosted publication using these names are still
+pending. See BUILD_STATUS.md for validation status.
 
-| Item | Next-build example |
+| Item | Selected next build |
 | --- | --- |
 | App version and release title | `0.78.29` |
 | APK filename | `nfs3-0.78.29-armv7.apk` |
 | Symbols filename | `nfs3-0.78.29-armv7-symbols.zip` |
+| Release metadata | `nfs3-0.78.29-armv7-release.json` |
 | Android version code | `106`, increased from tv28's `105` |
 
 `0.78` identifies the upstream version; `29` identifies this fork's revision.
-Architecture belongs in filenames and metadata. Profiling capability belongs in
-build metadata, without a `profile` suffix in the version or release title.
-The old suffix means local performance profiling is enabled; the build remains
-non-debuggable. Removing the suffix does not require disabling profiling.
+Keep the fork revision increasing, including after an upstream version update.
+Architecture belongs in filenames and metadata. Profiling capability is recorded
+in build metadata, without a `profile` suffix in the version or release title.
+The old suffix meant local performance profiling was enabled; profiling remains
+enabled in the shared build commands and the build remains non-debuggable.
 
-Implement the change together in Gradle, signing/output filenames, release title
-generation, previous-release detection and changelog lookup. Use an explicit
-version/code mapping instead of requiring `tvNN` in an APK name. Keep the existing
-code/run-based release tags for traceability. Preserve the application ID and
-signing identity, and continue increasing Android version codes.
+For the next release, update `versionName`, `versionCode` and `revision` together
+in the manifest, and add the matching changelog entry. Increase the Android
+version code as well as the fork revision. Keep the existing code/run-based
+release tags for traceability; the application ID and signing identity are unchanged.
 
-The publishing workflow must still recognize old TV versions, filenames and
-changelog headings, including when promoting an existing APK. Leave historical
-APKs, tags and release metadata intact. Add the new version's changelog entry and
-update the instructions above when the migration is implemented; do not change
-only the version string while the scripts still depend on its old format.
+Signing, artifact collection and publication understand the numeric format.
+Publication also recognizes historical TV versions, filenames and changelog
+headings, including when promoting an existing APK. Historical APKs, tags and
+release metadata are kept intact. Gradle's ordinary ARM64 version remains 0.78;
+this manifest controls the ARMv7 fork.
 
 ## Local builds
 

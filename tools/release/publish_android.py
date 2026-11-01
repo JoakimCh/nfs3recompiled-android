@@ -13,8 +13,10 @@ import zipfile
 
 if __package__:
     from .sign_android import CERTIFICATE_SHA256
+    from .release_identity import artifact_names, published_version, revision_of
 else:
     from sign_android import CERTIFICATE_SHA256
+    from release_identity import artifact_names, published_version, revision_of
 
 
 def require(condition, message):
@@ -95,7 +97,9 @@ def prepare(repo, run, directory):
         metadata = json.loads(member(archive, reports[0]))
         version = metadata['version']
         require(re.fullmatch(r'[\w.\-]+', version), 'Invalid version name.')
-        apk_name = f'nfs3-{version}-release.apk'
+        names = artifact_names(version)
+        require(reports[0] == names['report'], 'Release report name differs from APK version.')
+        apk_name = names['apk']
         require(metadata['apk'] == apk_name, 'APK name differs from release metadata.')
         require(metadata['source_commit'] == run['head_sha'] and metadata['uncommitted_changes'] is False,
                 'Release metadata must match the clean source commit of the selected run.')
@@ -116,7 +120,7 @@ def prepare(repo, run, directory):
         (directory / apk_name).write_bytes(apk_data)
         (directory / reports[0]).write_bytes(member(archive, reports[0]))
         (directory / 'validation.json').write_bytes(member(archive, 'validation.json'))
-    symbols_name = f'nfs3-{version}-symbols.zip'
+    symbols_name = names['symbols']
     with artifact(repo, run, 'armv7-native-symbols') as archive:
         symbols_data = member(archive, symbols_name)
     with zipfile.ZipFile(io.BytesIO(symbols_data)) as symbols:
@@ -141,10 +145,12 @@ def changelog_sections(text):
     sections = {}
     codes = set()
     for index, heading in enumerate(headings):
-        match = re.fullmatch(r'tv(\d+) [-–—] version (\d+)(?: .*)?', heading[1].strip())
+        match = re.fullmatch(r'(tv\d+|\d+\.\d+\.\d+) [-–—] version (\d+)(?: .*)?', heading[1].strip())
         if not match:
             continue
-        tv, code = map(int, match.groups())
+        label, code_text = match.groups()
+        tv = int(label[2:]) if label.startswith('tv') else revision_of(label)
+        code = int(code_text)
         require(tv not in sections and code not in codes, 'Duplicate changelog version.')
         end = headings[index + 1].start() if index + 1 < len(headings) else len(text)
         body = text[heading.end():end].strip()
@@ -158,15 +164,9 @@ def changelog_sections(text):
         for pattern in legacy_notes:
             body = re.sub(pattern, '', body)
         body = re.sub(r'\n{3,}', '\n\n', body).strip()
-        sections[tv] = {'code': code, 'body': body}
+        sections[tv] = {'code': code, 'body': body, 'label': label}
         codes.add(code)
     return sections
-
-
-def apk_tv(version):
-    match = re.search(r'(?:^|-)tv(\d+)(?:-|$)', version)
-    require(match, 'Cannot identify the TV version from the APK version name.')
-    return int(match[1])
 
 
 def previous_release(repo, run, current_tv, kind):
@@ -177,9 +177,9 @@ def previous_release(repo, run, current_tv, kind):
         # Assets identify ARMv7 releases even when legacy tags use another format.
         versions = set()
         for asset in release.get('assets', []):
-            match = re.fullmatch(r'nfs3-.*-armv7-tv(\d+)(?:-[\w.-]+)?-release\.apk', asset['name'])
-            if match:
-                versions.add(int(match[1]))
+            version = published_version(asset['name'])
+            if version:
+                versions.add(revision_of(version))
         require(len(versions) <= 1, 'A published release contains ambiguous ARMv7 versions.')
         if versions and (tv := versions.pop()) < current_tv:
             candidates.append((tv, release))
@@ -203,7 +203,7 @@ def changes_for_release(sections, current_tv, code, previous_tv=None):
     for tv in range(current_tv, start - 1, -1):
         entry = sections.get(tv)
         require(entry and entry['body'], f'Missing or empty changelog changes for tv{tv}.')
-        entries.append(f"### tv{tv}\n\n{entry['body']}")
+        entries.append(f"### {entry['label']}\n\n{entry['body']}")
     return '\n\n'.join(entries)
 
 
@@ -211,11 +211,14 @@ def release_notes(repo, run, metadata, kind, test_count):
     # Fetch the APK source, not the newer workflow checkout or branch tip.
     source = gh('api', f"repos/{repo}/contents/docs/fork/CHANGELOG.md?ref={run['head_sha']}",
                 '--header', 'Accept: application/vnd.github.raw+json').decode('utf-8')
-    tv = apk_tv(metadata['version'])
+    sections = changelog_sections(source)
+    tv = revision_of(metadata['version'])
+    current = sections.get(tv)
+    expected_label = f'tv{tv}' if '-armv7-tv' in metadata['version'] else metadata['version']
+    require(current and current['label'] == expected_label, 'APK version differs from its source changelog.')
     previous = previous_release(repo, run, tv, kind)
-    changes = changes_for_release(changelog_sections(source), tv, metadata['versionCode'],
-                                  previous[0] if previous else None)
-    since = f"Changes since [tv{previous[0]}]({previous[1]['html_url']}).\n\n" if previous else ''
+    changes = changes_for_release(sections, tv, metadata['versionCode'], previous[0] if previous else None)
+    since = f"Changes since [{sections[previous[0]]['label']}]({previous[1]['html_url']}).\n\n" if previous else ''
     notes = (
         'Download the **.apk** below to install or update the game.\n\n'
         f'## Changes\n\n{since}{changes}\n\n'
@@ -227,7 +230,8 @@ def release_notes(repo, run, metadata, kind, test_count):
         'The symbols ZIP and JSON files are for troubleshooting and verification. '
         'SHA256SUMS.txt contains file checksums. Only the APK is needed to play.\n\n'
         '</details>\n')
-    return f'NFS III ARMv7 TV — tv{tv}', notes
+    title = f'NFS III ARMv7 TV — tv{tv}' if '-armv7-tv' in metadata['version'] else metadata['version']
+    return title, notes
 
 
 def main():

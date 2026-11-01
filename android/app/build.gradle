@@ -16,6 +16,7 @@ if (launcherTestsOnly && gradle.startParameter.taskNames.any {
     throw new GradleException("launcherTestsOnly is restricted to testReleaseUnitTest; APK/native builds must include native libraries.")
 }
 def toolchain = rootProject.ext.nfsToolchain
+def forkRelease = rootProject.ext.nfsRelease
 def gameAbi = armv7Tv ? 'armeabi-v7a' : 'arm64-v8a'
 if (armv7Tv && (providers.gradleProperty("x87Exact").isPresent()
         || providers.gradleProperty("wideFpu").isPresent())) {
@@ -44,10 +45,9 @@ android {
          * API 21 on, as SDL3 itself does. */
         minSdk = 26
         targetSdk = toolchain.targetSdk as int
-        // Kept in step with versionName so the two can never disagree: 0.78 -> 78.
-        versionCode = armv7Tv ? 105 : 78
-        versionName = "0.78"
-        if (armv7Tv) versionNameSuffix = profileNative ? "-armv7-tv28-profile" : "-armv7-tv28"
+        // ARMv7 identity is shared with signing; profiling is a separate capability.
+        versionCode = armv7Tv ? (forkRelease.versionCode as int) : 78
+        versionName = armv7Tv ? forkRelease.versionName : "0.78"
         testInstrumentationRunner "dev.nfs3hp.port.TouchOverlayInstrumentation"
         // Only arm64-v8a is packed: Compose brings androidx.graphics.path for
         // four ABIs, and a phone of another ABI would then install an APK with

@@ -25,6 +25,12 @@ filesystem regressions and recovery/status documentation. Local tests/check/APK
 modes passed. The first hosted APK run also passed, including all 14 launcher
 tests, cold setup, signing and artifact uploads; see BUILD_STATUS.md.
 
+## 0.78.29 — version 106
+
+Versions now use a numeric format, starting with 0.78.29. ARMv7 downloads use
+shorter filenames, and release titles show the version number. Performance
+profiling remains available without a suffix in the app version.
+
 ## tv28 — version 105
 
 Joakim reported testing build 28 without problems on 2026-11-01.

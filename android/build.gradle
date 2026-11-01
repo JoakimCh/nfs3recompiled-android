@@ -3,6 +3,7 @@
 buildscript {
     def toolchain = new groovy.json.JsonSlurper().parse(file('../tools/android-toolchain.json'))
     rootProject.ext.nfsToolchain = toolchain
+    rootProject.ext.nfsRelease = new groovy.json.JsonSlurper().parse(file('../tools/android-release.json'))
     repositories {
         mavenCentral()
         google()

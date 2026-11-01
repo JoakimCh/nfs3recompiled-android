@@ -3,6 +3,23 @@
 This file records evidence, not a substitute for checking the current source and
 latest Actions run. A new context should read AGENTS.md, BUILD.md and this file.
 
+## Numeric version migration
+
+Selected next ARMv7 version: `0.78.29`, Android version code `106`, fork revision
+`29`, defined in `tools/android-release.json`. Gradle and signing use that mapping;
+APKs use `nfs3-0.78.29-armv7.apk`. The package and certificate are unchanged.
+Profiling remains enabled independently of the version string.
+
+Before the workspace reset, all 29 tooling tests and all 14 launcher tests passed
+locally. The Gradle merged manifest confirmed version 0.78.29/code 106, the existing
+package ID, non-debuggable state and enabled profiling. A release-notes preview
+matched the new changelog entry to the historical tv28 baseline.
+
+The local changes were restored from this conversation after the workspace reset.
+All 26 release-helper tests passed again before publication; launcher tests were not
+rerun because the Android toolchain was not restored. No APK with the numeric
+version has been built, signed, published or device tested yet.
+
 ## Release publishing: initial hosted run verified; revised notes tested locally
 
 [Publication run 41326807799](https://github.com/JoakimCh/nfs3recompiled-android/actions/runs/41326807799)
@@ -20,7 +37,9 @@ missing changelog entries, source/version matching, legacy tags, prerelease
 baselines and rejection before publication. A preview using the actual tv28 source
 and published release records selected tv24 as baseline and included tv25–tv28.
 GitHub's comparison API confirmed that the tv24 tag is an ancestor of that source.
-The revised notes have not yet been exercised by a hosted publication run.
+Joakim subsequently reported trying the revised release workflow and liking its
+notes. That user report is recorded separately from the locally inspected checks;
+the retry run ID has not been recorded here.
 
 The existing release is left in place for Joakim to delete and retry. Its tag must
 also be deleted to reuse the same APK run. See

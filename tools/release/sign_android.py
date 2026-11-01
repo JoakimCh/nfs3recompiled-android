@@ -10,6 +10,11 @@ import subprocess
 import tempfile
 import zipfile
 
+if __package__:
+    from .release_identity import artifact_names, release_config
+else:
+    from release_identity import artifact_names, release_config
+
 KEY_ALIAS = 'armv7-tv-release'
 CERTIFICATE_SHA256 = '464eab8f658b68c234e80e85f5bcb6c5a79771600ac04c0f9d5458769c27b60e'
 
@@ -35,15 +40,16 @@ def main():
     badging = run([bt / 'aapt', 'dump', 'badging', args.apk])
     version = re.search(r"versionName='([^']+)'", badging).group(1)
     code = int(re.search(r"versionCode='(\d+)'", badging).group(1))
-    expected = int(re.search(r'armv7Tv \? (\d+) :',
-                            (root / 'android/app/build.gradle').read_text()).group(1))
-    if code != expected or "name='dev.nfs3hp.port.armv7tv'" not in badging:
+    expected = release_config(root)
+    if (code != expected['versionCode'] or version != expected['versionName']
+            or "name='dev.nfs3hp.port.armv7tv'" not in badging):
         raise RuntimeError('Unexpected release package/version')
     if not re.fullmatch(r'[\w.\-]+', version):
         raise RuntimeError('Unexpected version name')
     out = args.output_dir.resolve()
     out.mkdir(parents=True, exist_ok=True)
-    apk = out / ('nfs3-' + version + '-release.apk')
+    names = artifact_names(version)
+    apk = out / names['apk']
     if apk == args.apk.resolve():
         raise RuntimeError('Input and output APK must differ')
     run([bt / 'zipalign', '-f', '-P', '16', '4', args.apk, apk])
@@ -82,7 +88,7 @@ def main():
                and build_id(p / 'libmain.so') == identity]
     if not matches:
         raise RuntimeError('No exact matching unstripped native symbols')
-    symbols = out / ('nfs3-' + version + '-symbols.zip')
+    symbols = out / names['symbols']
     with zipfile.ZipFile(symbols, 'w', zipfile.ZIP_DEFLATED, 6) as z:
         for p in sorted(matches[0].glob('*.so')):
             z.write(p, 'armeabi-v7a/' + p.name)
@@ -93,14 +99,15 @@ def main():
          root / 'android/app/build/intermediates/compile_symbol_list/release/generateReleaseRFile/R.txt',
          resource_report])
     source = run(['git', '-C', root, 'rev-parse', 'HEAD']).strip()
-    summary = {'version': version, 'versionCode': code, 'source_commit': source,
+    summary = {'version': version, 'versionCode': code, 'revision': expected['revision'],
+               'architecture': 'armeabi-v7a', 'source_commit': source,
                'uncommitted_changes': bool(run(['git', '-C', root, 'status', '--porcelain']).strip()),
                'apk': apk.name, 'apk_sha256': hashlib.sha256(apk.read_bytes()).hexdigest(),
                'native_build_id': identity, 'certificate_sha256': certificate,
                'native_files': libraries, 'debuggable': False, 'shell_profileable': True,
                'zip_alignment_bytes': 16384, 'device_tested': False,
                'resource_check': json.loads(resource_report.read_text()), 'toolchain': toolchain}
-    report = out / ('nfs3-' + version + '-release.json')
+    report = out / names['report']
     report.write_text(json.dumps(summary, indent=2) + '\n')
     with zipfile.ZipFile(symbols, 'a', zipfile.ZIP_DEFLATED) as z:
         z.write(report, 'metadata/release.json')

@@ -11,6 +11,7 @@ from unittest.mock import patch
 import zipfile
 
 from tools.release import publish_android as publish
+from tools.release.release_identity import artifact_names, published_version, release_config, revision_of
 
 
 def archive(files):
@@ -22,9 +23,10 @@ def archive(files):
 
 
 class ReleasePromotionTests(unittest.TestCase):
-    def fixture(self, wrong_hash=False, wrong_symbols=False, failed_tests=False):
+    def fixture(self, wrong_hash=False, wrong_symbols=False, failed_tests=False, version="test"):
+        names = artifact_names(version)
         metadata = {
-            'version': 'test', 'versionCode': 105, 'apk': 'nfs3-test-release.apk',
+            'version': version, 'versionCode': 106 if version == '0.78.29' else 105, 'apk': names['apk'],
             'source_commit': 'a' * 40, 'uncommitted_changes': False,
             'certificate_sha256': publish.CERTIFICATE_SHA256,
             'resource_check': {'passed': True}, 'debuggable': False,
@@ -39,9 +41,9 @@ class ReleasePromotionTests(unittest.TestCase):
         with archive({'metadata/release.json': symbol_metadata,
                       'armeabi-v7a/libmain.so': b'symbols'}) as symbols:
             symbols_bytes = symbols.fp.getvalue()
-        artifacts = [archive({'nfs3-test-release.json': metadata, 'nfs3-test-release.apk': b'apk',
+        artifacts = [archive({names['report']: metadata, names['apk']: b'apk',
                               'validation.json': validation}),
-                     archive({'nfs3-test-symbols.zip': symbols_bytes})]
+                     archive({names['symbols']: symbols_bytes})]
         for artifact in artifacts:
             self.addCleanup(artifact.close)
         return artifacts
@@ -51,6 +53,13 @@ class ReleasePromotionTests(unittest.TestCase):
             result = publish.prepare('owner/repo', {'head_sha': 'a' * 40}, Path(temp))
             self.assertEqual((Path(temp) / result['apk']).read_bytes(), b'apk')
             self.assertEqual(len(list(Path(temp).iterdir())), 4)
+
+    def test_numeric_artifacts_are_promoted_without_renaming_or_rebuilding(self):
+        with tempfile.TemporaryDirectory() as temp, patch.object(publish, 'artifact', side_effect=self.fixture(version='0.78.29')):
+            result = publish.prepare('owner/repo', {'head_sha': 'a' * 40}, Path(temp))
+            self.assertEqual(result['apk'], 'nfs3-0.78.29-armv7.apk')
+            self.assertEqual((Path(temp) / result['apk']).read_bytes(), b'apk')
+            self.assertTrue((Path(temp) / 'nfs3-0.78.29-armv7-symbols.zip').is_file())
 
     def test_rejects_apk_hash_mismatch(self):
         with tempfile.TemporaryDirectory() as temp, patch.object(publish, 'artifact', side_effect=self.fixture(wrong_hash=True)):
@@ -264,6 +273,54 @@ Older changes already released.
         self.assertNotIn('Device testing', body)
         self.assertNotIn('Joakim', body)
         self.assertLess(body.index('## Changes'), body.index('<details>'))
+
+    def test_numeric_release_uses_legacy_baseline_and_numeric_title(self):
+        source = self.changelog.replace('## tv29 — version 106', '## 0.78.29 — version 106')
+        run = {'head_sha': 'a' * 40, 'html_url': 'https://example.com/build'}
+        metadata = {'version': '0.78.29', 'versionCode': 106, 'native_build_id': '1234'}
+        with patch.object(publish, 'gh', return_value=source.encode()), \
+             patch.object(publish, 'previous_release', return_value=(28, self.release(28))):
+            title, body = publish.release_notes('o/r', run, metadata, 'release', 14)
+        self.assertEqual(title, '0.78.29')
+        self.assertIn('### 0.78.29', body)
+        self.assertNotIn('### tv28', body)
+        self.assertIn('Changes since [tv28]', body)
+
+    def test_numeric_baseline_is_recognized_for_later_release(self):
+        numeric = self.release(29)
+        numeric['assets'] = [{'name': 'nfs3-0.78.29-armv7.apk'}]
+        with patch.object(publish, 'pages', return_value=iter([self.release(28), numeric])), \
+             patch.object(publish, 'api', return_value={'status': 'ahead'}):
+            self.assertEqual(publish.previous_release('o/r', {'head_sha': 'a' * 40}, 30, 'release')[0], 29)
+
+    def test_same_revision_with_wrong_numeric_version_is_rejected(self):
+        source = self.changelog.replace('## tv29 — version 106', '## 0.79.29 — version 106')
+        metadata = {'version': '0.78.29', 'versionCode': 106, 'native_build_id': '1234'}
+        with patch.object(publish, 'gh', return_value=source.encode()):
+            with self.assertRaisesRegex(RuntimeError, 'APK version differs'):
+                publish.release_notes('o/r', {'head_sha': 'a' * 40}, metadata, 'release', 14)
+
+
+class ReleaseIdentityTests(unittest.TestCase):
+    def test_filenames_and_revisions_support_numeric_and_historical_apks(self):
+        for version in ['0.78.29', '0.78-armv7-tv28-profile', '0.78-armv7-tv24']:
+            names = artifact_names(version)
+            self.assertEqual(published_version(names['apk']), version)
+            self.assertEqual(revision_of(version), 29 if version == '0.78.29' else 28 if 'tv28' in version else 24)
+        self.assertIsNone(published_version('nfs3-0.78.29-arm64.apk'))
+        with self.assertRaises(RuntimeError):
+            artifact_names('../../bad')
+
+    def test_release_manifest_rejects_inconsistent_version_revision_mapping(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            (root / 'tools').mkdir()
+            path = root / 'tools/android-release.json'
+            path.write_text(json.dumps({'versionName': '0.78.29', 'versionCode': 106, 'revision': 30}))
+            with self.assertRaisesRegex(RuntimeError, 'mapping'):
+                release_config(root)
+            path.write_text(json.dumps({'versionName': '0.78.29', 'versionCode': 106, 'revision': 29}))
+            self.assertEqual(release_config(root)['versionCode'], 106)
 
 
 if __name__ == '__main__':
