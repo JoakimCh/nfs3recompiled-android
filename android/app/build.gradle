@@ -6,6 +6,7 @@ plugins {
 // Experimental TV build; the normal upstream build remains ARM64.
 def armv7Tv = providers.gradleProperty("armv7Tv").isPresent()
 def profileNative = providers.gradleProperty("profileNative").isPresent()
+def toolchain = rootProject.ext.nfsToolchain
 def gameAbi = armv7Tv ? 'armeabi-v7a' : 'arm64-v8a'
 if (armv7Tv && (providers.gradleProperty("x87Exact").isPresent()
         || providers.gradleProperty("wideFpu").isPresent())) {
@@ -15,10 +16,10 @@ if (armv7Tv && (providers.gradleProperty("x87Exact").isPresent()
 android {
     testBuildType = "release"
     namespace = "dev.nfs3hp.port"
-    // AGP 9.1's max supported/default is compileSdk 36 + build-tools 36.0.0
-    // (both installed); 35 still builds but 36 is the version it targets.
-    compileSdk = 36
-    ndkVersion = "28.2.13676358"
+    // Shared with workspace setup, CI and signing.
+    compileSdk = toolchain.compileSdk as int
+    buildToolsVersion = toolchain.buildTools
+    ndkVersion = toolchain.ndk
 
     defaultConfig {
         applicationId = "dev.nfs3hp.port"
@@ -33,11 +34,11 @@ android {
          * side asks nothing of the platform that NDK 28 does not cover from
          * API 21 on, as SDL3 itself does. */
         minSdk = 26
-        targetSdk = 36
+        targetSdk = toolchain.targetSdk as int
         // Kept in step with versionName so the two can never disagree: 0.78 -> 78.
-        versionCode = armv7Tv ? 102 : 78
+        versionCode = armv7Tv ? 104 : 78
         versionName = "0.78"
-        if (armv7Tv) versionNameSuffix = profileNative ? "-armv7-tv25-profile" : "-armv7-tv25"
+        if (armv7Tv) versionNameSuffix = profileNative ? "-armv7-tv27-profile" : "-armv7-tv27"
         testInstrumentationRunner "dev.nfs3hp.port.TouchOverlayInstrumentation"
         // Only arm64-v8a is packed: Compose brings androidx.graphics.path for
         // four ABIs, and a phone of another ABI would then install an APK with
@@ -112,6 +113,7 @@ android {
     externalNativeBuild {
         cmake {
             path 'jni/CMakeLists.txt'
+            version = toolchain.cmake
         }
     }
 

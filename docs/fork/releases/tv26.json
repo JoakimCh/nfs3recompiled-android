@@ -1,0 +1,40 @@
+{
+  "version": "0.78-armv7-tv26-profile",
+  "versionCode": 103,
+  "source_commit": "6edf170db37a59fadb13bd2945dd82a2995c210e",
+  "uncommitted_changes": true,
+  "apk": "nfs3-0.78-armv7-tv26-profile-release.apk",
+  "apk_sha256": "1ffc0a31e6f790867d5cfd01a0dced896265ff9d1f6a784591d163eea21ffbc1",
+  "native_build_id": "3e880831bf8d746238248fc65e1520bff5b95a07",
+  "certificate_sha256": "464eab8f658b68c234e80e85f5bcb6c5a79771600ac04c0f9d5458769c27b60e",
+  "native_files": [
+    "lib/armeabi-v7a/libSDL3.so",
+    "lib/armeabi-v7a/libandroidx.graphics.path.so",
+    "lib/armeabi-v7a/libc++_shared.so",
+    "lib/armeabi-v7a/libmain.so"
+  ],
+  "debuggable": false,
+  "shell_profileable": true,
+  "zip_alignment_bytes": 16384,
+  "device_tested": false,
+  "resource_check": {
+    "apk": "nfs3-0.78-armv7-tv26-profile-release.apk",
+    "app_resources_checked": 296,
+    "packaged_app_int_fields": 296,
+    "mismatches": [],
+    "duplicate_fields": [],
+    "passed": true
+  },
+  "ui_tests": [
+    {
+      "name": "dev.nfs3hp.port.ControllerSetupActivityTest",
+      "tests": "6",
+      "failures": "0",
+      "errors": "0"
+    }
+  ],
+  "native_controller_checks": "passed, including race combination order, in-game binding override, per-controller isolation, capture exclusion and both-release guard",
+  "controller_profile_checks": "passed, including combination state, custom Back, aliases, unknown keys and release",
+  "matching_symbols": "nfs3-0.78-armv7-tv26-profile-symbols.zip",
+  "notes": "Test build: optional per-controller Back + extra button during races. Device verification pending."
+}

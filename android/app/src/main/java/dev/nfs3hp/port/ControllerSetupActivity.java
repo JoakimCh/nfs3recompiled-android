@@ -33,7 +33,9 @@ public final class ControllerSetupActivity extends ComponentActivity implements 
     private boolean armed,test;
     private long armAt;
     private String descriptor="";
-    private Button testButton;
+    private Button testButton, pauseAssign;
+    private TextView pauseValue;
+    private String captureName(){return waiting==6?"race pause extra button":ControllerProfile.NAMES[waiting];}
     private int dp(int value){return Math.round(value*getResources().getDisplayMetrics().density);}
     private TextView text(String value,int size) {
         TextView v=new TextView(this);v.setText(value);v.setTextSize(size);v.setTextColor(0xffdce1fa);
@@ -93,8 +95,16 @@ public final class ControllerSetupActivity extends ComponentActivity implements 
             detailPanel.addView(bindingRow);
         }
         detailPanel.addView(button("Reset this controller’s menu controls",()->{
-            cancelCapture();for(int i=0;i<6;i++)profile.bindings[i]=null;profile.release();save();showFunctions();
+            cancelCapture();for(int i=0;i<6;i++)profile.assign(i,null);profile.release();save();showFunctions();
         }));
+        heading(detailPanel,"During race");
+        detailPanel.addView(text("Pause with Back + an extra button, even when either is assigned to racing. Hold both on this controller; release both before using it again.",14));
+        pauseValue=text("",14);detailPanel.addView(pauseValue);
+        LinearLayout pauseRow=row();
+        pauseAssign=button("Assign extra button",()->{if(waiting==6){cancelCapture();updateStatus();}else begin(6);});
+        weighted(pauseRow,pauseAssign);
+        weighted(pauseRow,button("Disable",()->{cancelCapture();profile.racePauseModifier=null;save();}));
+        detailPanel.addView(pauseRow);
         heading(detailPanel,"Device role");roleLabel=text("",15);detailPanel.addView(roleLabel);
         detailPanel.addView(button("Change device role…",()->showRole(device)));
         detailPanel.addView(text("Use Remote / keyboard for a TV remote. Remotes navigate with keyboard keys and cannot occupy gamepad slots. Choices save for this device.",14));
@@ -173,7 +183,11 @@ public final class ControllerSetupActivity extends ComponentActivity implements 
         values[i].setText(ControllerProfiles.label(profile,i));
         assignButtons[i].setText(waiting==i?"Cancel":"Assign");
         assignButtons[i].setActivated(waiting==i);
-    }}
+    }
+        if(pauseValue!=null)pauseValue.setText(profile==null || profile.racePauseModifier==null?"Disabled":
+            "Back + "+ControllerProfiles.keyLabel(profile.racePauseModifier.code));
+        if(pauseAssign!=null)pauseAssign.setText(waiting==6?"Cancel":"Assign extra button");
+    }
     private void save(){ControllerProfiles.save(this,profile);refreshRows();updateStatus();}
     private void cancelCapture(){waiting=-1;armed=false;handler.removeCallbacks(arm);refreshRows();}
     private void begin(int action) {
@@ -198,6 +212,17 @@ public final class ControllerSetupActivity extends ComponentActivity implements 
         else handler.postDelayed(this,100);
     }};
     private void captured(ControllerProfile.Binding binding) {
+        int backCode=profile.bindings[5]==null?97:profile.bindings[5].code;
+        if(waiting==6) {
+            if(binding.axis || ControllerProfile.samePauseButton(binding.code,backCode)) {
+                status.setText("Choose a different button from Back.");return;
+            }
+            profile.racePauseModifier=binding;
+            cancelCapture();test=true;testButton.setText("Stop test");save();return;
+        }
+        if(waiting==5 && profile.racePauseModifier!=null && ControllerProfile.samePauseButton(binding.code,profile.racePauseModifier.code)) {
+            status.setText("This is the race pause extra button. Disable or change it first.");return;
+        }
         for(int i=0;i<6;i++)if(i!=waiting && binding.sameInput(profile.bindings[i])) {
             status.setText("Already assigned to "+ControllerProfile.NAMES[i]+". Clear that assignment first, or press another control.");return;
         }
@@ -208,7 +233,7 @@ public final class ControllerSetupActivity extends ComponentActivity implements 
         refreshRows();detailPanel.setVisibility(device!=null && expanded?android.view.View.VISIBLE:android.view.View.GONE);
         if(device!=null){selectedTitle.setText(device.getName());roleLabel.setText(InputDeviceRoles.description(device));}
         if(device==null){status.setText("No selected gamepad connected.");functions.setText("");refreshRows();return;}
-        status.setText(waiting>=0?(armed?(waiting<4?"Press a button or move an axis for ":"Press a button for ")+ControllerProfile.NAMES[waiting]+".":"Release all controls to assign "+ControllerProfile.NAMES[waiting]+"…"):
+        status.setText(waiting>=0?(armed?(waiting<4?"Press a button or move an axis for ":"Press a button for ")+captureName()+".":"Release all controls to assign "+captureName()+"…"):
             device.getName()+(test?" — test active":" — ready"));
     }
     private void showFunctions() {

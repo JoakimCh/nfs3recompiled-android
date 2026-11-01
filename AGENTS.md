@@ -10,3 +10,7 @@ If my own test was successful then ask whether to publish the changes or keep wo
 And if we have done a lot of changes then feel free to remind me that we should commit them to GitHub.
 
 docs/fork/ is where you'll find further guidance and also where further guidance should be written if needed.
+
+For Android workspace setup and tool versions, read docs/fork/BUILD.md and
+docs/fork/WORKSPACE.md. Try the documented setup before declaring missing tools
+a blocker. Setup alone does not authorize testing, building or publishing.

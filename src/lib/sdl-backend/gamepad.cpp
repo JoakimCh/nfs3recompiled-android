@@ -55,6 +55,8 @@ static constexpr x86::reg32 kAndroidRoute = 1u << 16;
 static constexpr x86::reg32 kAndroidDpadRoute = 1u << 17;
 static constexpr x86::reg32 kAndroidRoutes = kAndroidRoute | kAndroidDpadRoute;
 static std::atomic<x86::reg32> s_nativeButtons[Gamepad::kSlotCount];
+static std::atomic<std::uint64_t> s_racePause[Gamepad::kSlotCount];
+static std::atomic<x86::reg32> s_pauseConsumed[Gamepad::kSlotCount];
 static padpolicy::CaptureGate s_captureGate[Gamepad::kSlotCount];
 static x86::reg32 s_physicalButtons[Gamepad::kSlotCount];
 
@@ -753,6 +755,8 @@ void sendKey(const ButtonBinding& binding, bool down)
 struct SlotButtons
 {
     SDL_JoystickID pad = 0;
+    bool pauseLatched = false, pauseSent = false;
+    x86::reg32 pauseSources = 0, pauseMenuSources = 0;
     bool           held[kPadButtons] = {};
     Uint64         repeatAt[kPadButtons] = {};
     bool           sent[kPadButtons] = {};    // its key went down and has not come up
@@ -778,6 +782,7 @@ void updateButtonKeys()
     // The first frame resolves and logs every binding, before anything is pressed.
     buttonBinding(0, 0, context);
     const bool muted = s_gameKeysMuted.load(std::memory_order_relaxed);
+    static const ButtonBinding escape = parseBinding("Escape");
     for (x86::reg32 slot = 0; slot < Gamepad::kSlotCount; ++slot)
     {
         SlotButtons& buttons = s_slotButtons[slot];
@@ -792,6 +797,9 @@ void updateButtonKeys()
                     sendKey(buttons.sentAs[i], false);
                 buttons.held[i] = buttons.sent[i] = false;
             }
+            if (buttons.pauseSent) sendKey(escape, false);
+            buttons.pauseSent = buttons.pauseLatched = false;
+            buttons.pauseSources = buttons.pauseMenuSources = s_pauseConsumed[slot] = 0;
             buttons.pad = source.id;
         }
         const x86::reg32 androidState = s_androidButtons[slot].load();
@@ -802,10 +810,45 @@ void updateButtonKeys()
         const bool capture = context == Gamepad::Context::Capture;
         s_captureGate[slot].sample(physical, capture);
         const x86::reg32 native = s_nativeButtons[slot].load();
+        // Evaluate physical sources before menu remapping and before in-game
+        // bindings suppress launcher keys. Never combine two controllers.
+        const auto pause = s_racePause[slot].load();
+        const int backIndex = int((pause >> 20) & 31) - 1;
+        const int extraIndex = int((pause >> 25) & 31) - 1;
+        auto pauseHeld = [&](int index, unsigned bit) {
+            return (pause & (1ull << bit)) ||
+                (index >= 0 && index < int(kPadButtons) &&
+                 automaticPhysicalButton(source, androidState, unsigned(index),
+                     buttons.pauseLatched));
+        };
+        const bool backHeld = pauseHeld(backIndex, 17);
+        const bool extraHeld = pauseHeld(extraIndex, 18);
+        if (buttons.pauseSent) {
+            sendKey(escape, false);
+            buttons.pauseSent = false;
+        }
+        if (buttons.pauseLatched && !backHeld && !extraHeld)
+            buttons.pauseLatched = false;
+        if (!buttons.pauseLatched && (pause & (1ull << 16)) &&
+            context == Gamepad::Context::Race && backHeld && extraHeld) {
+            buttons.pauseLatched = true;
+            buttons.pauseSources = x86::reg32(pause & 0xffff);
+            buttons.pauseMenuSources = x86::reg32((pause >> 32) & 0xffff);
+            buttons.pauseSent = true;
+        }
+        // Keep the combination out of the pause menu until BOTH controls are
+        // released, including the synthetic menu Back button (EAST).
+        s_pauseConsumed[slot] = buttons.pauseLatched ? buttons.pauseSources : 0;
+        const auto consumed = s_pauseConsumed[slot] |
+            (buttons.pauseLatched && context != Gamepad::Context::Race ? buttons.pauseMenuSources : 0);
+
         for (size_t i = 0; i < kPadButtons; ++i)
         {
             const ButtonBinding& binding = buttonBinding(slot, i, context);
-            const bool suppressed = capture || (context == Gamepad::Context::Race && (native & (1u << i)));
+            const bool suppressed = capture || (consumed & (1u << i)) ||
+                (context == Gamepad::Context::Race && ((native & (1u << i)) ||
+                    ((pause & (1ull << 16)) && int(i) == backIndex &&
+                     binding.scancode == SDL_SCANCODE_ESCAPE)));
             /* A key that is down goes up as soon as it stops being what this
              * button means -- muted, or a race gave way to a menu under a
              * thumb that never moved. */
@@ -854,6 +897,7 @@ void updateButtonKeys()
                 buttons.sent[i] = false;
             }
         }
+        if (buttons.pauseSent) sendKey(escape, true);
     }
 }
 
@@ -861,6 +905,10 @@ void updateButtonKeys()
 
 void Gamepad::controllerProfile(unsigned slot,std::uint64_t state) {
     if(slot<kSlotCount)s_controllerProfile[slot].store(state);
+}
+
+void Gamepad::racePause(unsigned slot,std::uint64_t state) {
+    if(slot<kSlotCount)s_racePause[slot].store(state);
 }
 
 
@@ -965,7 +1013,7 @@ GamepadState Gamepad::getState() const
          * zone goes on each before they are combined: on the difference it
          * would swallow a light press of one whenever the other rested on its
          * trigger too. */
-        const x86::reg32 native = s_nativeButtons[m_slot].load();
+        const x86::reg32 native = s_nativeButtons[m_slot].load() | s_pauseConsumed[m_slot];
         result.axes[kAxisPedals] = x86::sreg16(
               ((native & (1u << 14)) ? 0 : shapeAxis(SDL_GetGamepadAxis(slot->gamepad, SDL_GAMEPAD_AXIS_LEFT_TRIGGER), pedalResponse))
             - ((native & (1u << 15)) ? 0 : shapeAxis(SDL_GetGamepadAxis(slot->gamepad, SDL_GAMEPAD_AXIS_RIGHT_TRIGGER), pedalResponse)));
@@ -979,7 +1027,7 @@ GamepadState Gamepad::getState() const
         for (size_t i = 0; i < kPadButtons; ++i)
         {
             const ButtonBinding& binding = buttonBinding(m_slot, i, Context::Race);
-            if (binding.axis >= 0 && !(s_nativeButtons[m_slot].load() & (1u << i))
+            if (binding.axis >= 0 && !((s_nativeButtons[m_slot].load() | s_pauseConsumed[m_slot]) & (1u << i))
                 && physicalButton(*slot, s_androidButtons[m_slot].load(), unsigned(i), false))
                 blendAxis(result, x86::reg32(binding.axis), binding.direction * 32767);
         }
@@ -1010,7 +1058,7 @@ GamepadState Gamepad::getState() const
             if(controllerprofile::axisHeld(s_controllerProfile[m_slot].load()))
                 for(auto& axis:result.axes)axis=0;
         }
-        else if (mode == Context::Race) result.buttons = usable & s_nativeButtons[m_slot].load();
+        else if (mode == Context::Race) result.buttons = usable & s_nativeButtons[m_slot].load() & ~s_pauseConsumed[m_slot];
     }
 
     if (m_slot == 0 && !touchDrivesAsKeys())
@@ -1111,5 +1159,12 @@ Java_dev_nfs3hp_port_TouchControlsOverlay_nativeTouchAction(JNIEnv*,jclass,jint 
 extern "C" JNIEXPORT void JNICALL
 Java_dev_nfs3hp_port_NFS3Activity_nativeControllerProfile(JNIEnv*,jclass,jint slot,jlong state){
     win32::Gamepad::controllerProfile(unsigned(slot),std::uint64_t(state));
+}
+#endif
+
+#ifdef __ANDROID__
+extern "C" JNIEXPORT void JNICALL
+Java_dev_nfs3hp_port_NFS3Activity_nativeRacePause(JNIEnv*,jclass,jint slot,jlong state){
+    win32::Gamepad::racePause(unsigned(slot),std::uint64_t(state));
 }
 #endif

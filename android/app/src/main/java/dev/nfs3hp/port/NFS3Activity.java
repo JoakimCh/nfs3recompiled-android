@@ -556,6 +556,7 @@ public class NFS3Activity extends SDLActivity
     private void sendControllerProfile(int slot) {
         ControllerProfile profile=controllerProfiles[slot];
         nativeControllerProfile(slot,profile==null?0:profile.snapshot());
+        nativeRacePause(slot,profile==null?0:profile.racePauseSnapshot());
     }
     static int padButtonIndex(int code) { return ControllerProfile.logicalButton(code); }
     private final android.os.Handler remoteHandler=new android.os.Handler(android.os.Looper.getMainLooper());
@@ -863,6 +864,7 @@ public class NFS3Activity extends SDLActivity
     private static native void nativeMousePointer(float x, float y, int buttons);
     private static native void nativeToggleKeyboard();
     private static native boolean nativeKeyboardActive();
+    private static native void nativeRacePause(int slot,long state);
     private static native void nativeControllerProfile(int slot,long state);
     private static native void nativeGamepadButton(int slot, int button, boolean down);
     private static native void nativeSetGamepadSlots(String first, String second);

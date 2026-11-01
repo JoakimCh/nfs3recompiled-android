@@ -1,20 +1,16 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 
 buildscript {
+    def toolchain = new groovy.json.JsonSlurper().parse(file('../tools/android-toolchain.json'))
+    rootProject.ext.nfsToolchain = toolchain
     repositories {
         mavenCentral()
         google()
     }
     dependencies {
-        // The only JDK available on this machine is 25 (both the Android Studio
-        // JBR and the standalone install), which needs Gradle 9.1.0+ to run at
-        // all; AGP is pinned to a version that in turn requires that Gradle
-        // (see gradle/wrapper/gradle-wrapper.properties) and compileSdk 36.
-        classpath 'com.android.tools.build:gradle:9.1.1'
-        // The launcher is Jetpack Compose.  AGP 9 compiles Kotlin itself; this
-        // pins the Kotlin it uses to the one the Compose compiler plugin is for.
-        classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:2.4.10'
-        classpath 'org.jetbrains.kotlin:compose-compiler-gradle-plugin:2.4.10'
+        classpath "com.android.tools.build:gradle:${toolchain.agp}"
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:${toolchain.kotlin}"
+        classpath "org.jetbrains.kotlin:compose-compiler-gradle-plugin:${toolchain.kotlin}"
     }
 }
 

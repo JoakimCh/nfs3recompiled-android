@@ -1,5 +1,20 @@
 # Fork changes
 
+## tv27 — version 104 (toolchain trial)
+
+Updated the build toolchain and SDL from the shared tools/android-toolchain.json.
+The Android SDL Java bridge is merged with the matching upstream release while
+preserving fork-specific input routing. Runtime target SDK stays at 36.
+
+
+## tv26 — version 103 (test build)
+
+Added an optional per-controller race pause combination under Gamepads → During
+race: Back plus a selectable extra button. It overrides racing assignments only
+when both are held, triggers once, and stays consumed through the pause menu
+until both are released. Disabled by default; menu Back is unchanged. Racing
+inputs remain immediate before the combination is completed.
+
 ## tv25 — version 102
 
 Fixed gamepad-page content drawing over the header. The header stays fixed,
