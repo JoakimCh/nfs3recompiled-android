@@ -21,10 +21,14 @@ without source changes or removing the native build cache.
 The unsigned ARMv7 APK assembled successfully after the separate test run
 (`apk-fast --unsigned` avoided repeating those tests). The APK resource check
 passed for all 313 app resource fields, with no mismatches or duplicates.
-This verifies packaging, not signing or installation. The original private signing files did not
-survive the workspace reset. The signing identity remains configured in GitHub
-Actions; producing an installable update requires that workflow or restoring the
-private local signing files. No device test of this revision has been reported.
+The recovery archive was subsequently restored and the APK signed with the original
+release certificate (`464eab8f658b68c234e80e85f5bcb6c5a79771600ac04c0f9d5458769c27b60e`).
+Signing, package/version, non-debuggable state, ARMv7 libraries, 16 KiB alignment,
+resource fields and exact native build ID were verified by the signing helper.
+The signed APK is version 0.78.31/code 108, source main commit
+`12503d4e4c9b8a5292d2d8cb4faef1236ae3f28c`, with a clean source tree.
+See `releases/0.78.31.json` for its checksums and toolchain. Matching native symbols
+were generated. No device test of this revision has been reported.
 
 ## Pause shortcut reliability: locally validated
 
@@ -54,8 +58,7 @@ confirmation of the native pause fix remains outstanding.
 A full repository checkout and the manifest-selected Android tools were restored
 using the shared bootstrap. The initial Java Gradle distribution download failed;
 a checksum-verified ZIP fetched through curl recovered wrapper bootstrap. See
-WORKSPACE.md. The subsequent unsigned APK is recorded above; no APK has been
-signed in this workspace.
+WORKSPACE.md. The subsequent unsigned APK is recorded above; the subsequently restored signing identity and signed build are recorded above.
 
 ## Assignment feedback: launcher checks passed locally
 

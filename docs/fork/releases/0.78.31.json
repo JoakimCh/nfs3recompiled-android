@@ -1,0 +1,47 @@
+{
+  "version": "0.78.31",
+  "versionCode": 108,
+  "revision": 31,
+  "architecture": "armeabi-v7a",
+  "source_commit": "12503d4e4c9b8a5292d2d8cb4faef1236ae3f28c",
+  "uncommitted_changes": false,
+  "apk": "nfs3-0.78.31-armv7.apk",
+  "apk_sha256": "3166f852771cea921b74a81bdcfe33f1b5f66024abe96c63bfe751d49406c188",
+  "native_build_id": "d62564975a08a7a3eb35c85b1cb007a7d78db138",
+  "certificate_sha256": "464eab8f658b68c234e80e85f5bcb6c5a79771600ac04c0f9d5458769c27b60e",
+  "native_files": [
+    "lib/armeabi-v7a/libSDL3.so",
+    "lib/armeabi-v7a/libandroidx.graphics.path.so",
+    "lib/armeabi-v7a/libc++_shared.so",
+    "lib/armeabi-v7a/libmain.so"
+  ],
+  "debuggable": false,
+  "shell_profileable": true,
+  "zip_alignment_bytes": 16384,
+  "device_tested": false,
+  "resource_check": {
+    "apk": "nfs3-0.78.31-armv7.apk",
+    "app_resources_checked": 313,
+    "packaged_app_int_fields": 313,
+    "mismatches": [],
+    "duplicate_fields": [],
+    "passed": true
+  },
+  "toolchain": {
+    "jdk": 25,
+    "gradle": "9.8.2",
+    "agp": "9.5.0",
+    "kotlin": "2.4.10",
+    "compileSdk": 37,
+    "platformPackage": "platforms;android-37.0",
+    "targetSdk": 36,
+    "buildTools": "37.0.0",
+    "ndk": "30.0.16248370",
+    "cmake": "4.4.5",
+    "sdl": "3.4.18",
+    "sdlCommit": "829a65d769d935c4852f8159e964312c0957260a",
+    "sdkCommandLineToolsFallback": "22.0",
+    "ninja": "1.13.2",
+    "ninjaSha256LinuxX64": "5749cbc4e668273514150a80e387a957f933c6ed3f5f11e03fb30955e2bbead6"
+  }
+}
