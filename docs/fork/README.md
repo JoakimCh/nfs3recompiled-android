@@ -29,7 +29,7 @@ Packed game data may be unaligned. Math optimizations retain the established
 precision and fallback paths. The opaque shader runs only when opacity is known;
 other draws use the original shader.
 
-[Build and signing](BUILD.md) · [Verified build state](BUILD_STATUS.md) · [Changes](CHANGELOG.md) ·
+[Build, download and publish APKs](BUILD.md) · [Verified build state](BUILD_STATUS.md) · [Changes](CHANGELOG.md) ·
 [Workspace recovery](WORKSPACE.md) · [Performance findings](PERFORMANCE.md) ·
 [Translations](TRANSLATIONS.md)
 

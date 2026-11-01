@@ -3,6 +3,18 @@
 This file records evidence, not a substitute for checking the current source and
 latest Actions run. A new context should read AGENTS.md, BUILD.md and this file.
 
+## Release publishing: locally tested; hosted run pending
+
+The manual `publish-apk.yml` workflow and `tools/release/publish_android.py` promote
+an existing signed APK run to a prerelease or release. On 2026-11-01, all ten
+release-helper tests and three setup tests passed. They covered publication
+ordering with mocked GitHub calls, keeping a failed upload private as a draft,
+source selection, mismatched files, expired artifacts and existing-tag refusal.
+Workflow structure checks confirmed manual dispatch, prerelease default and the
+built-in token with job-scoped permissions. Actual hosted release publication
+has not run yet; no GitHub Release has been created by this implementation.
+See [BUILD.md](BUILD.md#publish-an-existing-apk-as-a-release) for usage on `main`.
+
 ## Application: tv28, version 105
 
 - Built locally from application source commit `25f196cce192aeaffdab1636f8bed217ec324298`.

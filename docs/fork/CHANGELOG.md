@@ -1,5 +1,14 @@
 # Fork changes
 
+## Unreleased release publishing
+
+Added a manual Publish APK release workflow. It promotes an existing successful
+signed APK run to a prerelease or release with its matching symbols, verification
+metadata and checksums. No rebuild or signing credentials are needed. Expired
+artifacts, inconsistent metadata and existing tags stop publication. Ten release
+helper tests and workflow structure checks passed; hosted publication remains
+untested. The workflow uses the built-in token with explicit job permissions.
+
 ## Unreleased build automation
 
 Added shared setup/tests/check/APK/signing commands, complete Linux workspace

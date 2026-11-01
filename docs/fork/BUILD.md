@@ -22,9 +22,7 @@ Choose `tests` for launcher changes, `check` to check native compilation, and `a
 when you want an installable build. These modes target ARMv7 TV; the normal
 upstream build targets ARM64.
 
-Select a branch containing the revised workflow, currently
-`feature/launcher-wording-backups-translations`. Until it is merged, `main` has
-the older workflow and inputs; the Actions sidebar may also show its older name.
+Select `main` for the merged version, or a feature branch to build its changes.
 No dedicated test branch is needed. The workflow runs manually, never on push.
 
 With an authenticated GitHub CLI, the equivalent command is:
@@ -54,6 +52,46 @@ overrides the workflow's requested 14 days for APKs/reports and 90 days for symb
 Check each run's expiry and save useful APKs with their matching symbols before
 then. To retain them longer in Actions, increase the repository's artifact
 retention limit under **Settings → Actions → General**. Never commit APKs or keys.
+
+## Publish an existing APK as a release
+
+Use **Publish APK release** (`.github/workflows/publish-apk.yml`) after building
+an APK. It publishes the existing signed file without rebuilding or using signing
+credentials. Release downloads are separate from expiring Actions artifacts.
+
+The workflow is available on `main`. To publish a build:
+
+1. Open **Actions → Publish APK release → Run workflow**.
+2. Select the workflow branch. Leave **Build branch** blank to use that branch,
+   or enter the branch containing the APK build.
+3. Leave **APK run ID** blank for that branch's latest successful signed APK run,
+   or paste a specific run ID (the number after `/actions/runs/` in its URL).
+4. Choose **prerelease** for a test build, or **release** for a device-tested build.
+5. Start the workflow. Its summary links to the published release.
+
+The workflow checks that the source commit, successful tests, signed APK hash
+and symbol metadata agree. It uploads the APK, exact symbols, verification JSON
+and checksums. The release tag identifies the version code and build run, for
+example `armv7-v105-run41324391872`, and points to that build's exact source commit.
+A regular release becomes the repository's latest release; a prerelease does not.
+Selecting either type leaves the original build metadata unchanged.
+
+The selected run must be a successful signed APK run from the build workflow on
+the chosen branch. Missing or expired artifacts stop publication; the workflow
+never silently substitutes an older APK. Publish before artifact expiry, or make
+a new APK build. Published assets remain available on the repository's
+[Releases page](https://github.com/JoakimCh/nfs3recompiled-android/releases).
+
+Existing tags/releases are never overwritten. A failed upload may leave a draft;
+inspect and delete an incomplete draft before retrying. If its tag exists too,
+remove it only after confirming it belongs to that failed attempt. The workflow
+requests `actions: read` and `contents: write` for its publishing job. GitHub
+automatically supplies a temporary `GITHUB_TOKEN`, passed to the CLI as `GH_TOKEN`.
+No personal token, new secret or change to repository-wide default token
+permissions is needed. It runs only when manually started.
+
+Local helper tests and workflow structure checks passed. Actual hosted release
+publication has not run yet; record its first successful run in BUILD_STATUS.md.
 
 ## Local builds
 

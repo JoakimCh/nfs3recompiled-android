@@ -1,0 +1,44 @@
+name: Publish APK release
+run-name: Publish ARMv7 ${{ inputs.release_type }}
+on:
+  workflow_dispatch:
+    inputs:
+      build_branch:
+        description: Build branch (blank uses the selected workflow branch)
+        type: string
+        required: false
+      run_id:
+        description: APK run ID (blank uses the latest successful APK run on that branch)
+        type: string
+        required: false
+      release_type:
+        description: Prerelease for testing, release for a device-tested build
+        type: choice
+        required: true
+        default: prerelease
+        options:
+          - prerelease
+          - release
+permissions:
+  contents: read
+concurrency:
+  group: publish-armv7-release
+  cancel-in-progress: false
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Publish existing verified APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_BUILD_BRANCH: ${{ inputs.build_branch || github.ref_name }}
+          RELEASE_RUN_ID: ${{ inputs.run_id }}
+          RELEASE_TYPE: ${{ inputs.release_type }}
+        run: python3 tools/release/publish_android.py
