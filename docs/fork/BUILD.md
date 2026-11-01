@@ -16,11 +16,21 @@ See [BUILD_STATUS.md](BUILD_STATUS.md) for verified runs and device feedback.
 | `tests` (default) | Tooling and launcher tests; no native build | Test reports |
 | `check` | Tests, then native ARMv7 compilation and linking | Reports; no APK |
 | `apk` | Tests, native build, packaging, signing and verification | Signed APK, reports and matching native symbols |
+| `apk-fast` | Native build, packaging, signing and verification; skips all tooling and launcher tests | Signed APK, verification reports and matching native symbols |
 
 **APK mode already includes tests**; there is no need to run each mode in order.
 Choose `tests` for launcher changes, `check` to check native compilation, and `apk`
 when you want an installable build. These modes target ARMv7 TV; the normal
 upstream build targets ARM64.
+
+Choose `apk-fast` for a quicker installable build when you do not want tests.
+It uses the same tool caches, signing identity and APK/symbol artifacts as `apk`.
+APK resource, certificate, ABI/alignment and native-symbol verification still run.
+Its `validation.json` records mode `apk-fast` and `tests: null`; it does not claim
+that tests passed. Build time still includes native compilation and packaging.
+The release-publishing workflow requires a tested `apk` build and rejects
+`apk-fast` artifacts. If its latest-run selection finds a fast build, select a
+specific tested APK run ID or run `apk` before publishing.
 
 Select `main` for the merged version, or a feature branch to build its changes.
 No dedicated test branch is needed. The workflow runs manually, never on push.
@@ -29,6 +39,8 @@ With an authenticated GitHub CLI, the equivalent command is:
 
 ```sh
 gh workflow run armv7-release.yml --ref BRANCH -f mode=apk
+# Skip tests for a fast installable build:
+gh workflow run armv7-release.yml --ref BRANCH -f mode=apk-fast
 ```
 
 ## Download the APK
@@ -169,6 +181,11 @@ python3 tools/android.py check --accept-sdk-licenses
 python3 tools/android.py apk --accept-sdk-licenses \
   --keystore /private/armv7-tv-release.p12 \
   --password-file /private/password.txt
+
+# Same signed build and verification, skipping tooling and launcher tests.
+python3 tools/android.py apk-fast --accept-sdk-licenses \
+  --keystore /private/armv7-tv-release.p12 \
+  --password-file /private/password.txt
 ```
 
 `--accept-sdk-licenses` accepts SDK licenses when installing packages. Omit it if
@@ -216,7 +233,7 @@ package. `-PlauncherTestsOnly` is restricted to launcher tests and rejects APK t
 
 ## Signing credentials
 
-GitHub signing secrets are configured and verified. Only APK mode uses them:
+GitHub signing secrets are configured and verified. Both APK modes use them:
 
 - `ANDROID_KEYSTORE_BASE64`: base64 of the original `.p12`, not the recovery ZIP.
 - `ANDROID_KEYSTORE_PASSWORD`: the original password.
@@ -228,3 +245,4 @@ repository. Never place credentials in Git, caches, logs or artifacts.
 
 Public alias: `armv7-tv-release`. Certificate SHA-256:
 `464eab8f658b68c234e80e85f5bcb6c5a79771600ac04c0f9d5458769c27b60e`.
+

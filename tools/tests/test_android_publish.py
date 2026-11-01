@@ -23,7 +23,7 @@ def archive(files):
 
 
 class ReleasePromotionTests(unittest.TestCase):
-    def fixture(self, wrong_hash=False, wrong_symbols=False, failed_tests=False, version="test"):
+    def fixture(self, wrong_hash=False, wrong_symbols=False, failed_tests=False, version="test", fast=False):
         names = artifact_names(version)
         metadata = {
             'version': version, 'versionCode': 106 if version == '0.78.29' else 105, 'apk': names['apk'],
@@ -37,6 +37,8 @@ class ReleasePromotionTests(unittest.TestCase):
         validation = {'source_commit': 'a' * 40, 'source_dirty': False, 'mode': 'apk',
                       'native_compiled': True, 'tests': {'tests': 14, 'failures': int(failed_tests),
                                                        'errors': 0, 'skipped': 0}}
+        if fast:
+            validation.update(mode='apk-fast', tests=None)
         symbol_metadata = dict(metadata, native_build_id='other') if wrong_symbols else metadata
         with archive({'metadata/release.json': symbol_metadata,
                       'armeabi-v7a/libmain.so': b'symbols'}) as symbols:
@@ -73,6 +75,11 @@ class ReleasePromotionTests(unittest.TestCase):
 
     def test_rejects_failed_tests(self):
         with tempfile.TemporaryDirectory() as temp, patch.object(publish, 'artifact', side_effect=self.fixture(failed_tests=True)):
+            with self.assertRaisesRegex(RuntimeError, 'Build validation'):
+                publish.prepare('owner/repo', {'head_sha': 'a' * 40}, Path(temp))
+
+    def test_rejects_fast_apk_without_successful_tests(self):
+        with tempfile.TemporaryDirectory() as temp, patch.object(publish, 'artifact', side_effect=self.fixture(fast=True)):
             with self.assertRaisesRegex(RuntimeError, 'Build validation'):
                 publish.prepare('owner/repo', {'head_sha': 'a' * 40}, Path(temp))
 
@@ -325,3 +332,4 @@ class ReleaseIdentityTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+

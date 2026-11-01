@@ -3,6 +3,21 @@
 This file records evidence, not a substitute for checking the current source and
 latest Actions run. A new context should read AGENTS.md, BUILD.md and this file.
 
+## Fast APK mode: tooling checks passed; hosted build pending
+
+Added manual `apk-fast` mode to the existing workflow and shared Android runner.
+It skips tooling and launcher tests, while retaining native compilation, APK
+resource checks, original-certificate signing, APK verification and exact symbols.
+Validation records `mode: apk-fast` and `tests: null`. Normal `apk` still runs tests;
+release publication still requires the tested `apk` mode.
+
+On 2026-11-01, all 32 tooling tests passed locally, including mocked runner paths
+for tests/check/normal APK/fast APK, signed and unsigned builds, fast validation
+metadata and rejection of fast builds by the release publisher. Workflow YAML,
+all four mode arguments, signing/artifact conditions and shell syntax checks
+passed. These checks do not compile or package the application. No hosted fast
+APK run, timing comparison or device test has been performed yet.
+
 ## Numeric version migration
 
 Selected next ARMv7 version: `0.78.29`, Android version code `106`, fork revision
@@ -134,3 +149,4 @@ secrets worked at that time. Their values are not available through GitHub reads
 
 An earlier feature-branch run was skipped by the old main-only job condition. It
 never checked credentials. The revised workflow removes that restriction.
+

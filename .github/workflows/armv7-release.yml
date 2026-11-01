@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: What to run
+        description: What to run (apk-fast skips tests)
         type: choice
         required: true
         default: tests
@@ -12,6 +12,7 @@ on:
           - tests
           - check
           - apk
+          - apk-fast
 permissions:
   contents: read
 concurrency:
@@ -60,7 +61,7 @@ jobs:
           path: third_party/SDL
           key: ${{ runner.os }}-sdl-v1-${{ hashFiles('tools/android-toolchain.json') }}
       - name: Verify original signing credentials before building
-        if: inputs.mode == 'apk'
+        if: inputs.mode == 'apk' || inputs.mode == 'apk-fast'
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
@@ -68,10 +69,10 @@ jobs:
       - name: Run selected checks or build
         run: |
           args=("$NFS_ANDROID_MODE" --accept-sdk-licenses --jobs 2)
-          if [ "$NFS_ANDROID_MODE" = apk ]; then args+=(--unsigned); fi
+          if [[ "$NFS_ANDROID_MODE" = apk || "$NFS_ANDROID_MODE" = apk-fast ]]; then args+=(--unsigned); fi
           python3 tools/android.py "${args[@]}"
       - name: Sign and verify APK
-        if: inputs.mode == 'apk'
+        if: inputs.mode == 'apk' || inputs.mode == 'apk-fast'
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
@@ -89,7 +90,7 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
       - name: Save signed APK and verification
-        if: inputs.mode == 'apk'
+        if: inputs.mode == 'apk' || inputs.mode == 'apk-fast'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: armv7-apk
@@ -100,10 +101,11 @@ jobs:
           if-no-files-found: error
           retention-days: 14
       - name: Save exact native symbols separately
-        if: inputs.mode == 'apk'
+        if: inputs.mode == 'apk' || inputs.mode == 'apk-fast'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: armv7-native-symbols
           path: out/*-symbols.zip
           if-no-files-found: error
           retention-days: 90
+
