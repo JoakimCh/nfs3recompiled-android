@@ -81,16 +81,33 @@ public class ControllerSetupActivityTest {
         try(ActivityController<ControllerSetupActivity> controller=Robolectric.buildActivity(ControllerSetupActivity.class).setup()) {
             View root=controller.get().getWindow().getDecorView();layout(root);layout(root);
             assertNotNull(find(root,"Button-only test pad"));
-            findButton(root,"Start test").performClick();
+            View testing=root.findViewWithTag("gamepad-test-panel"),raw=root.findViewWithTag("gamepad-test-raw");
+            assertEquals(View.GONE,testing.getVisibility());assertFalse(raw.isShown());
+            assertNull(findButton(root,"Show input details"));assertNull(findButton(root,"Hide input details"));
+            findButton(root,"Test gamepad").performClick();
+            assertEquals(View.VISIBLE,testing.getVisibility());assertTrue(raw.isShown());
+            assertNotNull(findButton(root,"Stop testing"));
             controller.get().dispatchKeyEvent(new android.view.KeyEvent(1,1,0,96,0,0,40,0,0,android.view.InputDevice.SOURCE_GAMEPAD));
             controller.get().dispatchKeyEvent(new android.view.KeyEvent(1,2,1,96,0,0,40,0,0,android.view.InputDevice.SOURCE_GAMEPAD));
-            findButton(root,"Stop test").performClick();findButton(root,"Assign").performClick();assertNotNull(find(root,"Cancel"));
+            findButton(root,"Stop testing").performClick();
+            assertEquals(View.GONE,testing.getVisibility());assertFalse(raw.isShown());
+            assertNotNull(findButton(root,"Test gamepad"));
+            findButton(root,"Test gamepad").performClick();
+            send(controller.get(),99,true);findButton(root,"Stop testing").performClick();
+            assertEquals(View.GONE,testing.getVisibility());
+            assertTrue(org.robolectric.util.ReflectionHelpers.getField(controller.get(),"releaseGate"));
+            send(controller.get(),99,false);
+            assertFalse(org.robolectric.util.ReflectionHelpers.getField(controller.get(),"releaseGate"));
+            findButton(root,"Test gamepad").performClick();controller.get().onBackPressed();
+            assertEquals(View.GONE,testing.getVisibility());assertFalse(controller.get().isFinishing());
+            findButton(root,"Assign").performClick();assertNotNull(find(root,"Cancel"));
             org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idleFor(java.time.Duration.ofMillis(350));
             controller.get().dispatchKeyEvent(new android.view.KeyEvent(10,10,0,99,0,0,40,0,0,android.view.InputDevice.SOURCE_GAMEPAD));
             controller.get().dispatchKeyEvent(new android.view.KeyEvent(10,11,1,99,0,0,40,0,0,android.view.InputDevice.SOURCE_GAMEPAD));
             assertNotNull(ControllerProfiles.load(controller.get(),input).bindings[0]);
             assertEquals(99,ControllerProfiles.load(controller.get(),input).bindings[0].code);layout(root);
-            assertNotNull(findButton(root,"Start test"));assertNull(findButton(root,"Stop test"));
+            assertNotNull(findButton(root,"Test gamepad"));assertNull(findButton(root,"Stop testing"));
+            assertEquals(View.GONE,testing.getVisibility());
             assertFalse(org.robolectric.util.ReflectionHelpers.getField(controller.get(),"releaseGate"));
             assertFalse(ControllerProfiles.load(controller.get(),input).hasRacePause());
             android.widget.Button[] assignments=org.robolectric.util.ReflectionHelpers.getField(controller.get(),"assignButtons");
@@ -126,7 +143,8 @@ public class ControllerSetupActivityTest {
             assertEquals(View.GONE,prompt.getVisibility());
             assertEquals(controller.get().getString(R.string.controller_pause_pair,ControllerProfiles.keyLabel(102),ControllerProfiles.keyLabel(108)),pairValue.getText().toString());
             assertEquals(99,pair.bindings[0].code);
-            assertNotNull(findButton(root,"Start test"));assertNull(findButton(root,"Stop test"));
+            assertNotNull(findButton(root,"Test gamepad"));assertNull(findButton(root,"Stop testing"));
+            assertEquals(View.GONE,testing.getVisibility());
             assertFalse(org.robolectric.util.ReflectionHelpers.getField(controller.get(),"releaseGate"));
             root.findViewWithTag("race-pause-assign").performClick();
             org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idleFor(java.time.Duration.ofMillis(350));
@@ -150,7 +168,7 @@ public class ControllerSetupActivityTest {
             int[] after=new int[2];scroll.getLocationOnScreen(after);
             assertArrayEquals(before,after);assertTrue(scroll.getScrollY()>0);
 
-            assertNotNull(find(root,"Start test"));
+            assertNotNull(find(root,"Test gamepad"));
         } finally {manager.removeInputDevice(40);InputDeviceRoles.changed(40);}
     }
     @Test public void packagesSavedLauncherJavaException() throws Exception {

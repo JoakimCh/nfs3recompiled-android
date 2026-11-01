@@ -185,9 +185,7 @@
  <string name="controls_automatic_help_button">Ajutor pentru comenzi</string>
  <string name="controls_automatic_help_title">Atingere și gamepaduri</string>
  <string name="controller_setup_intro">Alege un gamepad pentru fiecare jucător. Selectează un dispozitiv pentru a testa sau modifica comenzile meniurilor. Configurează comenzile de cursă în joc. Modificările se salvează automat.</string>
- <string name="controller_test_hint">Pornește testul, apoi apasă butoane sau mișcă manetele.</string>
- <string name="controller_details_show">Arată detaliile intrării</string>
- <string name="controller_details_hide">Ascunde detaliile intrării</string>
+ <string name="controller_test_hint">Apasă butoanele sau mișcă manetele pentru a verifica intrarea.</string>
  <string name="controller_reset_menu">Resetează comenzile meniurilor</string>
  <string name="controller_pause_title">Combinație pentru pauză în cursă</string>
  <string name="controller_pause_hint">Atribuie două butoane și ține-le apăsate pentru pauză. Direcțiile D-pad și intrările analogice nu sunt acceptate.</string>
@@ -213,4 +211,8 @@
  <string name="controller_pause_different">Alege un buton diferit.</string>
  <string name="controller_button_actions_hint">Confirm și Back acceptă doar butoane (fără D-pad sau intrări analogice).</string>
  <string name="controller_buttons_only">Folosește un buton al controlerului. Direcțiile D-pad și intrările analogice nu sunt acceptate.</string>
+ <string name="controller_test_start">Testează controlerul</string>
+ <string name="controller_test_stop">Oprește testarea</string>
+ <string name="controller_test_navigation">Folosește ecranul tactil sau telecomanda TV pentru a opri testarea.</string>
+ <string name="controller_test_no_input">Nicio intrare încă.</string>
 </resources>

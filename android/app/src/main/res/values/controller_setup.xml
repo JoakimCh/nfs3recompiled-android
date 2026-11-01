@@ -1,8 +1,6 @@
 <resources>
  <string name="controller_setup_intro">Choose a controller for each player. Select a controller to test or change its menu controls. Assign racing controls inside the game. Changes here save automatically.</string>
- <string name="controller_test_hint">Start the test, then press buttons or move the sticks.</string>
- <string name="controller_details_show">Show input details</string>
- <string name="controller_details_hide">Hide input details</string>
+ <string name="controller_test_hint">Press buttons or move the sticks to check input.</string>
  <string name="controller_reset_menu">Reset menu controls</string>
  <string name="controller_pause_title">Race pause shortcut</string>
  <string name="controller_pause_hint">Assign two gamepad buttons, then hold both to pause. D-pad directions and analog inputs are not supported.</string>
@@ -24,4 +22,8 @@
  <string name="controller_pause_pair" translatable="false">%1$s + %2$s</string>
  <string name="controller_button_actions_hint">Confirm and Back accept buttons only (no D-pad or analog inputs).</string>
  <string name="controller_buttons_only">Use a gamepad button. D-pad directions and analog inputs are not supported.</string>
+ <string name="controller_test_start">Test gamepad</string>
+ <string name="controller_test_stop">Stop testing</string>
+ <string name="controller_test_navigation">Use touch or the TV remote to stop testing.</string>
+ <string name="controller_test_no_input">No input yet.</string>
 </resources>

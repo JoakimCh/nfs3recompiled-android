@@ -185,9 +185,7 @@
  <string name="controls_automatic_help_button">Ayuda de los controles</string>
  <string name="controls_automatic_help_title">Pantalla táctil y mandos</string>
  <string name="controller_setup_intro">Elige un mando para cada jugador. Selecciona un mando para probar o cambiar sus controles de menú. Asigna los controles de carrera dentro del juego. Los cambios se guardan automáticamente.</string>
- <string name="controller_test_hint">Inicia la prueba y después pulsa botones o mueve los sticks.</string>
- <string name="controller_details_show">Mostrar detalles de entrada</string>
- <string name="controller_details_hide">Ocultar detalles de entrada</string>
+ <string name="controller_test_hint">Pulsa botones o mueve las palancas para comprobar la entrada.</string>
  <string name="controller_reset_menu">Restablecer controles de menú</string>
  <string name="controller_pause_title">Atajo para pausar la carrera</string>
  <string name="controller_pause_hint">Asigna dos botones del mando y mantén ambos pulsados para pausar. No se admiten direcciones de la cruceta ni entradas analógicas.</string>
@@ -213,4 +211,8 @@
  <string name="controller_pause_different">Elige un botón diferente.</string>
  <string name="controller_button_actions_hint">Confirm y Back solo admiten botones (sin cruceta ni entradas analógicas).</string>
  <string name="controller_buttons_only">Usa un botón del mando. No se admiten direcciones de la cruceta ni entradas analógicas.</string>
+ <string name="controller_test_start">Probar mando</string>
+ <string name="controller_test_stop">Detener prueba</string>
+ <string name="controller_test_navigation">Usa la pantalla táctil o el mando del televisor para detener la prueba.</string>
+ <string name="controller_test_no_input">Aún no hay entradas.</string>
 </resources>

@@ -185,9 +185,7 @@
  <string name="controls_automatic_help_button">Довідка з керування</string>
  <string name="controls_automatic_help_title">Сенсорне керування та геймпади</string>
  <string name="controller_setup_intro">Виберіть геймпад для кожного гравця. Виберіть пристрій, щоб перевірити або змінити його керування в меню. Керування перегонами призначається у грі. Зміни зберігаються автоматично.</string>
- <string name="controller_test_hint">Запустіть перевірку, а потім натискайте кнопки або рухайте стіки.</string>
- <string name="controller_details_show">Показати відомості про ввід</string>
- <string name="controller_details_hide">Сховати відомості про ввід</string>
+ <string name="controller_test_hint">Натискайте кнопки або рухайте стіки, щоб перевірити введення.</string>
  <string name="controller_reset_menu">Скинути керування в меню</string>
  <string name="controller_pause_title">Комбінація для паузи в перегонах</string>
  <string name="controller_pause_hint">Призначте дві кнопки й утримуйте обидві для паузи. Напрямки хрестовини та аналогові входи не підтримуються.</string>
@@ -213,4 +211,8 @@
  <string name="controller_pause_different">Виберіть іншу кнопку.</string>
  <string name="controller_button_actions_hint">Confirm і Back приймають лише кнопки (без хрестовини та аналогових входів).</string>
  <string name="controller_buttons_only">Використовуйте кнопку контролера. Напрямки хрестовини та аналогові входи не підтримуються.</string>
+ <string name="controller_test_start">Перевірити контролер</string>
+ <string name="controller_test_stop">Зупинити перевірку</string>
+ <string name="controller_test_navigation">Використовуйте сенсорний екран або пульт телевізора, щоб зупинити перевірку.</string>
+ <string name="controller_test_no_input">Ще немає вхідних даних.</string>
 </resources>

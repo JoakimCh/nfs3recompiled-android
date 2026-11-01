@@ -185,9 +185,7 @@
  <string name="controls_automatic_help_button">Vezérlési súgó</string>
  <string name="controls_automatic_help_title">Érintés és kontrollerek</string>
  <string name="controller_setup_intro">Válasszon kontrollert minden játékosnak. Egy kontroller kiválasztásával tesztelheti vagy módosíthatja a menüvezérlését. A verseny vezérlését a játékban állítsa be. A változások automatikusan mentődnek.</string>
- <string name="controller_test_hint">Indítsa el a tesztet, majd nyomjon gombokat vagy mozgassa a karokat.</string>
- <string name="controller_details_show">Bemeneti részletek megjelenítése</string>
- <string name="controller_details_hide">Bemeneti részletek elrejtése</string>
+ <string name="controller_test_hint">Nyomj meg gombokat vagy mozgasd a karokat a bemenet ellenőrzéséhez.</string>
  <string name="controller_reset_menu">Menüvezérlés alaphelyzetbe állítása</string>
  <string name="controller_pause_title">Versenyszünet-gombkombináció</string>
  <string name="controller_pause_hint">Rendelj hozzá két gombot, és tartsd mindkettőt lenyomva a szüneteltetéshez. A D-pad irányai és az analóg bemenetek nem támogatottak.</string>
@@ -213,4 +211,8 @@
  <string name="controller_pause_different">Válassz egy másik gombot.</string>
  <string name="controller_button_actions_hint">A Confirm és a Back csak gombokat fogad el (D-pad és analóg bemenet nélkül).</string>
  <string name="controller_buttons_only">Használj egy kontrollergombot. A D-pad irányai és az analóg bemenetek nem támogatottak.</string>
+ <string name="controller_test_start">Kontroller tesztelése</string>
+ <string name="controller_test_stop">Tesztelés leállítása</string>
+ <string name="controller_test_navigation">A tesztelést érintéssel vagy a TV távirányítójával állíthatod le.</string>
+ <string name="controller_test_no_input">Még nincs bemenet.</string>
 </resources>

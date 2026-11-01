@@ -185,9 +185,7 @@
  <string name="controls_automatic_help_button">Pomoc dotycząca sterowania</string>
  <string name="controls_automatic_help_title">Dotyk i pady</string>
  <string name="controller_setup_intro">Wybierz pad dla każdego gracza. Wybierz urządzenie, aby przetestować lub zmienić sterowanie w menu. Sterowanie podczas wyścigu przypisz w grze. Zmiany zapisują się automatycznie.</string>
- <string name="controller_test_hint">Uruchom test, a następnie naciskaj przyciski lub poruszaj drążkami.</string>
- <string name="controller_details_show">Pokaż szczegóły wejścia</string>
- <string name="controller_details_hide">Ukryj szczegóły wejścia</string>
+ <string name="controller_test_hint">Naciskaj przyciski lub poruszaj drążkami, aby sprawdzić wejście.</string>
  <string name="controller_reset_menu">Przywróć sterowanie w menu</string>
  <string name="controller_pause_title">Skrót pauzy w wyścigu</string>
  <string name="controller_pause_hint">Przypisz dwa przyciski i przytrzymaj oba, aby wstrzymać grę. Kierunki krzyżaka i wejścia analogowe nie są obsługiwane.</string>
@@ -213,4 +211,8 @@
  <string name="controller_pause_different">Wybierz inny przycisk.</string>
  <string name="controller_button_actions_hint">Confirm i Back przyjmują tylko przyciski (bez krzyżaka i wejść analogowych).</string>
  <string name="controller_buttons_only">Użyj przycisku kontrolera. Kierunki krzyżaka i wejścia analogowe nie są obsługiwane.</string>
+ <string name="controller_test_start">Testuj kontroler</string>
+ <string name="controller_test_stop">Zakończ test</string>
+ <string name="controller_test_navigation">Użyj ekranu dotykowego lub pilota telewizora, aby zakończyć test.</string>
+ <string name="controller_test_no_input">Brak sygnału wejściowego.</string>
 </resources>

@@ -185,9 +185,7 @@
  <string name="controls_automatic_help_button">Nápověda k ovládání</string>
  <string name="controls_automatic_help_title">Dotyk a gamepady</string>
  <string name="controller_setup_intro">Vyberte gamepad pro každého hráče. Výběrem gamepadu můžete otestovat nebo změnit jeho ovládání nabídek. Ovládání závodu nastavte ve hře. Změny se ukládají automaticky.</string>
- <string name="controller_test_hint">Spusťte test a poté mačkejte tlačítka nebo pohybujte páčkami.</string>
- <string name="controller_details_show">Zobrazit podrobnosti vstupu</string>
- <string name="controller_details_hide">Skrýt podrobnosti vstupu</string>
+ <string name="controller_test_hint">Stiskněte tlačítka nebo pohněte páčkami a zkontrolujte vstup.</string>
  <string name="controller_reset_menu">Obnovit ovládání nabídek</string>
  <string name="controller_pause_title">Zkratka pro pozastavení závodu</string>
  <string name="controller_pause_hint">Přiřaďte dvě tlačítka ovladače a podržením obou hru pozastavte. Směry D-padu ani analogové vstupy nejsou podporovány.</string>
@@ -213,4 +211,8 @@
  <string name="controller_pause_different">Vyberte jiné tlačítko.</string>
  <string name="controller_button_actions_hint">Confirm a Back přijímají pouze tlačítka (bez D-padu a analogových vstupů).</string>
  <string name="controller_buttons_only">Použijte tlačítko ovladače. Směry D-padu ani analogové vstupy nejsou podporovány.</string>
+ <string name="controller_test_start">Otestovat ovladač</string>
+ <string name="controller_test_stop">Ukončit testování</string>
+ <string name="controller_test_navigation">Testování ukončíte dotykem nebo dálkovým ovladačem TV.</string>
+ <string name="controller_test_no_input">Zatím žádný vstup.</string>
 </resources>

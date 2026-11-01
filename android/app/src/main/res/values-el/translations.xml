@@ -185,9 +185,7 @@
  <string name="controls_automatic_help_button">Βοήθεια χειρισμού</string>
  <string name="controls_automatic_help_title">Αφή και χειριστήρια</string>
  <string name="controller_setup_intro">Επιλέξτε χειριστήριο για κάθε παίκτη. Επιλέξτε μια συσκευή για δοκιμή ή αλλαγή του χειρισμού μενού. Ορίστε τον χειρισμό αγώνα μέσα στο παιχνίδι. Οι αλλαγές αποθηκεύονται αυτόματα.</string>
- <string name="controller_test_hint">Ξεκινήστε τη δοκιμή και μετά πατήστε κουμπιά ή κινήστε τους μοχλούς.</string>
- <string name="controller_details_show">Εμφάνιση λεπτομερειών εισόδου</string>
- <string name="controller_details_hide">Απόκρυψη λεπτομερειών εισόδου</string>
+ <string name="controller_test_hint">Πατήστε κουμπιά ή κινήστε τους μοχλούς για έλεγχο εισόδου.</string>
  <string name="controller_reset_menu">Επαναφορά χειρισμού μενού</string>
  <string name="controller_pause_title">Συντόμευση παύσης αγώνα</string>
  <string name="controller_pause_hint">Αντιστοιχίστε δύο κουμπιά και κρατήστε τα πατημένα για παύση. Δεν υποστηρίζονται κατευθύνσεις D-pad ή αναλογικές είσοδοι.</string>
@@ -213,4 +211,8 @@
  <string name="controller_pause_different">Επιλέξτε ένα διαφορετικό κουμπί.</string>
  <string name="controller_button_actions_hint">Τα Confirm και Back δέχονται μόνο κουμπιά (όχι D-pad ή αναλογικές εισόδους).</string>
  <string name="controller_buttons_only">Χρησιμοποιήστε κουμπί χειριστηρίου. Δεν υποστηρίζονται κατευθύνσεις D-pad ή αναλογικές είσοδοι.</string>
+ <string name="controller_test_start">Δοκιμή χειριστηρίου</string>
+ <string name="controller_test_stop">Διακοπή δοκιμής</string>
+ <string name="controller_test_navigation">Χρησιμοποιήστε την αφή ή το τηλεχειριστήριο για να διακόψετε τη δοκιμή.</string>
+ <string name="controller_test_no_input">Καμία είσοδος ακόμα.</string>
 </resources>

@@ -185,9 +185,7 @@
  <string name="controls_automatic_help_button">Ajuda dos controlos</string>
  <string name="controls_automatic_help_title">Toque e comandos de jogo</string>
  <string name="controller_setup_intro">Escolha um comando para cada jogador. Selecione um comando para testar ou alterar os seus controlos dos menus. Atribua os controlos de corrida dentro do jogo. As alterações são guardadas automaticamente.</string>
- <string name="controller_test_hint">Inicie o teste e depois prima botões ou mova os manípulos.</string>
- <string name="controller_details_show">Mostrar detalhes de entrada</string>
- <string name="controller_details_hide">Ocultar detalhes de entrada</string>
+ <string name="controller_test_hint">Prime botões ou move os manípulos para verificar a entrada.</string>
  <string name="controller_reset_menu">Repor controlos dos menus</string>
  <string name="controller_pause_title">Atalho de pausa na corrida</string>
  <string name="controller_pause_hint">Atribui dois botões e mantém ambos premidos para pausar. As direções do D-pad e as entradas analógicas não são suportadas.</string>
@@ -213,4 +211,8 @@
  <string name="controller_pause_different">Escolhe um botão diferente.</string>
  <string name="controller_button_actions_hint">Confirm e Back aceitam apenas botões (sem D-pad ou entradas analógicas).</string>
  <string name="controller_buttons_only">Usa um botão do comando. As direções do D-pad e as entradas analógicas não são suportadas.</string>
+ <string name="controller_test_start">Testar comando</string>
+ <string name="controller_test_stop">Parar teste</string>
+ <string name="controller_test_navigation">Usa o ecrã tátil ou o comando da TV para parar o teste.</string>
+ <string name="controller_test_no_input">Ainda sem entrada.</string>
 </resources>

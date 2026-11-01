@@ -185,9 +185,7 @@
  <string name="controls_automatic_help_button">Hjälp med kontroller</string>
  <string name="controls_automatic_help_title">Pekskärm och handkontroller</string>
  <string name="controller_setup_intro">Välj en handkontroll för varje spelare. Välj en kontroll för att testa eller ändra dess menykontroller. Körkontroller ställs in i spelet. Ändringar här sparas automatiskt.</string>
- <string name="controller_test_hint">Starta testet och tryck sedan på knappar eller rör spakarna.</string>
- <string name="controller_details_show">Visa inmatningsdetaljer</string>
- <string name="controller_details_hide">Dölj inmatningsdetaljer</string>
+ <string name="controller_test_hint">Tryck på knappar eller rör spakarna för att kontrollera inmatningen.</string>
  <string name="controller_reset_menu">Återställ menykontroller</string>
  <string name="controller_pause_title">Knappkombination för paus</string>
  <string name="controller_pause_hint">Tilldela två handkontrollknappar och håll båda intryckta för att pausa. Styrkorsets riktningar och analoga inmatningar stöds inte.</string>
@@ -213,4 +211,8 @@
  <string name="controller_pause_different">Välj en annan knapp.</string>
  <string name="controller_button_actions_hint">Confirm och Back accepterar bara knappar (inte styrkors eller analoga inmatningar).</string>
  <string name="controller_buttons_only">Använd en handkontrollknapp. Styrkorsets riktningar och analoga inmatningar stöds inte.</string>
+ <string name="controller_test_start">Testa handkontroll</string>
+ <string name="controller_test_stop">Avsluta test</string>
+ <string name="controller_test_navigation">Använd pekskärmen eller TV-fjärrkontrollen för att avsluta testet.</string>
+ <string name="controller_test_no_input">Ingen inmatning ännu.</string>
 </resources>

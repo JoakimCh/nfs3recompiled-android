@@ -185,9 +185,7 @@
  <string name="controls_automatic_help_button">Справка по управлению</string>
  <string name="controls_automatic_help_title">Сенсорное управление и геймпады</string>
  <string name="controller_setup_intro">Выберите геймпад для каждого игрока. Выберите устройство, чтобы проверить или изменить его управление в меню. Управление в гонке назначается в игре. Изменения сохраняются автоматически.</string>
- <string name="controller_test_hint">Запустите проверку, затем нажимайте кнопки или двигайте стики.</string>
- <string name="controller_details_show">Показать сведения о вводе</string>
- <string name="controller_details_hide">Скрыть сведения о вводе</string>
+ <string name="controller_test_hint">Нажимайте кнопки или двигайте стики для проверки ввода.</string>
  <string name="controller_reset_menu">Сбросить управление в меню</string>
  <string name="controller_pause_title">Комбинация для паузы в гонке</string>
  <string name="controller_pause_hint">Назначьте две кнопки и удерживайте обе для паузы. Направления крестовины и аналоговые входы не поддерживаются.</string>
@@ -213,4 +211,8 @@
  <string name="controller_pause_different">Выберите другую кнопку.</string>
  <string name="controller_button_actions_hint">Confirm и Back принимают только кнопки (без крестовины и аналоговых входов).</string>
  <string name="controller_buttons_only">Используйте кнопку контроллера. Направления крестовины и аналоговые входы не поддерживаются.</string>
+ <string name="controller_test_start">Проверить контроллер</string>
+ <string name="controller_test_stop">Остановить проверку</string>
+ <string name="controller_test_navigation">Используйте сенсорный экран или пульт телевизора, чтобы остановить проверку.</string>
+ <string name="controller_test_no_input">Пока нет входных данных.</string>
 </resources>

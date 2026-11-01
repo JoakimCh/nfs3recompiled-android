@@ -1,15 +1,5 @@
 # Fork changes
 
-## Unreleased pause shortcut reliability
-
-The race pause shortcut now holds its generated Escape press long enough for the
-game to sample it, and keeps Escape held while both assigned inputs remain held.
-Previously it released Escape on the next input update, so a race could miss the
-press. Button order and the gap between presses do not matter:
-the shortcut activates whenever both assigned buttons are held. Escape releases
-immediately when leaving the race context, and the pair still triggers once until
-both controls are released.
-
 ## Unreleased release publishing
 
 Added a manual Publish APK release workflow. It promotes an existing successful
@@ -34,6 +24,21 @@ Signing credentials are checked early and used only in APK mode. Added tooling
 filesystem regressions and recovery/status documentation. Local tests/check/APK
 modes passed. The first hosted APK run also passed, including all 14 launcher
 tests, cold setup, signing and artifact uploads; see BUILD_STATUS.md.
+
+## 0.78.31 — version 108
+
+Gamepad testing details are collapsed until Test gamepad is pressed. The button
+changes to Stop testing, which stops input testing and hides the indicators,
+active functions and raw input details. The separate input-details toggle is
+removed. Assignment controls remain visible. Updated all 18 translations.
+
+The race pause shortcut now holds its generated Escape press long enough for the
+game to sample it, and keeps Escape held while both assigned inputs remain held.
+Previously it released Escape on the next input update, so a race could miss the
+press. Button order and the gap between presses do not matter:
+the shortcut activates whenever both assigned buttons are held. Escape releases
+immediately when leaving the race context, and the pair still triggers once until
+both controls are released.
 
 ## 0.78.30 — version 107
 

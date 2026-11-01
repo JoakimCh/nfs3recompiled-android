@@ -185,9 +185,7 @@
  <string name="controls_automatic_help_button">Помоћ за управљање</string>
  <string name="controls_automatic_help_title">Додир и контролери</string>
  <string name="controller_setup_intro">Изаберите контролер за сваког играча. Изаберите уређај да бисте тестирали или променили контроле менија. Контроле трке подесите у игри. Промене се чувају аутоматски.</string>
- <string name="controller_test_hint">Покрените тест, а затим притискајте дугмад или померајте палице.</string>
- <string name="controller_details_show">Прикажи детаље улаза</string>
- <string name="controller_details_hide">Сакриј детаље улаза</string>
+ <string name="controller_test_hint">Притисните дугмад или померите палице да проверите улаз.</string>
  <string name="controller_reset_menu">Ресетуј контроле менија</string>
  <string name="controller_pause_title">Пречица за паузу трке</string>
  <string name="controller_pause_hint">Доделите два дугмета и држите оба за паузу. Смерови D-pad контроле и аналогни улази нису подржани.</string>
@@ -213,4 +211,8 @@
  <string name="controller_pause_different">Изаберите друго дугме.</string>
  <string name="controller_button_actions_hint">Confirm и Back прихватају само дугмад (без D-pad контроле и аналогних улаза).</string>
  <string name="controller_buttons_only">Користите дугме контролера. Смерови D-pad контроле и аналогни улази нису подржани.</string>
+ <string name="controller_test_start">Тестирај контролер</string>
+ <string name="controller_test_stop">Заустави тестирање</string>
+ <string name="controller_test_navigation">Зауставите тестирање додиром или даљинским управљачем телевизора.</string>
+ <string name="controller_test_no_input">Још нема улаза.</string>
 </resources>

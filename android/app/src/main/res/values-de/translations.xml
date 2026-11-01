@@ -185,9 +185,7 @@
  <string name="controls_automatic_help_button">Hilfe zur Steuerung</string>
  <string name="controls_automatic_help_title">Touch und Controller</string>
  <string name="controller_setup_intro">Für jeden Spieler einen Controller wählen. Einen Controller auswählen, um seine Menüsteuerung zu testen oder zu ändern. Die Rennsteuerung wird im Spiel zugewiesen. Änderungen hier werden automatisch gespeichert.</string>
- <string name="controller_test_hint">Den Test starten und dann Tasten drücken oder Sticks bewegen.</string>
- <string name="controller_details_show">Eingabedetails anzeigen</string>
- <string name="controller_details_hide">Eingabedetails ausblenden</string>
+ <string name="controller_test_hint">Drücke Tasten oder bewege die Sticks, um die Eingabe zu prüfen.</string>
  <string name="controller_reset_menu">Menüsteuerung zurücksetzen</string>
  <string name="controller_pause_title">Tastenkombination zum Pausieren</string>
  <string name="controller_pause_hint">Weise zwei Gamepad-Tasten zu und halte beide zum Pausieren gedrückt. Steuerkreuz und analoge Eingaben werden nicht unterstützt.</string>
@@ -213,4 +211,8 @@
  <string name="controller_pause_different">Wähle eine andere Taste.</string>
  <string name="controller_button_actions_hint">Confirm und Back unterstützen nur Tasten (kein Steuerkreuz oder analoge Eingaben).</string>
  <string name="controller_buttons_only">Verwende eine Gamepad-Taste. Steuerkreuz und analoge Eingaben werden nicht unterstützt.</string>
+ <string name="controller_test_start">Gamepad testen</string>
+ <string name="controller_test_stop">Test beenden</string>
+ <string name="controller_test_navigation">Beende den Test per Touch oder mit der TV-Fernbedienung.</string>
+ <string name="controller_test_no_input">Noch keine Eingabe.</string>
 </resources>

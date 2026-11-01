@@ -185,9 +185,7 @@
  <string name="controls_automatic_help_button">Hulp bij bediening</string>
  <string name="controls_automatic_help_title">Touch en gamepads</string>
  <string name="controller_setup_intro">Kies een controller voor elke speler. Selecteer een controller om de menubediening te testen of te wijzigen. Wijs racebediening in het spel toe. Wijzigingen worden automatisch opgeslagen.</string>
- <string name="controller_test_hint">Start de test en druk daarna op knoppen of beweeg de sticks.</string>
- <string name="controller_details_show">Invoerdetails tonen</string>
- <string name="controller_details_hide">Invoerdetails verbergen</string>
+ <string name="controller_test_hint">Druk op knoppen of beweeg de sticks om de invoer te controleren.</string>
  <string name="controller_reset_menu">Menubediening herstellen</string>
  <string name="controller_pause_title">Knoppencombinatie voor pauze</string>
  <string name="controller_pause_hint">Wijs twee knoppen toe en houd beide ingedrukt om te pauzeren. D-padrichtingen en analoge invoer worden niet ondersteund.</string>
@@ -213,4 +211,8 @@
  <string name="controller_pause_different">Kies een andere knop.</string>
  <string name="controller_button_actions_hint">Confirm en Back accepteren alleen knoppen (geen D-pad of analoge invoer).</string>
  <string name="controller_buttons_only">Gebruik een gamepadknop. D-padrichtingen en analoge invoer worden niet ondersteund.</string>
+ <string name="controller_test_start">Gamepad testen</string>
+ <string name="controller_test_stop">Testen stoppen</string>
+ <string name="controller_test_navigation">Stop de test via het aanraakscherm of de tv-afstandsbediening.</string>
+ <string name="controller_test_no_input">Nog geen invoer.</string>
 </resources>

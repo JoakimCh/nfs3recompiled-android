@@ -185,9 +185,7 @@
  <string name="controls_automatic_help_button">Aide sur les commandes</string>
  <string name="controls_automatic_help_title">Tactile et manettes</string>
  <string name="controller_setup_intro">Choisissez une manette par joueur. Sélectionnez une manette pour tester ou modifier ses commandes de menu. Configurez les commandes de course dans le jeu. Les modifications sont enregistrées automatiquement.</string>
- <string name="controller_test_hint">Lancez le test, puis appuyez sur des boutons ou déplacez les sticks.</string>
- <string name="controller_details_show">Afficher les détails des entrées</string>
- <string name="controller_details_hide">Masquer les détails des entrées</string>
+ <string name="controller_test_hint">Appuyez sur les boutons ou déplacez les sticks pour vérifier les entrées.</string>
  <string name="controller_reset_menu">Réinitialiser les commandes de menu</string>
  <string name="controller_pause_title">Raccourci de pause en course</string>
  <string name="controller_pause_hint">Attribuez deux boutons et maintenez-les enfoncés pour mettre en pause. Les directions de la croix et les entrées analogiques ne sont pas prises en charge.</string>
@@ -213,4 +211,8 @@
  <string name="controller_pause_different">Choisissez un autre bouton.</string>
  <string name="controller_button_actions_hint">Confirm et Back acceptent uniquement les boutons (sans croix directionnelle ni entrées analogiques).</string>
  <string name="controller_buttons_only">Utilisez un bouton de manette. Les directions de la croix et les entrées analogiques ne sont pas prises en charge.</string>
+ <string name="controller_test_start">Tester la manette</string>
+ <string name="controller_test_stop">Arrêter le test</string>
+ <string name="controller_test_navigation">Utilisez le tactile ou la télécommande TV pour arrêter le test.</string>
+ <string name="controller_test_no_input">Aucune entrée pour le moment.</string>
 </resources>

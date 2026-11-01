@@ -20,7 +20,7 @@ public final class ControllerSetupActivity extends ComponentActivity implements 
     @Override protected void attachBaseContext(android.content.Context base) {
         super.attachBaseContext(LocaleHelper.wrap(base));
     }
-    private LinearLayout content,devices,players,otherDevices,detailPanel;
+    private LinearLayout content,devices,players,otherDevices,detailPanel,testingPanel;
     private TextView selectedTitle,roleLabel;
     private final TextView[] indicators=new TextView[6];
     private boolean showOthers,expanded=true;
@@ -62,7 +62,6 @@ public final class ControllerSetupActivity extends ComponentActivity implements 
         v.setBackground(panelBackground(0xff19204b,0xff46528d));
         LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-1,-2);lp.setMargins(0,dp(8),0,dp(8));v.setLayoutParams(lp);return v;
     }
-    private android.widget.Button inputDetailsButton;
     private void weighted(LinearLayout row,android.view.View view) {
         LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(0,-2,1);lp.setMargins(dp(4),dp(4),dp(4),dp(4));row.addView(view,lp);
     }
@@ -79,22 +78,22 @@ public final class ControllerSetupActivity extends ComponentActivity implements 
         players=row();content.addView(players);
         heading(content,"Connected controllers");devices=column();content.addView(devices);
         detailPanel=panel();content.addView(detailPanel);selectedTitle=text("",21);detailPanel.addView(selectedTitle);
-        heading(detailPanel,"Test input");status=text("",16);detailPanel.addView(status);
+        testButton=button(getString(R.string.controller_test_start),()->{cancelCapture();setTesting(!test);updateStatus();});
+        testButton.setTag("gamepad-test-toggle");detailPanel.addView(testButton);
+        testingPanel=column();testingPanel.setTag("gamepad-test-panel");testingPanel.setVisibility(android.view.View.GONE);
+        detailPanel.addView(testingPanel);
+        testingPanel.addView(text(getString(R.string.controller_test_hint),14));
         LinearLayout chips=column();
         for(int group=0;group<2;group++) {LinearLayout chipRow=row();for(int col=0;col<3;col++) {
             int i=group*3+col;TextView chip=text(ControllerProfile.NAMES[i],16);chip.setGravity(android.view.Gravity.CENTER);
             chip.setMinHeight(dp(44));chip.setBackgroundResource(R.drawable.ui_input_indicator);indicators[i]=chip;weighted(chipRow,chip);
-        }chips.addView(chipRow);}detailPanel.addView(chips);
-        functions=text("Active functions: none",16);functions.setVisibility(android.view.View.GONE);detailPanel.addView(functions);
-        detailPanel.addView(text(getString(R.string.controller_test_hint),14));
-        raw=text("No input yet.",15);raw.setVisibility(android.view.View.GONE);raw.setMinLines(2);raw.setMaxLines(3);raw.setEllipsize(android.text.TextUtils.TruncateAt.END);detailPanel.addView(raw);
-        inputDetailsButton=button(getString(R.string.controller_details_show),()->{
-            boolean show=raw.getVisibility()!=android.view.View.VISIBLE;
-            raw.setVisibility(show?android.view.View.VISIBLE:android.view.View.GONE);
-            inputDetailsButton.setText(show?getString(R.string.controller_details_hide):getString(R.string.controller_details_show));
-        });detailPanel.addView(inputDetailsButton);
-        testButton=button("Start test",()->{cancelCapture();test=!test;testButton.setText(test?"Stop test":"Start test");if(!test){profile.release();down.clear();showFunctions();}updateStatus();});detailPanel.addView(testButton);
-        detailPanel.addView(text("During a test, use touch or the TV remote to operate this page. Remote Back stops the test or cancels an assignment.",14));
+        }chips.addView(chipRow);}testingPanel.addView(chips);
+        functions=text("Active functions: none",16);testingPanel.addView(functions);
+        raw=text(getString(R.string.controller_test_no_input),15);raw.setTag("gamepad-test-raw");
+        raw.setMinLines(2);raw.setMaxLines(3);raw.setEllipsize(android.text.TextUtils.TruncateAt.END);testingPanel.addView(raw);
+        testingPanel.addView(text(getString(R.string.controller_test_navigation),14));
+        // Assignment feedback remains available when the testing panel is closed.
+        status=text("",16);status.setTag("controller-assignment-status");status.setVisibility(android.view.View.GONE);detailPanel.addView(status);
         heading(detailPanel,"Menu controls");
         detailPanel.addView(text(getString(R.string.controller_button_actions_hint),14));
         for(int i=0;i<6;i++) {
@@ -131,7 +130,7 @@ public final class ControllerSetupActivity extends ComponentActivity implements 
         refreshDevices();
     }
     @Override protected void onResume(){super.onResume();((InputManager)getSystemService(INPUT_SERVICE)).registerInputDeviceListener(this,null);refreshDevices();}
-    @Override protected void onPause(){((InputManager)getSystemService(INPUT_SERVICE)).unregisterInputDeviceListener(this);handler.removeCallbacks(arm);cancelCapture();test=false;testButton.setText("Start test");if(profile!=null){profile.release();showFunctions();}down.clear();releaseGate=false;super.onPause();}
+    @Override protected void onPause(){((InputManager)getSystemService(INPUT_SERVICE)).unregisterInputDeviceListener(this);handler.removeCallbacks(arm);cancelCapture();setTesting(false);if(profile!=null){profile.release();showFunctions();}down.clear();releaseGate=false;super.onPause();}
     @Override protected void onSaveInstanceState(Bundle out){super.onSaveInstanceState(out);out.putString("controller",descriptor);out.putBoolean("show_others",showOthers);out.putBoolean("expanded",expanded);}
     private void choosePlayer(int slot) {
         List<GamepadSlots.Pad> pads=GamepadSlots.attached();String[] names=new String[pads.size()+1];names[0]=getString(R.string.controller_automatic);
@@ -170,7 +169,7 @@ public final class ControllerSetupActivity extends ComponentActivity implements 
             boolean active=input.getDescriptor().equals(descriptor);if(active)selected=input;
             Button card=button(input.getName()+"\n"+player+(active?(expanded?" · Hide controls":" · Show controls"):" · Test / configure"),()->{
                 if(input.getDescriptor().equals(descriptor)) {
-                    expanded=!expanded;if(!expanded){cancelCapture();test=false;profile.release();down.clear();testButton.setText("Start test");}
+                    expanded=!expanded;if(!expanded){cancelCapture();setTesting(false);}
                     refreshDevices();
                 }else select(input);
             });card.setTag("device:"+input.getDescriptor());card.setSelected(active);card.setMinHeight(dp(64));
@@ -183,7 +182,7 @@ public final class ControllerSetupActivity extends ComponentActivity implements 
             Button role=button(getString(R.string.controller_change_type),()->showRole(input));role.setTag("role:"+input.getDescriptor());card.addView(role);otherDevices.addView(card);
         }
         if(selected==null && !pads.isEmpty()){select(GamepadSlots.device(pads.get(0)));return;}
-        if(selected==null){releaseGate=false;pendingPauseFirst=null;captureMessage=null;device=null;profile=null;waiting=-1;test=false;testButton.setText("Start test");down.clear();}
+        if(selected==null){releaseGate=false;pendingPauseFirst=null;captureMessage=null;device=null;profile=null;waiting=-1;setTesting(false);down.clear();}
         else if(device==null || selected.getId()!=device.getId()){select(selected);return;}
         updateStatus();
         if(focusTag!=null){android.view.View replacement=content.findViewWithTag(focusTag);if(replacement!=null)replacement.requestFocus();}
@@ -193,7 +192,7 @@ public final class ControllerSetupActivity extends ComponentActivity implements 
         cancelCapture();releaseGate=false;device=selected;descriptor=selected.getDescriptor();profile=ControllerProfiles.load(this,selected);expanded=true;
         down.clear();java.util.Arrays.fill(latest,0);
         for(InputDevice.MotionRange r:device.getMotionRanges())if(joystick(r) && r.getAxis()>=0 && r.getAxis()<64)latest[r.getAxis()]=rest(r);
-        test=false;testButton.setText("Start test");refreshDevices();refreshRows();showFunctions();
+        setTesting(false);refreshDevices();refreshRows();showFunctions();
     }
     private void refreshRows(){for(int i=0;i<6;i++) {
         values[i].setText(ControllerProfiles.label(profile,i));
@@ -216,6 +215,13 @@ public final class ControllerSetupActivity extends ComponentActivity implements 
             pauseAssign.setText(getString(waiting>=6?R.string.controller_cancel:R.string.controller_assign));
             pauseAssign.setActivated(waiting>=6);
         }
+    }
+    private void setTesting(boolean enabled) {
+        if(!enabled && test && device!=null)releaseGate=!neutral();
+        test=enabled;
+        if(testingPanel!=null)testingPanel.setVisibility(enabled?android.view.View.VISIBLE:android.view.View.GONE);
+        if(testButton!=null)testButton.setText(getString(enabled?R.string.controller_test_stop:R.string.controller_test_start));
+        if(!enabled && profile!=null){profile.release();showFunctions();}
     }
     private void save(){ControllerProfiles.save(this,profile);refreshRows();updateStatus();}
     private void cancelCapture(){
@@ -277,6 +283,7 @@ public final class ControllerSetupActivity extends ComponentActivity implements 
     }
     private void updateStatus() {
         if(status==null)return;
+        status.setVisibility(waiting>=0?android.view.View.VISIBLE:android.view.View.GONE);
         refreshRows();detailPanel.setVisibility(device!=null && expanded?android.view.View.VISIBLE:android.view.View.GONE);
         if(device!=null){selectedTitle.setText(device.getName());roleLabel.setText(InputDeviceRoles.description(device));}
         if(device==null){status.setText("No selected gamepad connected.");functions.setText("");refreshRows();return;}
@@ -336,7 +343,7 @@ public final class ControllerSetupActivity extends ComponentActivity implements 
     }
     @Override public void onBackPressed() {
         if(waiting>=0){cancelCapture();updateStatus();return;}
-        if(test){test=false;profile.release();down.clear();testButton.setText("Start test");showFunctions();updateStatus();return;}
+        if(test){setTesting(false);updateStatus();return;}
         super.onBackPressed();
     }
     @Override public void onInputDeviceAdded(int id){InputDeviceRoles.changed(id);refreshDevices();}

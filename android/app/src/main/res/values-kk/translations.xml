@@ -185,9 +185,7 @@
  <string name="controls_automatic_help_button">Басқару анықтамасы</string>
  <string name="controls_automatic_help_title">Сенсор және геймпадтар</string>
  <string name="controller_setup_intro">Әр ойыншыға геймпад таңдаңыз. Мәзірдегі басқаруды тексеру не өзгерту үшін құрылғыны таңдаңыз. Жарыстағы басқаруды ойын ішінде тағайындаңыз. Өзгерістер автоматты түрде сақталады.</string>
- <string name="controller_test_hint">Тексеруді бастап, түймелерді басыңыз немесе таяқшаларды қозғаңыз.</string>
- <string name="controller_details_show">Енгізу мәліметтерін көрсету</string>
- <string name="controller_details_hide">Енгізу мәліметтерін жасыру</string>
+ <string name="controller_test_hint">Кірісті тексеру үшін түймелерді басыңыз немесе таяқшаларды жылжытыңыз.</string>
  <string name="controller_reset_menu">Мәзір басқаруын қалпына келтіру</string>
  <string name="controller_pause_title">Жарысты кідірту тіркесімі</string>
  <string name="controller_pause_hint">Екі түймені тағайындап, кідірту үшін екеуін де басып тұрыңыз. D-pad бағыттары мен аналогтік кірістерге қолдау көрсетілмейді.</string>
@@ -213,4 +211,8 @@
  <string name="controller_pause_different">Басқа түймені таңдаңыз.</string>
  <string name="controller_button_actions_hint">Confirm және Back тек түймелерді қабылдайды (D-pad пен аналогтік кірістерден басқа).</string>
  <string name="controller_buttons_only">Контроллер түймесін пайдаланыңыз. D-pad бағыттары мен аналогтік кірістерге қолдау көрсетілмейді.</string>
+ <string name="controller_test_start">Контроллерді сынау</string>
+ <string name="controller_test_stop">Сынауды тоқтату</string>
+ <string name="controller_test_navigation">Сынауды тоқтату үшін сенсорлық экранды немесе теледидар пультін пайдаланыңыз.</string>
+ <string name="controller_test_no_input">Әзірге кіріс жоқ.</string>
 </resources>

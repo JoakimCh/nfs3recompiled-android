@@ -185,9 +185,7 @@
  <string name="controls_automatic_help_button">Kontrol yardımı</string>
  <string name="controls_automatic_help_title">Dokunma ve kumandalar</string>
  <string name="controller_setup_intro">Her oyuncu için bir kumanda seçin. Menü kontrollerini test etmek veya değiştirmek için bir kumanda seçin. Yarış kontrollerini oyunun içinden atayın. Değişiklikler otomatik kaydedilir.</string>
- <string name="controller_test_hint">Testi başlatın, ardından düğmelere basın veya çubukları hareket ettirin.</string>
- <string name="controller_details_show">Giriş ayrıntılarını göster</string>
- <string name="controller_details_hide">Giriş ayrıntılarını gizle</string>
+ <string name="controller_test_hint">Girişi kontrol etmek için düğmelere basın veya çubukları hareket ettirin.</string>
  <string name="controller_reset_menu">Menü kontrollerini sıfırla</string>
  <string name="controller_pause_title">Yarışı duraklatma kısayolu</string>
  <string name="controller_pause_hint">İki oyun kumandası düğmesi atayın ve duraklatmak için ikisini de basılı tutun. D-pad yönleri ve analog girişler desteklenmez.</string>
@@ -213,4 +211,8 @@
  <string name="controller_pause_different">Farklı bir düğme seçin.</string>
  <string name="controller_button_actions_hint">Confirm ve Back yalnızca düğmeleri kabul eder (D-pad veya analog girişleri değil).</string>
  <string name="controller_buttons_only">Bir oyun kumandası düğmesi kullanın. D-pad yönleri ve analog girişler desteklenmez.</string>
+ <string name="controller_test_start">Oyun kumandasını test et</string>
+ <string name="controller_test_stop">Testi durdur</string>
+ <string name="controller_test_navigation">Testi durdurmak için dokunmatik ekranı veya TV kumandasını kullanın.</string>
+ <string name="controller_test_no_input">Henüz giriş yok.</string>
 </resources>

@@ -3,11 +3,34 @@
 This file records evidence, not a substitute for checking the current source and
 latest Actions run. A new context should read AGENTS.md, BUILD.md and this file.
 
+## 0.78.31: expandable gamepad testing panel
+
+Selected version 0.78.31/code 108 includes the pause fix published first to main
+as `8c9699c17515e399379e6328fcca5413cbe41251`, followed by the launcher UI change.
+Test gamepad expands the indicators, active functions and raw input details;
+Stop testing hides the panel. The separate input-details toggle is removed.
+Assignment feedback remains outside the panel. All 18 translations were updated.
+
+All 32 tooling tests and all 19 launcher tests passed locally, including panel
+visibility, Back stopping the test, assignment with the panel hidden and consuming
+held controls until release after stopping. All 19 resource sets parsed with
+matching new keys. A stale Kotlin compilation cache initially reported a conflicting
+LauncherScreens overload; clearing only generated Kotlin outputs resolved it,
+without source changes or removing the native build cache.
+
+The unsigned ARMv7 APK assembled successfully after the separate test run
+(`apk-fast --unsigned` avoided repeating those tests). The APK resource check
+passed for all 313 app resource fields, with no mismatches or duplicates.
+This verifies packaging, not signing or installation. The original private signing files did not
+survive the workspace reset. The signing identity remains configured in GitHub
+Actions; producing an installable update requires that workflow or restoring the
+private local signing files. No device test of this revision has been reported.
+
 ## Pause shortcut reliability: locally validated
 
 Branch `fix/race-pause-held-state`, based on main commit
-`b36d77ea7359dc9272d4229cbb8354bdf7e8cc56`. The fix is published to main before
-the expandable gamepad testing UI is implemented.
+`b36d77ea7359dc9272d4229cbb8354bdf7e8cc56`. The fix was published to main first as `8c9699c`, before
+the expandable gamepad testing UI was implemented.
 
 A native SDL regression reproduced a missed pause: the shortcut sent Escape down
 when both inputs were held, then released it on the next input poll. The game
@@ -31,7 +54,8 @@ confirmation of the native pause fix remains outstanding.
 A full repository checkout and the manifest-selected Android tools were restored
 using the shared bootstrap. The initial Java Gradle distribution download failed;
 a checksum-verified ZIP fetched through curl recovered wrapper bootstrap. See
-WORKSPACE.md. No APK has been assembled or signed in this workspace.
+WORKSPACE.md. The subsequent unsigned APK is recorded above; no APK has been
+signed in this workspace.
 
 ## Assignment feedback: launcher checks passed locally
 

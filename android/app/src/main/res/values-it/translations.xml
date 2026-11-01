@@ -185,9 +185,7 @@
  <string name="controls_automatic_help_button">Guida ai comandi</string>
  <string name="controls_automatic_help_title">Touch e gamepad</string>
  <string name="controller_setup_intro">Scegli un gamepad per ogni giocatore. Seleziona un gamepad per provare o modificare i comandi dei menu. Assegna i comandi di gara nel gioco. Le modifiche vengono salvate automaticamente.</string>
- <string name="controller_test_hint">Avvia il test, poi premi i pulsanti o muovi gli stick.</string>
- <string name="controller_details_show">Mostra dettagli di input</string>
- <string name="controller_details_hide">Nascondi dettagli di input</string>
+ <string name="controller_test_hint">Premi i pulsanti o muovi le levette per controllare gli input.</string>
  <string name="controller_reset_menu">Ripristina comandi dei menu</string>
  <string name="controller_pause_title">Scorciatoia per la pausa in gara</string>
  <string name="controller_pause_hint">Assegna due pulsanti e tienili premuti per mettere in pausa. Le direzioni del D-pad e gli ingressi analogici non sono supportati.</string>
@@ -213,4 +211,8 @@
  <string name="controller_pause_different">Scegli un pulsante diverso.</string>
  <string name="controller_button_actions_hint">Confirm e Back accettano solo pulsanti (niente D-pad o ingressi analogici).</string>
  <string name="controller_buttons_only">Usa un pulsante del controller. Le direzioni del D-pad e gli ingressi analogici non sono supportati.</string>
+ <string name="controller_test_start">Prova controller</string>
+ <string name="controller_test_stop">Interrompi prova</string>
+ <string name="controller_test_navigation">Usa il touchscreen o il telecomando TV per interrompere la prova.</string>
+ <string name="controller_test_no_input">Nessun input ricevuto.</string>
 </resources>
