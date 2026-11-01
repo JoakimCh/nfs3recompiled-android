@@ -3,7 +3,37 @@
 This file records evidence, not a substitute for checking the current source and
 latest Actions run. A new context should read AGENTS.md, BUILD.md and this file.
 
-## Assignment feedback: untested
+## Pause shortcut reliability: locally validated
+
+Branch `fix/race-pause-held-state`, based on main commit
+`b36d77ea7359dc9272d4229cbb8354bdf7e8cc56`. The fix is published to main before
+the expandable gamepad testing UI is implemented.
+
+A native SDL regression reproduced a missed pause: the shortcut sent Escape down
+when both inputs were held, then released it on the next input poll. The game
+samples held Win32 key state, so it could see only the eventual release. The same
+regression fails against the unchanged code and passes when Escape remains held
+while both inputs are held. A brief overlap gets a 100ms minimum delivery hold,
+matching system Back/touch pause. Entering a non-race context releases Escape
+immediately. The 100ms duration is for output delivery, not a timing window
+between the two input presses.
+
+The full SDL gamepad regression passed with the fix, including both button orders,
+a one-second gap before the second button, multiple rapid input polls, pause-menu
+entry, no repeat until release, rapid release/repress without a stuck Escape,
+and existing per-player/racing-input checks. All 32 tooling tests and all 19
+launcher tests passed; the ARMv7 CMake build compiled and linked successfully.
+The initial launcher run had two failures in the scrolling geometry assertion
+(API 34/36); waiting for layout and disabling test-only scroll animation made
+the check deterministic without changing the production UI. On-device
+confirmation of the native pause fix remains outstanding.
+
+A full repository checkout and the manifest-selected Android tools were restored
+using the shared bootstrap. The initial Java Gradle distribution download failed;
+a checksum-verified ZIP fetched through curl recovered wrapper bootstrap. See
+WORKSPACE.md. No APK has been assembled or signed in this workspace.
+
+## Assignment feedback: launcher checks passed locally
 
 Selected next version: 0.78.30/code 107. Shortcut capture displays the pending
 first button and an ellipsis beside the controls, with a local second-button
@@ -14,8 +44,9 @@ support. Existing saved bindings are preserved.
 
 The wording and all 18 translations were updated. Regression tests were added
 for validation, nearby progress/error feedback and Confirm/Back rejection.
-These changes are merged into `main` from `feature/controller-pause-pair`. Tests
-and APK builds have not been run for this revision.
+These changes were merged into `main` from `feature/controller-pause-pair`.
+The local investigation above subsequently covered all 19 launcher tests and
+native compilation. No new APK has been assembled from the local pause fix.
 
 ## Controller assignment and two-button race pause: user feedback
 

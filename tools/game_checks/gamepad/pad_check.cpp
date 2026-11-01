@@ -312,6 +312,34 @@ int main() {
         SDL_SetJoystickVirtualButton(joy,directions[(d+1)%4],false); Gamepad::update(); assert(keys().empty());
         Gamepad::nativeButtons(0,0);
     }
+    // The race samples held Win32 keys, not every queued SDL key edge. A press
+    // must survive several render/input polls before the game checks pause.
+    for(bool reverse:{false,true})for(unsigned delay:{0u,1000u}) {
+        const std::uint64_t heldPair=3ull|(1ull<<16)|(2ull<<20)|(1ull<<25)|(3ull<<32);
+        Gamepad::racePause(0,heldPair);Gamepad::nativeButtons(0,3);
+        Gamepad::context(Gamepad::Context::Race);Gamepad::update();keys();
+        const int first=reverse?0:1,second=reverse?1:0;
+        bool escapeHeld=false;
+        auto drainPause=[&](){for(const auto& event:keys())if(event.key==SDLK_ESCAPE)escapeHeld=event.down;};
+        Gamepad::androidButton(0,first,true);Gamepad::update();drainPause();assert(!escapeHeld);
+        if(delay)SDL_Delay(delay);
+        Gamepad::update();drainPause();assert(!escapeHeld);
+        Gamepad::androidButton(0,second,true);Gamepad::update();drainPause();assert(escapeHeld);
+        for(int poll=0;poll<3;++poll){Gamepad::update();drainPause();}
+        if(!escapeHeld) {
+            std::cerr << "FAIL: shortcut Escape was released before the race could sample its held state\n";
+            return 1;
+        }
+        // Release/repress during the delivery hold must not add a second Escape
+        // owner, which would leave Escape stuck when pause acknowledges it.
+        Gamepad::androidButton(0,-1,false);Gamepad::update();drainPause();assert(escapeHeld);
+        Gamepad::androidButton(0,first,true);Gamepad::androidButton(0,second,true);
+        Gamepad::update();drainPause();assert(escapeHeld);
+        Gamepad::context(Gamepad::Context::Pause);Gamepad::update();drainPause();assert(!escapeHeld);
+        Gamepad::update();assert(keys().empty());
+        Gamepad::androidButton(0,-1,false);Gamepad::update();keys();
+    }
+    Gamepad::racePause(0,0);Gamepad::nativeButtons(0,0);
     // Race pause wins over in-game bindings; neither player supplies the
     // other's modifier. Holding/re-pressing just one button must not repeat.
     const std::uint64_t combo = 3ull | (1ull<<16) | (2ull<<20) | (1ull<<25) | (3ull<<32);
@@ -336,7 +364,10 @@ int main() {
     Gamepad::androidButton(0,0,true);Gamepad::update();assert(keys().empty());
     assert(pad.getState().buttons==1);
     Gamepad::androidButton(0,1,true);Gamepad::update();expect(SDLK_ESCAPE,true);
-    Gamepad::update();expect(SDLK_ESCAPE,false);Gamepad::update();assert(keys().empty());
+    Gamepad::update();assert(keys().empty());SDL_Delay(110);
+    Gamepad::update();assert(keys().empty()); // Both held: keep Escape down until pause can observe it.
+    Gamepad::androidButton(0,0,false);Gamepad::update();expect(SDLK_ESCAPE,false);
+    Gamepad::update();assert(keys().empty());
     Gamepad::androidButton(0,-1,false);Gamepad::update();keys();
     Gamepad::racePause(0,0);Gamepad::nativeButtons(0,0);Gamepad::nativeButtons(1,0);
     // A pair without menu Back works in either order and keeps ordinary racing input immediate.

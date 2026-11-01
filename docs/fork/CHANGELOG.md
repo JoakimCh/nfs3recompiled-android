@@ -1,5 +1,15 @@
 # Fork changes
 
+## Unreleased pause shortcut reliability
+
+The race pause shortcut now holds its generated Escape press long enough for the
+game to sample it, and keeps Escape held while both assigned inputs remain held.
+Previously it released Escape on the next input update, so a race could miss the
+press. Button order and the gap between presses do not matter:
+the shortcut activates whenever both assigned buttons are held. Escape releases
+immediately when leaving the race context, and the pair still triggers once until
+both controls are released.
+
 ## Unreleased release publishing
 
 Added a manual Publish APK release workflow. It promotes an existing successful

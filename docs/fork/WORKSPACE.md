@@ -51,6 +51,13 @@ BUILD_STATUS.md for the exact evidence and remaining cache/mode checks.
 - Copy the JDK trust store and import configured public CA certificates when the
   environment supplies `SSL_CERT_FILE` or `REQUESTS_CA_BUNDLE`. Keep TLS verification
   enabled. The cache holds public certificates, not signing credentials.
+- If the Gradle wrapper cannot download its distribution through the Java proxy,
+  fetch the exact `distributionUrl` from `android/gradle/wrapper/gradle-wrapper.properties`
+  with `curl` and verify `distributionSha256Sum`. Put the verified ZIP in the
+  wrapper's existing `GRADLE_USER_HOME/wrapper/dists/<distribution>/<URL hash>/`
+  directory, leaving its lock files alone. The wrapper then verifies and unpacks
+  it normally. This recovered a cold workspace where Java's download failed even
+  though the SDK downloads and explicit Gradle proxy properties worked.
 - Some SDK installs put files inside an extra `android-*` directory. Flatten only
   an unambiguous package directory with `source.properties`, refuse collisions,
   preserve root `package.xml`, then check the expected tool files.

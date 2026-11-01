@@ -756,6 +756,7 @@ struct SlotButtons
 {
     SDL_JoystickID pad = 0;
     bool pauseLatched = false, pauseSent = false;
+    Uint64 pauseReleaseAt = 0;
     x86::reg32 pauseSources = 0, pauseMenuSources = 0;
     bool           held[kPadButtons] = {};
     Uint64         repeatAt[kPadButtons] = {};
@@ -783,9 +784,14 @@ void updateButtonKeys()
     buttonBinding(0, 0, context);
     const bool muted = s_gameKeysMuted.load(std::memory_order_relaxed);
     static const ButtonBinding escape = parseBinding("Escape");
+    // Match system Back/touch pause: races sample held keys once per game tick,
+    // so a down/up pair between those samples can be missed entirely.
+    static constexpr Uint64 pauseHoldMs = 100;
+    const Uint64 now = SDL_GetTicks();
     for (x86::reg32 slot = 0; slot < Gamepad::kSlotCount; ++slot)
     {
         SlotButtons& buttons = s_slotButtons[slot];
+        bool sendPauseDown = false;
         const Slot& source = s_slots[slot];
         /* A pad that leaves its slot -- unplugged, or handed to the other
          * player -- lets go of whatever it held, or the key would stay down. */
@@ -799,6 +805,7 @@ void updateButtonKeys()
             }
             if (buttons.pauseSent) sendKey(escape, false);
             buttons.pauseSent = buttons.pauseLatched = false;
+            buttons.pauseReleaseAt = 0;
             buttons.pauseSources = buttons.pauseMenuSources = s_pauseConsumed[slot] = 0;
             buttons.pad = source.id;
         }
@@ -823,18 +830,24 @@ void updateButtonKeys()
         };
         const bool firstHeld = pauseHeld(firstIndex, 17);
         const bool secondHeld = pauseHeld(secondIndex, 18);
-        if (buttons.pauseSent) {
+        // Keep the request observable while both inputs remain held. A brief
+        // overlap still gets the minimum delivery hold; pause/menu entry is
+        // the acknowledgement and releases Escape immediately.
+        if (buttons.pauseSent && (context != Gamepad::Context::Race ||
+                (now >= buttons.pauseReleaseAt && !(firstHeld && secondHeld)))) {
             sendKey(escape, false);
             buttons.pauseSent = false;
         }
         if (buttons.pauseLatched && !firstHeld && !secondHeld)
             buttons.pauseLatched = false;
-        if (!buttons.pauseLatched && (pause & (1ull << 16)) &&
+        if (!buttons.pauseLatched && !buttons.pauseSent && (pause & (1ull << 16)) &&
             context == Gamepad::Context::Race && firstHeld && secondHeld) {
             buttons.pauseLatched = true;
             buttons.pauseSources = x86::reg32(pause & 0xffff);
             buttons.pauseMenuSources = x86::reg32((pause >> 32) & 0xffff);
             buttons.pauseSent = true;
+            buttons.pauseReleaseAt = now + pauseHoldMs;
+            sendPauseDown = true;
         }
         // Keep the combination out of the pause menu until BOTH controls are
         // released, including any menu actions mapped to those controls.
@@ -897,7 +910,7 @@ void updateButtonKeys()
                 buttons.sent[i] = false;
             }
         }
-        if (buttons.pauseSent) sendKey(escape, true);
+        if (sendPauseDown) sendKey(escape, true);
     }
 }
 

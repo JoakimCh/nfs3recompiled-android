@@ -137,12 +137,14 @@ public class ControllerSetupActivityTest {
             findButton(root,"Disable").performClick();
             pair=ControllerProfiles.load(controller.get(),input);
             assertNull(pair.racePauseFirst);assertNull(pair.racePauseSecond);
+            layout(root); // Finish layout after hiding the capture prompt.
             View scrolling=find(root,"Input device report");
             while(!(scrolling instanceof android.widget.ScrollView)) scrolling=(View)scrolling.getParent();
             android.widget.ScrollView scroll=(android.widget.ScrollView)scrolling;
             assertTrue(scroll.getClipToOutline());
             int[] before=new int[2];scroll.getLocationOnScreen(before);
             assertTrue(before[1]>0);assertTrue(scroll.getHeight()<root.getHeight());
+            scroll.setSmoothScrollingEnabled(false); // Inspect final geometry, not an unadvanced animation.
             scroll.fullScroll(View.FOCUS_DOWN);
             org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idle();
             int[] after=new int[2];scroll.getLocationOnScreen(after);
