@@ -45,6 +45,27 @@ public class LauncherSettingsTest {
         return LauncherSettings.importFrom(context, new ByteArrayInputStream(bytes), root);
     }
 
+    @Test public void introAndMirrorRoundTripAndOldBackupsPreserveThem() throws Exception {
+        preferences.edit().putBoolean(GamePreferences.SKIP_INTRO, true)
+            .putBoolean(GamePreferences.FULL_MIRROR, true).commit();
+        byte[] saved = snapshot();
+        preferences.edit().clear().commit();
+        restore(saved);
+        assertTrue(preferences.getBoolean(GamePreferences.SKIP_INTRO, false));
+        assertTrue(preferences.getBoolean(GamePreferences.FULL_MIRROR, false));
+        for (int format = 1; format <= 3; format++) {
+            JSONObject old = new JSONObject().put("format", format).put("settings", new JSONObject()
+                .put(GamePreferences.FPS_CAP, new JSONObject().put("type", "int").put("value", 30)));
+            restore(old.toString().getBytes(StandardCharsets.UTF_8));
+            assertTrue(preferences.getBoolean(GamePreferences.SKIP_INTRO, false));
+            assertTrue(preferences.getBoolean(GamePreferences.FULL_MIRROR, false));
+        }
+        restore(new JSONObject().put("format", 4).put("settings", new JSONObject())
+            .toString().getBytes(StandardCharsets.UTF_8));
+        assertFalse(preferences.getBoolean(GamePreferences.SKIP_INTRO, false));
+        assertFalse(preferences.getBoolean(GamePreferences.FULL_MIRROR, false));
+    }
+
     @Test public void roundTripRestoresDisconnectedControllerSetupAndKeepsLocalReferences() throws Exception {
         preferences.edit().putString(profile+"0", "a:0:-1:0.0:1.0")
             .putString(profile+"5", "k:97").putString(profile+"race_pause_modifier", "k:108")
@@ -127,7 +148,7 @@ public class LauncherSettingsTest {
         preferences.edit().putString(profile+"race_pause_first","k:102")
             .putString(profile+"race_pause_second","k:108").commit();
         byte[] pair=snapshot();
-        assertEquals(3,new JSONObject(new String(pair,StandardCharsets.UTF_8)).getInt("format"));
+        assertEquals(4,new JSONObject(new String(pair,StandardCharsets.UTF_8)).getInt("format"));
         preferences.edit().clear().commit();restore(pair);
         assertEquals("k:102",preferences.getString(profile+"race_pause_first",""));
         assertEquals("k:108",preferences.getString(profile+"race_pause_second",""));
@@ -159,3 +180,4 @@ public class LauncherSettingsTest {
         assertEquals(90, preferences.getInt(GamePreferences.FPS_CAP, 0));
     }
 }
+

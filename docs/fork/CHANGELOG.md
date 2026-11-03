@@ -25,6 +25,17 @@ workflow modes with feature-branch support. Launcher-only tests skip native
 configuration. Native builds use bounded job pools; signing credentials are
 checked early and kept outside caches.
 
+## 0.78.32 — version 109
+
+The launcher menu uses two columns when space permits, with Exit at the bottom
+and the running ARMv7/ARMv8 architecture beside the version. Smaller windows and
+larger text keep a single menu column.
+
+Advanced has a Tweaks tab for startup preferences and unlocks. Skip game intro
+is off by default and leaves attract-mode movies available. Performance adds
+Full-detail rear-view mirror, off by default on both architectures. Launcher
+backup format 4 carries both settings; imports of older formats preserve them.
+
 ## 0.78.31 — version 108
 
 Gamepad input details and indicators expand with Test gamepad and collapse with

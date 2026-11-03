@@ -215,4 +215,6 @@
  <string name="controller_test_stop">Oprește testarea</string>
  <string name="controller_test_navigation">Folosește ecranul tactil sau telecomanda TV pentru a opri testarea.</string>
  <string name="controller_test_no_input">Nicio intrare încă.</string>
+    <string name="launcher_exit">Ieșire</string>
 </resources>
+

@@ -215,4 +215,6 @@
  <string name="controller_test_stop">Test beenden</string>
  <string name="controller_test_navigation">Beende den Test per Touch oder mit der TV-Fernbedienung.</string>
  <string name="controller_test_no_input">Noch keine Eingabe.</string>
+    <string name="launcher_exit">Beenden</string>
 </resources>
+

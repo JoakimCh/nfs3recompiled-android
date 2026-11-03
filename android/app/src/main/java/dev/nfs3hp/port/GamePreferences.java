@@ -37,6 +37,9 @@ final class GamePreferences
     static final String DATA_SET_NAMES = "data_set_names";
     static final String ORIENTATION = "screen_orientation";
     static final String FPS_CAP = "fps_cap";
+    // Startup and rendering preferences are read when a new game process starts.
+    static final String SKIP_INTRO = "skip_game_intro";
+    static final String FULL_MIRROR = "full_detail_mirror";
     /* Display gamma as a percentage: 100 leaves the picture exactly as the game
      * drew it, higher lifts the dark end.  Stored as an int because that is
      * what a SeekBar deals in. */
@@ -294,3 +297,4 @@ final class GamePreferences
         return 0;
     }
 }
+

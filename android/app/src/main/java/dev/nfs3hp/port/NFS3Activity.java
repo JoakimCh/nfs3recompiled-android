@@ -203,7 +203,8 @@ public class NFS3Activity extends SDLActivity
         }
         // The native side's log and SDL's (nfs3hp_main.cpp, sdl_quiet.h).
         setEnv("NFS_LOG", debug ? "1" : "0");
-        if (getPackageName().endsWith(".armv7tv")) setEnv("NFS_MIRROR_FULL", "0");
+        setEnv("NFS_MIRROR_FULL", preferences.getBoolean(GamePreferences.FULL_MIRROR, false) ? "1" : "0");
+        setEnv("NFS_SKIP_INTRO", preferences.getBoolean(GamePreferences.SKIP_INTRO, false) ? "1" : "0");
         if (debug)
         {
             for (DebugOptions.Option[] group : DebugOptions.ALL)
@@ -964,3 +965,4 @@ public class NFS3Activity extends SDLActivity
         }
     }
 }
+

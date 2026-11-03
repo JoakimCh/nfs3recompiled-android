@@ -215,4 +215,6 @@
  <string name="controller_test_stop">Zakończ test</string>
  <string name="controller_test_navigation">Użyj ekranu dotykowego lub pilota telewizora, aby zakończyć test.</string>
  <string name="controller_test_no_input">Brak sygnału wejściowego.</string>
+    <string name="launcher_exit">Wyjdź</string>
 </resources>
+

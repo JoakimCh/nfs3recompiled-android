@@ -215,4 +215,6 @@
  <string name="controller_test_stop">Zaustavi testiranje</string>
  <string name="controller_test_navigation">Zaustavite testiranje dodirom ili daljinskim upravljačem TV-a.</string>
  <string name="controller_test_no_input">Još nema ulaza.</string>
+    <string name="launcher_exit">Izlaz</string>
 </resources>
+

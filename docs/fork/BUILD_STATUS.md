@@ -4,6 +4,16 @@ Update this file when a result changes. Record the source and evidence; distingu
 automated checks from device feedback. Older session details remain in Git history
 and [release metadata](releases/). Usage is in [BUILD.md](BUILD.md).
 
+## Launcher changes: 0.78.32 / code 109 (not yet tested)
+
+Branch `launcher-tweaks` contains the adaptive menu grid, Exit, running ABI label,
+intro preference, Tweaks/unlocks grouping and mirror detail toggle. Both new
+preferences default off and travel in backup format 4. Older backup imports
+preserve them. Performance reset returns mirror detail to its off default.
+No tests or builds were run for this revision. Device checks should cover narrow
+and wide layouts, larger fonts, gamepad navigation, Exit, intro skipping versus
+attract playback, mirror detail on both ABIs, and backup round-trips.
+
 ## Multi-ABI workflow changes (not yet tested)
 
 Added ARMv7, ARMv8 and universal targets to the manual build and publish workflows.

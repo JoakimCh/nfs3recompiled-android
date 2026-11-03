@@ -34,7 +34,7 @@ final class LauncherSettings {
     private LauncherSettings() {}
 
     /** Bumped only if the meaning of the contents changes, not their spelling. */
-    private static final int FORMAT = 3;
+    private static final int FORMAT = 4;
     private static final String FORMAT_KEY = "format", SETTINGS_KEY = "settings";
     private static final String TYPE = "type", VALUE = "value";
 
@@ -62,6 +62,9 @@ final class LauncherSettings {
     };
 
     private static boolean carried(String key, int format) {
+        // Older backups never carried these choices, so importing one preserves them.
+        if (GamePreferences.SKIP_INTRO.equals(key) || GamePreferences.FULL_MIRROR.equals(key))
+            return format >= 4;
         for (String known : KEYS) if (known.equals(key)) return true;
         for (String prefix : PREFIXES) if (key.startsWith(prefix)) return true;
         if(format<3 && (key.endsWith("_race_pause_first") || key.endsWith("_race_pause_second")))return false;
@@ -188,6 +191,7 @@ final class LauncherSettings {
         else if (key.equals(GamePreferences.TOUCH_ENABLED) || key.equals(GamePreferences.TOUCH_AUTO_HIDE)
                 || key.equals(GamePreferences.TOUCH_VIBRATION) || key.equals(GamePreferences.TOUCH_SNAP)
                 || key.equals(GamePreferences.SAVES_INCLUDE_SETTINGS)
+                || key.equals(GamePreferences.SKIP_INTRO) || key.equals(GamePreferences.FULL_MIRROR)
                 || key.endsWith("_from_right") || key.endsWith("_from_bottom"))
             expected = "boolean";
         else expected = key.startsWith("touch_position_") ? "float" : "int";
@@ -281,3 +285,4 @@ final class LauncherSettings {
         return new String(buffer.toByteArray(), StandardCharsets.UTF_8);
     }
 }
+

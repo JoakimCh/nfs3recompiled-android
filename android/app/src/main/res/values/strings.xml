@@ -121,4 +121,6 @@
     <string name="launcher_file_open_failed">Could not open the selected settings file.</string>
     <string name="launcher_backup_failed">Could not back up the current settings. Import was cancelled.</string>
     <string name="launcher_restore_failed">Could not save the imported settings.</string>
+    <string name="launcher_exit">Exit</string>
 </resources>
+

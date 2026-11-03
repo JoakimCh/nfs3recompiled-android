@@ -215,4 +215,6 @@
  <string name="controller_test_stop">Arrêter le test</string>
  <string name="controller_test_navigation">Utilisez le tactile ou la télécommande TV pour arrêter le test.</string>
  <string name="controller_test_no_input">Aucune entrée pour le moment.</string>
+    <string name="launcher_exit">Quitter</string>
 </resources>
+

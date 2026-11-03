@@ -215,4 +215,6 @@
  <string name="controller_test_stop">Διακοπή δοκιμής</string>
  <string name="controller_test_navigation">Χρησιμοποιήστε την αφή ή το τηλεχειριστήριο για να διακόψετε τη δοκιμή.</string>
  <string name="controller_test_no_input">Καμία είσοδος ακόμα.</string>
+    <string name="launcher_exit">Έξοδος</string>
 </resources>
+

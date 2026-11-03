@@ -215,4 +215,6 @@
  <string name="controller_test_stop">Interrompi prova</string>
  <string name="controller_test_navigation">Usa il touchscreen o il telecomando TV per interrompere la prova.</string>
  <string name="controller_test_no_input">Nessun input ricevuto.</string>
+    <string name="launcher_exit">Esci</string>
 </resources>
+

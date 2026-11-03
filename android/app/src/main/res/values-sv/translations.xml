@@ -215,4 +215,6 @@
  <string name="controller_test_stop">Avsluta test</string>
  <string name="controller_test_navigation">Använd pekskärmen eller TV-fjärrkontrollen för att avsluta testet.</string>
  <string name="controller_test_no_input">Ingen inmatning ännu.</string>
+    <string name="launcher_exit">Avsluta</string>
 </resources>
+

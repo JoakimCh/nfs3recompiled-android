@@ -215,4 +215,6 @@
  <string name="controller_test_stop">Сынауды тоқтату</string>
  <string name="controller_test_navigation">Сынауды тоқтату үшін сенсорлық экранды немесе теледидар пультін пайдаланыңыз.</string>
  <string name="controller_test_no_input">Әзірге кіріс жоқ.</string>
+    <string name="launcher_exit">Шығу</string>
 </resources>
+

@@ -215,4 +215,6 @@
  <string name="controller_test_stop">Parar teste</string>
  <string name="controller_test_navigation">Usa o ecrã tátil ou o comando da TV para parar o teste.</string>
  <string name="controller_test_no_input">Ainda sem entrada.</string>
+    <string name="launcher_exit">Sair</string>
 </resources>
+

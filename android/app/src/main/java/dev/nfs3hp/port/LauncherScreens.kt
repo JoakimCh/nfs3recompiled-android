@@ -209,14 +209,9 @@ private fun MainScreen(a: LauncherActivity) {
                 }
             }
         }
-        val menu = @Composable { each: Modifier ->
-            MainMenuButton(stringResource(R.string.controls_hub), each) { a.go(LauncherActivity.Screen.Controls) }
-            MainMenuButton(stringResource(R.string.display_settings), each) { a.go(LauncherActivity.Screen.Display) }
-            MainMenuButton(stringResource(R.string.network_title), each) { a.go(LauncherActivity.Screen.Network) }
-            MainMenuButton(stringResource(R.string.data_settings), each) { a.go(LauncherActivity.Screen.Data) }
-            MainMenuButton(stringResource(R.string.language_label), each) { a.go(LauncherActivity.Screen.Language) }
-            MainMenuButton(stringResource(R.string.faq_title), each) { a.go(LauncherActivity.Screen.Faq) }
-            MainMenuButton(stringResource(R.string.advanced_title), each) { a.go(LauncherActivity.Screen.Advanced) }
+        val exit = @Composable { modifier: Modifier ->
+            MenuButton(stringResource(R.string.launcher_exit), { a.exitLauncher() }, modifier,
+                enabled = !a.busy, height = 52.dp)
         }
         val corner = @Composable { text: String, modifier: Modifier, align: androidx.compose.ui.text.style.TextAlign ->
             Text(
@@ -237,22 +232,18 @@ private fun MainScreen(a: LauncherActivity) {
         if (narrow) {
             Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 card(Modifier.fillMaxWidth())
-                menu(Modifier.fillMaxWidth())
-                Row(Modifier.fillMaxWidth().padding(top = 8.dp)) {
-                    author(Modifier.weight(1f))
-                    version(Modifier)
+                MainMenu(a, Modifier.fillMaxWidth(), twoColumns = false)
+                Spacer(Modifier.height(2.dp))
+                exit(Modifier.fillMaxWidth())
+                Column(Modifier.fillMaxWidth().padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    author(Modifier.fillMaxWidth())
+                    version(Modifier.fillMaxWidth())
                 }
             }
         } else {
-            /* One block, one height: the card fills it and the buttons share
-             * it, so the first button's top is the card's top and the
-             * last one's bottom the card's bottom, whatever the window --
-             * never measured from what the buttons happen to hold, which is
-             * what let the two drift apart once the window settled.
-             *
-             * Centred on its own, the same room above it as below: the build's
-             * version sits in the corner of the room below and moves nothing,
-             * where as a line under the block it used to push it up. */
+            /* The title card and menu share one centred block. Exit stays
+             * at its bottom while the menu can scroll in a short window.
+             * The version sits below the block without moving it. */
             val block = (maxHeight - 48.dp).coerceIn(260.dp, 440.dp)
             /* Below the block down to the screen's edge: the block's share of
              * the room, and the 24 dp of padding round it all. */
@@ -265,9 +256,12 @@ private fun MainScreen(a: LauncherActivity) {
                     Modifier.align(Alignment.Center).fillMaxWidth().height(block),
                     horizontalArrangement = Arrangement.spacedBy(24.dp),
                 ) {
-                    card(Modifier.weight(1.25f).fillMaxHeight())
-                    Column(Modifier.weight(1f).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        menu(Modifier.fillMaxWidth().weight(1f))
+                    card(Modifier.weight(1f).fillMaxHeight())
+                    Column(Modifier.weight(1.2f).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Box(Modifier.fillMaxWidth().weight(1f).verticalScroll(rememberScrollState())) {
+                            MainMenu(a, Modifier.fillMaxWidth())
+                        }
+                        exit(Modifier.fillMaxWidth())
                     }
                 }
                 /* The version halfway down that room, its end under the
@@ -284,6 +278,36 @@ private fun MainScreen(a: LauncherActivity) {
                     contentAlignment = Alignment.CenterStart,
                 ) {
                     author(Modifier)
+                }
+            }
+        }
+    }
+}
+
+/** Two menu columns when each button has room; larger text keeps one column.
+ * The final empty cell leaves space for future launcher sections. */
+@Composable
+private fun MainMenu(a: LauncherActivity, modifier: Modifier = Modifier, twoColumns: Boolean = true) {
+    val buttons = listOf(
+        R.string.controls_hub to LauncherActivity.Screen.Controls,
+        R.string.display_settings to LauncherActivity.Screen.Display,
+        R.string.network_title to LauncherActivity.Screen.Network,
+        R.string.data_settings to LauncherActivity.Screen.Data,
+        R.string.language_label to LauncherActivity.Screen.Language,
+        R.string.faq_title to LauncherActivity.Screen.Faq,
+        R.string.advanced_title to LauncherActivity.Screen.Advanced,
+    )
+    BoxWithConstraints(modifier) {
+        val fontScale = LocalDensity.current.fontScale.coerceAtLeast(1f)
+        val columns = if (twoColumns && maxWidth >= 380.dp * fontScale) 2 else 1
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            buttons.chunked(columns).forEach { row ->
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    row.forEach { (label, next) ->
+                        MenuButton(stringResource(label), { a.go(next) }, Modifier.weight(1f),
+                            height = 52.dp, maxLines = 2)
+                    }
+                    repeat(columns - row.size) { Spacer(Modifier.weight(1f)) }
                 }
             }
         }
@@ -1027,7 +1051,7 @@ private fun AdvancedScreen(a: LauncherActivity) {
     val width = Modifier.widthIn(max = 720.dp).fillMaxWidth()
     ScreenFrame(stringResource(R.string.advanced_title), onBack = { a.go(LauncherActivity.Screen.Main) }, scroll = false) {
         TabRow(tab, modifier = width, containerColor = GameColors.Deep, contentColor = GameColors.Gold) {
-            listOf("Unlocks", "Performance", "Debug").forEachIndexed { index, title ->
+            listOf("Tweaks", "Performance", "Debug").forEachIndexed { index, title ->
                 Tab(selected = tab == index, onClick = { tab = index }, text = { Text(title) })
             }
         }
@@ -1036,6 +1060,10 @@ private fun AdvancedScreen(a: LauncherActivity) {
                 verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 when (tab) {
                     0 -> Panel(width) {
+                        Label("Startup")
+                        BooleanSetting(preferences, GamePreferences.SKIP_INTRO, false,
+                            "Skip game intro", "Skip the startup intro when launching the game. Attract-mode movies still play.") {}
+                        Label("Unlocks")
                         Hint("Change unlocks for the active game files. Turning a switch off locks that content again, including earned unlocks.")
                         val bonus = a.bonusContent
                         if (bonus != null) {
@@ -1076,6 +1104,8 @@ private fun AdvancedScreen(a: LauncherActivity) {
                                     "Performance overlay", "FPS, frame intervals, draw calls and opaque-shader coverage.") {}
                                 BooleanSetting(preferences, PerformanceSession.COLLECT, false,
                                     "Record performance data", "Saves timing and rendering data for performance reports.") {}
+                                BooleanSetting(preferences, GamePreferences.FULL_MIRROR, false,
+                                    "Full-detail rear-view mirror", "Render additional scene detail in the mirror. May reduce performance. Applies on the next game launch.") {}
                                 BooleanSetting(preferences, PerformanceSession.OPAQUE, true,
                                     "Rendering optimization (experimental)", "May improve rendering performance. Disable if you notice graphical problems.") {}
                             }
@@ -1083,7 +1113,8 @@ private fun AdvancedScreen(a: LauncherActivity) {
                         MenuButton("Share performance report", { PerformanceSession.showReport(a) }, width)
                         MenuButton("Reset performance settings", {
                             preferences.edit().remove(PerformanceSession.COLLECT)
-                                .remove(PerformanceSession.OVERLAY).remove(PerformanceSession.OPAQUE).apply()
+                                .remove(PerformanceSession.OVERLAY).remove(PerformanceSession.OPAQUE)
+                                .remove(GamePreferences.FULL_MIRROR).apply()
                             generation++
                         }, width)
                     }
@@ -1138,3 +1169,4 @@ private fun AdvancedScreen(a: LauncherActivity) {
         }
     }
 }
+

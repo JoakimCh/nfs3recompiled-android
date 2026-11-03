@@ -213,6 +213,7 @@ fun MenuButton(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     height: Dp = 52.dp,
+    maxLines: Int = 1,
 ) {
     FilledTonalButton(
         onClick = onClick,
@@ -225,7 +226,7 @@ fun MenuButton(
             contentColor = GameColors.MenuBlue,
         ),
     ) {
-        Text(text, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Text(text, fontWeight = FontWeight.SemiBold, maxLines = maxLines, overflow = TextOverflow.Ellipsis)
     }
 }
 
@@ -423,3 +424,4 @@ fun DropdownPill(options: List<String>, selected: Int, onSelect: (Int) -> Unit, 
         }
     }
 }
+

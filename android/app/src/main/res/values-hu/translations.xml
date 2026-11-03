@@ -215,4 +215,6 @@
  <string name="controller_test_stop">Tesztelés leállítása</string>
  <string name="controller_test_navigation">A tesztelést érintéssel vagy a TV távirányítójával állíthatod le.</string>
  <string name="controller_test_no_input">Még nincs bemenet.</string>
+    <string name="launcher_exit">Kilépés</string>
 </resources>
+

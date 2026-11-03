@@ -139,7 +139,8 @@ class LauncherActivity : ComponentActivity() {
         } catch (ignored: PackageManager.NameNotFoundException) {
             ""
         }
-        return "v$name"
+        val architecture = if (android.os.Process.is64Bit()) "ARMv8 (64-bit)" else "ARMv7 (32-bit)"
+        return "v$name · $architecture"
     }
 
     fun go(next: Screen) {
@@ -468,6 +469,12 @@ class LauncherActivity : ComponentActivity() {
         thread.start()
     }
 
+    /** Close the launcher; an independently running game keeps its own exit flow. */
+    fun exitLauncher() {
+        if (busy) return
+        if (GameProcess.running(this)) finish() else finishAndRemoveTask()
+    }
+
     fun startGame() {
         if (dataSetManager?.active() == null)
             return
@@ -554,3 +561,4 @@ class LauncherActivity : ComponentActivity() {
 
     }
 }
+

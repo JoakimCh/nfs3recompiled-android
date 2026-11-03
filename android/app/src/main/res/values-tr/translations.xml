@@ -215,4 +215,6 @@
  <string name="controller_test_stop">Testi durdur</string>
  <string name="controller_test_navigation">Testi durdurmak için dokunmatik ekranı veya TV kumandasını kullanın.</string>
  <string name="controller_test_no_input">Henüz giriş yok.</string>
+    <string name="launcher_exit">Çıkış</string>
 </resources>
+

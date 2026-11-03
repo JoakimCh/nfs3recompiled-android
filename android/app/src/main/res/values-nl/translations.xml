@@ -215,4 +215,6 @@
  <string name="controller_test_stop">Testen stoppen</string>
  <string name="controller_test_navigation">Stop de test via het aanraakscherm of de tv-afstandsbediening.</string>
  <string name="controller_test_no_input">Nog geen invoer.</string>
+    <string name="launcher_exit">Afsluiten</string>
 </resources>
+

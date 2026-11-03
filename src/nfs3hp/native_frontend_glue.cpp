@@ -1,5 +1,6 @@
 #include "native_guest.h"
 #include "port_text.h"
+#include <SDL3/SDL.h>
 
 #include <cstdint>
 #include <initializer_list>
@@ -329,6 +330,20 @@ void sliderSetColour(win32::WinApplication* app, x86::CPU& cpu)
  * flushed, the music's stream made again.  1. */
 void playMovie(win32::WinApplication* app, x86::CPU& cpu)
 {
+    /* sub_4730d0's startup call passes the title movie name at 0x53b048.
+     * Attract mode uses its own name table (kMovies), including a separate
+     * titleav string. Match this startup-only entry, not every movie by name,
+     * and return before opening streams or disturbing the menu music. */
+    static const bool skipIntro = []() {
+        const char* value = SDL_getenv("NFS_SKIP_INTRO");
+        return value && SDL_strcmp(value, "1") == 0;
+    }();
+    if (skipIntro && cpu.eax == 0x53b048)
+    {
+        cpu.eax = 1;
+        cpu.esp += 4;
+        return;
+    }
     push(app, cpu, cpu.ebx);
     push(app, cpu, cpu.ecx);
     push(app, cpu, cpu.edx);
@@ -702,3 +717,4 @@ void nextKey(win32::WinApplication* app, x86::CPU& cpu)
 
 }  // namespace frontend
 }  // namespace nfs3hp
+
