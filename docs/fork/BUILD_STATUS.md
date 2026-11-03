@@ -4,6 +4,23 @@ Update this file when a result changes. Record the source and evidence; distingu
 automated checks from device feedback. Older session details remain in Git history
 and [release metadata](releases/). Usage is in [BUILD.md](BUILD.md).
 
+## log-warning-cleanup: 0.78.33 / code 110
+
+Local checks passed: 40 tooling tests, 23 launcher tests, and the NDK compiler
+policy check for both ARM ABIs. Picker tests cover cancellation, duplicate
+launches and a settings export delivered after activity recreation.
+
+The host vertex comparison passed all 45 functions in eight x87 modes at 64
+cases per mode, both normally and with the ARMv7-style fallback. At 200 cases,
+the pinned Clang reproduces the documented `trackVertices` discrepancy at
+mode `047f`, case 99; untouched main and the fallback have identical output.
+This does not resolve that older NaN/finite discrepancy.
+
+Full native compilation/linking is still being checked. The first local attempt
+stopped before linking; a one-job retry is in progress. No APK or device test
+has been performed for this branch. SDL's sensor deprecation also remains in
+upstream source; unused/generated declarations were not broadly suppressed.
+
 ## Workflow action upgrades (not yet tested)
 
 After merging `launcher-tweaks` into main, pinned the Node 24 actions:

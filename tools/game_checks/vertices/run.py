@@ -9,7 +9,11 @@ here, and run. VCHECK_DUMP=1 lists every differing word of a
 case, VCHECK_SHOW=<control word>:<case> the records a case starts from,
 VCHECK_TRACE=1 each run as it starts. VCHECK_BENCH=<iterations> measures the
 four matrix/vector kernels instead of checking them; synthetic host timings
-are not device FPS. Do not use fast-math or floating-point contraction."""
+are not device FPS. Do not use fast-math or floating-point contraction.
+
+Set CXX='c++ -DNFS_VERTEX_NO_FLOAT_FAST_PATH' to exercise the ARMv7-style
+single-precision fallback on the host. check_fp_policy.py --ndk PATH checks
+the real vertex translation unit's ARMv7/ARMv8 compiler policy."""
 import concurrent.futures
 import os
 import shlex

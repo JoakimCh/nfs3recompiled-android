@@ -16,7 +16,9 @@
  * between the clear and the test. */
 #if defined(__clang__)
 #pragma clang fp contract(off)
+#if !defined(__arm__)
 #pragma STDC FENV_ACCESS ON
+#endif
 #elif defined(_MSC_VER)
 #pragma fp_contract(off)
 #pragma fenv_access(on)
@@ -159,10 +161,15 @@ struct FpuMath
 /* Whether the FPU rounds to a float's 24 bits and to nearest -- a race's x87
  * at single precision, or NFS_FPU_FLOAT's -- where float arithmetic is the
  * x87's (FloatMath).  Never in the 80-bit and wide experiments, whose FPU
- * keeps more than a double. */
+ * keeps more than a double. Clang's 32-bit ARM backend does not support strict
+ * floating-point exceptions: use the emulated FPU rather than relying on an
+ * exception-based retry it cannot guarantee. NFS_VERTEX_NO_FLOAT_FAST_PATH
+ * exercises that same fallback in the host differential checks. The normal
+ * double-backed paths do not use this optimization. */
 inline bool singleNearest(const x86::CPU& cpu)
 {
-#if defined(WITH_PEDANTIC_FPU) || defined(WITH_WIDE_FPU)
+#if defined(WITH_PEDANTIC_FPU) || defined(WITH_WIDE_FPU) \
+    || defined(NFS_VERTEX_NO_FLOAT_FAST_PATH) || (defined(__clang__) && defined(__arm__))
     NFS2_USE(cpu);
     return false;
 #else

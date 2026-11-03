@@ -2425,7 +2425,7 @@ namespace
 struct Store
 {
     reg32 offset, value;
-    bool byte;
+    bool byte = false;
 };
 
 constexpr Store kEnd = {0, 0, false};

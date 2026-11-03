@@ -13,6 +13,17 @@ kept outside caches. Workflow actions use pinned Node 24 releases; all artifacts
 request 14-day retention. Release notes come from the APK source's versioned
 changelog entries.
 
+## 0.78.33 — version 110
+
+File pickers use the Activity Result API and preserve outstanding requests across
+activity recreation. Duplicate picker launches are blocked; cancellation allows
+retrying. Advanced tabs use the supported Material component.
+
+ARMv7 vertex calculations use emulated single-precision arithmetic where Clang
+cannot guarantee host floating-point exception tracking. ARMv8 retains the strict
+exception-based retry. Camera store defaults and announcer comparisons are
+explicit, and launcher tests permit their native-library access.
+
 ## 0.78.32 — version 109
 
 The launcher menu uses two columns when space permits, with Exit at the bottom

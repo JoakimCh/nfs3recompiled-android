@@ -305,7 +305,7 @@ static Result raceAnnouncerTicked(App* app, CPU& cpu, reg32 esp, reg32 car)
         bool over = false;
         if (backwards == 0)
         {
-            if (reg32(was) == kLineStart(app))
+            if (reg32(was) == reg32(kLineStart(app)))
             {
                 eax &= 0xff;
                 over = eax == reg32(kLineEnd(app));

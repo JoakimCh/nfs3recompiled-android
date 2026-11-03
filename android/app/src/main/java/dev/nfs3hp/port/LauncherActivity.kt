@@ -15,6 +15,8 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -67,6 +69,17 @@ class LauncherActivity : ComponentActivity() {
         private set
     var dialog by mutableStateOf<Dialog?>(null)
 
+    private var pickerOpen = false
+    // Register in a fixed order on every creation, before the activity starts,
+    // so AndroidX can deliver a pending result after recreation.
+    private val folderPicker = registerPicker(REQUEST_PICK_FOLDER)
+    private val zipPicker = registerPicker(REQUEST_PICK_ZIP)
+    private val imagePicker = registerPicker(REQUEST_PICK_IMAGE)
+    private val saveImportPicker = registerPicker(REQUEST_IMPORT_SAVES)
+    private val saveExportPicker = registerPicker(REQUEST_EXPORT_SAVES)
+    private val launcherImportPicker = registerPicker(REQUEST_IMPORT_LAUNCHER)
+    private val launcherExportPicker = registerPicker(REQUEST_EXPORT_LAUNCHER)
+
     private var worker: Thread? = null
     private var dataSetManager: DataSetManager? = null
     /** The overlay drawn on the Touch screen or in the editor, while one is. */
@@ -88,6 +101,7 @@ class LauncherActivity : ComponentActivity() {
         requestedOrientation = launcherOrientation()
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
+        pickerOpen = savedInstanceState?.getBoolean("document_picker_open") ?: false
         hideStatusBar(this)
         InputDeviceRoles.initialize(this)
         val preferences = GamePreferences.get(this)
@@ -256,58 +270,78 @@ class LauncherActivity : ComponentActivity() {
 
     // ---- The system's file pickers, and what comes back from them ----
 
+    private fun registerPicker(kind: Int) =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            onDocumentResult(kind, result.resultCode, result.data)
+        }
+
+    private fun launchPicker(picker: ActivityResultLauncher<Intent>, intent: Intent) {
+        pickerOpen = true
+        try {
+            picker.launch(intent)
+        } catch (e: RuntimeException) {
+            pickerOpen = false
+            throw e
+        }
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        outState.putBoolean("document_picker_open", pickerOpen)
+        super.onSaveInstanceState(outState)
+    }
+
     fun launchFolderPicker() {
-        if (busy) return
+        if (busy || pickerOpen) return
         val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
             .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
-        startActivityForResult(intent, REQUEST_PICK_FOLDER)
+        launchPicker(folderPicker, intent)
     }
 
     fun launchZipPicker() {
-        if (busy) return
+        if (busy || pickerOpen) return
         val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE)
             .setType("application/zip").addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        startActivityForResult(intent, REQUEST_PICK_ZIP)
+        launchPicker(zipPicker, intent)
     }
 
     /** A CD image: an .iso, or the .bin of a BIN/CUE pair (DataImporter.importFromDiscImage). */
     fun launchImagePicker() {
-        if (busy) return
+        if (busy || pickerOpen) return
         val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE)
             // Any file: providers give .bin and .iso no one type; the importer
             // reads what it is from the file itself.
             .setType("*/*").addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        startActivityForResult(intent, REQUEST_PICK_IMAGE)
+        launchPicker(imagePicker, intent)
     }
 
     fun launchSaveImport() {
-        if (busy) return
+        if (busy || pickerOpen) return
         val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE)
             .setType("application/zip").addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        startActivityForResult(intent, REQUEST_IMPORT_SAVES)
+        launchPicker(saveImportPicker, intent)
     }
 
     fun launchSaveExport() {
-        if (busy) return
+        if (busy || pickerOpen) return
         val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE)
             .setType("application/zip").putExtra(Intent.EXTRA_TITLE, "nfs3-saves-" + stamp() + ".zip")
             .addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
-        startActivityForResult(intent, REQUEST_EXPORT_SAVES)
+        launchPicker(saveExportPicker, intent)
     }
 
     fun launchLauncherImport() {
-        if (busy) return
+        if (busy || pickerOpen) return
         val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE)
             .setType("*/*").addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        startActivityForResult(intent, REQUEST_IMPORT_LAUNCHER)
+        launchPicker(launcherImportPicker, intent)
     }
 
     fun launchLauncherExport() {
-        if (busy) return
+        if (busy || pickerOpen) return
         val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE)
             .setType("application/json").putExtra(Intent.EXTRA_TITLE, "nfs3-launcher-" + stamp() + ".json")
             .addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
-        startActivityForResult(intent, REQUEST_EXPORT_LAUNCHER)
+        launchPicker(launcherExportPicker, intent)
     }
 
     private fun stamp(): String = SimpleDateFormat("yyyyMMdd-HHmm", Locale.ROOT).format(Date())
@@ -317,9 +351,9 @@ class LauncherActivity : ComponentActivity() {
     private fun includeSettings(): Boolean =
         GamePreferences.get(this).getBoolean(GamePreferences.SAVES_INCLUDE_SETTINGS, false)
 
-    @Deprecated("Deprecated in Java")
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
+    private fun onDocumentResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        pickerOpen = false
+        if (busy) return
         val uri = data?.data
         if (resultCode != Activity.RESULT_OK || uri == null)
             return

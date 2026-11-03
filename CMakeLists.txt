@@ -218,7 +218,15 @@ function(add_game_exe name)
         # Vertex arithmetic is compared against separate x87 operations.
         # GCC does not use the clang/MSVC FP pragmas in this source.
         set_property(SOURCE "${game_src_dir}/native_vertices.cpp" APPEND PROPERTY COMPILE_OPTIONS
-            -ffp-contract=off -frounding-math)
+            -ffp-contract=off)
+        # Clang cannot honor dynamic FP environment access on 32-bit ARM.
+        # native_vertices.cpp disables its exception-dependent float fast path
+        # there; default-double and emulated rounding remain available.
+        if(NOT (CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND CMAKE_SIZEOF_VOID_P EQUAL 4
+                AND CMAKE_SYSTEM_PROCESSOR MATCHES "^[Aa][Rr][Mm]"))
+            set_property(SOURCE "${game_src_dir}/native_vertices.cpp" APPEND PROPERTY COMPILE_OPTIONS
+                -frounding-math)
+        endif()
         set_property(SOURCE ${DISASM_SOURCES} APPEND PROPERTY COMPILE_OPTIONS -fno-exceptions)
         # A function that can run off its end without returning a value is
         # undefined behaviour the optimiser turns into anything at all: a

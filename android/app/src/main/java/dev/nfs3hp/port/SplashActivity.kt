@@ -10,6 +10,8 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -46,6 +48,9 @@ class SplashActivity : ComponentActivity() {
     private var importing by mutableStateOf(false)
     private var importPercent by mutableIntStateOf(-1)
     private var pickerOpen = false
+    private val folderPicker = registerPicker(REQUEST_PICK_FOLDER)
+    private val zipPicker = registerPicker(REQUEST_PICK_ZIP)
+    private val imagePicker = registerPicker(REQUEST_PICK_IMAGE)
     private var worker: Thread? = null
 
     /* Language of the launcher, chosen in the picker on the main screen.
@@ -63,6 +68,7 @@ class SplashActivity : ComponentActivity() {
         requestedOrientation = LauncherActivity.orientationFor(this)
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
+        pickerOpen = savedInstanceState?.getBoolean("document_picker_open") ?: false
         LauncherActivity.hideStatusBar(this)
         status = getString(R.string.checking_game_data)
         setContent { GameTheme { SplashScreen() } }
@@ -129,37 +135,52 @@ class SplashActivity : ComponentActivity() {
         canPick = true
     }
 
+    // Stable registrations let the registry restore an outstanding picker result.
+    private fun registerPicker(kind: Int) =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            onDocumentResult(kind, result.resultCode, result.data)
+        }
+
+    private fun launchPicker(picker: ActivityResultLauncher<Intent>, intent: Intent) {
+        pickerOpen = true
+        try {
+            picker.launch(intent)
+        } catch (e: RuntimeException) {
+            pickerOpen = false
+            throw e
+        }
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        outState.putBoolean("document_picker_open", pickerOpen)
+        super.onSaveInstanceState(outState)
+    }
+
     private fun launchFolderPicker() {
         if (pickerOpen || importing) return
-        pickerOpen = true
         val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
             .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
-        startActivityForResult(intent, REQUEST_PICK_FOLDER)
+        launchPicker(folderPicker, intent)
     }
 
     private fun launchZipPicker() {
         if (pickerOpen || importing) return
-        pickerOpen = true
         val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE)
             .setType("application/zip").addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        startActivityForResult(intent, REQUEST_PICK_ZIP)
+        launchPicker(zipPicker, intent)
     }
 
     /** A CD image: an .iso, or the .bin of a BIN/CUE pair (DataImporter.importFromDiscImage). */
     private fun launchImagePicker() {
         if (pickerOpen || importing) return
-        pickerOpen = true
         val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE)
             // Any file: providers give .bin and .iso no one type; the importer
             // reads what it is from the file itself.
             .setType("*/*").addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        startActivityForResult(intent, REQUEST_PICK_IMAGE)
+        launchPicker(imagePicker, intent)
     }
 
-    @Deprecated("Deprecated in Java")
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode != REQUEST_PICK_FOLDER && requestCode != REQUEST_PICK_ZIP && requestCode != REQUEST_PICK_IMAGE) return
+    private fun onDocumentResult(requestCode: Int, resultCode: Int, data: Intent?) {
         pickerOpen = false
         val uri = data?.data
         if (resultCode != Activity.RESULT_OK || uri == null) return

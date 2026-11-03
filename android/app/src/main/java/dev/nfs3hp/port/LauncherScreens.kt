@@ -46,7 +46,7 @@ import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.foundation.text.appendInlineContent
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
+import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.AlertDialog
@@ -1050,7 +1050,7 @@ private fun AdvancedScreen(a: LauncherActivity) {
     var tab by rememberSaveable { mutableIntStateOf(0) }
     val width = Modifier.widthIn(max = 720.dp).fillMaxWidth()
     ScreenFrame(stringResource(R.string.advanced_title), onBack = { a.go(LauncherActivity.Screen.Main) }, scroll = false) {
-        TabRow(tab, modifier = width, containerColor = GameColors.Deep, contentColor = GameColors.Gold) {
+        PrimaryTabRow(tab, modifier = width, containerColor = GameColors.Deep, contentColor = GameColors.Gold) {
             listOf("Tweaks", "Performance", "Debug").forEachIndexed { index, title ->
                 Tab(selected = tab == index, onClick = { tab = index }, text = { Text(title) })
             }
