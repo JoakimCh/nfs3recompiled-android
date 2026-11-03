@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Sign and verify an ARMv7 release; passwords are read from a private file."""
+"""Sign and verify an Android fork release; passwords are read from a private file."""
 import argparse
 import hashlib
 import json
@@ -11,9 +11,9 @@ import tempfile
 import zipfile
 
 if __package__:
-    from .release_identity import artifact_names, release_config
+    from .release_identity import TARGET_ABIS, artifact_names, release_config
 else:
-    from release_identity import artifact_names, release_config
+    from release_identity import TARGET_ABIS, artifact_names, release_config
 
 KEY_ALIAS = 'armv7-tv-release'
 CERTIFICATE_SHA256 = '464eab8f658b68c234e80e85f5bcb6c5a79771600ac04c0f9d5458769c27b60e'
@@ -21,6 +21,7 @@ CERTIFICATE_SHA256 = '464eab8f658b68c234e80e85f5bcb6c5a79771600ac04c0f9d5458769c
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--target', choices=TARGET_ABIS, default='armv7')
     parser.add_argument('--apk', type=Path, required=True)
     parser.add_argument('--sdk', type=Path, required=True)
     parser.add_argument('--keystore', type=Path, required=True)
@@ -48,7 +49,7 @@ def main():
         raise RuntimeError('Unexpected version name')
     out = args.output_dir.resolve()
     out.mkdir(parents=True, exist_ok=True)
-    names = artifact_names(version)
+    names = artifact_names(version, args.target)
     apk = out / names['apk']
     if apk == args.apk.resolve():
         raise RuntimeError('Input and output APK must differ')
@@ -69,41 +70,53 @@ def main():
     def build_id(file):
         return re.search(r'Build ID: (\w+)', run([readelf, '-n', file])).group(1)
 
+    abis = TARGET_ABIS[args.target]
+    identities = {}
+    symbol_dirs = {}
     with tempfile.TemporaryDirectory(prefix='verify-', dir=out) as temporary:
         temp = Path(temporary)
         with zipfile.ZipFile(apk) as z:
             libraries = [n for n in z.namelist() if n.startswith('lib/') and n.endswith('.so')]
-            if not libraries or any(not n.startswith('lib/armeabi-v7a/') for n in libraries):
-                raise RuntimeError('APK must contain only ARMv7 native libraries')
+            if {n.split('/')[1] for n in libraries} != set(abis):
+                raise RuntimeError('APK native ABIs differ from selected target')
             for name in libraries:
                 data = z.read(name)
-                if data[:6] != b'\x7fELF\x01\x01' or int.from_bytes(data[18:20], 'little') != 40:
+                abi = name.split('/')[1]
+                elf_class, machine = (1, 40) if abi == 'armeabi-v7a' else (2, 183)
+                if (data[:6] != b'\x7fELF' + bytes([elf_class, 1])
+                        or int.from_bytes(data[18:20], 'little') != machine):
                     raise RuntimeError('Unexpected native ELF: ' + name)
-            main_library = temp / 'libmain.so'
-            main_library.write_bytes(z.read('lib/armeabi-v7a/libmain.so'))
-        identity = build_id(main_library)
-    candidates = list((root / 'android/app/build/intermediates/cxx/RelWithDebInfo')
-                      .glob('*/obj/armeabi-v7a'))
-    matches = [p for p in candidates if (p / 'libmain.so').is_file()
-               and build_id(p / 'libmain.so') == identity]
-    if not matches:
-        raise RuntimeError('No exact matching unstripped native symbols')
+            for abi in abis:
+                required = {f'lib/{abi}/{name}' for name in ('libmain.so', 'libSDL3.so', 'libc++_shared.so')}
+                if not required.issubset(libraries):
+                    raise RuntimeError('Missing required native libraries for ' + abi)
+                main_library = temp / (abi + '-libmain.so')
+                main_library.write_bytes(z.read(f'lib/{abi}/libmain.so'))
+                identities[abi] = build_id(main_library)
+                candidates = (root / 'android/app/build/intermediates/cxx/RelWithDebInfo').glob('*/obj/' + abi)
+                matches = [p for p in candidates if (p / 'libmain.so').is_file()
+                           and build_id(p / 'libmain.so') == identities[abi]]
+                if not matches:
+                    raise RuntimeError('No exact matching unstripped native symbols for ' + abi)
+                symbol_dirs[abi] = matches[0]
     symbols = out / names['symbols']
     with zipfile.ZipFile(symbols, 'w', zipfile.ZIP_DEFLATED, 6) as z:
-        for p in sorted(matches[0].glob('*.so')):
-            z.write(p, 'armeabi-v7a/' + p.name)
+        for abi in abis:
+            for p in sorted(symbol_dirs[abi].glob('*.so')):
+                z.write(p, abi + '/' + p.name)
         z.writestr('README.txt', 'Exact native symbols for ' + apk.name +
-                   '\nNative BuildID: ' + identity + '\nNot needed to install or play.\n')
+                   '\nNative BuildIDs: ' + json.dumps(identities, sort_keys=True) +
+                   '\nNot needed to install or play.\n')
     resource_report = out / 'apk-resource-check.json'
     run(['python3', root / 'tools/game_checks/gamepad/check_apk_resources.py', apk, bt,
          root / 'android/app/build/intermediates/compile_symbol_list/release/generateReleaseRFile/R.txt',
          resource_report])
     source = run(['git', '-C', root, 'rev-parse', 'HEAD']).strip()
     summary = {'version': version, 'versionCode': code, 'revision': expected['revision'],
-               'architecture': 'armeabi-v7a', 'source_commit': source,
+               'target': args.target, 'architectures': list(abis), 'source_commit': source,
                'uncommitted_changes': bool(run(['git', '-C', root, 'status', '--porcelain']).strip()),
                'apk': apk.name, 'apk_sha256': hashlib.sha256(apk.read_bytes()).hexdigest(),
-               'native_build_id': identity, 'certificate_sha256': certificate,
+               'native_build_ids': identities, 'certificate_sha256': certificate,
                'native_files': libraries, 'debuggable': False, 'shell_profileable': True,
                'zip_alignment_bytes': 16384, 'device_tested': False,
                'resource_check': json.loads(resource_report.read_text()), 'toolchain': toolchain}
@@ -116,3 +129,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+

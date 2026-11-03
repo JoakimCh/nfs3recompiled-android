@@ -1,5 +1,13 @@
 # Fork changes
 
+## Unreleased multi-ABI workflows
+
+Build and publish ARMv7, ARMv8 or one universal APK from the manual workflows.
+All targets share the installed fork identity, release version and signing key.
+Verification checks each selected ABI and retains its exact native symbols and
+BuildID. Release promotion selects the requested target and supports older ARMv7
+artifacts.
+
 ## Unreleased release publishing
 
 The release publisher accepts signed `apk-fast` builds, preserving skipped-test
@@ -100,3 +108,4 @@ Added ARMv7 support, packed-data alignment fixes, controller/player routing,
 touch remapping, two-pad split screen, device/crash reports and opaque shader
 optimization. Fixed packaged resource mismatches. Consolidated notes, removed
 obsolete recorder helpers/tests and made release UI tests opt-in.
+

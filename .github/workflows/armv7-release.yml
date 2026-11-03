@@ -1,8 +1,17 @@
 name: Android checks and builds
-run-name: ARMv7 ${{ inputs.mode }} · ${{ github.ref_name }}
+run-name: ${{ inputs.target }} ${{ inputs.mode }} · ${{ github.ref_name }}
 on:
   workflow_dispatch:
     inputs:
+      target:
+        description: Native target (both creates one universal APK)
+        type: choice
+        required: true
+        default: both
+        options:
+          - armv7
+          - armv8
+          - both
       mode:
         description: What to run (apk-fast skips tests)
         type: choice
@@ -16,17 +25,18 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: armv7-${{ github.ref }}-${{ inputs.mode }}
+  group: android-${{ github.ref }}-${{ inputs.target }}-${{ inputs.mode }}
   cancel-in-progress: false
 jobs:
   android:
     runs-on: ubuntu-24.04
-    timeout-minutes: 60
+    timeout-minutes: 120
     env:
       NFS_BUILD_CACHE: ${{ github.workspace }}/.nfs3-cache
       ANDROID_HOME: ${{ github.workspace }}/.nfs3-cache/sdk
       ANDROID_SDK_ROOT: ${{ github.workspace }}/.nfs3-cache/sdk
       GRADLE_USER_HOME: ${{ github.workspace }}/.gradle-cache
+      NFS_ANDROID_TARGET: ${{ inputs.target }}
       NFS_ANDROID_MODE: ${{ inputs.mode }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
@@ -68,7 +78,7 @@ jobs:
         run: python3 tools/android.py verify-signing --github-secrets
       - name: Run selected checks or build
         run: |
-          args=("$NFS_ANDROID_MODE" --accept-sdk-licenses --jobs 2)
+          args=("$NFS_ANDROID_MODE" --target "$NFS_ANDROID_TARGET" --accept-sdk-licenses --jobs 2)
           if [[ "$NFS_ANDROID_MODE" = apk || "$NFS_ANDROID_MODE" = apk-fast ]]; then args+=(--unsigned); fi
           python3 tools/android.py "${args[@]}"
       - name: Sign and verify APK
@@ -76,12 +86,12 @@ jobs:
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-        run: python3 tools/android.py sign --github-secrets
+        run: python3 tools/android.py sign --target "$NFS_ANDROID_TARGET" --github-secrets
       - name: Save reports
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: armv7-${{ inputs.mode }}-reports
+          name: ${{ inputs.target }}-${{ inputs.mode }}-reports
           path: |
             android/app/build/test-results/testReleaseUnitTest/
             android/app/build/reports/tests/testReleaseUnitTest/
@@ -93,7 +103,7 @@ jobs:
         if: inputs.mode == 'apk' || inputs.mode == 'apk-fast'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: armv7-apk
+          name: ${{ inputs.target }}-apk
           path: |
             out/nfs3-*.apk
             out/*-release.json
@@ -104,8 +114,9 @@ jobs:
         if: inputs.mode == 'apk' || inputs.mode == 'apk-fast'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: armv7-native-symbols
+          name: ${{ inputs.target }}-native-symbols
           path: out/*-symbols.zip
           if-no-files-found: error
           retention-days: 90
+
 

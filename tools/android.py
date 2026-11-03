@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Shared ARMv7 Android commands for the workspace and GitHub Actions."""
+"""Shared Android fork commands for the workspace and GitHub Actions."""
 import argparse
 import base64
 from contextlib import contextmanager
@@ -14,6 +14,7 @@ import xml.etree.ElementTree as ET
 
 import setup_android as setup
 from release.sign_android import CERTIFICATE_SHA256, KEY_ALIAS
+from release.release_identity import TARGET_ABIS
 
 ROOT = setup.ROOT
 APK = ROOT / 'android/app/build/outputs/apk/release/app-release-unsigned.apk'
@@ -76,7 +77,7 @@ def verify_signing(args, env):
 
 
 def gradle(tasks, args, env, flags, launcher_only=False):
-    command = ['bash', str(ROOT / 'android/gradlew'), *tasks, '-Parmv7Tv', '-PprofileNative',
+    command = ['bash', str(ROOT / 'android/gradlew'), *tasks, '-PforkRelease', '-PgameAbis=' + ','.join(TARGET_ABIS[args.target]), '-PprofileNative',
                '-PnativeJobs=' + str(args.jobs), '--no-daemon', '--max-workers=' + str(args.jobs),
                '--build-cache', '--console=plain', *flags]
     if launcher_only: command.append('-PlauncherTestsOnly')
@@ -102,6 +103,7 @@ def report(args, results):
     args.output_dir.mkdir(parents=True, exist_ok=True)
     data = {'mode': args.mode, 'source_commit': setup.output(['git', '-C', ROOT, 'rev-parse', 'HEAD'], os.environ.copy()),
             'source_dirty': bool(setup.output(['git', '-C', ROOT, 'status', '--porcelain'], os.environ.copy())),
+            'target': args.target, 'architectures': list(TARGET_ABIS[args.target]),
             'tests': results, 'native_compiled': args.mode in ('check', 'apk', 'apk-fast'),
             'toolchain': json.loads(setup.CONFIG.read_text())}
     if args.mode in ('apk', 'apk-fast'):
@@ -115,6 +117,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('mode', choices=('setup', 'tests', 'check', 'apk', 'apk-fast', 'sign', 'verify-signing'))
     setup.arguments(parser)
+    parser.add_argument('--target', choices=TARGET_ABIS, default='armv7',
+                        help='Native target; both creates one universal APK (default: armv7)')
     parser.add_argument('--tests-only', action='store_true', help='Prepare only launcher tooling in setup mode')
     parser.add_argument('--unsigned', action='store_true', help='Explicitly leave an intermediate APK unsigned')
     parser.add_argument('--github-secrets', action='store_true', help='Read CI signing secrets into private temporary files and remove them afterwards')
@@ -148,7 +152,7 @@ def main():
                 else:
                     results = tests(args, env, flags)
                 if args.mode == 'check':
-                    gradle([':app:buildCMakeRelWithDebInfo[armeabi-v7a]'], args, env, flags)
+                    gradle([':app:buildCMakeRelWithDebInfo[' + abi + ']' for abi in TARGET_ABIS[args.target]], args, env, flags)
                 elif args.mode in ('apk', 'apk-fast'):
                     gradle([':app:assembleRelease'], args, env, flags)
                     sdk = Path(env['ANDROID_HOME'])
@@ -161,6 +165,7 @@ def main():
             if args.mode == 'sign' or (args.mode in ('apk', 'apk-fast') and not args.unsigned):
                 subprocess.run([sys.executable, str(ROOT / 'tools/release/sign_android.py'),
                                 '--apk', str(args.apk.resolve()), '--sdk', env['ANDROID_HOME'],
+                                '--target', args.target,
                                 '--keystore', str(args.keystore.resolve()), '--password-file', str(args.password_file.resolve()),
                                 '--output-dir', str(args.output_dir.resolve())], cwd=ROOT, env=env, check=True)
             elif args.mode in ('apk', 'apk-fast'):
@@ -171,4 +176,5 @@ def main():
 
 if __name__ == '__main__':
     main()
+
 

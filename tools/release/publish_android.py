@@ -13,10 +13,10 @@ import zipfile
 
 if __package__:
     from .sign_android import CERTIFICATE_SHA256
-    from .release_identity import artifact_names, published_version, revision_of
+    from .release_identity import TARGET_ABIS, artifact_names, published_version, revision_of
 else:
     from sign_android import CERTIFICATE_SHA256
-    from release_identity import artifact_names, published_version, revision_of
+    from release_identity import TARGET_ABIS, artifact_names, published_version, revision_of
 
 
 def require(condition, message):
@@ -51,7 +51,7 @@ def signed_job(repo, run_id):
         for step in job.get('steps', [])) for job in jobs)
 
 
-def choose_run(repo, branch, requested):
+def choose_run(repo, branch, requested, target='armv7'):
     workflow = api(f'repos/{repo}/actions/workflows/armv7-release.yml')['id']
     if requested:
         require(re.fullmatch(r'[1-9][0-9]*', requested), 'Run ID must be a positive number.')
@@ -64,6 +64,9 @@ def choose_run(repo, branch, requested):
                  and run['head_repository']['full_name'] == repo
                  and run['event'] == 'workflow_dispatch' and run['status'] == 'completed'
                  and run['conclusion'] == 'success' and signed_job(repo, run['id']))
+        if valid:
+            names = {a['name'] for a in pages(f"repos/{repo}/actions/runs/{run['id']}/artifacts", 'artifacts')}
+            valid = target + '-apk' in names
         if valid:
             return run
         require(not requested, 'Selected run is not a successful signed APK build on this branch.')
@@ -90,14 +93,15 @@ def member(archive, name):
     return archive.read(matches[0])
 
 
-def prepare(repo, run, directory):
-    with artifact(repo, run, 'armv7-apk') as archive:
+def prepare(repo, run, directory, target='armv7'):
+    require(target in TARGET_ABIS, 'Unknown Android target.')
+    with artifact(repo, run, target + '-apk') as archive:
         reports = [n for n in archive.namelist() if re.fullmatch(r'nfs3-[\w.\-]+-release\.json', n)]
         require(len(reports) == 1, 'Expected exactly one signed release report.')
         metadata = json.loads(member(archive, reports[0]))
         version = metadata['version']
         require(re.fullmatch(r'[\w.\-]+', version), 'Invalid version name.')
-        names = artifact_names(version)
+        names = artifact_names(version, target)
         require(reports[0] == names['report'], 'Release report name differs from APK version.')
         apk_name = names['apk']
         require(metadata['apk'] == apk_name, 'APK name differs from release metadata.')
@@ -109,6 +113,18 @@ def prepare(repo, run, directory):
                 and metadata['debuggable'] is False and metadata['shell_profileable'] is True
                 and metadata['zip_alignment_bytes'] == 16384,
                 'Release verification metadata is not successful.')
+        abis = TARGET_ABIS[target]
+        # Older ARMv7 reports predate target/ABI fields; never infer new targets.
+        require(metadata.get('target', 'armv7') == target, 'Release target mismatch.')
+        if 'architectures' in metadata:
+            require(metadata['architectures'] == list(abis), 'Release ABI mismatch.')
+        require(target == 'armv7' or 'architectures' in metadata, 'Release ABIs are missing.')
+        if 'native_build_ids' in metadata:
+            require(set(metadata['native_build_ids']) == set(abis)
+                    and all(isinstance(v, str) and re.fullmatch(r'[0-9a-fA-F]+', v)
+                            for v in metadata['native_build_ids'].values()), 'Native BuildIDs are missing.')
+        else:
+            require(target == 'armv7' and metadata.get('native_build_id'), 'Native BuildIDs are missing.')
         apk_data = member(archive, apk_name)
         require(hashlib.sha256(apk_data).hexdigest() == metadata['apk_sha256'], 'APK SHA-256 mismatch.')
         validation = json.loads(member(archive, 'validation.json'))
@@ -122,16 +138,28 @@ def prepare(repo, run, directory):
                 and validation['native_compiled'] is True and valid_tests,
                 'Build validation must show a clean APK build with successful tests, '
                 'or an apk-fast build with tests explicitly skipped.')
+        require(validation.get('target', 'armv7') == target, 'Build validation target mismatch.')
+        if 'architectures' in metadata:
+            require(validation.get('architectures') == list(abis), 'Build validation ABI mismatch.')
+            # Inspect the archive too: metadata must describe the actual packaged ABIs.
+            with zipfile.ZipFile(io.BytesIO(apk_data)) as apk:
+                native = {n for n in apk.namelist() if n.startswith('lib/') and n.endswith('.so')}
+                require({n.split('/')[1] for n in native} == set(abis), 'Packaged ABI mismatch.')
+                require(native == set(metadata['native_files']), 'Packaged native files mismatch.')
+                for abi in abis:
+                    require(all(f'lib/{abi}/{name}' in native for name in
+                                ('libmain.so', 'libSDL3.so', 'libc++_shared.so')),
+                            'Required native libraries are missing.')
         (directory / apk_name).write_bytes(apk_data)
         (directory / reports[0]).write_bytes(member(archive, reports[0]))
         (directory / 'validation.json').write_bytes(member(archive, 'validation.json'))
     symbols_name = names['symbols']
-    with artifact(repo, run, 'armv7-native-symbols') as archive:
+    with artifact(repo, run, target + '-native-symbols') as archive:
         symbols_data = member(archive, symbols_name)
     with zipfile.ZipFile(io.BytesIO(symbols_data)) as symbols:
         require(json.loads(member(symbols, 'metadata/release.json')) == metadata,
                 'Symbol metadata does not match the signed APK.')
-        require('armeabi-v7a/libmain.so' in symbols.namelist(), 'Native symbols are missing.')
+        require(all(abi + '/libmain.so' in symbols.namelist() for abi in abis), 'Native symbols are missing.')
     (directory / symbols_name).write_bytes(symbols_data)
     return metadata
 
@@ -179,20 +207,20 @@ def previous_release(repo, run, current_tv, kind):
     for release in pages(f'repos/{repo}/releases'):
         if release['draft'] or (kind == 'release' and release['prerelease']):
             continue
-        # Assets identify ARMv7 releases even when legacy tags use another format.
+        # Assets identify fork releases even when legacy tags use another format.
         versions = set()
         for asset in release.get('assets', []):
             version = published_version(asset['name'])
             if version:
                 versions.add(revision_of(version))
-        require(len(versions) <= 1, 'A published release contains ambiguous ARMv7 versions.')
+        require(len(versions) <= 1, 'A published release contains ambiguous fork versions.')
         if versions and (tv := versions.pop()) < current_tv:
             candidates.append((tv, release))
     for tv, release in sorted(candidates, key=lambda item: (item[0], item[1]['published_at']), reverse=True):
         comparison = api(f"repos/{repo}/compare/{quote(release['tag_name'], safe='')}...{run['head_sha']}")
         if comparison['status'] in ('ahead', 'identical'):
             return tv, release
-    require(not candidates, 'Cannot find a previous ARMv7 release in this build source history.')
+    require(not candidates, 'Cannot find a previous fork release in this build source history.')
     return None
 
 
@@ -225,6 +253,9 @@ def release_notes(repo, run, metadata, kind, test_count):
     changes = changes_for_release(sections, tv, metadata['versionCode'], previous[0] if previous else None)
     since = f"Changes since [{sections[previous[0]]['label']}]({previous[1]['html_url']}).\n\n" if previous else ''
     checks = f': {test_count} launcher tests passed' if test_count is not None else ''
+    build_ids = metadata.get('native_build_ids')
+    native_details = ('\n'.join(f'- Native BuildID ({abi}): `{identity}`.' for abi, identity in build_ids.items())
+                      if build_ids else f"- Native BuildID: `{metadata['native_build_id']}`.")
     notes = (
         'Download the **.apk** below to install or update the game.\n\n'
         f'## Changes\n\n{since}{changes}\n\n'
@@ -232,8 +263,8 @@ def release_notes(repo, run, metadata, kind, test_count):
         f"- Version: `{metadata['version']}` ({metadata['versionCode']}).\n"
         f"- Source: [`{run['head_sha'][:7]}`](https://github.com/{repo}/commit/{run['head_sha']}).\n"
         f"- [Build and automated checks]({run['html_url']}){checks}.\n"
-        f"- Native BuildID: `{metadata['native_build_id']}`.\n\n"
-        'The symbols ZIP and JSON files are for troubleshooting and verification. '
+        + native_details + "\n\n"
+        + 'The symbols ZIP and JSON files are for troubleshooting and verification. '
         'SHA256SUMS.txt contains file checksums. Only the APK is needed to play.\n\n'
         '</details>\n')
     title = f'NFS III ARMv7 TV — tv{tv}' if '-armv7-tv' in metadata['version'] else metadata['version']
@@ -245,14 +276,16 @@ def main():
     branch = os.environ['RELEASE_BUILD_BRANCH'].strip()
     kind = os.environ['RELEASE_TYPE']
     require(branch and kind in ('prerelease', 'release'), 'Select a build branch and valid release type.')
-    run = choose_run(repo, branch, os.environ.get('RELEASE_RUN_ID', '').strip())
+    target = os.environ.get('RELEASE_TARGET', 'armv7')
+    require(target in TARGET_ABIS, 'Select a valid Android target.')
+    run = choose_run(repo, branch, os.environ.get('RELEASE_RUN_ID', '').strip(), target)
     print(f"Selected APK run {run['id']} on {branch}, source {run['head_sha']}", flush=True)
     with tempfile.TemporaryDirectory(prefix='publish-apk-', dir=os.environ.get('RUNNER_TEMP')) as temp:
         directory = Path(temp)
-        metadata = prepare(repo, run, directory)
+        metadata = prepare(repo, run, directory, target)
         code = metadata['versionCode']
         require(type(code) is int and code > 0, 'Invalid APK version code.')
-        tag = f"armv7-v{code}-run{run['id']}"
+        tag = f"{target}-v{code}-run{run['id']}"
         unused_tag(repo, tag)
         assets = sorted(directory.iterdir())
         checksums = directory / 'SHA256SUMS.txt'
@@ -287,3 +320,4 @@ if __name__ == '__main__':
     except (OSError, RuntimeError, ValueError, KeyError, zipfile.BadZipFile,
             subprocess.CalledProcessError) as error:
         raise SystemExit(str(error))
+

@@ -1,8 +1,17 @@
 name: Publish APK release
-run-name: Publish ARMv7 ${{ inputs.release_type }}
+run-name: Publish ${{ inputs.target }} ${{ inputs.release_type }}
 on:
   workflow_dispatch:
     inputs:
+      target:
+        description: Native target of the existing build
+        type: choice
+        required: true
+        default: both
+        options:
+          - armv7
+          - armv8
+          - both
       build_branch:
         description: Build branch (blank uses the selected workflow branch)
         type: string
@@ -22,7 +31,7 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: publish-armv7-release
+  group: publish-android-release
   cancel-in-progress: false
 jobs:
   publish:
@@ -38,7 +47,9 @@ jobs:
       - name: Publish existing verified APK
         env:
           GH_TOKEN: ${{ github.token }}
+          RELEASE_TARGET: ${{ inputs.target }}
           RELEASE_BUILD_BRANCH: ${{ inputs.build_branch || github.ref_name }}
           RELEASE_RUN_ID: ${{ inputs.run_id }}
           RELEASE_TYPE: ${{ inputs.release_type }}
         run: python3 tools/release/publish_android.py
+

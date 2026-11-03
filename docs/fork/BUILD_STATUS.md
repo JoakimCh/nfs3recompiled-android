@@ -4,6 +4,15 @@ Update this file when a result changes. Record the source and evidence; distingu
 automated checks from device feedback. Older session details remain in Git history
 and [release metadata](releases/). Usage is in [BUILD.md](BUILD.md).
 
+## Multi-ABI workflow changes (not yet tested)
+
+Added ARMv7, ARMv8 and universal targets to the manual build and publish workflows.
+The runner, signing verification, symbols and release metadata track each selected
+ABI. Existing ARMv7 artifact promotion remains supported. No tests, native builds,
+APK builds or workflow dispatches were run for these changes, per the requested
+implementation/publication scope. Previous verified results below do not validate
+this revision. Run the desired target's `tests`, `check` or `apk` mode when authorized.
+
 ## Publisher and documentation update
 
 The publisher accepts `apk-fast`, preserving skipped-test metadata and handling
@@ -66,3 +75,4 @@ Repository artifact retention was observed at one day; inspect each run's expiry
   tv27 compared 45 vertex functions across eight FPU modes with both NDKs;
   output was identical, with 44 passing and the same NaN/finite discrepancy in
   the remaining function. See [releases/tv27.json](releases/tv27.json).
+

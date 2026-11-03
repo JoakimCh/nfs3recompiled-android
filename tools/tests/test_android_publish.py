@@ -11,7 +11,7 @@ from unittest.mock import patch
 import zipfile
 
 from tools.release import publish_android as publish
-from tools.release.release_identity import artifact_names, published_version, release_config, revision_of
+from tools.release.release_identity import TARGET_ABIS, artifact_names, published_version, release_config, revision_of
 
 
 def archive(files):
@@ -123,9 +123,66 @@ class ReleasePromotionTests(unittest.TestCase):
 
     def test_latest_selection_skips_runs_without_successful_signing(self):
         with patch.object(publish, 'api', return_value={'id': 7}), \
-             patch.object(publish, 'pages', return_value=iter([self.run_fixture(3), self.run_fixture(2)])), \
+             patch.object(publish, 'pages', side_effect=[iter([self.run_fixture(3), self.run_fixture(2)]),
+                                                       iter([{'name': 'armv7-apk'}])]), \
              patch.object(publish, 'signed_job', side_effect=[False, True]):
             self.assertEqual(publish.choose_run('owner/repo', 'feature/test', '')['id'], 2)
+
+    def test_latest_selection_skips_other_architecture_builds(self):
+        with patch.object(publish, 'api', return_value={'id': 7}), \
+             patch.object(publish, 'pages', side_effect=[
+                 iter([self.run_fixture(3), self.run_fixture(2)]),
+                 iter([{'name': 'armv7-apk'}]), iter([{'name': 'both-apk'}])]), \
+             patch.object(publish, 'signed_job', return_value=True):
+            self.assertEqual(publish.choose_run('owner/repo', 'feature/test', '', 'both')['id'], 2)
+
+    def target_fixture(self, target, missing_symbol=False, wrong_validation=False):
+        abis = TARGET_ABIS[target]
+        names = artifact_names('0.78.31', target)
+        native = {f'lib/{abi}/{name}': b'library' for abi in abis
+                  for name in ('libmain.so', 'libSDL3.so', 'libc++_shared.so')}
+        with archive(native) as apk:
+            apk_bytes = apk.fp.getvalue()
+        metadata = {
+            'version': '0.78.31', 'versionCode': 108, 'apk': names['apk'],
+            'source_commit': 'a' * 40, 'uncommitted_changes': False,
+            'certificate_sha256': publish.CERTIFICATE_SHA256,
+            'resource_check': {'passed': True}, 'debuggable': False,
+            'shell_profileable': True, 'zip_alignment_bytes': 16384,
+            'apk_sha256': hashlib.sha256(apk_bytes).hexdigest(),
+            'target': target, 'architectures': list(abis), 'native_files': list(native),
+            'native_build_ids': {abi: '1234' for abi in abis},
+        }
+        validation = {'source_commit': 'a' * 40, 'source_dirty': False, 'mode': 'apk-fast',
+                      'native_compiled': True, 'tests': None, 'target': target,
+                      'architectures': [] if wrong_validation else list(abis)}
+        files = {abi + '/libmain.so': b'symbols' for abi in abis}
+        if missing_symbol:
+            del files[abis[-1] + '/libmain.so']
+        files['metadata/release.json'] = metadata
+        with archive(files) as symbols:
+            symbol_bytes = symbols.fp.getvalue()
+        artifacts = [archive({names['report']: metadata, names['apk']: apk_bytes,
+                              'validation.json': validation}), archive({names['symbols']: symbol_bytes})]
+        for item in artifacts:
+            self.addCleanup(item.close)
+        return artifacts
+
+    def test_each_target_promotes_matching_apk_and_symbols(self):
+        for target in TARGET_ABIS:
+            with self.subTest(target=target), tempfile.TemporaryDirectory() as temp, \
+                 patch.object(publish, 'artifact', side_effect=self.target_fixture(target)):
+                metadata = publish.prepare('owner/repo', {'head_sha': 'a' * 40}, Path(temp), target)
+                self.assertEqual(metadata['architectures'], list(TARGET_ABIS[target]))
+                self.assertEqual(published_version(metadata['apk']), '0.78.31')
+
+    def test_universal_promotion_rejects_missing_abi_validation_or_symbols(self):
+        for options, message in (({'wrong_validation': True}, 'validation ABI'),
+                                 ({'missing_symbol': True}, 'Native symbols')):
+            with self.subTest(options=options), tempfile.TemporaryDirectory() as temp, \
+                 patch.object(publish, 'artifact', side_effect=self.target_fixture('both', **options)):
+                with self.assertRaisesRegex(RuntimeError, message):
+                    publish.prepare('owner/repo', {'head_sha': 'a' * 40}, Path(temp), 'both')
 
     def test_explicit_run_on_another_branch_is_rejected(self):
         with patch.object(publish, 'api', side_effect=[{'id': 7}, self.run_fixture(3)]), \
@@ -369,4 +426,5 @@ class ReleaseIdentityTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
 

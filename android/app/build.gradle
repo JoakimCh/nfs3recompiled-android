@@ -3,8 +3,16 @@ plugins {
      id 'org.jetbrains.kotlin.plugin.compose'
 }
 
-// Experimental TV build; the normal upstream build remains ARM64.
+// Fork releases keep their installed identity regardless of selected ABI.
+// The legacy armv7Tv flag remains an alias for existing local commands.
 def armv7Tv = providers.gradleProperty("armv7Tv").isPresent()
+def forkBuild = armv7Tv || providers.gradleProperty("forkRelease").isPresent()
+def gameAbis = providers.gradleProperty("gameAbis")
+        .orElse(armv7Tv ? "armeabi-v7a" : "arm64-v8a").get().split(',').toList()
+if (gameAbis.isEmpty() || gameAbis.toSet().size() != gameAbis.size()
+        || !gameAbis.every { it in ['armeabi-v7a', 'arm64-v8a'] }) {
+    throw new GradleException("gameAbis must select armeabi-v7a, arm64-v8a, or both")
+}
 def profileNative = providers.gradleProperty("profileNative").isPresent()
 // Launcher tests deliberately avoid installing/configuring the native toolchain.
 def launcherTestsOnly = providers.gradleProperty("launcherTestsOnly").isPresent()
@@ -17,8 +25,7 @@ if (launcherTestsOnly && gradle.startParameter.taskNames.any {
 }
 def toolchain = rootProject.ext.nfsToolchain
 def forkRelease = rootProject.ext.nfsRelease
-def gameAbi = armv7Tv ? 'armeabi-v7a' : 'arm64-v8a'
-if (armv7Tv && (providers.gradleProperty("x87Exact").isPresent()
+if (gameAbis.contains("armeabi-v7a") && (providers.gradleProperty("x87Exact").isPresent()
         || providers.gradleProperty("wideFpu").isPresent())) {
     throw new GradleException("The ARMv7 TV build uses the default double-backed FPU.")
 }
@@ -33,7 +40,7 @@ android {
 
     defaultConfig {
         applicationId = "dev.nfs3hp.port"
-        if (armv7Tv) applicationIdSuffix = ".armv7tv"
+        if (forkBuild) applicationIdSuffix = ".armv7tv"
         /* Android 8.0.  The floor is java.nio.file, which the launcher reads
          * and writes the game's files with: it arrived in API 26, and going
          * lower would mean desugaring the library and rewriting that.  Nothing
@@ -46,16 +53,15 @@ android {
         minSdk = 26
         targetSdk = toolchain.targetSdk as int
         // ARMv7 identity is shared with signing; profiling is a separate capability.
-        versionCode = armv7Tv ? (forkRelease.versionCode as int) : 78
-        versionName = armv7Tv ? forkRelease.versionName : "0.78"
+        versionCode = forkBuild ? (forkRelease.versionCode as int) : 78
+        versionName = forkBuild ? forkRelease.versionName : "0.78"
         testInstrumentationRunner "dev.nfs3hp.port.TouchOverlayInstrumentation"
-        // Only arm64-v8a is packed: Compose brings androidx.graphics.path for
-        // four ABIs, and a phone of another ABI would then install an APK with
-        // no game in it (arm64 only, decided 2026-10-01).
+        // Filter both packaging and native compilation: Compose also supplies
+        // libraries for ABIs for which we do not build the game.
         ndk {
-            abiFilters gameAbi
+            abiFilters.addAll(gameAbis)
         }
-        manifestPlaceholders = [nativeProfileable: profileNative.toString(), launcherAppLabel: armv7Tv ? "NFS III ARMv7 TV" : "@string/app_name"]
+        manifestPlaceholders = [nativeProfileable: profileNative.toString(), launcherAppLabel: forkBuild ? "NFS III" : "@string/app_name"]
 
         if (!launcherTestsOnly) {
             externalNativeBuild {
@@ -96,7 +102,7 @@ android {
                     )
                     // Only nfs3hp is wired up for Android (see the NFS_BUILD_NFS2SE
                     // guard in the root CMakeLists.txt); the default is already OFF.
-                    abiFilters gameAbi
+                    abiFilters.addAll(gameAbis)
                 }
             }
         }
@@ -166,3 +172,4 @@ dependencies {
     implementation 'androidx.compose.material3:material3:1.4.0'
     implementation 'androidx.compose.material:material-icons-core:1.7.8'
 }
+
