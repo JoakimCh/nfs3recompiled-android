@@ -28,7 +28,7 @@ For a fresh context or workspace:
   do not reconstruct setup by hand. Keep signing credentials outside source/caches.
 * Record verified runs and device feedback in docs/fork/BUILD_STATUS.md and release
   metadata in docs/fork/releases/. Download useful APKs and exact symbols before
-  artifact expiry; the repository currently limits retention to one day.
+  artifact expiry; workflows request 14 days, but inspect each run's actual expiry.
 
 Setup alone does not authorize tests, builds or publication. The shared runner
 passed local tests/check/APK runs; the hosted APK workflow also passed. Consult

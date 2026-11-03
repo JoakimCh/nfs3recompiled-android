@@ -120,6 +120,6 @@ jobs:
           path: out/*-symbols.zip
           if-no-files-found: error
           archive: true
-          retention-days: 90
+          retention-days: 14
 
 

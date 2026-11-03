@@ -12,8 +12,9 @@ v7.0.2. Artifact uploads explicitly retain ZIP archives for compatibility
 with the publisher. The JDK/toolchain and signing identity are unchanged.
 
 No tests, builds or workflow dispatches were run for this action update.
-The repository retention limit still needs its owner to raise it to 90 days;
-the workflow requests 14 days for APKs/reports and 90 days for symbols.
+The workflow now requests 14 days for APKs, reports and exact native symbols.
+The owner will set the repository retention limit to 14 days to match.
+This retention-only update has not been run in a workflow.
 
 ## Latest verified APK: 0.78.32 / code 109 (universal)
 

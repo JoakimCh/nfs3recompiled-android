@@ -4,8 +4,8 @@
 
 Updated the pinned setup-java, checkout and upload-artifact actions to supported
 Node 24 releases. Uploads explicitly use ZIP archives for release-publisher
-compatibility. Documented the repository retention limit needed for 14-day
-APKs/reports and 90-day exact native symbols.
+compatibility. APKs, reports and exact native symbols all request 14-day
+retention, matching the selected repository limit.
 
 ## Unreleased multi-ABI workflows
 
