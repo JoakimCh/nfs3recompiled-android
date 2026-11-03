@@ -18,13 +18,16 @@ choose **Run workflow**, select the branch under **Use workflow from**, and choo
 | `apk-fast` | Same APK build and verification, skipping tooling and launcher tests | Signed APK, reports and symbols |
 
 `apk` includes tests; there is no need to run each mode in order. Fast builds
-record `mode: apk-fast` and `tests: null`. Choose **Native target**: `armv7`, `armv8`, or `both` (the workflow default).
-`both` builds one universal APK containing `armeabi-v7a` and `arm64-v8a`;
-Android selects the compatible runtime. All targets retain the installed fork
-package `dev.nfs3hp.port.armv7tv`, release manifest and original signing key.
-The ordinary Gradle build without fork flags remains the upstream ARM64 identity.
-The workflow filename remains `armv7-release.yml` for existing links/history. Workflows run manually. Select `main` or a feature
-branch; no dedicated test branch is needed. With an authenticated GitHub CLI:
+record `mode: apk-fast` and `tests: null`.
+
+Choose **Native target**: `armv7`, `armv8`, or `both` (the workflow default).
+`both` creates one universal APK; Android selects the compatible runtime.
+All targets use the fork package `dev.nfs3hp.port.armv7tv`, release manifest and
+original signing key. Plain Gradle builds without fork flags keep upstream's
+ARM64 identity.
+
+Workflows run manually on `main` or a feature branch. The existing filename
+`armv7-release.yml` also serves ARMv8 and universal builds. With GitHub CLI:
 
 ```sh
 gh workflow run armv7-release.yml --ref BRANCH -f mode=apk -f target=both
@@ -43,25 +46,27 @@ Open the completed run and scroll to **Artifacts**. GitHub may require sign-in.
 Here `TARGET` is `armv7`, `armv8`, or `both`.
 
 Check the run's branch, source commit and completed steps. A skipped run is not
-validation. APK verification checks certificate, package/version, the exact selected ABIs and ELF architectures,
-16 KiB alignment, non-debuggable/profileable state, resources and a matching native BuildID/symbols set for each ABI.
+validation. APK verification checks the certificate, package/version, selected
+ABIs and ELF architectures, 16 KiB alignment, non-debuggable/profileable state,
+resources and matching native symbols for each ABI.
 Device testing is separate.
 
 The workflow requests **14 days** for APKs, reports and exact native symbols.
 Set the repository retention limit to **14 days** under
 **Settings → Actions → General → Artifact and log retention** to match.
-The last verified run was capped at **one day**; increasing the setting applies
-to new artifacts, so check each existing run's expiry and preserve useful APKs
-and symbols. Published releases provide lasting downloads. Never commit APKs or
-signing keys.
+Check each run's actual expiry: a retention change applies only to new artifacts.
+Published releases provide lasting downloads of APKs and symbols. Never commit
+APKs or signing keys.
 
 ## Publish an existing APK as a release
 
 Open [Publish APK release](https://github.com/JoakimCh/nfs3recompiled-android/actions/workflows/publish-apk.yml)
 and choose **Run workflow**:
 
-1. Select the native target matching the build, then the workflow branch. **Build branch** defaults to that branch.
-2. Leave **APK run ID** blank for its latest successful signed build for that target, or enter
+1. Select the native target matching the build, then the workflow branch.
+   **Build branch** defaults to that branch.
+2. Leave **APK run ID** blank for the latest successful signed build of that
+   target, or enter
    the number after `/actions/runs/` in a specific run's URL.
 3. Choose **prerelease** or **release**, then start. The summary links to the result.
 

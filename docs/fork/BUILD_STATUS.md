@@ -11,17 +11,15 @@ setup-java v6.1.0, checkout v7.0.1, and upload-artifact
 v7.0.2. Artifact uploads explicitly retain ZIP archives for compatibility
 with the publisher. The JDK/toolchain and signing identity are unchanged.
 
-No tests, builds or workflow dispatches were run for this action update.
-The workflow now requests 14 days for APKs, reports and exact native symbols.
-The owner will set the repository retention limit to 14 days to match.
-This retention-only update has not been run in a workflow.
+The action upgrades and 14-day retention configuration await a workflow run.
+The owner plans to set the repository retention limit to 14 days to match.
 
 ## Latest verified APK: 0.78.32 / code 109 (universal)
 
 [Run 41719407758](https://github.com/JoakimCh/nfs3recompiled-android/actions/runs/41719407758)
 on 2026-11-03 built clean source
 `c69b914bc1d11af7058adc7ec56d132f8bdb8da4` on `launcher-tweaks`.
-That source has now been merged into main.
+That source is merged into main.
 
 - All 40 tooling tests and 20 launcher tests passed, with no launcher failures,
   errors or skipped tests.
@@ -35,43 +33,16 @@ That source has now been merged into main.
 - No device-test result or hosted release-promotion result for this revision
   has been reported. The action upgrades above are newer than this verified run.
 
-The APK contains the adaptive menu grid, Exit, running architecture label,
-intro preference, Tweaks/unlocks grouping and mirror detail toggle. Both new
-preferences default off and travel in backup format 4; older imports preserve
-them. Device checks should cover narrow/wide layouts, larger fonts, gamepad
-navigation, Exit, intro versus attract playback, mirror detail and backups.
+## Earlier validation
 
-## Publisher and documentation update
-
-The publisher accepts `apk-fast`, preserving skipped-test metadata and handling
-release notes without a test count. Normal `apk` builds still require passing
-tests; existing artifact checks remain in place. Documentation was consolidated
-and superseded status removed.
-
-All 36 tooling tests passed locally on 2026-11-02, including fast promotion,
-metadata preservation, release-note handling and rejection of invalid builds.
-No APK rebuild was needed. Hosted promotion from a fast build remains unverified.
-
-## Previously verified APK: 0.78.31 / code 108
-
-Source: `12503d4e4c9b8a5292d2d8cb4faef1236ae3f28c` on main, clean tree.
-Includes the race-pause reliability fix and expandable gamepad testing panel.
-Metadata: [releases/0.78.31.json](releases/0.78.31.json).
-
-- All 32 tooling and 19 launcher tests passed locally. Launcher coverage includes
-  panel visibility, stopping with Back, assignment feedback and held-button release.
-- The native SDL gamepad regression passed: both button orders, a one-second gap,
-  rapid polls, menu entry, release/repress, no repeated activation and existing
-  racing/per-player behavior. It reproduced the missed pause before the fix.
-- ARMv7 compilation/linking and APK assembly passed. Packaging used
-  `apk-fast --unsigned` after the separate test run, then `sign` with the restored
-  original private files. The generated build validation records skipped tests
-  for that packaging command; the separate successful tests are recorded here.
-- Original certificate, package/version, ARMv7 libraries, 16 KiB alignment,
-  non-debuggable/profileable state and matching symbols were verified.
-  All 313 packaged resource fields matched; all 19 language resource sets parsed.
-- The signed APK was delivered. No device-test result for this revision has
-  been reported.
+- On 2026-11-02, all 36 tooling tests passed locally, including fast-build
+  promotion, metadata preservation and rejection of invalid builds. Hosted
+  promotion from `apk-fast` remains unverified.
+- [0.78.31 / code 108](releases/0.78.31.json), source
+  `12503d4e4c9b8a5292d2d8cb4faef1236ae3f28c`, passed 32 tooling tests,
+  19 launcher tests, the native gamepad pause regression, ARMv7 packaging and
+  signing/resource/symbol checks. Its pause fix and expanded gamepad test panel
+  still need device feedback.
 
 ## Device feedback
 
@@ -91,16 +62,16 @@ The original local tv28 APK was also reported working without problems;
 | Local shared runner | Tests, native check and signed APK modes passed; isolated launcher bootstrap passed without an NDK. Source `f674acd863ccb3f86bc4052a00e58d39e849f0b9`; later 0.78.31 evidence is above |
 | Fast-mode tooling | Earlier 32-test suite covered runner/signing paths and fast metadata; local unsigned fast packaging passed for 0.78.31. Hosted fast mode remains unverified |
 
-The hosted APK run saved caches after cold setup. Warm hosted cache restoration
-and standalone hosted `tests`/`check` modes have not been verified here.
-Repository artifact retention was observed at one day; inspect each run's expiry.
+Warm cache restoration passed in the 0.78.32 run above. Standalone hosted
+`tests`/`check` modes remain unverified. Check each artifact's actual expiry.
 
 ## Remaining checks
 
 - Verify hosted release promotion from an `apk-fast` build.
 - Validate the updated action versions in a new main workflow run.
-- Device-test 0.78.32 on ARMv7 and ARMv8, including the new launcher settings
-  and the existing pause/gamepad controls.
+- Device-test 0.78.32 on ARMv7 and ARMv8: narrow/wide layouts, larger fonts,
+  gamepad navigation and pause, Exit, intro versus attract playback, mirror
+  detail and settings backups.
 - For toolchain/native math changes, retain the known `trackVertices` discrepancy:
   tv27 compared 45 vertex functions across eight FPU modes with both NDKs;
   output was identical, with 44 passing and the same NaN/finite discrepancy in

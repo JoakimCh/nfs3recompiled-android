@@ -7,7 +7,7 @@
 | Opaque shader selection | Retained, on by default. Joakim reported better TV FPS; the gain was not measured. Unknown/transparent draws use the original shader. |
 | One-time vertex attribute setup | Retained. Removes repeated setup; no isolated FPS measurement. |
 | Default-double vector specialization | Retained with precision fallbacks. No isolated whole-game speedup measured. |
-| Original, cheaper mirror view | Retained for ARMv7. Trades mirror detail for less scene work. |
+| Original, cheaper mirror view | Default on ARMv7 and ARMv8. Full-detail mirrors can be enabled under Advanced → Performance. |
 | Broad projection-loop conversion | Reverted after a directed-rounding mismatch. |
 | Packed-data access fixes | Fixed alignment crashes; primarily a stability improvement. |
 

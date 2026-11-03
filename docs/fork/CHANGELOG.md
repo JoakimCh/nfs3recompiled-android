@@ -1,36 +1,17 @@
 # Fork changes
 
-## Unreleased workflow maintenance
-
-Updated the pinned setup-java, checkout and upload-artifact actions to supported
-Node 24 releases. Uploads explicitly use ZIP archives for release-publisher
-compatibility. APKs, reports and exact native symbols all request 14-day
-retention, matching the selected repository limit.
-
-## Unreleased multi-ABI workflows
-
-Build and publish ARMv7, ARMv8 or one universal APK from the manual workflows.
-All targets share the installed fork identity, release version and signing key.
-Verification checks each selected ABI and retains its exact native symbols and
-BuildID. Release promotion selects the requested target and supports older ARMv7
-artifacts.
-
-## Unreleased release publishing
-
-The release publisher accepts signed `apk-fast` builds, preserving skipped-test
-metadata and existing artifact checks. Fast builds keep the same changelog notes
-without claiming automated tests passed.
-
-The Publish APK release workflow promotes an existing signed build with matching
-symbols, metadata and checksums. Notes collect versioned entries from the APK
-source since the previous published ARMv7 version, with collapsed build details.
-
 ## Unreleased build automation
 
-Added shared setup/tests/check/APK commands, Linux bootstrap and cached manual
-workflow modes with feature-branch support. Launcher-only tests skip native
-configuration. Native builds use bounded job pools; signing credentials are
-checked early and kept outside caches.
+Manual workflows build ARMv7, ARMv8 or a universal APK and publish an existing
+verified build with its matching symbols, metadata and checksums. All targets
+share the fork package, release version and signing key. Promotion supports
+older ARMv7 artifacts and preserves explicitly skipped tests in `apk-fast`.
+
+Shared local and hosted commands provide tool bootstrap, launcher tests and
+native builds with bounded job pools. Signing credentials are checked early and
+kept outside caches. Workflow actions use pinned Node 24 releases; all artifacts
+request 14-day retention. Release notes come from the APK source's versioned
+changelog entries.
 
 ## 0.78.32 — version 109
 

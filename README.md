@@ -1,21 +1,27 @@
 # Joakim's NFS III: Hot Pursuit Android fork
 
-A fork of [nfs3recompiled-android](https://github.com/ZloiKILLER/nfs3recompiled-android/),
-focused on ARMv7 Android TV support and improved controller support. I use AI to
-help develop these changes.
+A fork of [nfs3recompiled-android](https://github.com/ZloiKILLER/nfs3recompiled-android/)
+with Android TV support, improved controls and extra launcher options. I use AI
+to help develop these changes.
 
-- [Fork overview and changes](docs/fork/README.md)
-- [Build an APK and download workflow results](docs/fork/BUILD.md)
-- [Verified builds and device tests](docs/fork/BUILD_STATUS.md)
+- ARMv7 and ARMv8 builds, including a universal APK containing both.
+- Configurable gamepad menu controls, player assignment and input testing.
+- Per-controller two-button pause shortcuts, and touch controls that follow
+  the game's racing bindings.
+- An Exit button, optional intro skipping and individual bonus-content unlocks.
+- Adjustable mirror detail, an experimental rendering optimization and
+  performance reports.
 
-AI contributors: read [AGENTS.md](AGENTS.md) before starting work.
+[Downloads](https://github.com/JoakimCh/nfs3recompiled-android/releases) ·
+[Fork documentation](docs/fork/README.md) · [Changelog](docs/fork/CHANGELOG.md)
 
-The ARMv7 TV package is `dev.nfs3hp.port.armv7tv`. The upstream instructions below
-describe the original ARM64 build; its 64-bit CPU requirement does not apply to
-the ARMv7 package. Both need OpenGL ES 3.0 and your own game data.
+Fork APKs require Android 8.0 or newer, OpenGL ES 3.0 and your own game data.
+The ARM64-only requirement in the original README below applies to upstream;
+this fork also supports ARMv7 Android TV devices.
 
-Original readme below:
+---
 
+Original upstream README:
 
 # NFS III: Hot Pursuit — Android
 
