@@ -4,6 +4,17 @@ Update this file when a result changes. Record the source and evidence; distingu
 automated checks from device feedback. Older session details remain in Git history
 and [release metadata](releases/). Usage is in [BUILD.md](BUILD.md).
 
+## Vertex performance experiments: 0.78.34 / code 111
+
+Local checks passed: 40 tooling tests, 29 launcher tests (no failures, errors or
+skips), the compiler policy check for both ARM ABIs, and a native counter check
+including pause/resume. The host vertex comparison matched all 45 functions at
+64 cases in each of eight rounding modes. The previously documented expanded
+`trackVertices` discrepancy remains unresolved.
+
+The source is ready for the requested local ARMv7-only APK build after branch
+publication. APK signing/verification and device performance tests are pending.
+
 ## log-warning-cleanup: 0.78.33 / code 110
 
 Source `2915ab2067bd5f519144abaea43c2826e1cd4ad9` passed local checks:

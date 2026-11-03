@@ -89,7 +89,7 @@ public class DocumentPickersTest {
             shadowOf(Looper.getMainLooper()).idle();
             assertFalse("settings export did not finish", activity.getBusy());
             JSONObject saved = new JSONObject(output.toString(StandardCharsets.UTF_8.name()));
-            assertEquals(4, saved.getInt("format"));
+            assertEquals(5, saved.getInt("format"));
             assertTrue(saved.has("settings"));
         }
     }

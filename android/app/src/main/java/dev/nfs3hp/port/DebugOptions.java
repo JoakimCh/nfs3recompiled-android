@@ -76,7 +76,6 @@ final class DebugOptions
         new Option("load_check", false, "Check the loading natives [NATIVE]", "NFS_NATIVE_CHECK", "load"),
         new Option("native_check", false, "Check every checked native [NATIVE]", "NFS_NATIVE_CHECK", "1"),
         new Option("mad_check", false, "Check the movie decoder [MAD]", "NFS_MAD_CHECK", "1"),
-        new Option("fpu_single_races", false, "Races at single precision, not extended", "NFS_FPU_EXTENDED", "0"),
         new Option("fpu_double", false, "No x87 single-precision rounding", "NFS_FPU_SINGLE", "0"),
         new Option("fpu_float", false, "The whole game in single precision",
             "NFS_FPU_FLOAT", "1", "NFS_FPU_EXTENDED", "0"),
@@ -128,6 +127,6 @@ final class DebugOptions
         for (Option[] group : ALL)
             for (Option option : group)
                 edit.remove(option.preference());
-        edit.remove("debug_" + DEPTH16).apply();
+        edit.remove("debug_fpu_single_races").remove("debug_" + DEPTH16).apply();
     }
 }

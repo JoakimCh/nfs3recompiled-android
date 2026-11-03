@@ -296,18 +296,19 @@ fun Label(text: String, modifier: Modifier = Modifier) {
 
 /** A setting that is on or off: the whole row is the switch. */
 @Composable
-fun SwitchRow(text: String, checked: Boolean, onChange: (Boolean) -> Unit, note: String? = null) {
+fun SwitchRow(text: String, checked: Boolean, onChange: (Boolean) -> Unit, note: String? = null, enabled: Boolean = true) {
     Column {
         Row(
             Modifier
                 .fillMaxWidth()
-                .toggleable(value = checked, role = Role.Switch, onValueChange = onChange)
+                .toggleable(value = checked, enabled = enabled, role = Role.Switch, onValueChange = onChange)
                 .padding(vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(text, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge, color = GameColors.Silver)
             Switch(
                 checked = checked,
+                enabled = enabled,
                 onCheckedChange = null,
                 colors = SwitchDefaults.colors(
                     checkedThumbColor = GameColors.Night,

@@ -16,8 +16,20 @@ workloads differed. That suggested rendering cost was worth investigating; it
 was not a controlled comparison. CPU profiles pointed toward draw submission,
 but CPU sample shares and swap waits do not directly measure GPU execution time.
 
-For another experiment, record the device, race/settings, source revision and
-native BuildID alongside the result. Separate measured gains from impressions.
-The performance report is available in Advanced. For native sampling, the
-[phone script](../../tools/profiling/record-phone.sh) runs from an authorized
-ADB shell: `sh /sdcard/Download/record-phone.sh` while a race is running.
+Advanced → Performance offers Extended race precision (default) or Original
+single precision. ARMv7 additionally offers Fast vertex calculations, off by
+default and available with single-precision arithmetic. It omits exceptional-value
+retries and may render incorrectly. ARMv8 retains its checked fast path. Selecting
+precision clears conflicting Debug overrides; broader arithmetic experiments remain
+under Debug. The effective mode is displayed. Reset restores Extended and Fast off.
+
+For comparisons, keep the device, ABI, track, car, camera, resolution and mirror
+settings the same. Account for the frame cap and heating. The overlay and report
+include compatible/fast/retry vertex passes: verify that Fast actually ran. Counters
+cover selected loop dispatches, not every vertex helper; a retry counts as both a
+retry and a compatible pass. Performance collection adds overhead. No device FPS
+gain has been measured for this experiment.
+
+The report records the source/build, running ABI and effective arithmetic settings.
+For native sampling, the [phone script](../../tools/profiling/record-phone.sh) runs
+from an authorized ADB shell: `sh /sdcard/Download/record-phone.sh` during a race.

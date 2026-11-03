@@ -28,8 +28,8 @@ import java.util.zip.*;
  * Disk writes and report exports stay off the UI and GL threads. */
 public final class PerformanceSession {
     public static final String COLLECT="perf_collect", OVERLAY="perf_overlay", OPAQUE="perf_opaque_shader";
-    private static final String SCHEMA="nfs3-performance-v3";
-    private static final String EXTRA_COLUMNS="race_main_calls,race_main_elapsed_ns,race_main_cpu_ns,queue_throttle_calls,queue_throttle_elapsed_ns,queue_throttle_cpu_ns,queue_finish_calls,queue_finish_elapsed_ns,queue_finish_cpu_ns,present_calls,present_elapsed_ns,present_cpu_ns,swap_calls,swap_elapsed_ns,swap_cpu_ns,pace_sleep_calls,pace_sleep_elapsed_ns,pace_sleep_cpu_ns,game_cycle_calls,game_cycle_elapsed_ns,game_cycle_cpu_ns,adjacent_pairs,identical_pairs,break_texture,break_levels,break_format,break_wrap,break_depth,break_blend,break_cull,break_chroma,break_clip,break_fog,break_gamma,boundary_analysis_elapsed_ns,boundary_analysis_cpu_ns,gl_idle_wait_calls,gl_idle_wait_elapsed_ns,gl_idle_wait_cpu_ns,opaque_draws,opaque_vertices,shader_switches,opaque_program_available,depth_steps_active";
+    private static final String SCHEMA="nfs3-performance-v4";
+    private static final String EXTRA_COLUMNS="race_main_calls,race_main_elapsed_ns,race_main_cpu_ns,queue_throttle_calls,queue_throttle_elapsed_ns,queue_throttle_cpu_ns,queue_finish_calls,queue_finish_elapsed_ns,queue_finish_cpu_ns,present_calls,present_elapsed_ns,present_cpu_ns,swap_calls,swap_elapsed_ns,swap_cpu_ns,pace_sleep_calls,pace_sleep_elapsed_ns,pace_sleep_cpu_ns,game_cycle_calls,game_cycle_elapsed_ns,game_cycle_cpu_ns,adjacent_pairs,identical_pairs,break_texture,break_levels,break_format,break_wrap,break_depth,break_blend,break_cull,break_chroma,break_clip,break_fog,break_gamma,boundary_analysis_elapsed_ns,boundary_analysis_cpu_ns,gl_idle_wait_calls,gl_idle_wait_elapsed_ns,gl_idle_wait_cpu_ns,opaque_draws,opaque_vertices,shader_switches,opaque_program_available,depth_steps_active,vertex_compatible_passes,vertex_fast_passes,vertex_retry_passes";
     private final Activity activity;
     private final Handler ui=new Handler(Looper.getMainLooper());
     private final HandlerThread worker=new HandlerThread("NFS3-performance");
@@ -65,7 +65,7 @@ public final class PerformanceSession {
                 metadata.put("schema",SCHEMA).put("started_unix_ms",System.currentTimeMillis());
                 metadata.put("version",a.getPackageManager().getPackageInfo(a.getPackageName(),0).versionName);
                 metadata.put("device",Build.MANUFACTURER+" "+Build.MODEL).put("android",Build.VERSION.RELEASE);
-                metadata.put("app_abi","armeabi-v7a").put("package",a.getPackageName());
+                metadata.put("app_abi",VertexSettings.armv7() ? "armeabi-v7a" : "arm64-v8a").put("package",a.getPackageName());
                 metadata.put("overlay",show).put("merge_batches",false).put("opaque_shader",p.getBoolean(OPAQUE,true));
                 metadata.put("debug_mode",DebugOptions.enabled(p,a.getIntent()));
                 metadata.put("fps_cap",p.getInt(GamePreferences.FPS_CAP,30));
@@ -77,7 +77,12 @@ public final class PerformanceSession {
                 for(DebugOptions.Option[] group:DebugOptions.ALL)for(DebugOptions.Option option:group)
                     debug.put(option.name,DebugOptions.value(p,a.getIntent(),option));
                 debug.put("depth16",DebugOptions.depth16(p,a.getIntent()));metadata.put("debug_options",debug);
-                metadata.put("armv7_default_full_mirror",false);
+                VertexSettings.Resolved vertex=VertexSettings.resolve(p,a.getIntent(),VertexSettings.armv7());
+                metadata.put("vertex_environment",new JSONObject(vertex.environment()));
+                metadata.put("effective_precision",vertex.description());
+                metadata.put("vertex_arithmetic",VertexSettings.armv7() ? (vertex.fast ? "unchecked-float-experimental" : "compatible") : "checked-float-when-eligible");
+                metadata.put("full_detail_mirror",p.getBoolean(GamePreferences.FULL_MIRROR,false));
+                metadata.put("vertex_counter_notes","v4 appends compatible/fast/retry passes in track, object, environment-map and eligible vector dispatches; excludes per-polygon helpers and direct double kernels. Retry also increments compatible. Counters require performance recording or overlay.");
                 metadata.put("timing_notes","v3 appends opaque draw/vertex/program-activation counters, followed by current (noncumulative) opaque-program availability and depth-step flags; batch merging removed. v2 appends phase timings and raw adjacent-batch boundaries. Game cycle excludes explicit FPS-cap sleep but includes queue waits, game logic and work between paceFrame checkpoints; it is not total critical-path time. race_main measures main view calls, not full game frames. present includes swap; swap is not GPU time. Timing categories overlap/across parallel threads and must not be summed. Boundary categories overlap and describe raw neighbors even with merging disabled; analysis overhead is separately measured. Epoch changes discard phase scopes spanning pause/resume. GL idle is condition wait only. CSV first 264 columns retain v1 layout.");
                 metadata.put("notes","Cumulative counters sampled once/second. Frame intervals are completed SDL swaps, not GPU times. Intervals over 1 second are counted as excluded gaps. CPU is GL-thread CPU time inside drawPending; elapsed includes waits. Overlay overhead is included. Menus and loading are not automatically classified. In-game detail settings are not captured. CSV limited to first 14400 samples (4 hours). Histogram bins: 0..249 milliseconds, bin 250 includes 250..1000 ms.");
             } catch(Exception ignored) { /* Keep capture useful if metadata is partial. */ }
@@ -120,7 +125,7 @@ public final class PerformanceSession {
     }};
     private void snapshot(boolean display) {
         try {
-            long[] v=nativeSnapshot();if(v==null||v.length!=308)return;
+            long[] v=nativeSnapshot();if(v==null||v.length!=311)return;
             if(collect)disk.post(() -> save(v));
             if(display&&overlay!=null&&previous!=null)overlay.setText(describe(previous,v));
             previous=v;
@@ -139,6 +144,8 @@ public final class PerformanceSession {
         if(b.length>=303)text+=String.format(Locale.ROOT,"\ngame CPU %.1f | queue %.1f | swap %.1f ms/frame",
             (b[284]-a[284])/1e6/frames,(b[268]-a[268])/1e6/frames,(b[277]-a[277])/1e6/frames);
         if(b.length>=308)text+=String.format(Locale.ROOT," | opaque %.0f%%",draws>0?100.0*(b[303]-a[303])/draws:0);
+        if(b.length>=311)text+=String.format(Locale.ROOT,"\nvertex passes/frame: fast %.1f | compatible %.1f | retry %.1f",
+            (b[309]-a[309])/(double)frames,(b[308]-a[308])/(double)frames,(b[310]-a[310])/(double)frames);
         return text;
     }
     void resume() {
@@ -159,7 +166,7 @@ public final class PerformanceSession {
 
     public static void showReport(Activity a) {
         new AlertDialog.Builder(a).setTitle("Performance report")
-            .setMessage("Share or save the latest collected game session. Includes device/build, experiment settings and per-second counters; no game files. Reports remain available after a crash. Changes to performance switches apply on the next game launch.")
+            .setMessage("Share or save the latest collected game session. Includes device/build, experiment settings and per-second counters; no game files. Reports remain available after a crash.")
             .setPositiveButton("Share",(d,w)->export(a,false))
             .setNeutralButton("Save to Downloads",(d,w)->export(a,true)).setNegativeButton("Close",null).show();
     }

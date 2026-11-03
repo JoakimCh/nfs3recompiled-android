@@ -1100,18 +1100,37 @@ private fun AdvancedScreen(a: LauncherActivity) {
                     1 -> {
                         key(generation) {
                             Panel(width) {
+                                Label("Race precision")
+                                ChoiceList(listOf("Extended (default)", "Original single precision"),
+                                    if (VertexSettings.precision(preferences) == VertexSettings.SINGLE) 1 else 0) { index ->
+                                    VertexSettings.select(preferences, if (index == 1) VertexSettings.SINGLE else VertexSettings.EXTENDED)
+                                    generation++
+                                }
+                                val vertex = VertexSettings.resolve(preferences, null, VertexSettings.armv7())
+                                Hint("Effective precision: " + vertex.description())
+                                if (VertexSettings.armv7()) {
+                                    SwitchRow("Fast vertex calculations (experimental)",
+                                        preferences.getBoolean(VertexSettings.FAST, false), { on ->
+                                            preferences.edit().putBoolean(VertexSettings.FAST, on).apply()
+                                            generation++
+                                        }, if (vertex.eligible)
+                                            "Uses faster float calculations. May cause rendering errors."
+                                        else "Available with single-precision arithmetic. Select Original single precision above.",
+                                        enabled = vertex.eligible)
+                                }
                                 BooleanSetting(preferences, PerformanceSession.OVERLAY, false,
                                     "Performance overlay", "FPS, frame intervals, draw calls and opaque-shader coverage.") {}
                                 BooleanSetting(preferences, PerformanceSession.COLLECT, false,
                                     "Record performance data", "Saves timing and rendering data for performance reports.") {}
                                 BooleanSetting(preferences, GamePreferences.FULL_MIRROR, false,
-                                    "Full-detail rear-view mirror", "Render additional scene detail in the mirror. May reduce performance. Applies on the next game launch.") {}
+                                    "Full-detail rear-view mirror", "Render additional scene detail in the mirror. May reduce performance.") {}
                                 BooleanSetting(preferences, PerformanceSession.OPAQUE, true,
                                     "Rendering optimization (experimental)", "May improve rendering performance. Disable if you notice graphical problems.") {}
                             }
                         }
                         MenuButton("Share performance report", { PerformanceSession.showReport(a) }, width)
                         MenuButton("Reset performance settings", {
+                            VertexSettings.reset(preferences)
                             preferences.edit().remove(PerformanceSession.COLLECT)
                                 .remove(PerformanceSession.OVERLAY).remove(PerformanceSession.OPAQUE)
                                 .remove(GamePreferences.FULL_MIRROR).apply()

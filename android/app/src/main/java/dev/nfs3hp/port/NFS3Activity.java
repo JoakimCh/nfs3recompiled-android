@@ -228,6 +228,9 @@ public class NFS3Activity extends SDLActivity
          * here is silently undone. */
         setRequestedOrientation(GamePreferences.screenOrientation(preferences));
 
+        for (java.util.Map.Entry<String,String> setting : VertexSettings.resolve(preferences, getIntent(), VertexSettings.armv7()).environment().entrySet())
+            setEnv(setting.getKey(), setting.getValue());
+
         setEnv("NFS_PERF_STATS", (preferences.getBoolean(PerformanceSession.COLLECT,false) || preferences.getBoolean(PerformanceSession.OVERLAY,false)) ? "1" : "0");
         setEnv("NFS_OPAQUE_SHADER", preferences.getBoolean(PerformanceSession.OPAQUE,true) ? "1" : "0");
         // Role filtering happens in the shared Android/SDL bridge. SDL's

@@ -3,7 +3,8 @@
     python tools/game_checks/vertices/check_fp_policy.py --ndk PATH
 
 Compile the real vertex translation unit at release optimization. ARMv7 must
-not depend on host exception flags; ARMv8 must retain strict FP operations and
+offer a compatible default and opt-in float loops without exception flags;
+ARMv8 must retain strict FP operations and
 its exception-based retry. No Android device or APK is needed. Linux host only.
 """
 import argparse
@@ -37,11 +38,11 @@ def main():
         ir = output.read_text()
         retries = '@feclearexcept' in ir or '@fetestexcept' in ir
         strict = 'llvm.experimental.constrained.fmul' in ir and 'fpexcept.strict' in ir
-        if abi == 'armeabi-v7a' and (retries or 'FloatMath' in ir):
-            raise SystemExit('ARMv7 still uses float loops requiring unsupported FP exception tracking')
+        if abi == 'armeabi-v7a' and (retries or 'NFS_VERTEX_FAST' not in ir or 'FloatMath' not in ir):
+            raise SystemExit('ARMv7 lost its selectable float path or depends on unsupported FP exception tracking')
         if abi == 'arm64-v8a' and not (retries and strict):
             raise SystemExit('ARMv8 lost its strict FP exception/retry semantics')
-        print(abi + ': ' + ('emulated single-precision path' if abi == 'armeabi-v7a'
+        print(abi + ': ' + ('compatible default and selectable unchecked float path' if abi == 'armeabi-v7a'
                            else 'strict host FP operations and exception retry'), flush=True)
 
 

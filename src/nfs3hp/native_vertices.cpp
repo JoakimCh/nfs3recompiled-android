@@ -1,6 +1,7 @@
 #include <nfs3hp.h>
 #include "native_thrash.h"
 #include "packed_vertex.h"
+#include <lib/perfstats.h>
 #include <SDL3/SDL.h>
 #include <cfenv>
 #include <cfloat>
@@ -162,17 +163,46 @@ struct FpuMath
  * at single precision, or NFS_FPU_FLOAT's -- where float arithmetic is the
  * x87's (FloatMath).  Never in the 80-bit and wide experiments, whose FPU
  * keeps more than a double. Clang's 32-bit ARM backend does not support strict
- * floating-point exceptions: use the emulated FPU rather than relying on an
- * exception-based retry it cannot guarantee. NFS_VERTEX_NO_FLOAT_FAST_PATH
+ * floating-point exceptions: default to the emulated FPU; NFS_VERTEX_FAST=1
+ * explicitly permits unchecked float arithmetic for performance experiments.
+ * It never relies on an exception-based retry. NFS_VERTEX_NO_FLOAT_FAST_PATH
  * exercises that same fallback in the host differential checks. The normal
  * double-backed paths do not use this optimization. */
+inline bool uncheckedVertexFast()
+{
+#if defined(__clang__) && defined(__arm__) && !defined(NFS_VERTEX_NO_FLOAT_FAST_PATH)
+    static const bool enabled = [] { const char* p = SDL_getenv("NFS_VERTEX_FAST"); return p && std::strcmp(p, "1") == 0; }();
+    return enabled;
+#else
+    return false;
+#endif
+}
+
+// ARMv7's experimental path never uses exception flags; the default cannot enter it.
+inline void clearVertexExceptions()
+{
+#if !(defined(__clang__) && defined(__arm__))
+    std::feclearexcept(FE_OVERFLOW | FE_UNDERFLOW | FE_INVALID);
+#endif
+}
+inline bool vertexRetryNeeded()
+{
+#if defined(__clang__) && defined(__arm__)
+    return false;
+#else
+    return std::fetestexcept(FE_OVERFLOW | FE_UNDERFLOW | FE_INVALID) != 0;
+#endif
+}
+
 inline bool singleNearest(const x86::CPU& cpu)
 {
-#if defined(WITH_PEDANTIC_FPU) || defined(WITH_WIDE_FPU) \
-    || defined(NFS_VERTEX_NO_FLOAT_FAST_PATH) || (defined(__clang__) && defined(__arm__))
+#if defined(WITH_PEDANTIC_FPU) || defined(WITH_WIDE_FPU) || defined(NFS_VERTEX_NO_FLOAT_FAST_PATH)
     NFS2_USE(cpu);
     return false;
 #else
+#if defined(__clang__) && defined(__arm__)
+    if (!uncheckedVertexFast()) return false;
+#endif
     return cpu.fpu.rounding == x86::FPU::kRoundSingleNearest;
 #endif
 }
@@ -695,12 +725,15 @@ void envMapCoordsNative(win32::WinApplication* app, x86::CPU& cpu)
     bool exact = !singleNearest(cpu);
     if (!exact)
     {
-        std::feclearexcept(FE_OVERFLOW | FE_UNDERFLOW | FE_INVALID);
+        win32::perf::vertexPass(win32::perf::VertexFast);
+        clearVertexExceptions();
         envMapLoop(app, cpu.fpu, FloatMath(), count, turned, vertices, ebx, compared);
-        exact = std::fetestexcept(FE_OVERFLOW | FE_UNDERFLOW | FE_INVALID) != 0;
+        exact = vertexRetryNeeded();
+        if (exact) win32::perf::vertexPass(win32::perf::VertexRetry);
     }
     if (exact)
     {
+        win32::perf::vertexPass(win32::perf::VertexCompatible);
         ebx = cpu.ebx;
         compared = LastWideCompare();
         envMapLoop(app, cpu.fpu, FpuMath{cpu.fpu}, count, turned, vertices, ebx, compared);
@@ -2188,7 +2221,6 @@ void quadMeshNative(win32::WinApplication* app, x86::CPU& cpu)
  * had).  Every output is then a function of inputs the call does not write
  * (`inPlace` says when that is not so), so the second run simply writes over
  * the first.  In any other mode, and in place, the emulated FPU's way at once. */
-constexpr int kOutOfRange = FE_OVERFLOW | FE_UNDERFLOW | FE_INVALID;
 
 template <void (*Float)(win32::WinApplication*, x86::CPU&, const FloatMath&),
           void (*Exact)(win32::WinApplication*, x86::CPU&, const FpuMath&)>
@@ -2197,12 +2229,15 @@ void runNative(win32::WinApplication* app, x86::CPU& cpu, bool inPlace = false)
     if (singleNearest(cpu) && !inPlace)
     {
         const x86::CPU entry = cpu;
-        std::feclearexcept(kOutOfRange);
+        win32::perf::vertexPass(win32::perf::VertexFast);
+        clearVertexExceptions();
         Float(app, cpu, FloatMath());
-        if (!std::fetestexcept(kOutOfRange))
+        if (!vertexRetryNeeded())
             return;
+        win32::perf::vertexPass(win32::perf::VertexRetry);
         cpu = entry;
     }
+    win32::perf::vertexPass(win32::perf::VertexCompatible);
     Exact(app, cpu, FpuMath{cpu.fpu});
 }
 

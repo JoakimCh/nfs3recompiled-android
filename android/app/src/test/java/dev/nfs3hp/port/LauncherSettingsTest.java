@@ -148,7 +148,7 @@ public class LauncherSettingsTest {
         preferences.edit().putString(profile+"race_pause_first","k:102")
             .putString(profile+"race_pause_second","k:108").commit();
         byte[] pair=snapshot();
-        assertEquals(4,new JSONObject(new String(pair,StandardCharsets.UTF_8)).getInt("format"));
+        assertEquals(5,new JSONObject(new String(pair,StandardCharsets.UTF_8)).getInt("format"));
         preferences.edit().clear().commit();restore(pair);
         assertEquals("k:102",preferences.getString(profile+"race_pause_first",""));
         assertEquals("k:108",preferences.getString(profile+"race_pause_second",""));

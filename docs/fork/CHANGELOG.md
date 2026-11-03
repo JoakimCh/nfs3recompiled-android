@@ -13,6 +13,18 @@ kept outside caches. Workflow actions use pinned Node 24 releases; all artifacts
 request 14-day retention. Release notes come from the APK source's versioned
 changelog entries.
 
+## 0.78.34 — version 111
+
+Advanced → Performance groups race precision with an ARMv7-only experimental
+fast-vertex switch. Extended precision and compatible ARMv7 calculations remain
+the defaults. Selecting precision clears conflicting Debug overrides; Reset
+performance settings restores the defaults. Broader arithmetic experiments stay
+under Debug. Launcher notes about applying settings on a later launch are removed.
+
+Performance reports identify the running ABI and effective arithmetic settings,
+and append vertex compatible/fast/retry pass counters, also shown in the overlay.
+Settings backup format 5 carries the new choices; older imports preserve them.
+
 ## 0.78.33 — version 110
 
 File pickers use the Activity Result API and preserve outstanding requests across

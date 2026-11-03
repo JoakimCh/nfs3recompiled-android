@@ -20,7 +20,7 @@ enum Field : size_t {
     BreakFormat=289, BreakWrap=290, BreakDepth=291, BreakBlend=292,
     BreakCull=293, BreakChroma=294, BreakClip=295, BreakFog=296, BreakGamma=297,
     BoundaryElapsed=298, BoundaryCpu=299, GlIdleCalls=300, OpaqueDraws=303, OpaqueVertices=304, ShaderSwitches=305,
-    OpaqueAvailable=306, DepthStepsActive=307, FieldCount=308
+    OpaqueAvailable=306, DepthStepsActive=307, VertexCompatible=308, VertexFast=309, VertexRetry=310, FieldCount=311
 };
 // One GL-thread update per submission/frame; the UI takes a snapshot once/sec.
 // Do not reuse the game's resettable DrawCounters or touch simulation state.
@@ -95,6 +95,11 @@ inline void submitted(uint64_t batches,uint64_t draws,uint64_t vertices,uint64_t
 }
 inline void rendererConfig(bool available,bool depth){if(!enabled())return;auto& s=state();std::lock_guard<std::mutex> l(s.mutex);s.values[OpaqueAvailable]=available;s.values[DepthStepsActive]=depth;}
 inline void opaqueUsage(uint64_t draws,uint64_t vertices,uint64_t switches){if(!enabled())return;auto& s=state();std::lock_guard<std::mutex> l(s.mutex);if(!s.active)return;s.values[OpaqueDraws]+=draws;s.values[OpaqueVertices]+=vertices;s.values[ShaderSwitches]+=switches;}
+inline void vertexPass(Field field) {
+    if(!enabled())return;
+    auto& s=state();std::lock_guard<std::mutex> l(s.mutex);
+    if(s.active)++s.values[field];
+}
 inline std::array<uint64_t,FieldCount> snapshot() {
     auto& s=state(); std::lock_guard<std::mutex> l(s.mutex);
     auto v=s.values;v[0]=now();return v;
