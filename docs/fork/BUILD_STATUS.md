@@ -12,8 +12,12 @@ including pause/resume. The host vertex comparison matched all 45 functions at
 64 cases in each of eight rounding modes. The previously documented expanded
 `trackVertices` discrepancy remains unresolved.
 
-The source is ready for the requested local ARMv7-only APK build after branch
-publication. APK signing/verification and device performance tests are pending.
+After publishing source `4f43573d6806059a9067aa2b0e60fa9ec937b51f`, the local
+ARMv7-only APK build passed with a clean source tree. Package/version, all 314 app
+resource IDs and the packaged ARMv7 ELF libraries were verified. The unsigned APK
+SHA-256 is `7be544bcd409382945b4d554051826366e9c797c75b8f8a8b49fb2e5fb0d7f05`.
+Original-key signing and certificate/alignment/symbol verification await the local
+signing files. No device test or performance measurement has been performed.
 
 ## log-warning-cleanup: 0.78.33 / code 110
 
