@@ -1,5 +1,12 @@
 # Fork changes
 
+## Unreleased workflow maintenance
+
+Updated the pinned setup-java, checkout and upload-artifact actions to supported
+Node 24 releases. Uploads explicitly use ZIP archives for release-publisher
+compatibility. Documented the repository retention limit needed for 14-day
+APKs/reports and 90-day exact native symbols.
+
 ## Unreleased multi-ABI workflows
 
 Build and publish ARMv7, ARMv8 or one universal APK from the manual workflows.

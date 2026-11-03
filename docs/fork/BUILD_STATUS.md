@@ -4,24 +4,41 @@ Update this file when a result changes. Record the source and evidence; distingu
 automated checks from device feedback. Older session details remain in Git history
 and [release metadata](releases/). Usage is in [BUILD.md](BUILD.md).
 
-## Launcher changes: 0.78.32 / code 109 (not yet tested)
+## Workflow action upgrades (not yet tested)
 
-Branch `launcher-tweaks` contains the adaptive menu grid, Exit, running ABI label,
+After merging `launcher-tweaks` into main, pinned the Node 24 actions:
+setup-java v6.1.0, checkout v7.0.1, and upload-artifact
+v7.0.2. Artifact uploads explicitly retain ZIP archives for compatibility
+with the publisher. The JDK/toolchain and signing identity are unchanged.
+
+No tests, builds or workflow dispatches were run for this action update.
+The repository retention limit still needs its owner to raise it to 90 days;
+the workflow requests 14 days for APKs/reports and 90 days for symbols.
+
+## Latest verified APK: 0.78.32 / code 109 (universal)
+
+[Run 41719407758](https://github.com/JoakimCh/nfs3recompiled-android/actions/runs/41719407758)
+on 2026-11-03 built clean source
+`c69b914bc1d11af7058adc7ec56d132f8bdb8da4` on `launcher-tweaks`.
+That source has now been merged into main.
+
+- All 40 tooling tests and 20 launcher tests passed, with no launcher failures,
+  errors or skipped tests.
+- Both ARMv7 (`armeabi-v7a`) and ARMv8 (`arm64-v8a`) compiled and linked.
+- The universal APK passed signing, package/version, selected ABI/ELF,
+  resource, ZIP alignment and matching native symbol verification.
+- Reports, the signed APK and exact symbols uploaded successfully. Warm Gradle,
+  Android-tool and SDL caches restored successfully.
+- Artifacts were capped at one day, expiring at 2026-11-04 21:10:49 UTC.
+  Raising retention does not extend these existing artifacts.
+- No device-test result or hosted release-promotion result for this revision
+  has been reported. The action upgrades above are newer than this verified run.
+
+The APK contains the adaptive menu grid, Exit, running architecture label,
 intro preference, Tweaks/unlocks grouping and mirror detail toggle. Both new
-preferences default off and travel in backup format 4. Older backup imports
-preserve them. Performance reset returns mirror detail to its off default.
-No tests or builds were run for this revision. Device checks should cover narrow
-and wide layouts, larger fonts, gamepad navigation, Exit, intro skipping versus
-attract playback, mirror detail on both ABIs, and backup round-trips.
-
-## Multi-ABI workflow changes (not yet tested)
-
-Added ARMv7, ARMv8 and universal targets to the manual build and publish workflows.
-The runner, signing verification, symbols and release metadata track each selected
-ABI. Existing ARMv7 artifact promotion remains supported. No tests, native builds,
-APK builds or workflow dispatches were run for these changes, per the requested
-implementation/publication scope. Previous verified results below do not validate
-this revision. Run the desired target's `tests`, `check` or `apk` mode when authorized.
+preferences default off and travel in backup format 4; older imports preserve
+them. Device checks should cover narrow/wide layouts, larger fonts, gamepad
+navigation, Exit, intro versus attract playback, mirror detail and backups.
 
 ## Publisher and documentation update
 
@@ -34,7 +51,7 @@ All 36 tooling tests passed locally on 2026-11-02, including fast promotion,
 metadata preservation, release-note handling and rejection of invalid builds.
 No APK rebuild was needed. Hosted promotion from a fast build remains unverified.
 
-## Latest verified APK: 0.78.31 / code 108
+## Previously verified APK: 0.78.31 / code 108
 
 Source: `12503d4e4c9b8a5292d2d8cb4faef1236ae3f28c` on main, clean tree.
 Includes the race-pause reliability fix and expandable gamepad testing panel.
@@ -80,7 +97,9 @@ Repository artifact retention was observed at one day; inspect each run's expiry
 ## Remaining checks
 
 - Verify hosted release promotion from an `apk-fast` build.
-- Device-test 0.78.31, especially the pause pair and gamepad test panel.
+- Validate the updated action versions in a new main workflow run.
+- Device-test 0.78.32 on ARMv7 and ARMv8, including the new launcher settings
+  and the existing pause/gamepad controls.
 - For toolchain/native math changes, retain the known `trackVertices` discrepancy:
   tv27 compared 45 vertex functions across eight FPU modes with both NDKs;
   output was identical, with 44 passing and the same NaN/finite discrepancy in

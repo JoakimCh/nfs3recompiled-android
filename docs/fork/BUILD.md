@@ -47,10 +47,13 @@ validation. APK verification checks certificate, package/version, the exact sele
 16 KiB alignment, non-debuggable/profileable state, resources and a matching native BuildID/symbols set for each ABI.
 Device testing is separate.
 
-Artifacts were last observed to expire after **one day** because of the repository
-retention limit. Check the run's expiry and preserve useful APKs and symbols.
-Change retention under **Settings → Actions → General**, or publish a release for
-lasting downloads. Never commit APKs or signing keys.
+The workflow requests **14 days** for APKs/reports and **90 days** for exact native
+symbols. Set the repository retention limit to **90 days** under
+**Settings → Actions → General → Artifact and log retention** to allow both.
+The last verified run was capped at **one day**; increasing the setting applies
+to new artifacts, so check each existing run's expiry and preserve useful APKs
+and symbols. Published releases provide lasting downloads. Never commit APKs or
+signing keys.
 
 ## Publish an existing APK as a release
 
