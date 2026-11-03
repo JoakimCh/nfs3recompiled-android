@@ -6,20 +6,21 @@ and [release metadata](releases/). Usage is in [BUILD.md](BUILD.md).
 
 ## log-warning-cleanup: 0.78.33 / code 110
 
-Local checks passed: 40 tooling tests, 23 launcher tests, and the NDK compiler
-policy check for both ARM ABIs. Picker tests cover cancellation, duplicate
-launches and a settings export delivered after activity recreation.
+Source `2915ab2067bd5f519144abaea43c2826e1cd4ad9` passed local checks:
+40 tooling tests, 23 launcher tests (no failures, errors or skips), and the NDK
+compiler policy check for both ARM ABIs. ARMv7 and ARMv8 compiled and linked with
+the pinned toolchain using one compilation job. Picker tests cover cancellation,
+duplicate launches and a settings export delivered after activity recreation.
 
-The host vertex comparison passed all 45 functions in eight x87 modes at 64
-cases per mode, both normally and with the ARMv7-style fallback. At 200 cases,
-the pinned Clang reproduces the documented `trackVertices` discrepancy at
-mode `047f`, case 99; untouched main and the fallback have identical output.
-This does not resolve that older NaN/finite discrepancy.
+The GCC host vertex comparison passed all 45 functions in eight x87 modes at 64
+cases per mode, normally and with the ARMv7-style fallback. At 200 cases, pinned
+Clang reproduces the documented `trackVertices` discrepancy at mode `047f`, case
+99; untouched main and the fallback have identical output. That older NaN/finite
+discrepancy remains unresolved.
 
-Full native compilation/linking is still being checked. The first local attempt
-stopped before linking; a one-job retry is in progress. No APK or device test
-has been performed for this branch. SDL's sensor deprecation also remains in
-upstream source; unused/generated declarations were not broadly suppressed.
+No APK or device test was performed; ARMv7 fallback performance needs device
+feedback. SDL's sensor deprecation and unused/generated declaration warnings
+remain; they were not broadly suppressed.
 
 ## Workflow action upgrades (not yet tested)
 
