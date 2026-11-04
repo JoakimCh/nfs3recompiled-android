@@ -4,6 +4,23 @@ Update this file when a result changes. Record the source and evidence; distingu
 automated checks from device feedback. Older session details remain in Git history
 and [release metadata](releases/). Usage is in [BUILD.md](BUILD.md).
 
+## Object vertex double dispatch: 0.78.35 / code 112
+
+ARMv7/ARMv8 release assembly confirmed retained arithmetic precision checks.
+The object vertex routine now selects DoubleMath once per default-double batch,
+reusing its calculation template and retaining other modes and compatible-pass
+counting. [Host kernel timing](PERFORMANCE.md) improved; Android FPS is unmeasured.
+Track dispatch was left unchanged after its trial altered a NaN-sensitive GCC case.
+
+Expanded checks (200 cases per mode, eight modes) pass for both affected/reference
+routines with GCC. Pinned Clang retains the baseline `trackVertices` failure at
+mode `047f`, case 99; object vertices match under the existing NaN policy, with
+two NaN sign/payload output-word differences. The final source passed 40 tooling
+and 29 launcher tests (no failures/errors/skips), all 45 host functions at 64
+cases per mode, both ABI compiler-policy checks, dual-ABI native compilation/linking,
+and the SDL gamepad regression. No APK was built for this revision; device
+performance remains unmeasured.
+
 ## Vertex performance experiments: 0.78.34 / code 111
 
 Local checks passed: 40 tooling tests, 29 launcher tests (no failures, errors or
@@ -16,8 +33,9 @@ The [ARMv7-only build](releases/0.78.34.json) was built locally after publishing
 clean source `4f43573d6806059a9067aa2b0e60fa9ec937b51f`. Original signing identity,
 package/version, all 314 app resource IDs, ARMv7 ELF libraries, 16 KiB alignment,
 non-debuggable/profileable state and exact matching native symbols passed
-verification. No GitHub build workflow was used. No device test or performance
-measurement has been performed.
+verification. No GitHub build workflow was used. Preliminary owner feedback: modes 1/2 showed
+compatible passes and mode 3 fast passes, with no graphical differences noticed.
+Extended seemed fastest; this was not a controlled performance measurement.
 
 ## log-warning-cleanup: 0.78.33 / code 110
 

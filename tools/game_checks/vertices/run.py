@@ -8,7 +8,7 @@ NDK's clang-cl on Windows or CXX (default c++) on a POSIX host, into build/
 here, and run. VCHECK_DUMP=1 lists every differing word of a
 case, VCHECK_SHOW=<control word>:<case> the records a case starts from,
 VCHECK_TRACE=1 each run as it starts. VCHECK_BENCH=<iterations> measures the
-four matrix/vector kernels instead of checking them; synthetic host timings
+selected vertex and matrix/vector kernels instead of checking them; synthetic host timings
 are not device FPS. Do not use fast-math or floating-point contraction.
 
 Set CXX='c++ -DNFS_VERTEX_NO_FLOAT_FAST_PATH' to exercise the ARMv7-style

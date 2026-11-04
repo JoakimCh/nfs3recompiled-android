@@ -22,6 +22,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <ctime>
 #include <random>
 #include <string>
 #include <vector>
@@ -1191,11 +1192,12 @@ void benchmark(VApp& app, const Tested& t, unsigned iterations)
 {
     const std::string name(t.name);
     if (name != "dotProducts" && name != "rotateVectors" && name != "transformPoints"
+        && name != "trackVertices" && name != "objectVertices"
         && name != "multiplyMatrices" && name != "addVectors" && name != "subtractVectors" && name != "scaleVectors")
         return;
     World g{app};
     constexpr unsigned count = 1024;
-    const auto input = g.alloc(12 * count), output = g.alloc(12 * count);
+    const auto input = g.alloc(12 * count), output = g.alloc(0x20 * count + 0x20);
     const auto matrix = g.alloc(36), move = g.alloc(12);
     for (unsigned i = 0; i < count * 3; ++i)
         g.f(input + 4 * i) = float(int(i % 257) - 128) / 17.0f;
@@ -1213,6 +1215,23 @@ void benchmark(VApp& app, const Tested& t, unsigned iterations)
     entry.ecx = output;
     entry.esp = kStackHigh - 0x2000;
     g.w(entry.esp + 4) = output;
+    if (name == "trackVertices")
+    {
+        const auto view = g.alloc(0x80), records = g.alloc(0x20 * count);
+        for (unsigned i = 0; i < 9; ++i) g.f(view + 0x28 + 4 * i) = g.f(matrix + 4 * i);
+        g.f(view + 0x58) = 1.25f; g.f(view + 0x5c) = -2.5f; g.f(view + 0x60) = 50.0f;
+        g.w(view + 0x70) = 0xff808080; g.w(view + 0x74) = 0;
+        g.f(0x552e04) = 50.0f; g.f(0x552e10) = 0.01f;
+        g.f(0x552e0c) = 1.0f; g.f(0x552e08) = 1000.0f;
+        for (unsigned i = 0; i < count; ++i) g.f(records + 0x20 * i + 0xc) = 1.0f;
+        entry.eax = view; entry.edx = count; entry.ebx = input; entry.ecx = output;
+        g.w(entry.esp + 4) = records;
+    }
+    if (name == "objectVertices")
+    {
+        g.f(move + 8) = 50.0f;
+        entry.ecx = move;
+    }
     if (name == "transformPoints")
         entry.ecx = move;
     if (name == "scaleVectors") {
@@ -1231,6 +1250,7 @@ void benchmark(VApp& app, const Tested& t, unsigned iterations)
         auto cpu = entry;
         t.native(&app, cpu);
     }
+    const auto cpuStart = std::clock();
     const auto start = std::chrono::steady_clock::now();
     for (unsigned i = 0; i < iterations; ++i)
     {
@@ -1238,8 +1258,10 @@ void benchmark(VApp& app, const Tested& t, unsigned iterations)
         t.native(&app, cpu);
     }
     const double ns = std::chrono::duration<double, std::nano>(std::chrono::steady_clock::now() - start).count();
-    std::printf("BENCH %s %.1f ns/call (%u iterations, %u items), sample %.9g\n", t.name,
-                ns / iterations, iterations, name == "multiplyMatrices" ? 1u : count, double(g.f(output)));
+    const double cpuNs = double(std::clock() - cpuStart) * 1e9 / CLOCKS_PER_SEC;
+    std::printf("BENCH %s %.1f ns/call (%u iterations, %u items), CPU %.1f ns/call, sample %.9g\n", t.name,
+                ns / iterations, iterations, name == "multiplyMatrices" ? 1u : count,
+                cpuNs / iterations, double(g.f(output)));
 }
 
 // Byte offsets of the current vector output: packed floats need not start

@@ -13,6 +13,13 @@ kept outside caches. Workflow actions use pinned Node 24 releases; all artifacts
 request 14-day retention. Release notes come from the APK source's versioned
 changelog entries.
 
+## 0.78.35 — version 112
+
+The Extended-precision object vertex routine selects direct double arithmetic
+once per batch, reusing the existing calculation templates. Original
+single precision, experimental float calculations, and compatible-pass counters
+retain their existing behaviour. No additional launcher setting is needed.
+
 ## 0.78.34 — version 111
 
 Advanced → Performance groups race precision with an ARMv7-only experimental

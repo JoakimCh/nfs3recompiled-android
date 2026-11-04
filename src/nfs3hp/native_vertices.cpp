@@ -2248,6 +2248,13 @@ void trackVerticesNative(win32::WinApplication* app, x86::CPU& cpu)
 
 void objectVerticesNative(win32::WinApplication* app, x86::CPU& cpu)
 {
+    // Decide once per batch; preserve the existing compatibility counter.
+    if (hostDouble(cpu))
+    {
+        win32::perf::vertexPass(win32::perf::VertexCompatible);
+        objectVerticesWith(app, cpu, DoubleMath());
+        return;
+    }
     runNative<objectVerticesWith<FloatMath>, objectVerticesWith<FpuMath>>(app, cpu);
 }
 
