@@ -24,7 +24,26 @@ enum Field : size_t {
 };
 // One GL-thread update per submission/frame; the UI takes a snapshot once/sec.
 // Do not reuse the game's resettable DrawCounters or touch simulation state.
-inline bool enabled() { static const bool v = [] { auto p=std::getenv("NFS_PERF_STATS"); return p && *p=='1'; }(); return v; }
+enum class Level { Off, Fps, Detailed };
+inline Level level() {
+    static const Level value=[] {
+        const auto detail=std::getenv("NFS_PERF_STATS");
+        if(detail&&*detail=='1')return Level::Detailed;
+        const auto fps=std::getenv("NFS_FPS_COUNTER");
+        return fps&&*fps=='1'?Level::Fps:Level::Off;
+    }();
+    return value;
+}
+// FPS-only deliberately leaves enabled() false: detailed callers do no work.
+inline bool enabled(){return level()==Level::Detailed;}
+inline bool fpsOnly(){return level()==Level::Fps;}
+struct FpsStats {
+    std::atomic<uint32_t> frames{0};
+    std::atomic<bool> active{true};
+};
+static_assert(std::atomic<uint32_t>::is_always_lock_free && std::atomic<bool>::is_always_lock_free,
+              "FPS state must be lock-free");
+inline FpsStats& fpsState(){static FpsStats s;return s;}
 inline bool opaqueEnabled(){static const bool v=[] {auto p=std::getenv("NFS_OPAQUE_SHADER");return !p||*p!='0';}();return v;}
 
 inline uint64_t now() { return std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now().time_since_epoch()).count(); }
@@ -42,7 +61,15 @@ struct Stats {
     bool active=true;
 };
 inline Stats& state() { static Stats s; return s; }
-inline void active(bool value) { if(!enabled())return; auto& s=state(); std::lock_guard<std::mutex> l(s.mutex); s.active=value; s.lastFrame=0; ++s.epoch; }
+inline void active(bool value) {
+    const auto selected=level();
+    if(selected!=Level::Detailed) {
+        if(selected==Level::Fps)fpsState().active.store(value,std::memory_order_relaxed);
+        return;
+    }
+    auto& s=state();std::lock_guard<std::mutex> l(s.mutex);
+    s.active=value;s.lastFrame=0;++s.epoch;
+}
 inline void timing(size_t field,uint64_t elapsed,uint64_t cpu,uint64_t epoch) {
     if(!enabled())return;
     auto& s=state(); std::lock_guard<std::mutex> l(s.mutex);
@@ -75,7 +102,17 @@ inline void boundaries(const std::array<uint64_t,13>& counts,uint64_t elapsed,ui
     s.values[BoundaryElapsed]+=elapsed;s.values[BoundaryCpu]+=cpu;
 }
 inline void presented(uint64_t time, unsigned width, unsigned height) {
-    if(!enabled())return;
+    const auto selected=level();
+    if(selected!=Level::Detailed) {
+        if(selected==Level::Fps) {
+            auto& s=fpsState();
+            if(s.active.load(std::memory_order_relaxed)) {
+                // One GL-thread producer; no read/modify/write loop or shared mutex.
+                s.frames.store(s.frames.load(std::memory_order_relaxed)+1,std::memory_order_relaxed);
+            }
+        }
+        return;
+    }
     auto& s=state(); std::lock_guard<std::mutex> l(s.mutex);
     if(!s.active)return;
     ++s.values[1]; s.values[11]=width; s.values[12]=height;
@@ -99,6 +136,10 @@ inline void vertexPass(Field field) {
     if(!enabled())return;
     auto& s=state();std::lock_guard<std::mutex> l(s.mutex);
     if(s.active)++s.values[field];
+}
+// Sampling time is read once/second by the UI, never on the FPS-only frame path.
+inline std::array<uint64_t,2> fpsSnapshot() {
+    return {now(),fpsState().frames.load(std::memory_order_relaxed)};
 }
 inline std::array<uint64_t,FieldCount> snapshot() {
     auto& s=state(); std::lock_guard<std::mutex> l(s.mutex);

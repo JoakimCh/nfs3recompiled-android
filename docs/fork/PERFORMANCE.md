@@ -12,12 +12,32 @@
 | Broad projection-loop conversion | Reverted after a directed-rounding mismatch. |
 | Packed-data access fixes | Fixed alignment crashes; primarily a stability improvement. |
 
+Default-double mode does not need single-precision rounding after each operation.
+The object specialization selects the existing DoubleMath template once per batch,
+sharing the formulae and explicit float stores with the compatibility paths.
+
 For the object specialization, five alternating baseline/candidate pairs using
 NDK 30 Clang on Linux x86-64 measured median CPU time of 32.70 → 20.58 µs per call
 (50,000 calls/run, 1,024 finite-input vertices/call, statistics disabled). This
 37% reduction is an isolated host kernel result, not an ARM or whole-game FPS
 measurement. ARMv7/ARMv8 native vertex text grows by 848/1,288 bytes. Track dispatch
 remains unchanged because a trial altered a NaN-sensitive GCC comparison case.
+
+### Why track dispatch was deferred
+
+At 200 host cases per rounding mode, the track specialization made GCC fail a
+previously passing case: mode `047f` (single precision, rounding down), case 99.
+Native output was NaN (`7fc00000`) where the generated reference wrote
+`3fc71d73` (about 1.55558622). Pinned Clang already fails that same case without
+the specialization. Removing only the track dispatch restored the GCC check.
+
+The failure mode does not select the new double path. A working hypothesis is
+that changed inlining/register allocation alters NaN sign/payload propagation
+in the existing path. Track projection inspects raw float bits as a signed
+integer when choosing `1` versus `1/z`; NaN sign can therefore affect control
+flow. The first divergent operation has not been traced, so this mechanism is
+not established. Trace it and establish the intended original x87 behaviour
+before revisiting track optimization. No gameplay glitch has been tied to this case.
 
 Historical TV runs showed roughly 22 FPS at 1080p and 38 FPS at 720p, but the
 workloads differed. That suggested rendering cost was worth investigating; it
@@ -32,11 +52,29 @@ precision clears conflicting Debug overrides; broader arithmetic experiments rem
 under Debug. The effective mode is displayed. Reset restores Extended and Fast off.
 
 For comparisons, keep the device, ABI, track, car, camera, resolution and mirror
-settings the same. Account for the frame cap and heating. The overlay and report
+settings the same. Account for the frame cap and heating. The Verbose overlay and report
 include compatible/fast/retry vertex passes: verify that Fast actually ran. Counters
 cover selected loop dispatches, not every vertex helper; a retry counts as both a
 retry and a compatible pass. Performance collection adds overhead. No device FPS
 gain has been measured for this experiment.
+
+### Overlay and recording
+
+| Display | Recording off | Recording on |
+| --- | --- | --- |
+| Disabled | Performance collector off | Full statistics; no overlay |
+| FPS | Lightweight frame counter | Full statistics; FPS display |
+| Verbose | Full statistics and display | Full statistics and display, saved |
+
+Recording selects the detailed collector automatically without changing the display
+choice. This permits an unobstructed capture and shares one detailed collector.
+FPS-only uses one atomic frame counter updated by the GL thread, sampled once per
+second. It skips detailed mutexes, profiling timers, batch analysis and vertex
+counters; no recording thread is created. Residual enable checks and display work
+remain. The old enabled overlay preference maps to Verbose; Reset disables both
+overlay and recording. FPS uses completed swaps over the sampling window, including
+loading stalls; Verbose interval statistics exclude gaps longer than one second.
+A pause starts a fresh display window. Device overhead has not been measured.
 
 The report records the source/build, running ABI and effective arithmetic settings.
 For native sampling, the [phone script](../../tools/profiling/record-phone.sh) runs

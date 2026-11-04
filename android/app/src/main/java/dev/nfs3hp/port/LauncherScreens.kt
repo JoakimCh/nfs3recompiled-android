@@ -1118,10 +1118,16 @@ private fun AdvancedScreen(a: LauncherActivity) {
                                         else "Available with single-precision arithmetic. Select Original single precision above.",
                                         enabled = vertex.eligible)
                                 }
-                                BooleanSetting(preferences, PerformanceSession.OVERLAY, false,
-                                    "Performance overlay", "FPS, frame intervals, draw calls and opaque-shader coverage.") {}
+                                Label("Performance overlay")
+                                val overlayModes = listOf(PerformanceSession.DISABLED, PerformanceSession.FPS, PerformanceSession.VERBOSE)
+                                ChoiceList(listOf("Disabled", "FPS", "Verbose"),
+                                    overlayModes.indexOf(PerformanceSession.overlayMode(preferences))) { index ->
+                                    PerformanceSession.setOverlayMode(preferences, overlayModes[index])
+                                    generation++
+                                }
+                                Hint("FPS uses lightweight frame counting. Verbose includes timings, draw calls and vertex counters.")
                                 BooleanSetting(preferences, PerformanceSession.COLLECT, false,
-                                    "Record performance data", "Saves timing and rendering data for performance reports.") {}
+                                    "Record performance data", "Collects and saves full statistics regardless of the overlay selection.") {}
                                 BooleanSetting(preferences, GamePreferences.FULL_MIRROR, false,
                                     "Full-detail rear-view mirror", "Render additional scene detail in the mirror. May reduce performance.") {}
                                 BooleanSetting(preferences, PerformanceSession.OPAQUE, true,
@@ -1131,9 +1137,8 @@ private fun AdvancedScreen(a: LauncherActivity) {
                         MenuButton("Share performance report", { PerformanceSession.showReport(a) }, width)
                         MenuButton("Reset performance settings", {
                             VertexSettings.reset(preferences)
-                            preferences.edit().remove(PerformanceSession.COLLECT)
-                                .remove(PerformanceSession.OVERLAY).remove(PerformanceSession.OPAQUE)
-                                .remove(GamePreferences.FULL_MIRROR).apply()
+                            PerformanceSession.reset(preferences)
+                            preferences.edit().remove(GamePreferences.FULL_MIRROR).apply()
                             generation++
                         }, width)
                     }

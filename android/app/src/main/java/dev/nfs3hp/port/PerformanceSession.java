@@ -27,14 +27,38 @@ import java.util.zip.*;
 /** Once/second snapshots. The native counters never alter game math or input.
  * Disk writes and report exports stay off the UI and GL threads. */
 public final class PerformanceSession {
+    // OVERLAY is the legacy boolean, retained only for preference migration.
     public static final String COLLECT="perf_collect", OVERLAY="perf_overlay", OPAQUE="perf_opaque_shader";
+    static final String OVERLAY_MODE="perf_overlay_mode";
+    static final String DISABLED="disabled", FPS="fps", VERBOSE="verbose";
+    static final int OFF_LEVEL=0, FPS_LEVEL=1, DETAILED_LEVEL=2;
+
+    static String overlayMode(SharedPreferences preferences) {
+        String mode=preferences.getString(OVERLAY_MODE,null);
+        if(DISABLED.equals(mode)||FPS.equals(mode)||VERBOSE.equals(mode))return mode;
+        // Preserve an existing enabled overlay as Verbose until explicitly changed.
+        return preferences.getBoolean(OVERLAY,false)?VERBOSE:DISABLED;
+    }
+    static void setOverlayMode(SharedPreferences preferences,String mode) {
+        if(!DISABLED.equals(mode)&&!FPS.equals(mode)&&!VERBOSE.equals(mode))mode=DISABLED;
+        preferences.edit().putString(OVERLAY_MODE,mode).remove(OVERLAY).apply();
+    }
+    static void reset(SharedPreferences preferences) {
+        preferences.edit().remove(COLLECT).remove(OVERLAY).remove(OVERLAY_MODE).remove(OPAQUE).apply();
+    }
+    static int instrumentationLevel(SharedPreferences preferences) {
+        String mode=overlayMode(preferences);
+        if(preferences.getBoolean(COLLECT,false)||VERBOSE.equals(mode))return DETAILED_LEVEL;
+        return FPS.equals(mode)?FPS_LEVEL:OFF_LEVEL;
+    }
     private static final String SCHEMA="nfs3-performance-v4";
     private static final String EXTRA_COLUMNS="race_main_calls,race_main_elapsed_ns,race_main_cpu_ns,queue_throttle_calls,queue_throttle_elapsed_ns,queue_throttle_cpu_ns,queue_finish_calls,queue_finish_elapsed_ns,queue_finish_cpu_ns,present_calls,present_elapsed_ns,present_cpu_ns,swap_calls,swap_elapsed_ns,swap_cpu_ns,pace_sleep_calls,pace_sleep_elapsed_ns,pace_sleep_cpu_ns,game_cycle_calls,game_cycle_elapsed_ns,game_cycle_cpu_ns,adjacent_pairs,identical_pairs,break_texture,break_levels,break_format,break_wrap,break_depth,break_blend,break_cull,break_chroma,break_clip,break_fog,break_gamma,boundary_analysis_elapsed_ns,boundary_analysis_cpu_ns,gl_idle_wait_calls,gl_idle_wait_elapsed_ns,gl_idle_wait_cpu_ns,opaque_draws,opaque_vertices,shader_switches,opaque_program_available,depth_steps_active,vertex_compatible_passes,vertex_fast_passes,vertex_retry_passes";
     private final Activity activity;
     private final Handler ui=new Handler(Looper.getMainLooper());
-    private final HandlerThread worker=new HandlerThread("NFS3-performance");
+    private final HandlerThread worker;
     private final Handler disk;
     private final boolean collect, show;
+    private final String overlayMode;
     private TextView overlay;
     private long[] previous;
     private boolean resumed, closed, storageFailed;
@@ -46,8 +70,10 @@ public final class PerformanceSession {
     PerformanceSession(Activity a, ViewGroup parent) {
         activity=a;
         SharedPreferences p=GamePreferences.get(a);
-        collect=p.getBoolean(COLLECT,false);show=p.getBoolean(OVERLAY,false);
-        worker.start();disk=new Handler(worker.getLooper());
+        collect=p.getBoolean(COLLECT,false);overlayMode=overlayMode(p);show=!DISABLED.equals(overlayMode);
+        if(collect) {
+            worker=new HandlerThread("NFS3-performance");worker.start();disk=new Handler(worker.getLooper());
+        } else {worker=null;disk=null;}
         if(show && parent!=null) {
             overlay=new TextView(a);
             overlay.setText("Performance: waiting for frames…");
@@ -66,7 +92,7 @@ public final class PerformanceSession {
                 metadata.put("version",a.getPackageManager().getPackageInfo(a.getPackageName(),0).versionName);
                 metadata.put("device",Build.MANUFACTURER+" "+Build.MODEL).put("android",Build.VERSION.RELEASE);
                 metadata.put("app_abi",VertexSettings.armv7() ? "armeabi-v7a" : "arm64-v8a").put("package",a.getPackageName());
-                metadata.put("overlay",show).put("merge_batches",false).put("opaque_shader",p.getBoolean(OPAQUE,true));
+                metadata.put("overlay",show).put("overlay_mode",overlayMode).put("instrumentation","detailed").put("merge_batches",false).put("opaque_shader",p.getBoolean(OPAQUE,true));
                 metadata.put("debug_mode",DebugOptions.enabled(p,a.getIntent()));
                 metadata.put("fps_cap",p.getInt(GamePreferences.FPS_CAP,30));
                 JSONObject display=new JSONObject();
@@ -82,7 +108,7 @@ public final class PerformanceSession {
                 metadata.put("effective_precision",vertex.description());
                 metadata.put("vertex_arithmetic",VertexSettings.armv7() ? (vertex.fast ? "unchecked-float-experimental" : "compatible") : "checked-float-when-eligible");
                 metadata.put("full_detail_mirror",p.getBoolean(GamePreferences.FULL_MIRROR,false));
-                metadata.put("vertex_counter_notes","v4 appends compatible/fast/retry passes in track, object, environment-map and eligible vector dispatches; excludes per-polygon helpers and direct double kernels. Retry also increments compatible. Counters require performance recording or overlay.");
+                metadata.put("vertex_counter_notes","v4 appends compatible/fast/retry passes in track, object, environment-map and eligible vector dispatches; excludes per-polygon helpers and direct double vector/matrix dispatches. Retry also increments compatible. Counters require performance recording or the Verbose overlay.");
                 metadata.put("timing_notes","v3 appends opaque draw/vertex/program-activation counters, followed by current (noncumulative) opaque-program availability and depth-step flags; batch merging removed. v2 appends phase timings and raw adjacent-batch boundaries. Game cycle excludes explicit FPS-cap sleep but includes queue waits, game logic and work between paceFrame checkpoints; it is not total critical-path time. race_main measures main view calls, not full game frames. present includes swap; swap is not GPU time. Timing categories overlap/across parallel threads and must not be summed. Boundary categories overlap and describe raw neighbors even with merging disabled; analysis overhead is separately measured. Epoch changes discard phase scopes spanning pause/resume. GL idle is condition wait only. CSV first 264 columns retain v1 layout.");
                 metadata.put("notes","Cumulative counters sampled once/second. Frame intervals are completed SDL swaps, not GPU times. Intervals over 1 second are counted as excluded gaps. CPU is GL-thread CPU time inside drawPending; elapsed includes waits. Overlay overhead is included. Menus and loading are not automatically classified. In-game detail settings are not captured. CSV limited to first 14400 samples (4 hours). Histogram bins: 0..249 milliseconds, bin 250 includes 250..1000 ms.");
             } catch(Exception ignored) { /* Keep capture useful if metadata is partial. */ }
@@ -125,11 +151,19 @@ public final class PerformanceSession {
     }};
     private void snapshot(boolean display) {
         try {
-            long[] v=nativeSnapshot();if(v==null||v.length!=311)return;
-            if(collect)disk.post(() -> save(v));
-            if(display&&overlay!=null&&previous!=null)overlay.setText(describe(previous,v));
+            long[] v=nativeSnapshot();if(v==null||(v.length!=311&&v.length!=2))return;
+            if(collect&&v.length==311)disk.post(() -> save(v));
+            if(display&&overlay!=null&&previous!=null)
+                overlay.setText(FPS.equals(overlayMode)?describeFps(previous,v):describe(previous,v));
             previous=v;
         } catch(UnsatisfiedLinkError ignored) { if(overlay!=null)overlay.setText("Performance unavailable: game library not loaded"); }
+    }
+    static String describeFps(long[] a,long[] b) {
+        long ns=b[0]-a[0];
+        // The FPS-only producer uses a 32-bit atomic counter; account for wrap.
+        long frames=b.length==2?(b[1]-a[1])&0xffffffffL:b[1]-a[1];
+        if(ns<=0||frames<0)return "Performance: waiting for frames…";
+        return String.format(Locale.ROOT,"%.1f FPS",frames*1e9/ns);
     }
     static String describe(long[] a,long[] b) {
         long frames=b[1]-a[1],intervals=b[2]-a[2],ns=b[3]-a[3];
@@ -160,8 +194,11 @@ public final class PerformanceSession {
         resumed=false;previous=null;if(overlay!=null)overlay.setVisibility(View.GONE);
     }
     void close() {
-        if(closed)return;pause();closed=true;worker.quitSafely();
-        try{worker.join(1000);}catch(InterruptedException e){Thread.currentThread().interrupt();}
+        if(closed)return;pause();closed=true;
+        if(worker!=null) {
+            worker.quitSafely();
+            try{worker.join(1000);}catch(InterruptedException e){Thread.currentThread().interrupt();}
+        }
     }
 
     public static void showReport(Activity a) {

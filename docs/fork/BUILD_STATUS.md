@@ -4,6 +4,20 @@ Update this file when a result changes. Record the source and evidence; distingu
 automated checks from device feedback. Older session details remain in Git history
 and [release metadata](releases/). Usage is in [BUILD.md](BUILD.md).
 
+## Overlay levels: 0.78.36 / code 113
+
+The launcher suite passed 32 tests and tooling passed 44, including native
+collector isolation checks with the detailed mutex deliberately held. The native
+checks cover FPS/disabled isolation, pause/resume, counter wrap, concurrent
+sampling and detailed-mode precedence. ARMv7/ARMv8 compiler output for the FPS
+collection hook contains atomic loads/stores without atomic RMW loops or clock
+reads. Both native ABIs compiled/linked; compiler-policy and SDL controller checks
+passed. All 45 host functions matched at 64 cases per rounding mode. Expanded
+GCC checks passed; pinned Clang retains only the documented `047f`, case 99 track
+failure, with object results matching the existing NaN policy.
+No device overhead measurement or APK build has been performed for this revision.
+The track finding and its unproven mechanism are documented in [PERFORMANCE.md](PERFORMANCE.md).
+
 ## Object vertex double dispatch: 0.78.35 / code 112
 
 ARMv7/ARMv8 release assembly confirmed retained arithmetic precision checks.

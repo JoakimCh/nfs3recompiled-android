@@ -13,6 +13,14 @@ kept outside caches. Workflow actions use pinned Node 24 releases; all artifacts
 request 14-day retention. Release notes come from the APK source's versioned
 changelog entries.
 
+## 0.78.36 — version 113
+
+Performance overlay choices are Disabled, FPS and Verbose. FPS without recording
+uses a lightweight frame counter; Verbose and recording enable detailed statistics.
+Recording keeps the selected display. Overlay-only sessions no longer start a
+recording thread. Existing enabled overlays migrate to Verbose; Reset disables
+overlay and recording. Reports record the display mode.
+
 ## 0.78.35 — version 112
 
 The Extended-precision object vertex routine selects direct double arithmetic

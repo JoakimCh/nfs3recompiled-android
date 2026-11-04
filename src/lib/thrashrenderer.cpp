@@ -559,8 +559,11 @@ void ThrashRenderer::drawPending(const ThrashDraw& draw)
         const GLuint program=fast?m_opaqueProgram:m_program;
         const auto& loc=fast?m_opaqueLocations:m_locations;
         const bool programChanged=activeProgram!=program;
-        if(programChanged){glUseProgram(program);activeProgram=program;++switches;}
-        if(fast){++opaqueDraws;opaqueVertices+=vertexEnd-first;}
+        if(programChanged){glUseProgram(program);activeProgram=program;}
+        if(measure) {
+            ++actualDraws;switches+=programChanged;
+            if(fast){++opaqueDraws;opaqueVertices+=vertexEnd-first;}
+        }
         // Alpha one with SRC_ALPHA/ONE_MINUS_SRC_ALPHA replaces the destination.
         // Make that proven fact explicit to the GPU's opaque-surface processing.
         if(!previous || blendEnabled!=!fast) {
@@ -639,7 +642,6 @@ void ThrashRenderer::drawPending(const ThrashDraw& draw)
         scissor = clipped;
         previous = &batch;
         glDrawArrays(GL_TRIANGLES, GLint(first), GLsizei(vertexEnd - first));
-        ++actualDraws;
         first = vertexEnd;
     }
     glBindSampler(0, 0);
@@ -1138,6 +1140,13 @@ void ThrashRenderer::finishTriangle(ThrashVertex* out)
 #include <jni.h>
 extern "C" JNIEXPORT jlongArray JNICALL
 Java_dev_nfs3hp_port_PerformanceSession_nativeSnapshot(JNIEnv* env,jclass) {
+    if(!win32::perf::enabled()) {
+        const auto values=win32::perf::fpsSnapshot();
+        const jlong data[]={static_cast<jlong>(values[0]),static_cast<jlong>(values[1])};
+        auto result=env->NewLongArray(2);
+        if(result)env->SetLongArrayRegion(result,0,2,data);
+        return result;
+    }
     auto values=win32::perf::snapshot();
     jlong data[win32::perf::FieldCount];for(size_t i=0;i<win32::perf::FieldCount;++i)data[i]=static_cast<jlong>(values[i]);
     auto result=env->NewLongArray(win32::perf::FieldCount);
