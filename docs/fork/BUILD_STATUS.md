@@ -3,6 +3,22 @@
 Current evidence is below; versioned changes are in [CHANGELOG.md](CHANGELOG.md),
 artifact identities in [releases/](releases/), and older session details in Git history.
 
+## ARMv7 upstream float comparison candidate
+
+Branch `compare-armv7-upstream-floats` starts from main `d0d5cd58`. It enables
+ordinary C++ float loops plus upstream-style libc exception clear/test calls on
+ARMv7. Compare with `fix-armv7-checked-vertices` at `4bcf2394`, which uses explicit
+scalar VFP instructions and FPSCR checks. Other fork behavior, packed accesses,
+opaque rendering and ARM64 arithmetic are unchanged between the candidates.
+
+Clang's unsupported ARMv7 FENV_ACCESS pragma remains disabled, so this is an
+upstream-style comparison rather than a byte-for-byte upstream build. Its libc
+retry is retained, but compiler ordering/exception behavior is not guaranteed.
+Both ABI compiler-policy checks and ARMv7 machine-code generation passed.
+Neither candidate has measured device performance; this branch is not claimed
+to be the fastest until compared on the same ARMv7 device and race. The existing
+0.78.37 APK below includes neither candidate.
+
 ## 0.78.37 / code 114 — signed universal APK
 
 Built locally on 2026-11-06 from clean, published source

@@ -126,26 +126,24 @@ struct FpuMath
     Value sqrt(Value a) const { return double(fp::sqrt(x86::Float(a))); }
 };
 
-// ARMv7 uses the compatible path without exception flag dependencies.
+// Comparison branch: use upstream's ordinary C++ float operations and libc
+// exception retry on ARMv7 too. Clang does not support FENV_ACCESS there, so
+// keep that pragma disabled on ARMv7. This variant deliberately does not supply
+// the ordered VFP instructions or FPSCR checks from fix-armv7-checked-vertices.
 inline void clearVertexExceptions()
 {
-#if !(defined(__clang__) && defined(__arm__))
     std::feclearexcept(FE_OVERFLOW | FE_UNDERFLOW | FE_INVALID);
-#endif
 }
 inline bool vertexRetryNeeded()
 {
-#if defined(__clang__) && defined(__arm__)
-    return false;
-#else
     return std::fetestexcept(FE_OVERFLOW | FE_UNDERFLOW | FE_INVALID) != 0;
-#endif
 }
 
-// Fixed upstream single precision. ARMv7 cannot safely use exception retries.
+// Upstream's fixed-single mode makes float loops eligible on both ARM ABIs.
+// Keep the explicit reference-check override and existing in-place protection.
 inline constexpr bool vertexFloatFastPath()
 {
-#if (defined(__clang__) && defined(__arm__)) || defined(NFS_VERTEX_NO_FLOAT_FAST_PATH)
+#if defined(NFS_VERTEX_NO_FLOAT_FAST_PATH)
     return false;
 #else
     return true;
