@@ -366,7 +366,7 @@ class LauncherActivity : ComponentActivity() {
     /** The logs as a zip in the cache, handed to another app: the share menu,
      *  or, to the developer, a letter to the address in developer_email. */
     fun sendLogs(toDeveloper: Boolean) {
-        startOperation {
+        startOperation(getString(R.string.logs_share_title)) {
             val folder = File(cacheDir, "logs")
             folder.listFiles()?.forEach { it.delete() }
             folder.mkdirs()
@@ -458,7 +458,7 @@ class LauncherActivity : ComponentActivity() {
                         SaveGameManager.exportZip(applicationContext, uri, dataRoot(), withSettings))
                 }
             }
-            REQUEST_EXPORT_LOGS -> startOperation {
+            REQUEST_EXPORT_LOGS -> startOperation(getString(R.string.logs_export)) {
                 val count = contentResolver.openOutputStream(uri)?.use { LogBundle.write(applicationContext, it) }
                     ?: throw IOException(getString(R.string.saves_open_failed))
                 getString(R.string.logs_exported, count)
