@@ -4,13 +4,13 @@ Update this file when a result changes. Record the source and evidence; distingu
 automated checks from device feedback. Older session details remain in Git history
 and [release metadata](releases/). Usage is in [BUILD.md](BUILD.md).
 
-## Upstream integration candidate — not tested or built
+## Upstream integration: 0.78.37 / code 114 — host checks passed, APK pending
 
 Branch `integrate-upstream-vertex-cleanup` starts from
 `vertex-double-dispatch` at `919280cf7dbeec4f76ace1ea0d870d65c3c17518`
 and incorporates upstream `9c27ce73e9310337b9d555500ebb01b47fd602e1`.
-Prepared as a merge commit for publication before building. Build version is
-0.78.37 / code 114; tests and universal APK validation are pending.
+Published merge commit: `738ce51422431781b8cd59ccfa47942eb9942757`.
+Its tree matches the prepared local merge. Build version is 0.78.37 / code 114.
 
 Uses upstream fixed single precision; removes double dispatch, arithmetic UI
 experiments and stale build options. Retains packed-access fixes, the ARMv7
@@ -18,11 +18,22 @@ compatible path, checked ARMv8 float/retry, rendering optimizations and FPS mode
 Upstream Logs export uses the fork's lifecycle-aware document picker. Both log
 and crash-report providers, controller integration and replay launch are retained.
 
-Source review only. No tests, compiler checks, builds, benchmarks, workflow runs,
-or device checks were executed. Existing arithmetic tests and compiler-policy
-expectations were updated but not run. See [PERFORMANCE.md](PERFORMANCE.md) for
-carry/drop decisions and the validation plan. All results below are historical
-and do not validate this merged candidate.
+On 2026-11-06, all 44 tooling tests passed on the published source. GCC host
+vertex comparisons passed all 45 functions at 200 cases each (9,000 per path),
+both normally and with `NFS_VERTEX_NO_FLOAT_FAST_PATH` (ARMv7-style fallback).
+The normal path had one accepted NaN-only output-word difference in
+`objectVerticesNearest`; the fallback had none. Both runs had 10 particle cases
+stopped in a stubbed callee, so those cases are partial coverage. These results
+use upstream's fixed `007f` mode, not the old eight-mode experiment.
+
+Android launcher tests, both ABI compiler-policy checks, native Android builds,
+controller regression, signing/package validation and device testing remain
+pending. No APK has been built for this source. The connected GitHub tools cannot
+dispatch a new workflow: run `armv7-release.yml` on
+`integrate-upstream-vertex-cleanup`, mode `apk`, target `both`. This includes
+tooling/launcher tests and the signed universal build. See
+[PERFORMANCE.md](PERFORMANCE.md) for the carry/drop decisions and remaining
+validation. Historical results below do not validate this merged candidate.
 
 ## Overlay levels: 0.78.36 / code 113
 
