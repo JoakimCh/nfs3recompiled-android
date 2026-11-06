@@ -1,184 +1,59 @@
 # Verified build state
 
-Update this file when a result changes. Record the source and evidence; distinguish
-automated checks from device feedback. Older session details remain in Git history
-and [release metadata](releases/). Usage is in [BUILD.md](BUILD.md).
+Current evidence is below; versioned changes are in [CHANGELOG.md](CHANGELOG.md),
+artifact identities in [releases/](releases/), and older session details in Git history.
 
-## Upstream integration: 0.78.37 / code 114 — local universal APK verified (unsigned)
+## 0.78.37 / code 114 — signed universal APK
 
-Branch `integrate-upstream-vertex-cleanup` starts from
-`vertex-double-dispatch` at `919280cf7dbeec4f76ace1ea0d870d65c3c17518`
-and incorporates upstream `9c27ce73e9310337b9d555500ebb01b47fd602e1`.
-Published merge commit: `738ce51422431781b8cd59ccfa47942eb9942757`.
-Its tree matches the prepared local merge. Build version is 0.78.37 / code 114.
+Built locally on 2026-11-06 from clean, published source
+`9590520b1677f9ae3d8b9a6e2c3b9f9894e30c1a` on
+`integrate-upstream-vertex-cleanup`. This merges `vertex-double-dispatch`
+(`919280cf`) with upstream `9c27ce73`. No GitHub build workflow was used.
+The APK was subsequently signed with the original release key without rebuilding.
+[Release metadata](releases/0.78.37.json) records hashes, certificate, toolchain,
+native Build IDs and separate build/signing source commits.
 
-Uses upstream fixed single precision; removes double dispatch, arithmetic UI
-experiments and stale build options. Retains packed-access fixes, the ARMv7
-compatible path, checked ARMv8 float/retry, rendering optimizations and FPS modes.
-Upstream Logs export uses the fork's lifecycle-aware document picker. Both log
-and crash-report providers, controller integration and replay launch are retained.
-
-On 2026-11-06, all 44 tooling tests passed on the published source. GCC host
-vertex comparisons passed all 45 functions at 200 cases each (9,000 per path),
-both normally and with `NFS_VERTEX_NO_FLOAT_FAST_PATH` (ARMv7-style fallback).
-The normal path had one accepted NaN-only output-word difference in
-`objectVerticesNearest`; the fallback had none. Both runs had 10 particle cases
-stopped in a stubbed callee, so those cases are partial coverage. These results
-use upstream's fixed `007f` mode, not the old eight-mode experiment.
-
-Local build source: `9590520b1677f9ae3d8b9a6e2c3b9f9894e30c1a`, published
-before building. On 2026-11-06 the local shared runner passed 44 tooling tests,
-29 launcher tests (zero failures/errors/skips), and compiled/linked both ARM ABIs.
-Both NDK compiler-policy checks and the SDL controller regression also passed.
-The universal 0.78.37 APK passed all 332 resource checks, package/version checks,
-ABI/ELF checks, ZIP alignment and exact native Build ID matching. ARM64 libraries
-have 16 KiB ELF alignment; ARMv7 libraries have at least 4 KiB. The APK is
-non-debuggable and shell-profileable. A final runner invocation disabled the
-Gradle build cache after a transient cache-packaging failure; it passed on clean
-published source. No GitHub build workflow was used.
-
-The APK remains unsigned because the original release signing files are not
-available in this workspace. It is not installable until signed. Exact hashes,
-toolchain and Build IDs are in [release metadata](releases/0.78.37.json).
-Device correctness and FPS comparisons remain pending. See
-[PERFORMANCE.md](PERFORMANCE.md) for carry/drop decisions and coverage limits.
-Historical results below do not validate this merged candidate.
-
-## Overlay levels: 0.78.36 / code 113
-
-The launcher suite passed 32 tests and tooling passed 44, including native
-collector isolation checks with the detailed mutex deliberately held. The native
-checks cover FPS/disabled isolation, pause/resume, counter wrap, concurrent
-sampling and detailed-mode precedence. ARMv7/ARMv8 compiler output for the FPS
-collection hook contains atomic loads/stores without atomic RMW loops or clock
-reads. Both native ABIs compiled/linked; compiler-policy and SDL controller checks
-passed. All 45 host functions matched at 64 cases per rounding mode. Expanded
-GCC checks passed; pinned Clang retains only the documented `047f`, case 99 track
-failure, with object results matching the existing NaN policy.
-No device overhead measurement or APK build has been performed for this revision.
-The track finding and its unproven mechanism are documented in [PERFORMANCE.md](PERFORMANCE.md).
-
-## Object vertex double dispatch: 0.78.35 / code 112
-
-ARMv7/ARMv8 release assembly confirmed retained arithmetic precision checks.
-The object vertex routine now selects DoubleMath once per default-double batch,
-reusing its calculation template and retaining other modes and compatible-pass
-counting. [Host kernel timing](PERFORMANCE.md) improved; Android FPS is unmeasured.
-Track dispatch was left unchanged after its trial altered a NaN-sensitive GCC case.
-
-Expanded checks (200 cases per mode, eight modes) pass for both affected/reference
-routines with GCC. Pinned Clang retains the baseline `trackVertices` failure at
-mode `047f`, case 99; object vertices match under the existing NaN policy, with
-two NaN sign/payload output-word differences. The final source passed 40 tooling
-and 29 launcher tests (no failures/errors/skips), all 45 host functions at 64
-cases per mode, both ABI compiler-policy checks, dual-ABI native compilation/linking,
-and the SDL gamepad regression. No APK was built for this revision; device
-performance remains unmeasured.
-
-## Vertex performance experiments: 0.78.34 / code 111
-
-Local checks passed: 40 tooling tests, 29 launcher tests (no failures, errors or
-skips), the compiler policy check for both ARM ABIs, and a native counter check
-including pause/resume. The host vertex comparison matched all 45 functions at
-64 cases in each of eight rounding modes. The previously documented expanded
-`trackVertices` discrepancy remains unresolved.
-
-The [ARMv7-only build](releases/0.78.34.json) was built locally after publishing
-clean source `4f43573d6806059a9067aa2b0e60fa9ec937b51f`. Original signing identity,
-package/version, all 314 app resource IDs, ARMv7 ELF libraries, 16 KiB alignment,
-non-debuggable/profileable state and exact matching native symbols passed
-verification. No GitHub build workflow was used. Preliminary owner feedback: modes 1/2 showed
-compatible passes and mode 3 fast passes, with no graphical differences noticed.
-Extended seemed fastest; this was not a controlled performance measurement.
-
-## log-warning-cleanup: 0.78.33 / code 110
-
-Source `2915ab2067bd5f519144abaea43c2826e1cd4ad9` passed local checks:
-40 tooling tests, 23 launcher tests (no failures, errors or skips), and the NDK
-compiler policy check for both ARM ABIs. ARMv7 and ARMv8 compiled and linked with
-the pinned toolchain using one compilation job. Picker tests cover cancellation,
-duplicate launches and a settings export delivered after activity recreation.
-
-The GCC host vertex comparison passed all 45 functions in eight x87 modes at 64
-cases per mode, normally and with the ARMv7-style fallback. At 200 cases, pinned
-Clang reproduces the documented `trackVertices` discrepancy at mode `047f`, case
-99; untouched main and the fallback have identical output. That older NaN/finite
-discrepancy remains unresolved.
-
-No APK or device test was performed; ARMv7 fallback performance needs device
-feedback. SDL's sensor deprecation and unused/generated declaration warnings
-remain; they were not broadly suppressed.
-
-## Workflow action upgrades (not yet tested)
-
-After merging `launcher-tweaks` into main, pinned the Node 24 actions:
-setup-java v6.1.0, checkout v7.0.1, and upload-artifact
-v7.0.2. Artifact uploads explicitly retain ZIP archives for compatibility
-with the publisher. The JDK/toolchain and signing identity are unchanged.
-
-The action upgrades and 14-day retention configuration await a workflow run.
-The owner plans to set the repository retention limit to 14 days to match.
-
-## Latest verified APK: 0.78.32 / code 109 (universal)
-
-[Run 41719407758](https://github.com/JoakimCh/nfs3recompiled-android/actions/runs/41719407758)
-on 2026-11-03 built clean source
-`c69b914bc1d11af7058adc7ec56d132f8bdb8da4` on `launcher-tweaks`.
-That source is merged into main.
-
-- All 40 tooling tests and 20 launcher tests passed, with no launcher failures,
-  errors or skipped tests.
-- Both ARMv7 (`armeabi-v7a`) and ARMv8 (`arm64-v8a`) compiled and linked.
-- The universal APK passed signing, package/version, selected ABI/ELF,
-  resource, ZIP alignment and matching native symbol verification.
-- Reports, the signed APK and exact symbols uploaded successfully. Warm Gradle,
-  Android-tool and SDL caches restored successfully.
-- Artifacts were capped at one day, expiring at 2026-11-04 21:10:49 UTC.
-  Raising retention does not extend these existing artifacts.
-- No device-test result or hosted release-promotion result for this revision
-  has been reported. The action upgrades above are newer than this verified run.
-
-## Earlier validation
-
-- On 2026-11-02, all 36 tooling tests passed locally, including fast-build
-  promotion, metadata preservation and rejection of invalid builds. Hosted
-  promotion from `apk-fast` remains unverified.
-- [0.78.31 / code 108](releases/0.78.31.json), source
-  `12503d4e4c9b8a5292d2d8cb4faef1236ae3f28c`, passed 32 tooling tests,
-  19 launcher tests, the native gamepad pause regression, ARMv7 packaging and
-  signing/resource/symbol checks. Its pause fix and expanded gamepad test panel
-  still need device feedback.
-
-## Device feedback
-
-Joakim reported that the two-button pause/assignment build worked before the
-first-button feedback and latest reliability changes. Its exact APK/run identity
-was not recorded, so it does not validate 0.78.31.
-The original local tv28 APK was also reported working without problems;
-[releases/tv28.json](releases/tv28.json) identifies that binary.
-
-## Workflow and setup evidence
-
-| Check | Evidence |
+| Check | Result |
 | --- | --- |
-| Cold hosted APK build and signing | [Run 41324391872](https://github.com/JoakimCh/nfs3recompiled-android/actions/runs/41324391872), source `5f68209a56b0dc4d26974b80191466f761655f3d`; tv28, 3 tooling and 14 launcher tests, APK/symbol/report uploads passed |
-| Release publication and built-in token permissions | [Run 41326807799](https://github.com/JoakimCh/nfs3recompiled-android/actions/runs/41326807799), workflow source `e93c02e5891770b86a0bee0be76ea8b096157731`; all five release assets published |
-| Changelog-based release notes | Local helper checks and a tv28 preview passed; Joakim later reported the revised workflow worked and liked the notes. Retry run ID was not recorded |
-| Local shared runner | Tests, native check and signed APK modes passed; isolated launcher bootstrap passed without an NDK. Source `f674acd863ccb3f86bc4052a00e58d39e849f0b9`; later 0.78.31 evidence is above |
-| Fast-mode tooling | Earlier 32-test suite covered runner/signing paths and fast metadata; local unsigned fast packaging passed for 0.78.31. Hosted fast mode remains unverified |
+| Tooling tests | 44 passed |
+| Launcher tests | 29 passed; no failures, errors or skips |
+| Native build | ARMv7 and ARM64 compiled and linked |
+| NDK arithmetic policy | Both ABIs passed |
+| SDL controller regression | Passed |
+| APK verification | Original certificate, package/version, both ABI/ELF sets, 332 resource IDs, ZIP alignment and matching native symbols passed |
+| Release configuration | Non-debuggable, shell-profileable; ARM64 ELF alignment at least 16 KiB, ARMv7 at least 4 KiB |
+| Device correctness / FPS | Pending |
 
-Warm cache restoration passed in the 0.78.32 run above. Standalone hosted
-`tests`/`check` modes remain unverified. Check each artifact's actual expiry.
+GCC host comparisons exercised 45 vertex functions at 200 cases each, normally
+and with `NFS_VERTEX_NO_FLOAT_FAST_PATH` (ARMv7-style fallback). The normal path
+had one accepted NaN-only output-word difference in `objectVerticesNearest`;
+the fallback had none. Each path stopped 10 particle cases at a stubbed callee,
+so those cases have partial coverage. These runs use upstream's fixed `007f`
+mode; they do not validate the removed eight-mode experiment.
 
-## Remaining checks
+A final local runner invocation disabled Gradle's build cache after a transient
+cache-packaging failure. It passed on the same clean source.
 
-- Verify hosted release promotion from an `apk-fast` build.
-- Validate the updated action versions in a new main workflow run.
-- Device-test 0.78.32 on ARMv7 and ARMv8: narrow/wide layouts, larger fonts,
-  gamepad navigation and pause, Exit, intro versus attract playback, mirror
-  detail and settings backups.
-- For toolchain/native math changes, retain the known `trackVertices` discrepancy:
-  tv27 compared 45 vertex functions across eight FPU modes with both NDKs;
-  output was identical, with 44 passing and the same NaN/finite discrepancy in
-  the remaining function. See [releases/tv27.json](releases/tv27.json).
+## Remaining validation
 
+- Test this APK on ARMv7 TV and ARM64 phone: launcher layouts, larger fonts,
+  gamepad assignment/pause, touch bindings, Exit, intro/attract playback,
+  settings backups and log export.
+- Compare upstream and fork on matching races, including split screen, mirrors,
+  transparent geometry, replay determinism and long sessions. No FPS gain is claimed.
+- If using hosted builds again, verify the updated action versions, requested
+  14-day retention, standalone tests/check modes and `apk-fast` promotion.
+
+## Historical evidence
+
+| Revision | Evidence and limits |
+| --- | --- |
+| 0.78.36 / 0.78.35 | Dual-ABI native and automated checks passed; no APK or device benchmark. Double dispatch is removed in 0.78.37. |
+| [0.78.34](releases/0.78.34.json) | Signed local ARMv7 APK. Owner saw no graphical differences among the experimental modes; perceived speed was not a controlled measurement. |
+| 0.78.32 | [Hosted universal build](https://github.com/JoakimCh/nfs3recompiled-android/actions/runs/41719407758) passed; its one-day artifacts have expired. |
+| [0.78.31](releases/0.78.31.json) | Signed local ARMv7 APK, launcher/controller/resource checks passed; device feedback was incomplete. |
+| [tv28](releases/tv28.json) | Original local APK reported working. [Hosted publication](https://github.com/JoakimCh/nfs3recompiled-android/actions/runs/41326807799) also succeeded. |
+
+The old selectable-arithmetic branch had a `trackVertices` NaN/finite discrepancy
+at mode `047f`, case 99. It is not evidence against or proof of correctness for
+the new fixed mode; see [PERFORMANCE.md](PERFORMANCE.md).

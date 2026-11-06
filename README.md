@@ -1,23 +1,28 @@
 # Joakim's NFS III: Hot Pursuit Android fork
 
 A fork of [nfs3recompiled-android](https://github.com/ZloiKILLER/nfs3recompiled-android/)
-with Android TV support, improved controls and extra launcher options. I use AI
-to help develop these changes.
+focused on Android TV, controller customization and launcher improvements.
+I use AI to help develop these changes.
 
-- ARMv7 and ARMv8 builds, including a universal APK containing both.
-- Configurable gamepad menu controls, player assignment and input testing.
-- Per-controller two-button pause shortcuts, and touch controls that follow
-  the game's racing bindings.
-- An Exit button, optional intro skipping and individual bonus-content unlocks.
-- Adjustable mirror detail, an experimental rendering optimization and
-  performance reports.
+- Configurable gamepad menu controls, player assignment, input testing and
+  per-controller two-button pause shortcuts.
+- Touch controls that follow the game's racing bindings.
+- A responsive launcher with Exit, optional intro skipping and individual
+  bonus-content unlocks.
+- Adjustable mirror detail, opaque-rendering optimization, lightweight FPS
+  display and optional detailed performance reports.
 
-[Downloads](https://github.com/JoakimCh/nfs3recompiled-android/releases) ·
-[Fork documentation](docs/fork/README.md) · [Changelog](docs/fork/CHANGELOG.md)
+This branch incorporates upstream 0.78's fixed single-precision arithmetic,
+replay diagnostics and log export. The old selectable-precision and unchecked
+fast-vertex experiments have been removed. See the [changelog](docs/fork/CHANGELOG.md)
+and [performance notes](docs/fork/PERFORMANCE.md) for details.
 
-Fork APKs require Android 8.0 or newer, OpenGL ES 3.0 and your own game data.
-The ARM64-only requirement in the original README below applies to upstream;
-this fork also supports ARMv7 Android TV devices.
+Both upstream and this fork support ARMv7 and ARM64. Fork builds are available
+for either architecture or as one universal APK, with a separate package and
+signing identity. You need Android 8.0 or newer, OpenGL ES 3.0 and your own game data.
+
+[Published downloads](https://github.com/JoakimCh/nfs3recompiled-android/releases) ·
+[Fork documentation](docs/fork/README.md) · [Current build status](docs/fork/BUILD_STATUS.md)
 
 ---
 

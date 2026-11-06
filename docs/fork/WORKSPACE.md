@@ -8,12 +8,10 @@ workspace are not required to reconstruct the process.
 
 1. Read AGENTS.md, these guides, and the selected branch's Git status. Preserve
    unrelated local files and edits. Identify the requested source commit.
-2. For authorized checks/builds, prefer the manual GitHub workflow. Inspect current
-   dispatch capabilities; if unavailable, provide the exact run link/branch/mode
-   for the user. Match the completed run to the requested commit before downloading.
-3. For an explicitly requested local run, invoke `python3 tools/android.py MODE`.
-   The script bootstraps missing tools from the manifest and applies the fixes below.
-   Keep its chosen cache between runs where possible.
+2. Honor the requested local or hosted workflow. For local runs, use
+   `python3 tools/android.py MODE`; it bootstraps from the manifest. Reuse its cache.
+3. For hosted runs, match the completed run to the requested commit before
+   downloading. If dispatch is unavailable, provide the workflow link/branch/mode.
 4. Inspect the final summary and output reports. Preserve the signed APK, release
    metadata and matching symbols outside the disposable workspace.
 5. Record a newly verified build in `docs/fork/releases/` and update BUILD_STATUS.md.
@@ -76,5 +74,5 @@ below; inspect its diagnostics before reconstructing setup manually.
   `android/app/build/kotlin` and `android/app/build/intermediates/built_in_kotlinc`.
   This recovered stale compilation state without removing native caches.
 - For toolchain/native math changes, run the existing gamepad and floating-point
-  checks when authorized. The known `trackVertices` discrepancy and validation
-  limits are recorded in BUILD_STATUS.md and releases/tv27.json.
+  checks when authorized. Current fixed-mode coverage and the historical
+  selectable-mode `trackVertices` discrepancy are distinguished in BUILD_STATUS.md.

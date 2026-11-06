@@ -7,7 +7,7 @@ arithmetic and remove obsolete double dispatch, precision controls and the
 unchecked ARMv7 experiment. Keep alignment fixes, safe ABI-specific vertex paths,
 opaque rendering, mirror preferences and lightweight FPS collection. Retain
 upstream logs/replay tools alongside fork controller and launcher improvements.
-Prepared for a universal ARMv7/ARMv8 build; validation is recorded separately.
+Validation and artifact identity are recorded in BUILD_STATUS.md.
 
 ## Unreleased build automation
 
