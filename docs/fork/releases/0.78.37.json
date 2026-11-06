@@ -1,0 +1,112 @@
+{
+  "mode": "apk",
+  "source_commit": "9590520b1677f9ae3d8b9a6e2c3b9f9894e30c1a",
+  "source_dirty": false,
+  "target": "both",
+  "architectures": [
+    "armeabi-v7a",
+    "arm64-v8a"
+  ],
+  "tests": {
+    "tests": 29,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "native_compiled": true,
+  "toolchain": {
+    "jdk": 25,
+    "gradle": "9.8.2",
+    "agp": "9.5.0",
+    "kotlin": "2.4.10",
+    "compileSdk": 37,
+    "platformPackage": "platforms;android-37.0",
+    "targetSdk": 36,
+    "buildTools": "37.0.0",
+    "ndk": "30.0.16248370",
+    "cmake": "4.4.5",
+    "sdl": "3.4.18",
+    "sdlCommit": "829a65d769d935c4852f8159e964312c0957260a",
+    "sdkCommandLineToolsFallback": "22.0",
+    "ninja": "1.13.2",
+    "ninjaSha256LinuxX64": "5749cbc4e668273514150a80e387a957f933c6ed3f5f11e03fb30955e2bbead6"
+  },
+  "apk": "nfs3-0.78.37-universal-unsigned.apk",
+  "unsigned": true,
+  "apk_sha256": "9c78fed68ee650ff9e7266cec6d8dfbc81ccfc48dc8ba4c20998943aac455a83",
+  "resource_check": {
+    "apk": "app-release-unsigned.apk",
+    "app_resources_checked": 332,
+    "packaged_app_int_fields": 332,
+    "mismatches": [],
+    "duplicate_fields": [],
+    "passed": true
+  },
+  "installable": false,
+  "certificate_sha256": null,
+  "native_build_ids": {
+    "arm64-v8a": "30a470a45aa6c038eee531c7a17c9c8e70d08bfd",
+    "armeabi-v7a": "34eac1898aaf9b69a6a910cbaadbae8e6b554b10"
+  },
+  "elf_load_alignment": {
+    "lib/arm64-v8a/libSDL3.so": [
+      16384,
+      16384,
+      16384
+    ],
+    "lib/arm64-v8a/libandroidx.graphics.path.so": [
+      16384,
+      16384,
+      16384
+    ],
+    "lib/arm64-v8a/libc++_shared.so": [
+      16384,
+      16384,
+      16384
+    ],
+    "lib/arm64-v8a/libmain.so": [
+      16384,
+      16384,
+      16384
+    ],
+    "lib/armeabi-v7a/libSDL3.so": [
+      4096,
+      4096,
+      4096
+    ],
+    "lib/armeabi-v7a/libandroidx.graphics.path.so": [
+      16384,
+      16384,
+      16384
+    ],
+    "lib/armeabi-v7a/libc++_shared.so": [
+      4096,
+      4096,
+      4096
+    ],
+    "lib/armeabi-v7a/libmain.so": [
+      16384,
+      16384,
+      16384
+    ]
+  },
+  "zip_alignment_bytes": 16384,
+  "debuggable": false,
+  "shell_profileable": true,
+  "device_tested": false,
+  "host_tooling_tests": 44,
+  "controller_regression": "passed",
+  "abi_fp_policy": "passed both ABIs",
+  "host_vertex_comparisons": {
+    "cases_per_function": 200,
+    "functions": 45,
+    "normal_nan_only_words": 1,
+    "fallback_nan_only_words": 0,
+    "partial_callee_cases_per_path": 10
+  },
+  "version": "0.78.37",
+  "version_code": 114,
+  "build_location": "local",
+  "branch": "integrate-upstream-vertex-cleanup",
+  "date": "2026-11-06"
+}

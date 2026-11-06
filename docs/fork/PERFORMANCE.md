@@ -1,13 +1,14 @@
 # Performance findings
 
-## Upstream 0.78 integration candidate (host checks passed)
+## Upstream 0.78 integration candidate (local build and automated checks passed)
 
 Source: experimental branch `919280cf` plus upstream `9c27ce73` (four commits
 since `4a65cd49`). Upstream changes 279 files, including regenerated functions,
 native replacements, replay diagnostics and a fixed single-precision `fp::` API.
 Host tooling and both normal/fallback vertex comparisons passed; see
 [BUILD_STATUS.md](BUILD_STATUS.md) for NaN/partial-coverage qualifications.
-Android build, launcher tests and device measurements remain pending.
+Local universal Android build, launcher tests, both ABI compiler-policy checks
+and controller regression passed. Signing and device measurements remain pending.
 
 | Decision | Reason |
 | --- | --- |
@@ -30,8 +31,8 @@ could compile out diagnostics, but should be evaluated separately with the same
 race, device, ABI, resolution and settings. No FPS improvement is claimed here.
 
 The updated fixed-single vertex comparisons passed on both normal and ARMv7-style
-paths. Before accepting this candidate: inspect both ABI compiler policies, run
-launcher/settings/controller regressions, and build both ABIs. Then compare
+paths. Both ABI compiler policies, launcher/settings/controller regressions and
+the universal build passed locally. Before accepting this candidate, compare
 upstream and candidate on the same TV/phone races, including split screen,
 mirrors, transparent geometry and long sessions. Historical expanded track NaN
 failures must be reassessed against the new upstream reference, not presumed fixed.

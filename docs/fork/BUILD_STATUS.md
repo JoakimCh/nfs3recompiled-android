@@ -4,7 +4,7 @@ Update this file when a result changes. Record the source and evidence; distingu
 automated checks from device feedback. Older session details remain in Git history
 and [release metadata](releases/). Usage is in [BUILD.md](BUILD.md).
 
-## Upstream integration: 0.78.37 / code 114 — host checks passed, APK pending
+## Upstream integration: 0.78.37 / code 114 — local universal APK verified (unsigned)
 
 Branch `integrate-upstream-vertex-cleanup` starts from
 `vertex-double-dispatch` at `919280cf7dbeec4f76ace1ea0d870d65c3c17518`
@@ -26,14 +26,23 @@ The normal path had one accepted NaN-only output-word difference in
 stopped in a stubbed callee, so those cases are partial coverage. These results
 use upstream's fixed `007f` mode, not the old eight-mode experiment.
 
-Android launcher tests, both ABI compiler-policy checks, native Android builds,
-controller regression, signing/package validation and device testing remain
-pending. No APK has been built for this source. The connected GitHub tools cannot
-dispatch a new workflow: run `armv7-release.yml` on
-`integrate-upstream-vertex-cleanup`, mode `apk`, target `both`. This includes
-tooling/launcher tests and the signed universal build. See
-[PERFORMANCE.md](PERFORMANCE.md) for the carry/drop decisions and remaining
-validation. Historical results below do not validate this merged candidate.
+Local build source: `9590520b1677f9ae3d8b9a6e2c3b9f9894e30c1a`, published
+before building. On 2026-11-06 the local shared runner passed 44 tooling tests,
+29 launcher tests (zero failures/errors/skips), and compiled/linked both ARM ABIs.
+Both NDK compiler-policy checks and the SDL controller regression also passed.
+The universal 0.78.37 APK passed all 332 resource checks, package/version checks,
+ABI/ELF checks, ZIP alignment and exact native Build ID matching. ARM64 libraries
+have 16 KiB ELF alignment; ARMv7 libraries have at least 4 KiB. The APK is
+non-debuggable and shell-profileable. A final runner invocation disabled the
+Gradle build cache after a transient cache-packaging failure; it passed on clean
+published source. No GitHub build workflow was used.
+
+The APK remains unsigned because the original release signing files are not
+available in this workspace. It is not installable until signed. Exact hashes,
+toolchain and Build IDs are in [release metadata](releases/0.78.37.json).
+Device correctness and FPS comparisons remain pending. See
+[PERFORMANCE.md](PERFORMANCE.md) for carry/drop decisions and coverage limits.
+Historical results below do not validate this merged candidate.
 
 ## Overlay levels: 0.78.36 / code 113
 
