@@ -106,11 +106,33 @@ inline x86::reg32 asBits(float value)
 struct FloatMath
 {
     typedef float Value;
+#if defined(__clang__) && defined(__arm__)
+    // Volatile scalar VFP instructions preserve each rounding step and exception
+    // even though Clang does not support FENV_ACCESS on ARMv7. The memory clobber
+    // orders these operations with the FPSCR clear/read below. Do not use NEON:
+    // its floating-point behavior is not the scalar VFP exception contract.
+    static Value add(Value a, Value b) {
+        Value r; asm volatile("vadd.f32 %0, %1, %2" : "=t"(r) : "t"(a), "t"(b) : "memory"); return r;
+    }
+    static Value sub(Value a, Value b) {
+        Value r; asm volatile("vsub.f32 %0, %1, %2" : "=t"(r) : "t"(a), "t"(b) : "memory"); return r;
+    }
+    static Value mul(Value a, Value b) {
+        Value r; asm volatile("vmul.f32 %0, %1, %2" : "=t"(r) : "t"(a), "t"(b) : "memory"); return r;
+    }
+    static Value div(Value a, Value b) {
+        Value r; asm volatile("vdiv.f32 %0, %1, %2" : "=t"(r) : "t"(a), "t"(b) : "memory"); return r;
+    }
+    static Value sqrt(Value a) {
+        Value r; asm volatile("vsqrt.f32 %0, %1" : "=t"(r) : "t"(a) : "memory"); return r;
+    }
+#else
     static Value add(Value a, Value b) { return a + b; }
     static Value sub(Value a, Value b) { return a - b; }
     static Value mul(Value a, Value b) { return a * b; }
     static Value div(Value a, Value b) { return a / b; }
     static Value sqrt(Value a) { return std::sqrt(a); }
+#endif
 };
 
 /* The generated code's fixed single-precision arithmetic, retaining the
@@ -126,27 +148,45 @@ struct FpuMath
     Value sqrt(Value a) const { return double(fp::sqrt(x86::Float(a))); }
 };
 
-// ARMv7 uses the compatible path without exception flag dependencies.
+#if defined(__clang__) && defined(__arm__)
+inline unsigned vertexFpscr()
+{
+    unsigned value;
+    asm volatile("vmrs %0, fpscr" : "=r"(value) : : "memory");
+    return value;
+}
+// IOC, DZC, OFC, UFC and IDC. Include input denormals and divide-by-zero
+// conservatively; inexact alone is expected for ordinary float calculations.
+constexpr unsigned vertexExceptionMask = 0x8f;
+#endif
+
 inline void clearVertexExceptions()
 {
-#if !(defined(__clang__) && defined(__arm__))
+#if defined(__clang__) && defined(__arm__)
+    const unsigned value = vertexFpscr() & ~vertexExceptionMask;
+    asm volatile("vmsr fpscr, %0" : : "r"(value) : "memory");
+#else
     std::feclearexcept(FE_OVERFLOW | FE_UNDERFLOW | FE_INVALID);
 #endif
 }
 inline bool vertexRetryNeeded()
 {
 #if defined(__clang__) && defined(__arm__)
-    return false;
+    return (vertexFpscr() & vertexExceptionMask) != 0;
 #else
     return std::fetestexcept(FE_OVERFLOW | FE_UNDERFLOW | FE_INVALID) != 0;
 #endif
 }
 
-// Fixed upstream single precision. ARMv7 cannot safely use exception retries.
-inline constexpr bool vertexFloatFastPath()
+// Fixed upstream single precision. ARMv7 uses ordered scalar VFP operations
+// rather than unsupported compiler exception tracking. Respect unusual caller
+// rounding/flush/default-NaN modes by selecting compatible arithmetic directly.
+inline bool vertexFloatFastPath()
 {
-#if (defined(__clang__) && defined(__arm__)) || defined(NFS_VERTEX_NO_FLOAT_FAST_PATH)
+#if defined(NFS_VERTEX_NO_FLOAT_FAST_PATH)
     return false;
+#elif defined(__clang__) && defined(__arm__)
+    return (vertexFpscr() & 0x03c00000u) == 0;
 #else
     return true;
 #endif

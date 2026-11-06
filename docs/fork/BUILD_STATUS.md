@@ -3,6 +3,26 @@
 Current evidence is below; versioned changes are in [CHANGELOG.md](CHANGELOG.md),
 artifact identities in [releases/](releases/), and older session details in Git history.
 
+## Local ARMv7 fast path change awaiting device validation
+
+The working tree replaces the unconditional ARMv7 compatible path with scalar
+VFP arithmetic ordered through volatile inline assembly. FPSCR exception flags
+trigger the existing compatible retry. Non-default rounding, flush-to-zero or
+default-NaN modes select compatible arithmetic before entering the loop.
+ARM64 behavior and packed-data alignment fixes remain unchanged.
+
+NDK compiler-policy checks passed for both ABIs, and ARMv7 machine-code generation
+passed. The host vertex comparison passed 45 functions at 200 cases each, retaining
+the NaN-only and partial-callee qualifications below. The host run reused the
+existing generated reference and rebuilt the modified native object; fresh
+reference generation was unavailable because Capstone was missing.
+
+This candidate is on `fix-armv7-checked-vertices` and is not included in the
+signed 0.78.37 APK below. Before
+accepting it, exercise ordinary and directed exception cases on ARMv7, and compare
+identical device races for correctness and performance. Host tests cannot execute
+the ARMv7 assembly or establish a speedup.
+
 ## 0.78.37 / code 114 — signed universal APK
 
 Built locally on 2026-11-06 from clean, published source
