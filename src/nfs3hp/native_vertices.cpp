@@ -31,24 +31,17 @@
  * end of this file, and the generated code -- which has no code of its own for
  * them any more, nor a generated fallback -- calls it by name; a call through
  * a pointer (dynamic_call) finds it too.  They do the original's arithmetic in
- * the original's order, rounded as the generated code rounds it in whatever
- * mode the game has the x87 in at the call -- a race's single precision
- * (fldcw at 0x4a3ed3), the extended precision the port runs its races and
- * menus at (extendedRaces, raceControl), a directed rounding.  They carry the
+ * the original's order, rounded as the generated code rounds it, at single
+ * precision.  They carry the
  * port's changes to their code: the mirror's car scale (mirrorCarScale) and
  * its headlight light on the road (mirrorAsMain), the alpha intensity's
  * scaling on this driver.  tools/game_checks/vertices holds each against the
- * game's code, made afresh with those changes, in eight x87 control words.
+ * game's code, made afresh with those changes, at the upstream fixed single-precision setting.
  * (The hooks left at the end -- arenaReset, aiVotes, the [COMM] traces --
  * only watch, and always hand the call on to the generated code.)
  *
- * The arithmetic is the emulated FPU's own (FpuMath: FPU::add, sub, mul, div
- * and sqrt, which round as the control word asks -- a float's 24 bits at
- * single precision, the double as it is at 53 or 64), on values kept as wide
- * as the x87 stack keeps them; a float is made only where the original stores
- * one (fstp dword), an integer only through FPU::toInteger (fistp, in the
- * control word's rounding).  In the experiments' builds (WITH_PEDANTIC_FPU,
- * WITH_WIDE_FPU) they run too, in double: not to the bit there.
+ * FpuMath uses upstream fp:: helpers: fixed single precision with a wider
+ * exponent, including exceptional-value handling. Float stores remain explicit.
  *
  * At single precision to nearest the hottest loops (FloatMath) run as floats
  * instead: with float inputs, float arithmetic gives the x87's bits -- a double
@@ -109,7 +102,7 @@ inline x86::reg32 asBits(float value)
 }
 
 /* The arithmetic as floats: exact at single precision to nearest while
- * nothing over- or underflows (singleNearest). */
+ * nothing over- or underflows (vertexFloatFastPath). */
 struct FloatMath
 {
     typedef float Value;
@@ -120,65 +113,20 @@ struct FloatMath
     static Value sqrt(Value a) { return std::sqrt(a); }
 };
 
-/* The default FPU keeps extended/double results as host doubles. Dispatch
- * once per call instead of checking its precision at every operation in a
- * vertex loop. Keep the same operation order, with contraction disabled.
- * This is not the 80-bit or long-double implementation. */
-struct DoubleMath
-{
-    typedef double Value;
-    static Value add(Value a, Value b) { return a + b; }
-    static Value sub(Value a, Value b) { return a - b; }
-    static Value mul(Value a, Value b) { return a * b; }
-    static Value div(Value a, Value b) { return a / b; }
-    static Value sqrt(Value a) { return std::sqrt(a); }
-};
-
-inline bool hostDouble(const x86::CPU& cpu)
-{
-#if defined(WITH_PEDANTIC_FPU) || defined(WITH_WIDE_FPU)
-    NFS2_USE(cpu);
-    return false;
-#else
-    return cpu.fpu.rounding == x86::FPU::kRoundNone;
-#endif
-}
-
-/* The arithmetic as the generated code does it, through the emulated FPU:
- * each result rounded as the control word asks at the time (FPU::add and the
- * rest), whatever the operands -- a float from memory or a double -- and with
- * the x87's range.  Exact in every mode; what the natives call M. */
+/* The generated code's fixed single-precision arithmetic, retaining the
+ * wider exponent and exceptional-value handling. What the natives call M. */
 struct FpuMath
 {
     typedef double Value;
     x86::FPU& fpu;
-    Value add(Value a, Value b) const { return double(fpu.add(x86::Float(a), x86::Float(b))); }
-    Value sub(Value a, Value b) const { return double(fpu.sub(x86::Float(a), x86::Float(b))); }
-    Value mul(Value a, Value b) const { return double(fpu.mul(x86::Float(a), x86::Float(b))); }
-    Value div(Value a, Value b) const { return double(fpu.div(x86::Float(a), x86::Float(b))); }
-    Value sqrt(Value a) const { return double(fpu.sqrt(x86::Float(a))); }
+    Value add(Value a, Value b) const { return double(fp::add(x86::Float(a), x86::Float(b))); }
+    Value sub(Value a, Value b) const { return double(fp::sub(x86::Float(a), x86::Float(b))); }
+    Value mul(Value a, Value b) const { return double(fp::mul(x86::Float(a), x86::Float(b))); }
+    Value div(Value a, Value b) const { return double(fp::div(x86::Float(a), x86::Float(b))); }
+    Value sqrt(Value a) const { return double(fp::sqrt(x86::Float(a))); }
 };
 
-/* Whether the FPU rounds to a float's 24 bits and to nearest -- a race's x87
- * at single precision, or NFS_FPU_FLOAT's -- where float arithmetic is the
- * x87's (FloatMath).  Never in the 80-bit and wide experiments, whose FPU
- * keeps more than a double. Clang's 32-bit ARM backend does not support strict
- * floating-point exceptions: default to the emulated FPU; NFS_VERTEX_FAST=1
- * explicitly permits unchecked float arithmetic for performance experiments.
- * It never relies on an exception-based retry. NFS_VERTEX_NO_FLOAT_FAST_PATH
- * exercises that same fallback in the host differential checks. The normal
- * double-backed paths do not use this optimization. */
-inline bool uncheckedVertexFast()
-{
-#if defined(__clang__) && defined(__arm__) && !defined(NFS_VERTEX_NO_FLOAT_FAST_PATH)
-    static const bool enabled = [] { const char* p = SDL_getenv("NFS_VERTEX_FAST"); return p && std::strcmp(p, "1") == 0; }();
-    return enabled;
-#else
-    return false;
-#endif
-}
-
-// ARMv7's experimental path never uses exception flags; the default cannot enter it.
+// ARMv7 uses the compatible path without exception flag dependencies.
 inline void clearVertexExceptions()
 {
 #if !(defined(__clang__) && defined(__arm__))
@@ -194,16 +142,13 @@ inline bool vertexRetryNeeded()
 #endif
 }
 
-inline bool singleNearest(const x86::CPU& cpu)
+// Fixed upstream single precision. ARMv7 cannot safely use exception retries.
+inline constexpr bool vertexFloatFastPath()
 {
-#if defined(WITH_PEDANTIC_FPU) || defined(WITH_WIDE_FPU) || defined(NFS_VERTEX_NO_FLOAT_FAST_PATH)
-    NFS2_USE(cpu);
+#if (defined(__clang__) && defined(__arm__)) || defined(NFS_VERTEX_NO_FLOAT_FAST_PATH)
     return false;
 #else
-#if defined(__clang__) && defined(__arm__)
-    if (!uncheckedVertexFast()) return false;
-#endif
-    return cpu.fpu.rounding == x86::FPU::kRoundSingleNearest;
+    return true;
 #endif
 }
 
@@ -226,7 +171,7 @@ struct CrossProducts
 inline CrossProducts crossProducts(x86::CPU& cpu, float p, float q, float r, float s, float t, float u, float v,
                                    float w)
 {
-    if (singleNearest(cpu))
+    if (vertexFloatFastPath())
     {
         const float a = p - q;
         const float b = r - s;
@@ -348,7 +293,7 @@ x86::reg32 shadeVertex(win32::WinApplication* app, x86::FPU& fpu, const Math& ma
                                          65536.0f));
     // fistp as the generated code has it: the control word's rounding, the
     // indefinite past an integer's range.
-    x86::reg32 level = x86::reg32(fpu.toInteger<x86::sreg32>(x86::Float(light)));
+    x86::reg32 level = x86::reg32(fp::toInteger<x86::sreg32>(x86::Float(light)));
     if (x86::sreg32(level) >= 0x10000)
         level = 0xffff;
     level = (level >> 8) & 0xff;
@@ -722,7 +667,7 @@ void envMapCoordsNative(win32::WinApplication* app, x86::CPU& cpu)
     // works out from what it reads.  In any other mode the FPU's way at once.
     x86::reg32 ebx = cpu.ebx;
     LastWideCompare compared;
-    bool exact = !singleNearest(cpu);
+    bool exact = !vertexFloatFastPath();
     if (!exact)
     {
         win32::perf::vertexPass(win32::perf::VertexFast);
@@ -806,7 +751,7 @@ void shadeNormalsNative(win32::WinApplication* app, x86::CPU& cpu)
         if (0.0 < d || d != d)
         {
             // fmul qword, fistp: the FPU's rounding, then the control word's
-            const x86::reg32 n = x86::reg32(cpu.fpu.toInteger<x86::sreg32>(x86::Float(FpuMath{cpu.fpu}.mul(d, factor))));
+            const x86::reg32 n = x86::reg32(fp::toInteger<x86::sreg32>(x86::Float(FpuMath{cpu.fpu}.mul(d, factor))));
             x86::reg32 red = global(0x55e6b8) + ((n * global(0x55e6d0)) >> 16);
             if (red > global(0x55e6c4))
                 red = global(0x55e6c4);
@@ -1647,7 +1592,7 @@ void clipPolygonNative(win32::WinApplication* app, x86::CPU& cpu)
         store(fan + 8, M.add(offset, scaled));
         store(fan + 0xc, w);
         auto channel = [&](x86::reg32 field) {
-            return x86::reg32(cpu.fpu.toInteger<x86::sreg32>(x86::Float(load(vertex + field)))) & 0xff;
+            return x86::reg32(fp::toInteger<x86::sreg32>(x86::Float(load(vertex + field)))) & 0xff;
         };
         word(fan + 0x10) = channel(0x14) << 24 | channel(0x18) << 16 | channel(0x1c) << 8 | channel(0x20);
         word(fan + 0x14) = 0;
@@ -2226,7 +2171,7 @@ template <void (*Float)(win32::WinApplication*, x86::CPU&, const FloatMath&),
           void (*Exact)(win32::WinApplication*, x86::CPU&, const FpuMath&)>
 void runNative(win32::WinApplication* app, x86::CPU& cpu, bool inPlace = false)
 {
-    if (singleNearest(cpu) && !inPlace)
+    if (vertexFloatFastPath() && !inPlace)
     {
         const x86::CPU entry = cpu;
         win32::perf::vertexPass(win32::perf::VertexFast);
@@ -2248,13 +2193,6 @@ void trackVerticesNative(win32::WinApplication* app, x86::CPU& cpu)
 
 void objectVerticesNative(win32::WinApplication* app, x86::CPU& cpu)
 {
-    // Decide once per batch; preserve the existing compatibility counter.
-    if (hostDouble(cpu))
-    {
-        win32::perf::vertexPass(win32::perf::VertexCompatible);
-        objectVerticesWith(app, cpu, DoubleMath());
-        return;
-    }
     runNative<objectVerticesWith<FloatMath>, objectVerticesWith<FpuMath>>(app, cpu);
 }
 
@@ -2262,11 +2200,6 @@ void objectVerticesNative(win32::WinApplication* app, x86::CPU& cpu)
  * not be turned again from what they were: one run, the FPU's. */
 void rotateVectorsNative(win32::WinApplication* app, x86::CPU& cpu)
 {
-    if (hostDouble(cpu))
-    {
-        rotateVectorsWith(app, cpu, DoubleMath());
-        return;
-    }
     const x86::reg32 span = x86::sreg32(cpu.eax) > 0 ? cpu.eax * 0xc : 0;
     const bool inPlace = span != 0 && cpu.ecx - cpu.edx + span - 1 < 2 * span - 1;
     runNative<rotateVectorsWith<FloatMath>, rotateVectorsWith<FpuMath>>(app, cpu, inPlace);
@@ -2312,21 +2245,17 @@ void dotProductsWith(win32::WinApplication* app, x86::CPU& cpu, const Math& math
 
 void dotProductsNative(win32::WinApplication* app, x86::CPU& cpu)
 {
-    if (hostDouble(cpu))
-        dotProductsWith(app, cpu, DoubleMath());
-    else
-        runNative<dotProductsWith<FloatMath>, dotProductsWith<FpuMath>>(app, cpu);
+    runNative<dotProductsWith<FloatMath>, dotProductsWith<FpuMath>>(app, cpu);
 }
 
 /* sub_4e0280: c = a b, 3x3 matrices of floats, row by row.
  *   eax  a; edx  b; ebx  c
  * c may be a or b: the original copies whichever it is to its frame first, and
  * leaves eax or edx pointing at the copy.  Here everything is read before
- * anything is written. DoubleMath handles the default double precision;
- * FpuMath handles the other modes. Neither needs a retry. */
-template <typename Math>
-void multiplyMatricesWith(win32::WinApplication* app, x86::CPU& cpu, const Math& M)
+ * anything is written. Fixed single-precision arithmetic needs no retry. */
+void multiplyMatricesNative(win32::WinApplication* app, x86::CPU& cpu)
 {
+    const FpuMath M{cpu.fpu};
     const x86::reg32 esp = cpu.esp;
     const x86::reg32 a = cpu.eax, b = cpu.edx, c = cpu.ebx;
     const x86::reg32 frame = esp - 16 - 0x2c;  // push ecx, esi, edi, ebp; sub esp, 0x2c
@@ -2353,23 +2282,15 @@ void multiplyMatricesWith(win32::WinApplication* app, x86::CPU& cpu, const Math&
     cpu.esp = esp + 4;
 }
 
-void multiplyMatricesNative(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (hostDouble(cpu))
-        multiplyMatricesWith(app, cpu, DoubleMath());
-    else
-        multiplyMatricesWith(app, cpu, FpuMath{cpu.fpu});
-}
-
 /* sub_4e0430: points turned by a 3x3 matrix and moved.
  *   eax  count; edx  the points in; ebx  the matrix; ecx  the move;
  *   [esp+4]  the points out, 12 bytes each (it returns with ret 4)
  * A point's three are read before it is written, so it works in place; the
  * move is added to what was stored, as floats. As for a multiplied matrix,
- * select DoubleMath or FpuMath once; out may be in. */
-template <typename Math>
-void transformPointsWith(win32::WinApplication* app, x86::CPU& cpu, const Math& M)
+ * use fixed single-precision arithmetic; out may be in. */
+void transformPointsNative(win32::WinApplication* app, x86::CPU& cpu)
 {
+    const FpuMath M{cpu.fpu};
     const x86::sreg32 count = x86::sreg32(cpu.eax);
     const x86::reg32 esp = cpu.esp;
     const x86::reg32 outArgument = app->getMemory<x86::reg32>(esp + 4);
@@ -2417,14 +2338,6 @@ void transformPointsWith(win32::WinApplication* app, x86::CPU& cpu, const Math& 
     flags.compare(0, 0);
     flags.store(cpu);
     cpu.esp = esp + 4 + 4;
-}
-
-void transformPointsNative(win32::WinApplication* app, x86::CPU& cpu)
-{
-    if (hostDouble(cpu))
-        transformPointsWith(app, cpu, DoubleMath());
-    else
-        transformPointsWith(app, cpu, FpuMath{cpu.fpu});
 }
 
 /* sub_4c79a0: the frame's polygons as one list, from the depth buckets.
@@ -3017,7 +2930,7 @@ void sortedBucketsNative(win32::WinApplication* app, x86::CPU& cpu)
         while (polygon != 0)
         {
             const x86::reg32 next = word(polygon);
-            x86::sreg32 index = cpu.fpu.toInteger<x86::sreg32>(
+            x86::sreg32 index = fp::toInteger<x86::sreg32>(
                 x86::Float(FpuMath{cpu.fpu}.mul(app->getMemory<float>(polygon + 0x1c), scale)));
             if (index < 0)
                 index = 0;
@@ -3163,7 +3076,7 @@ void depthBucketsNative(win32::WinApplication* app, x86::CPU& cpu)
                 sum = M.add(sum, floatAt(v3 + 8));
             const double mean = M.mul(sum, app->getMemory<double>(x86::reg32(kind == 0 ? 0x540254 : 0x540264)));
             const double shifted = M.add(M.sub(mean, asFloat(start)), floatAt(0x7dcfdc));
-            x86::sreg32 index = cpu.fpu.toInteger<x86::sreg32>(x86::Float(M.mul(shifted, floatAt(0x54025c))));
+            x86::sreg32 index = fp::toInteger<x86::sreg32>(x86::Float(M.mul(shifted, floatAt(0x54025c))));
             if (index < 0)
                 index = 0;
             else if (index > 0x7cf)
@@ -3257,7 +3170,7 @@ void nearestBlockNative(win32::WinApplication* app, x86::CPU& cpu)
     const GuestFloats p{app, cpu.eax};
     x86::reg32* point = &app->getMemory<x86::reg32>(frame - 0x10);
     for (int i = 0; i < 3; ++i)
-        point[i] = x86::reg32(cpu.fpu.toInteger<x86::sreg32>(x86::Float(FpuMath{cpu.fpu}.mul(p[i], scale))));
+        point[i] = x86::reg32(fp::toInteger<x86::sreg32>(x86::Float(FpuMath{cpu.fpu}.mul(p[i], scale))));
     const x86::sreg32 count = x86::sreg32(app->getMemory<x86::reg32>(0x5dd940));
     const x86::reg32 blocks = app->getMemory<x86::reg32>(0x5dd948);
     x86::sreg32 best = 0x7fffffff;
@@ -3504,7 +3417,7 @@ void particlesNative(win32::WinApplication* app, x86::CPU& cpu)
     // sub_4bbe70 into [ebp-0xe]: an empty list
     word(ebp - 0xe) = 0;
     word(ebp - 0xa) = 0;
-    const x86::reg32 alphaScale = x86::reg32(cpu.fpu.toInteger<x86::sreg32>(
+    const x86::reg32 alphaScale = x86::reg32(fp::toInteger<x86::sreg32>(
         x86::Float(M.mul(floatAt(0x6fbc38), app->getMemory<double>(x86::reg32(0x540448))))));
     const float camera[3] = { floatAt(view + 0x38), floatAt(view + 0x3c), floatAt(view + 0x40) };
     const x86::reg32 player = word(view + 4);
@@ -3631,8 +3544,8 @@ void particlesNative(win32::WinApplication* app, x86::CPU& cpu)
         if (!(1.0 > z))
         {
             const float scale = float(M.div(1.0, z));
-            sizeX = float(cpu.fpu.toInteger<x86::sreg32>(x86::Float(M.mul(sizeX, scale))));
-            sizeY = float(cpu.fpu.toInteger<x86::sreg32>(x86::Float(M.mul(sizeY, scale))));
+            sizeX = float(fp::toInteger<x86::sreg32>(x86::Float(M.mul(sizeX, scale))));
+            sizeY = float(fp::toInteger<x86::sreg32>(x86::Float(M.mul(sizeY, scale))));
         }
         app->getMemory<x86::reg16>(cursor + 4) = 0;
         word(cursor) = cursor + 0xa0;
@@ -3773,7 +3686,7 @@ void dropsNative(win32::WinApplication* app, x86::CPU& cpu)
         cpu.ebp = saved[5];
         cpu.esp = esp + 4;
     };
-    const x86::reg32 alphaScale = x86::reg32(cpu.fpu.toInteger<x86::sreg32>(
+    const x86::reg32 alphaScale = x86::reg32(fp::toInteger<x86::sreg32>(
         x86::Float(M.mul(floatAt(0x6fbc38), app->getMemory<double>(x86::reg32(0x540440))))));
     // The camera's mode, three times as the original reads it.
     auto cameraMode = [&]() -> x86::reg32 {
@@ -3895,9 +3808,9 @@ void moveParticlesNative(win32::WinApplication* app, x86::CPU& cpu)
     LastWideCompare compared;
     const double step = app->getMemory<double>(x86::reg32(0x540420));
     auto trig = [&](bool sine, x86::reg32 at) {
-        const x86::Float angle = cpu.fpu.mul(x86::Float(floatAt(at)),
+        const x86::Float angle = fp::mul(x86::Float(floatAt(at)),
                                              x86::Float(app->getMemory<double>(x86::reg32(sine ? 0x54b6b0 : 0x54b6b8))));
-        return double(sine ? cpu.fpu.sin(angle) : cpu.fpu.cos(angle));
+        return double(sine ? fp::sin(angle) : fp::cos(angle));
     };
     for (x86::reg32 i = 0; i < 0x258; ++i)
     {
@@ -3959,7 +3872,7 @@ void moveParticlesNative(win32::WinApplication* app, x86::CPU& cpu)
             {
                 for (int c = 3; c >= 0; --c)
                 {
-                    const x86::sreg32 fade = cpu.fpu.toInteger<x86::sreg32>(
+                    const x86::sreg32 fade = fp::toInteger<x86::sreg32>(
                         x86::Float(M.mul(double(byte(kind + 0x50 + x86::reg32(c))), age)));
                     byte(p + 0x54 + x86::reg32(c)) = x86::reg8(byte(kind + 0x4c + x86::reg32(c)) - x86::reg8(fade));
                 }
@@ -4147,7 +4060,7 @@ void lightGlowNative(win32::WinApplication* app, x86::CPU& cpu)
     if (1.0 > alpha)
     {
         scaled = true;
-        scale = x86::reg32(cpu.fpu.toInteger<x86::sreg32>(
+        scale = x86::reg32(fp::toInteger<x86::sreg32>(
             x86::Float(M.mul(alpha, app->getMemory<double>(x86::reg32(0x53bcf8))))));
         word(ebp + 0x28) = scaleColour(word(ebp + 0x28), scale);
     }
@@ -4191,10 +4104,10 @@ void lightGlowNative(win32::WinApplication* app, x86::CPU& cpu)
         word(ebp - 8) = asBits(angle);
         word(ebp - 0x24) = asBits(width);
         word(ebp - 0x20) = asBits(height);
-        const x86::Float turned = cpu.fpu.mul(x86::Float(angle), x86::Float(app->getMemory<double>(x86::reg32(0x54b6b0))));
-        const float sw = float(M.mul(double(cpu.fpu.sin(turned)), width));
-        const x86::Float turnedToo = cpu.fpu.mul(x86::Float(angle), x86::Float(app->getMemory<double>(x86::reg32(0x54b6b8))));
-        const double ch = M.mul(double(cpu.fpu.cos(turnedToo)), height);
+        const x86::Float turned = fp::mul(x86::Float(angle), x86::Float(app->getMemory<double>(x86::reg32(0x54b6b0))));
+        const float sw = float(M.mul(double(fp::sin(turned)), width));
+        const x86::Float turnedToo = fp::mul(x86::Float(angle), x86::Float(app->getMemory<double>(x86::reg32(0x54b6b8))));
+        const double ch = M.mul(double(fp::cos(turnedToo)), height);
         word(ebp - 0x10) = asBits(sw);
         auto move = [&](x86::reg32 corner, double dx, double dy) {
             const double cx = floatAt(corner), cy = floatAt(corner + 4);
@@ -4241,11 +4154,8 @@ void lightGlowNative(win32::WinApplication* app, x86::CPU& cpu)
 /* st(0) toward zero, then to an integer as fistp stores it (sub_4dfd56). */
 inline x86::sreg32 truncated(x86::CPU& cpu, double value)
 {
-    const auto rc = cpu.fpu.control.rc;
-    cpu.fpu.control.rc = 3;
-    const x86::Float whole = cpu.fpu.rndint(x86::Float(value));
-    cpu.fpu.control.rc = rc;
-    return cpu.fpu.toInteger<x86::sreg32>(whole);
+    NFS2_USE(cpu);
+    return fp::toInteger<x86::sreg32>(std::trunc(value));
 }
 
 /* sub_492980: a headlight's beam, a cone of quads between a ring at the lamp
@@ -4349,20 +4259,8 @@ void headlightBeamNative(win32::WinApplication* app, x86::CPU& cpu)
 
     // sub_4ea9c0: the half angle of the cone
     double angle;
-    if (app->getMemory<x86::reg8>(0x567858) & 1)
     {
-        word(cpu.esp - 4) = lengthBits;
-        word(cpu.esp - 8) = asBits(nearRadius);
-        cpu.esp -= 8;
-        if (!call(app, cpu, 0x4ea9c0))
-            return;
-        angle = double(cpu.fpu.st(0));
-        cpu.fpu.count -= 1;
-        cpu.esp = esp;
-    }
-    else
-    {
-        angle = M.mul(double(cpu.fpu.atan(x86::Float(asFloat(lengthBits)), x86::Float(nearRadius))),
+        angle = M.mul(double(fp::atan(x86::Float(asFloat(lengthBits)), x86::Float(nearRadius))),
                        app->getMemory<double>(x86::reg32(0x54b6c0)));
     }
     const float spread = float(M.mul(angle, floatAt(0x53bd18)));
@@ -4396,7 +4294,7 @@ void headlightBeamNative(win32::WinApplication* app, x86::CPU& cpu)
     const double alpha = floatAt(0x6fbc38);
     compared(1.0, alpha);
     if (1.0 > alpha)
-        colour = scaleColour(colour, x86::reg32(cpu.fpu.toInteger<x86::sreg32>(
+        colour = scaleColour(colour, x86::reg32(fp::toInteger<x86::sreg32>(
                                          x86::Float(M.mul(alpha, app->getMemory<double>(x86::reg32(0x53bd20)))))));
     const float step = float(M.div(1.0, double(n)));
 
@@ -4408,10 +4306,10 @@ void headlightBeamNative(win32::WinApplication* app, x86::CPU& cpu)
         float a = start;
         for (x86::sreg32 i = 0; i < count; ++i)
         {
-            const double c = M.mul(double(cpu.fpu.cos(cpu.fpu.mul(x86::Float(a),
+            const double c = M.mul(double(fp::cos(fp::mul(x86::Float(a),
                                                                    x86::Float(app->getMemory<double>(x86::reg32(0x54b6b8)))))),
                                     radius);
-            const double s = M.mul(double(cpu.fpu.sin(cpu.fpu.mul(x86::Float(a),
+            const double s = M.mul(double(fp::sin(fp::mul(x86::Float(a),
                                                                    x86::Float(app->getMemory<double>(x86::reg32(0x54b6b0)))))),
                                     radius);
             const float p[3] = { float(c), float(s), lit ? 0.0f : asFloat(lengthBits) };
@@ -4968,9 +4866,9 @@ inline void countedDown(x86::CPU& cpu, x86::reg32 added, x86::reg32 before)
 
 /* sub_4e0050: count vectors at edx times the float [esp+4] into [esp+8]
  * (ret 8). */
-template <typename Math>
-void scaleVectorsWith(win32::WinApplication* app, x86::CPU& cpu, const Math& M)
+void scaleVectorsNative(win32::WinApplication* app, x86::CPU& cpu)
 {
+    const FpuMath M{cpu.fpu};
     const x86::reg32 esp = cpu.esp;
     const x86::sreg32 count = x86::sreg32(cpu.eax);
     const double scale = app->getMemory<float>(esp + 4);
@@ -5004,9 +4902,10 @@ void scaleVectorsWith(win32::WinApplication* app, x86::CPU& cpu, const Math& M)
 
 /* sub_4dffb0 (add) and sub_4e0000 (subtract): count vectors at edx, each with
  * the one vector at ebx, into ecx. */
-template <bool Add, typename Math>
-void offsetVectorsWith(win32::WinApplication* app, x86::CPU& cpu, const Math& M)
+template <bool Add>
+void offsetVectorsNative(win32::WinApplication* app, x86::CPU& cpu)
 {
+    const FpuMath M{cpu.fpu};
     const x86::sreg32 count = x86::sreg32(cpu.eax);
     x86::reg32 in = cpu.edx;
     const x86::reg32 by = cpu.ebx;
@@ -5041,16 +4940,6 @@ void offsetVectorsWith(win32::WinApplication* app, x86::CPU& cpu, const Math& M)
     cpu.ecx = out;
     cpu.edx = by;
     cpu.esp += 4;
-}
-
-void scaleVectorsNative(win32::WinApplication* app, x86::CPU& cpu) {
-    if (hostDouble(cpu)) scaleVectorsWith(app, cpu, DoubleMath());
-    else scaleVectorsWith(app, cpu, FpuMath{cpu.fpu});
-}
-template <bool Add>
-void offsetVectorsNative(win32::WinApplication* app, x86::CPU& cpu) {
-    if (hostDouble(cpu)) offsetVectorsWith<Add>(app, cpu, DoubleMath());
-    else offsetVectorsWith<Add>(app, cpu, FpuMath{cpu.fpu});
 }
 
 /* sub_4e06a0: the length of the vector at eax, pushed onto the x87 stack. */
@@ -5296,7 +5185,7 @@ void projectedTriangleNative(win32::WinApplication* app, x86::CPU& cpu)
         cpu.flags.lo = x86::reg8(0x02 | ((cpu.fpu.status.word >> 8) & 0xd7));
         if (1.0 > brightness)
         {
-            const x86::reg32 scale = x86::reg32(cpu.fpu.toInteger<x86::sreg32>(
+            const x86::reg32 scale = x86::reg32(fp::toInteger<x86::sreg32>(
                 x86::Float(FpuMath{cpu.fpu}.mul(brightness, app->getMemory<double>(x86::reg32(0x536c6c))))));
             for (int i = 0; i < 3; ++i)
                 recordWords[i][5] = scaleColour(recordWords[i][5], scale);

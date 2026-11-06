@@ -15,19 +15,11 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # options
-option(WITH_PEDANTIC_FPU "Compile pedantic FPU implementation" OFF)
-option(WITH_WIDE_FPU "Experiment: x87 values as long double, never single precision (include/fpu.h)" OFF)
-option(WITH_MMX "Enable MMX support" ON)
+option(WITH_MMX "The checks' game code: MMX registers, cpuid and rdtsc on the CPU" OFF)
 option(NFS_TRACE_MSG "Trace the win32 message pump to the log" OFF)
 option(NFS2_ASSERT_TRAP "Make NFS2_ASSERT a hard trap (debugger break) instead of logging and continuing" OFF)
 
 # add compile definitions based on options
-if(WITH_PEDANTIC_FPU)
-    add_compile_definitions(WITH_PEDANTIC_FPU)
-endif()
-if(WITH_WIDE_FPU)
-    add_compile_definitions(WITH_WIDE_FPU)
-endif()
 if(WITH_MMX)
     add_compile_definitions(WITH_MMX)
 endif()
@@ -91,6 +83,14 @@ endif()
 
 # Android has no desktop OpenGL: link GLESv3 directly instead of going through
 # find_package(OpenGL), which has no Android-CMake config to find anyway.
+# The game's data keeps floats at any address, as x86 allows.  32-bit ARM faults
+# on a float or a pair of words loaded from one that is not aligned (arm64 does
+# not), and the natives read through float pointers: every pointer is taken as
+# possibly unaligned, on this ABI only.
+if(ANDROID AND ANDROID_ABI STREQUAL "armeabi-v7a")
+    add_compile_options(-fmax-type-align=1)
+endif()
+
 if(ANDROID)
     set(NFS_GL_LIBS GLESv3)
 else()
@@ -131,20 +131,6 @@ file(GLOB LIB_CPP_SOURCES CONFIGURE_DEPENDS
      "${NFS_ROOT_DIR}/src/lib/winapi/*.cpp"
      "${NFS_ROOT_DIR}/src/lib/winapi/ddraw/*.cpp"
      "${NFS_ROOT_DIR}/src/lib/winapi/dsound/*.cpp")
-
-# src/lib/x87soft.cpp is WITH_PEDANTIC_FPU's 80-bit arithmetic: the x87's,
-# exact, in portable C++ -- an arm64 phone as well as a PC (it replaces
-# x87.asm, which ran on the host's own x87 and so only on x86).  It needs
-# unsigned __int128, which GCC and Clang have and MSVC does not.  Without
-# WITH_PEDANTIC_FPU nothing calls it, so it is left out.
-if(WITH_PEDANTIC_FPU AND MSVC)
-    message(FATAL_ERROR
-        "WITH_PEDANTIC_FPU needs GCC or Clang: src/lib/x87soft.cpp uses "
-        "unsigned __int128.")
-endif()
-if(NOT WITH_PEDANTIC_FPU)
-    list(REMOVE_ITEM LIB_CPP_SOURCES "${NFS_ROOT_DIR}/src/lib/x87soft.cpp")
-endif()
 
 add_library(nfs_core STATIC ${LIB_CPP_SOURCES})
 target_include_directories(nfs_core PRIVATE
@@ -221,7 +207,7 @@ function(add_game_exe name)
             -ffp-contract=off)
         # Clang cannot honor dynamic FP environment access on 32-bit ARM.
         # native_vertices.cpp disables its exception-dependent float fast path
-        # there; default-double and emulated rounding remain available.
+        # there; fixed single-precision helpers retain the wider exponent.
         if(NOT (CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND CMAKE_SIZEOF_VOID_P EQUAL 4
                 AND CMAKE_SYSTEM_PROCESSOR MATCHES "^[Aa][Rr][Mm]"))
             set_property(SOURCE "${game_src_dir}/native_vertices.cpp" APPEND PROPERTY COMPILE_OPTIONS
@@ -239,9 +225,6 @@ function(add_game_exe name)
         ${NFS_ROOT_DIR}/decomp/mad/src
         ${NFS_ROOT_DIR}/include)
     target_link_libraries(${name} PRIVATE ${SDL3_MAIN_TARGET} nfs_core ${SDL3_LIB_TARGET} ${NFS_GL_LIBS})
-    if(WITH_PEDANTIC_FPU)
-        target_compile_definitions(${name} PRIVATE WITH_PEDANTIC_FPU)
-    endif()
     if(WITH_MMX)
         target_compile_definitions(${name} PRIVATE WITH_MMX)
     endif()

@@ -4,6 +4,26 @@ Update this file when a result changes. Record the source and evidence; distingu
 automated checks from device feedback. Older session details remain in Git history
 and [release metadata](releases/). Usage is in [BUILD.md](BUILD.md).
 
+## Upstream integration candidate — not tested or built
+
+Branch `integrate-upstream-vertex-cleanup` starts from
+`vertex-double-dispatch` at `919280cf7dbeec4f76ace1ea0d870d65c3c17518`
+and incorporates upstream `9c27ce73e9310337b9d555500ebb01b47fd602e1`.
+Prepared as a merge commit for publication before building. Build version is
+0.78.37 / code 114; tests and universal APK validation are pending.
+
+Uses upstream fixed single precision; removes double dispatch, arithmetic UI
+experiments and stale build options. Retains packed-access fixes, the ARMv7
+compatible path, checked ARMv8 float/retry, rendering optimizations and FPS modes.
+Upstream Logs export uses the fork's lifecycle-aware document picker. Both log
+and crash-report providers, controller integration and replay launch are retained.
+
+Source review only. No tests, compiler checks, builds, benchmarks, workflow runs,
+or device checks were executed. Existing arithmetic tests and compiler-policy
+expectations were updated but not run. See [PERFORMANCE.md](PERFORMANCE.md) for
+carry/drop decisions and the validation plan. All results below are historical
+and do not validate this merged candidate.
+
 ## Overlay levels: 0.78.36 / code 113
 
 The launcher suite passed 32 tests and tooling passed 44, including native

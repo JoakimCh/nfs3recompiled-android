@@ -157,7 +157,32 @@ STOOD_IN = {
     0x444910: (0x445e60,), 0x444b20: (0x445e60,), 0x444f50: (0x445e60,), 0x445520: (0x445e60,),
     0x4449d0: (0x445f50,), 0x444b60: (0x445f50,), 0x4450c0: (0x445f50,), 0x445680: (0x445f50,),
     0x445ac0: (0x445f50,),
+    # The view's grid (port::view), which the view's frame calls by address: stood in there, held on its own.
+    0x464840: (),
+    # The edge pair emitter (port::view), which the glyph geometry's builder calls by address.
+    0x474db0: (),
+    # The HUD's aligned text (port::hud), which the HUD's other texts call by address.
+    0x4897f0: (),
+    # The HUD's tables' and map's starters and view fitter (port::hud), which the HUD's start and its panes call by
+    # address: stood in there, held on their own.
+    0x48aa40: (),
+    0x48cdb0: (),
+    0x48d110: (),
+    0x4844c0: (),
+    0x484c10: (),
+    0x4e8f28: (),
+    0x485c20: (),
+    0x4870c0: (),
+    0x486f70: (),
+    0x485f20: (0x4873e0,),   # (the stroke's own clip: port::hud::strokeClippedDrawn calls it as C++)
+    0x4873e0: (),
+    0x48cb50: (),
+    0x48cc60: (),
+    0x486df0: (),
 }
+# The car's colour count (port_fields), which the view's nearest colour calls by address: stood in there,
+# held on its own; the fields' entries each call it as C++.
+STOOD_IN[0x439760] = tuple(sorted(nfs3hp.PORT_FIELDS_NATIVES))
 
 
 def force_feedback_car(text):
@@ -216,23 +241,6 @@ def widescreen(text):
     return port_sites(SITES)(text)
 
 
-def race_precision(text):
-    """tools/apply_race_precision.py's change, which the loading screen's, the
-    loading bar's and the game's main's natives have: the race's x87 word
-    through nfs3hp::raceControl."""
-    from tools.apply_race_precision import LOAD, EXTENDED, SITES
-    for _, instruction in SITES:
-        anchor = "    // " + instruction
-        if anchor not in text:
-            continue
-        start = text.index(anchor)
-        stop = text.index("\n    // 00", start + 1)
-        block = text[start:stop]
-        assert block.count(LOAD) == 1, instruction
-        text = text[:start] + block.replace(LOAD, EXTENDED, 1) + text[stop:]
-    return text
-
-
 def track_detail(text):
     """tools/apply_track_detail.py's changes, which load::defaultConfig has --
     View Distance Full where the settings start over -- and render::
@@ -279,7 +287,14 @@ def hud_scale(text):
     """tools/apply_hud_scale.py's changes, which render's HUD frame and the
     layouts inside it have: the HUD's sizes from a 4:3 screen."""
     from tools.apply_hud_scale import READS
-    return port_sites([(None, address + "  ", old, new) for address, (old, new) in READS])(text)
+    changed = port_sites([(None, address + "  ", old, new) for address, (old, new) in READS])(text)
+    if "hudReference" in changed and "x86::reg32 hudReferenceWidth(" not in changed:
+        # (Inside the function: the generated file is cut into parts at each function's signature.)
+        declarations = ("    x86::reg32 hudReferenceWidth(win32::WinApplication* app);\n"
+                        "    x86::reg32 hudReferenceHeight(win32::WinApplication* app);\n")
+        brace = changed.index("\n{\n") + 3
+        changed = changed[:brace] + declarations + changed[brace:]
+    return changed
 
 
 def cabin_fit(text):
@@ -390,7 +405,6 @@ def coll_file_strncmp(text):
 PORT_CHANGES = {0x4710f0: force_feedback_car, 0x410030: music_stream, 0x4107c0: music_stream,
                 0x49bd30: hud_editor,
                 0x4bed90: widescreen, 0x4bee80: widescreen,
-                0x494fa0: race_precision, 0x495230: race_precision, 0x4a39f0: race_precision,
                 0x4723f0: track_detail,
                 0x41a120: alpha_intensity, 0x41aa60: mirror_detail, 0x41c310: mirror_detail,
                 0x41cdc0: mirror_detail, 0x431320: coll_file_strncmp,
@@ -408,6 +422,8 @@ PORT_CHANGES.update({
     0x4b7d30: car_detail, 0x4bef50: dynamic_fullscreen_mode,
     0x4b9bc0: mirror_detail, 0x4bae00: mirror_detail, 0x4bb200: mirror_detail,
     0x4ddb40: alpha_intensity, 0x4de070: alpha_intensity, 0x4de700: alpha_intensity})
+# port_hud.cpp's: the HUD's, with the changes of the HUD's scale in them.
+PORT_CHANGES.update({0x484b70: hud_scale, 0x485180: hud_scale, 0x48a660: hud_scale, 0x48ae70: hud_scale, 0x48aa40: hud_scale, 0x48d110: hud_scale})
 # native_vertices.cpp's, for tools/game_checks/vertices (gen_vertices.py).
 PORT_CHANGES.update({0x492370: alpha_intensity, 0x492980: alpha_intensity, 0x4cb750: alpha_intensity,
                      0x4cbc90: alpha_intensity, 0x41ae90: mirror_detail, 0x4bb5d0: mirror_detail})
@@ -463,13 +479,18 @@ def main():
     game = disassembler.disassemble("nfs3hp", str(ROOT / "nfs3hp/nfs3.exe"), nfs3hp.DATA_SEGMENTS,
                                     nfs3hp.KNOWN_SUBROUTINES, nfs3hp.SPLIT_INSTRUCTIONS,
                                     nfs3hp.THREAD_ROUTINES, nfs3hp.THREAD_SEGMENTS, nfs3hp.MERGE_ROUTINES)
-    fpu_codegen.EXACT = True  # as Application.write has the game's arithmetic
+    # The rewrites written in doubles (the HUD, the view, the speech decoder) are
+    # held against the game's code in doubles: these differ from a float in the
+    # last bit, and only what they draw or play sees it.
+    game.double_functions = {address for address, name in nfs3hp.GAME_NATIVES.items()
+                             if name.startswith(("port::hud::", "port::view::", "port::coded", "port::convert"))
+                             or name in ("port::reverbLength", "port::gapLine")}
     # The menus' screens are frontend_checks' (tools/frontend_checks).
     # Not held against their code: the sound and graphics code's dead stubs (they only stop
     # the game), and the mix and a channel's ramp, whose native mixer was held
     # against the game's mix by mix on the phone (0.77's snd_check).
     natives = {address: name for address, name in nfs3hp.GAME_NATIVES.items()
-               if address not in nfs3hp.MENU_NATIVES and not name.startswith(("snd::dead_", "graphics::dead_", "dead::"))
+               if address not in nfs3hp.MENU_NATIVES and not name.startswith(("snd::dead_", "graphics::dead_", "dead::", "removed::"))
                and name not in ("port::mixerServe", "port::mixerRamp")}
     # native_render.cpp's are tools/game_checks/render's: here, as before they
     # were native whole, stand-ins for the natives that call them.
@@ -568,7 +589,6 @@ def main():
                 "bool widescreenMode(x86::reg32 width, x86::reg32 height);\n"
                 "x86::reg32 dynamicSavedMode(x86::reg32 found, x86::reg32 width);\n"
                 "/* The races' x87 word (race precision). */\n"
-                "x86::reg16 raceControl(x86::reg16 word);\n"
                 "/* The mirror's pass as the main view's (mirror detail). */\n"
                 "x86::reg32 mirrorAsMain(x86::reg32 kind);\n"
                 "/* The HUD editor's measure of each quad queued (hud editor). */\n"

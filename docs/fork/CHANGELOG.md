@@ -1,5 +1,14 @@
 # Fork changes
 
+## 0.78.37 — version 114
+
+Integrate upstream 0.78 through `9c27ce73`. Adopt its fixed single-precision
+arithmetic and remove obsolete double dispatch, precision controls and the
+unchecked ARMv7 experiment. Keep alignment fixes, safe ABI-specific vertex paths,
+opaque rendering, mirror preferences and lightweight FPS collection. Retain
+upstream logs/replay tools alongside fork controller and launcher improvements.
+Prepared for a universal ARMv7/ARMv8 build; validation is recorded separately.
+
 ## Unreleased build automation
 
 Manual workflows build ARMv7, ARMv8 or a universal APK and publish an existing

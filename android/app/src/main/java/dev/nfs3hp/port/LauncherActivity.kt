@@ -1,6 +1,7 @@
 package dev.nfs3hp.port
 
 import android.app.Activity
+import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ActivityInfo
@@ -21,8 +22,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.core.content.FileProvider
 import androidx.documentfile.provider.DocumentFile
 import java.io.File
+import java.io.FileOutputStream
 import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -40,7 +43,7 @@ class LauncherActivity : ComponentActivity() {
     enum class Screen {
         Main, Language, Data, GameData, DataSets, Saves, LauncherSettings,
         Controls, Touch, Editor, ControlsHelp,
-        ForceFeedback, Faq, Display, Adjustment, Network, Advanced,
+        ForceFeedback, Faq, Display, Adjustment, Network, Advanced, Logs,
     }
 
     /** A question put to the player: a title, the question, and what the
@@ -104,6 +107,7 @@ class LauncherActivity : ComponentActivity() {
         pickerOpen = savedInstanceState?.getBoolean("document_picker_open") ?: false
         hideStatusBar(this)
         InputDeviceRoles.initialize(this)
+        autoReplayPending = savedInstanceState == null && intent.getBooleanExtra("auto_replay", false)
         val preferences = GamePreferences.get(this)
         // Removed in 0.75: fixed/editable positions supersede this global offset.
         preferences.edit().remove("touch_raise_controls").apply()
@@ -125,6 +129,10 @@ class LauncherActivity : ComponentActivity() {
         super.onResume()
         CrashReports.check(this)
         if (screen == Screen.Advanced) refreshBonusContent()
+        if (autoReplayPending) {
+            autoReplayPending = false
+            startGame()
+        }
     }
 
     fun launcherOrientation(): Int = orientationFor(this)
@@ -161,7 +169,8 @@ class LauncherActivity : ComponentActivity() {
         if (next == Screen.Advanced) refreshBonusContent()
         if (next == Screen.GameData || next == Screen.DataSets || next == Screen.Main)
             refreshDataSets()
-        if (next != Screen.GameData && next != Screen.Saves && next != Screen.LauncherSettings && next != Screen.DataSets)
+        if (next != Screen.GameData && next != Screen.Saves && next != Screen.LauncherSettings && next != Screen.DataSets &&
+            next != Screen.Logs)
             status = ""
         if (next == Screen.Touch)
             // The old wheel and tilt modes are gone: the buttons are what there is.
@@ -270,6 +279,8 @@ class LauncherActivity : ComponentActivity() {
 
     // ---- The system's file pickers, and what comes back from them ----
 
+    private val logExportPicker = registerPicker(REQUEST_EXPORT_LOGS)
+
     private fun registerPicker(kind: Int) =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             onDocumentResult(kind, result.resultCode, result.data)
@@ -344,6 +355,63 @@ class LauncherActivity : ComponentActivity() {
         launchPicker(launcherExportPicker, intent)
     }
 
+    fun launchLogExport() {
+        if (busy || pickerOpen) return
+        val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE)
+            .setType("application/zip").putExtra(Intent.EXTRA_TITLE, "nfs3-logs-" + stamp() + ".zip")
+            .addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
+        launchPicker(logExportPicker, intent)
+    }
+
+    /** The logs as a zip in the cache, handed to another app: the share menu,
+     *  or, to the developer, a letter to the address in developer_email. */
+    fun sendLogs(toDeveloper: Boolean) {
+        startOperation {
+            val folder = File(cacheDir, "logs")
+            folder.listFiles()?.forEach { it.delete() }
+            folder.mkdirs()
+            val name = "nfs3-logs-" + stamp() + ".zip"
+            val zip = File(folder, name)
+            val count = FileOutputStream(zip).use { LogBundle.write(applicationContext, it) }
+            val uri = FileProvider.getUriForFile(this, "$packageName.logs", zip)
+            val send = Intent(Intent.ACTION_SEND).setType(if (toDeveloper) "message/rfc822" else "application/zip")
+                .putExtra(Intent.EXTRA_STREAM, uri)
+                .putExtra(Intent.EXTRA_SUBJECT, getString(R.string.logs_mail_subject, stamp()))
+                .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            if (toDeveloper)
+                send.putExtra(Intent.EXTRA_EMAIL, arrayOf(getString(R.string.developer_email)))
+                    .putExtra(Intent.EXTRA_TEXT, getString(R.string.logs_mail_text))
+            runOnUiThread {
+                try {
+                    startActivity(Intent.createChooser(send, getString(R.string.logs_share_title)))
+                } catch (e: ActivityNotFoundException) {
+                    Toast.makeText(this, getString(R.string.data_error, e.message), Toast.LENGTH_LONG).show()
+                }
+            }
+            getString(R.string.logs_packed, count)
+        }
+    }
+
+    fun confirmClearLogs() {
+        if (GameProcess.running(this)) {
+            Toast.makeText(this, R.string.logs_clear_game_running, Toast.LENGTH_LONG).show()
+            return
+        }
+        dialog = Dialog(
+            getString(R.string.logs_clear),
+            getString(R.string.logs_clear_message),
+            getString(R.string.logs_clear),
+            {
+                val cleared = LogBundle.clear(applicationContext)
+                logsChanged++
+                Toast.makeText(this, getString(R.string.logs_cleared, cleared), Toast.LENGTH_SHORT).show()
+            },
+        )
+    }
+
+    /** Counts what changed in the log files, so the Logs screen reads them anew. */
+    var logsChanged by mutableIntStateOf(0)
+
     private fun stamp(): String = SimpleDateFormat("yyyyMMdd-HHmm", Locale.ROOT).format(Date())
 
     /* Read from the stored preference: the operation reports back after the
@@ -389,6 +457,11 @@ class LauncherActivity : ComponentActivity() {
                     getString(R.string.saves_export_complete,
                         SaveGameManager.exportZip(applicationContext, uri, dataRoot(), withSettings))
                 }
+            }
+            REQUEST_EXPORT_LOGS -> startOperation {
+                val count = contentResolver.openOutputStream(uri)?.use { LogBundle.write(applicationContext, it) }
+                    ?: throw IOException(getString(R.string.saves_open_failed))
+                getString(R.string.logs_exported, count)
             }
             REQUEST_EXPORT_LAUNCHER -> startOperation(getString(R.string.exporting_launcher)) {
                 LauncherSettings.export(applicationContext, uri)
@@ -509,6 +582,8 @@ class LauncherActivity : ComponentActivity() {
         if (GameProcess.running(this)) finish() else finishAndRemoveTask()
     }
 
+    private var autoReplayPending = false
+
     fun startGame() {
         if (dataSetManager?.active() == null)
             return
@@ -541,7 +616,7 @@ class LauncherActivity : ComponentActivity() {
             Screen.Editor -> closeEditor()
             Screen.Touch, Screen.ForceFeedback, Screen.ControlsHelp -> go(Screen.Controls)
             // The Data screens are a level deeper than the rest.
-            Screen.GameData, Screen.Saves, Screen.LauncherSettings -> go(Screen.Data)
+            Screen.GameData, Screen.Saves, Screen.LauncherSettings, Screen.Logs -> go(Screen.Data)
             Screen.DataSets -> go(Screen.GameData)
             // Screen adjustment sits under Display.
             Screen.Adjustment -> go(Screen.Display)
@@ -566,6 +641,7 @@ class LauncherActivity : ComponentActivity() {
         private const val REQUEST_IMPORT_LAUNCHER = 14
         private const val REQUEST_EXPORT_LAUNCHER = 15
         private const val REQUEST_PICK_IMAGE = 16
+        private const val REQUEST_EXPORT_LOGS = 17
 
         /** Full screen, as the theme asks, said to the window as well: with the
          *  status bar gone from the start, nothing arrives later to move the

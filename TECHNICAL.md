@@ -44,8 +44,9 @@ The game's data is imported once, from a folder holding `FEDATA` and
 2048-byte sectors or whole 2352-byte MODE1/MODE2 ones; the CUE sheet is not
 needed).
 
-Android 8.0 or newer on a 64-bit ARM device (ARMv8, arm64-v8a) with OpenGL ES
-3.0. Testing happens on Android 13, and
+Android 8.0 or newer on an ARM device with OpenGL ES 3.0: one APK holds
+arm64-v8a and armeabi-v7a, and the installer takes the device's first, so 64-bit
+Android always runs arm64-v8a. Testing happens on Android 13, and
 Android 10 was confirmed by a tester; 8 and 9 install but have not been played
 on yet.
 
@@ -89,6 +90,76 @@ on, the log is open and the screen's switches (`DebugOptions`) set the
 diagnostic variables below when the game next starts. Each switch keeps its
 launch-extra name, and a launch extra wins over the screen for that start:
 `adb shell am start -n dev.nfs3hp.port/.SplashActivity --ez debug true --ez trace_ticks true`.
+
+**Live functions log** (`live_counter`, under Traces) records
+which of the game's functions run. With it on (and debug mode) the game starts
+a timer, `ITIMER_PROF`, that every 4 ms of CPU time interrupts the running
+thread; the handler walks its frame-pointer chain and counts the addresses in
+`libmain.so` (`src/nfs3hp/func_log.cpp`): the function the time is spent in, and
+every function with a call in progress. Nothing is added to the game's code and
+with the switch off none of it exists. A thread appends what changed to
+`functions.bin` in the game's `logs` folder
+(`/sdcard/Android/data/dev.nfs3hp.port/files/logs/`) every two seconds, and
+the log's `[FUNCS]` lines say how it goes. It is a sample: a function that runs a few
+times in a session may not be in it. Play a session -- menus, a race, its replay
+-- leave the game, then:
+
+```bash
+adb pull /sdcard/Android/data/dev.nfs3hp.port/files/logs/functions.bin
+python tools/profile_report.py functions.bin [libmain.so] [report.md]
+```
+
+The report sorts the functions into generated code, natives (`native_*.cpp`) and
+the typed port (`port_*.cpp`) by the source files in the library's debug info,
+and says how many of each were seen, how the time divides, and what runs in
+each 20 seconds. The log also notes the x87's precision: every control word the
+game sets reaches `FPU::s_controlHook` (`include/fpu.h`, null otherwise), each
+thread's last one is kept, and each sample carries the precision control its
+thread was under, so the report divides the time between 24, 53 and 64 bits and
+counts the words set.
+
+The report needs the unstripped `libmain.so` of the build the APK was
+made from (`android/app/build/intermediates/cxx/*/*/obj/arm64-v8a/`); the build
+id in `functions.bin` is checked against it. A first measurement (0.78, 252 s,
+by counting every call in an instrumented build): 859 of 2239 generated
+functions ran, and in a race generated code was about 8% of the calls to the
+original's functions.
+
+**Comparing builds by a replay.** A replay is the race driven again from its
+recorded inputs, the opponents and the physics included, so the same replay on two
+builds must drive the same cars. `replay_trace` (under Traces,
+`src/nfs3hp/replay_trace.cpp`) writes every car at every physics step to
+`logs/trace-race.bin` or `logs/trace-replay.bin`; a replay's first pass only, since
+it goes round again at its end. `tools/replay_run.py` plays one on the phone with
+nothing touched (launch extra `auto_replay`: no movies, from the first menu straight
+into `replay.rp3`) and fetches the trace; `tools/replay_compare.py` says whether two
+traces match, or the first step, car and field that differ:
+
+```bash
+python tools/replay_run.py new.bin --replay diagnostics/replay-golden/test2.rp3 --compare diagnostics/replay-golden/traces/test2-a.bin
+```
+
+It stops at the first step that differs, and `--seconds n` after that many seconds
+of the race alike, for a quick look. The unlocked screen has to stay on. Two runs of
+one build match to the bit. The physics
+is chaotic, so a tolerance means little over a whole race: at 53 bits instead of 24
+the first bit differs at the start, the cars are half a metre apart after 22 seconds
+and up to 1.7 km apart after 219. A replay recorded under other arithmetic plays
+differently for the same reason.
+
+**Logs** (Data -> Logs, in English in every language like Advanced) gathers what
+the diagnostics have written (`LogBundle.java`): the files in the game's `logs`
+folder -- `functions.bin` and what other traces put there -- plus `cars.bin` and
+`ai.bin` beside it, the app's own lines of the system log (`logcat -d`, which
+Android lets an app read for itself; there are lines only in debug mode), and
+`device.txt` (the build, the phone, the debug switches). *Export to a file* asks for a
+place with the system's file picker; *Share* opens the share menu with the zip
+attached; *Send to the developer* opens a letter to the address in
+`developer_email` (`res/values/strings.xml`; the button is gone if it is empty)
+with the zip attached. The zip for Share and Send is made in the cache and
+reached through `FileProvider` (`res/xml/log_paths.xml`). *Clear logs* deletes
+the files and runs `logcat -c`, which the system may refuse; it will not run
+while the game is, since the game has the files open.
 
 The menus carry one button of the port's, the keyboard in the top-right corner:
 a finger works them as a pointer, and the system's own back is the game's
@@ -280,28 +351,37 @@ join into the log in debug mode (switch `net_trace`).
 A PC of 1998 raced in single precision: before every race the game takes the
 x87's precision control down to 24 bits (fldcw at 0x4a3e8d and 0x4a3ed3), and
 every sum, product and quotient of the physics and of the opponents' driving
-keeps a float's significand. Four functions that step out to the system mid-race
-come back the same way (0x495179, 0x4955e9, 0x4b6239, 0x4bc811). The Modern
-Patch drops that fldcw and races at the 64 bits fninit leaves. The port does as
-the Modern Patch does at all six (`tools/apply_race_precision.py`);
-`NFS_FPU_EXTENDED=0` brings back the original's single precision. Every machine
-of a network race needs the same.
+keeps a float's significand. The single precision starts as the game leaves its
+menus, so a race's loading and its replay run in it too. The Modern Patch drops
+that fldcw and races at 64 bits. The port's arithmetic is the original race's, all
+the time: 24 bits in the race as on a PC, and in the menus too, where the original
+had 64; a replay comes out the same to the bit whichever the menus and the
+tables built at the start are in. Every machine of a network race needs the same.
 
-How wide "extended" is depends on the build. The default keeps the x87's
-values in doubles: 53 bits. `WITH_PEDANTIC_FPU` (`./gradlew -Px87Exact
-assembleRelease`) keeps them in 80 bits and does the x87's arithmetic in portable
-C++ (`src/lib/x87soft.cpp`): addition, subtraction, multiplication, division,
-square root, comparisons, frndint, fscale, fprem and every conversion come out
-as an x87's to the bit, at every precision control and in every rounding mode
-(`tools/x87soft_checks.cpp` compares a million random operands of each with a
-real x87), and fsin, fcos, fptan, fpatan, fyl2x and f2xm1 within a last bit of
-it — an arm64 long double has 113 bits, and the sine and cosine reduce their
-argument by the x87's own 66-bit pi. It costs speed: every x87 operation of
-the generated code is a call.
+Single precision rounds sums, products, quotients and roots only: sin, cos and
+atan2 (fsin, fcos, fpatan) keep their full width, as on the x87, until the next
+operation or a float store rounds them. So a value between operations is a double,
+holding a float's 24 bits with the x87's wider exponent; the operations are `fp::`
+in `include/fpu.h`, which work out the exact result's side of a tie, and come out
+as the x87's to the bit. Where the code itself loads a control word around its
+work, the emulated FPU's operations go by it: 64 bits to turn numbers into text and
+back in the runtime, and chopping for an integer.
 
-In an extended race the natives that only draw stay on; the ones the physics
-and the opponents can reach — the vector helpers, the nearest block, the
-ground's height, the particles — step aside for the generated code.
+The natives and the rewrites still work on the emulated FPU of the CPU they are
+handed, whose arithmetic rounds by its control word: 24 bits since `FPU::init`, 64
+in those same windows. The contact-physics functions `tools/decomp.py` converted
+(`port_conv`) go through the same operations; the HUD and view rewrites (`port_view`,
+`port_hud`) compute in doubles, which only what is drawn sees.
+
+## What the old processors asked for, removed
+
+The game measured the processor at start-up and chose by it: movies' quality and
+whether to drop their in-between frames, the detail settings of a first start, MMX
+routines or plain ones, the x87's copies. It also worked round the Pentium's FDIV
+bug. None of this is on the port: `nfs3hp::removed` answers with constants, movies
+are always at their best quality and the detail at the game's highest. A movie still
+drops a frame that is late against its sound; that is keeping them together, not the
+processor's speed.
 
 ## Native code
 
@@ -398,8 +478,13 @@ go through it:
   since (game_checks' generated code in 16 parts), and check side by side on
   every thread (`GAME_CHECKS_JOBS`): game_checks a function a process,
   frontend_checks a share of the functions a process (`frontend_checks.exe
-  nfs3.exe rounds k/n`). frontend_checks copies the whole 16 MB memory three
-  times a case, so its shares are bound by the memory's bandwidth.
+  nfs3.exe rounds k/n`). Both copy and compare only the pages a case wrote
+  (`MEM_WRITE_WATCH`, `GetWriteWatch`): copying megabytes a case held them to
+  the memory's bandwidth, so that all the threads got no further than one.
+  `tools/frontend_checks/windows/run.py [rounds] [group|base]` takes a group of
+  `tools/frontend_checks/groups/`: a row a function (`<address> <name> <kind>`),
+  and that group's world, entries and watched memory, which run only in its own
+  processes. A case past 200000 calls stops and says so.
 - The C runtime the game was linked with, Watcom's, goes native family by
   family (`src/nfs3hp/native_watcom.cpp`, in `nfs3hp::watcom`, bound as the
   game's own are, `WATCOM_NATIVES`). `src/nfs3hp/watcom.md` maps all of it in
@@ -421,23 +506,17 @@ go through it:
   `setenv` with the wide environment -- the formatted input -- `sscanf`,
   `__scnf`, `strtod` -- the console's `getch`, `getche` and `kbhit`, the
   structured exception handling, the start-up from `_cstart_` to the game's
-  main, the Pentium FDIV bug's atan2 and divisions, `__reporterror` -- and
+  main, `__reporterror` -- and
   the heap, `_nrealloc` and `_nexpand` with it --
   `malloc`, `free` and what grows and shrinks it, in `native_watcom_heap.cpp`,
   which voodoo2a's heap is too.
   `tools/game_checks` holds them against their generated code as well.
-- All of the game's code that uses MMX is native
-  (`src/nfs3hp/native_mmx.cpp`, in `nfs3hp::mmx`, bound as the game's own
-  are, `MMX_NATIVES`): the SND library's MMX routines -- a block added into
-  the mixer's accumulator at its volume, the accumulator out to 8 or 16 bits,
-  the interpolators, the XA decoders -- and the memmove the game's file reads
-  copy with. They work on the CPU's MMX registers as their code does, leaving
-  them as it leaves them, with `include/mmx.h`'s MMX in plain C++;
-  `tools/game_checks` holds them against their generated code, the MMX
-  registers too, and `tools/mmx_checks` holds `mmx.h`'s MMX against the
-  x86's own. The disassembler writes MMX with it as well
-  (`disasm/codegen/mmx.py`): there is no SSE anywhere, and on ARM nothing to
-  translate.
+- The game's mixing, written for MMX, is plain loops over 16-bit samples
+  (`src/nfs3hp/native_mix.cpp`, `MIX_NATIVES`): a block added into the accumulator
+  at its volume, the accumulator into the output, interpolating, decoding EA's XA
+  ADPCM, and the forward copy its memmove and file reads use. They give the game's
+  samples to the bit, and `tools/game_checks` holds them against its code, which is
+  the only place `include/mmx.h` and `WITH_MMX` are still built.
 - The game's controls are native whole, in `nfs3hp::controls`, bound as the
   game's own are (`CONTROLS_INPUT_NATIVES`, `CONTROLS_DEVICES_NATIVES`,
   `CONTROLS_RACE_NATIVES`, `CONTROLS_PIPELINE_NATIVES`, `CONTROLS_QUEUE_NATIVES`): its side of DirectInput -- DirectInput started and
@@ -490,8 +569,7 @@ go through it:
   them, the menus' art, the polygon lists' drawers, the HUD's message box and
   editor frame, the cabin's instruments, the loading screen and bar, the
   screen capture, the game's main. Each is written as its code is, port
-  changes included (the widescreen list, the race's x87 word through
-  `raceControl`), and `tools/game_checks` holds it against the game's code
+  changes included (the widescreen list), and `tools/game_checks` holds it against the game's code
   with the patch made to it (`graphics_world.inc` makes up the records,
   modes and formats they read). What only the software renderers or Direct3D
   reach and nothing else calls is a stub that stops the game
@@ -575,7 +653,7 @@ go through it:
   channels' set-ups, volumes, resamplers and decoders (PCM, XA ADPCM mono and
   stereo, once, looped, with an intro, streamed from memory or a packet
   player, and EA's frame-coded speech with its x87 synthesis filter;
-  `port_snd_mixsetup.cpp`, `native_snd_mixfuncs.cpp`, `native_mmx.cpp`), the
+  `port_snd_mixsetup.cpp`, `native_snd_mixfuncs.cpp`, `native_mix.cpp`), the
   sample converter, streams and the reverb -- and the game's own use of it,
   every function the game reaches: music, effects, engines, sirens, cops,
   the announcer, the co-driver and the radio, the track's description, 3D
@@ -599,12 +677,6 @@ go through it:
   game -- streams, sound, memory, clock, keyboard -- as the original did; each
   frame goes to the screen in full colour, scaled on the GPU, instead of
   through the 16-bit surface.
-- Two functions of the opponents' driving are decompiled into C++ to be read
-  and changed (`src/nfs3hp/native_ai.h`): sub_4064f0, the pull of an
-  opponent's engine at its speed, and sub_4070c0, how far the way it wants to
-  go is from the way it points. They come out as the generated code to the
-  bit in every precision and both builds (`tools/native_ai_checks.py`);
-  `NFS_NATIVE_AI=0` runs the generated code instead.
 - The code nothing can reach has no generated code: 904 functions, a stub
   each that stops the game with its address (`nfs3hp::dead`,
   `src/nfs3hp/native_dead.inc`, `native_dead.cpp`). Most of it the linker
@@ -621,14 +693,12 @@ go through it:
 Each was compared with the generated code bit for bit before it was switched
 on — memory, registers, flags, the FPU and the triangles drawn. The vertex,
 polygon and drawing natives (`native_vertices.cpp`, `native_render.cpp`) round
-each step through the emulated FPU, as the control word asks at the time, so
-they are exact in every precision; in a race they are about three quarters of
+each step through the emulated FPU; in a race they are about three quarters of
 the game thread's time. They are native whole, with no generated code behind
 them in the game: their checks are on the desktop, against the game's code
-made afresh with the port's changes they carry, in every x87 control word
+made afresh with the port's changes they carry
 (`python tools/game_checks/vertices/run.py`, and `render/run.py` beside it).
-In the experiments' builds (`WITH_PEDANTIC_FPU`, `WITH_WIDE_FPU`) they run
-too, in double, so not to the bit there. The loading natives keep their check
+The loading natives keep their check
 in the game (`NFS_NATIVE_CHECK`).
 
 ### The port's own C++
@@ -738,10 +808,6 @@ opened, and the dialog's own key and pass, which hand an answer to its
 callback. What opens a question, a message and a line to type in and lays out
 their boxes stays native whole (`native_frontend_dialogs.cpp`, `MENU_NATIVES`).
 
-A test showed the whole game playing normally in single precision
-(`NFS_FPU_FLOAT=1`), the menus too: the port's own C++ can use the host's
-floats.
-
 ### Decompiled menus
 
 The menus are being decompiled too, a screen at a time — not for speed, but to
@@ -749,8 +815,11 @@ be read and changed in C++. The menu engine finds a screen's handlers by its
 name in a table at `0x555c48` (57 screens, one per `MENUS/*.MNU`): one as the
 screen opens, one as it closes, one on every pass of the menu loop. A screen's
 handlers and the functions only it calls go to `src/nfs3hp/native_frontend_*.cpp`,
-hooked at the top of their generated functions by
-`tools/apply_native_frontend.py`, the generated code kept behind them.
+bound to their addresses with no generated code behind them. All 57 screens and
+the code under them are native now, and the race's HUD and the simulation's last
+generated functions went the same way (`native_frontend_hudr`, `hudx`, `sima`,
+`simb`, `simc`), listed by `tools/frontend_checks/groups/*.txt`. They are C++ but
+not yet typed: they read and write guest memory and call by address.
 
 The menus' state stays in guest memory, where the rest of the game reads it,
 and what the engine does for a screen — find an item by its codelink, a line of
@@ -819,8 +888,7 @@ recorder the car and track screens keep, which saves the turning car or the
 track frame by frame as `.tga` files. Their 55 functions were compared by the
 same `tools/frontend_checks/run.sh`, and keep the port's changes among them:
 Download Car stays hidden (`tools/apply_hide_download.py`) and the phone's
-keyboard comes up while the game waits for a typed name
-(`tools/apply_text_entry.py`).
+keyboard comes up while the game waits for a typed name (`nfs3hp::textEntry`).
 
 The engine goes the same way, a layer at a time. First
 (`port_menus.cpp` now; once `native_frontend_menus.cpp`), what reads `FeData\Menus\*.mnu` into the table
@@ -875,8 +943,8 @@ are native whole have none to go back to.
 ### Android
 
 Requires Android SDK with **NDK 28.2.13676358**, build-tools 36.0.0, compileSdk
-36, and a JDK (Android Studio's bundled JBR works). The app is arm64-v8a only,
-minSdk 26, so it installs on Android 8.0 and later. The floor is `java.nio.file`,
+36, and a JDK (Android Studio's bundled JBR works). The app is arm64-v8a and armeabi-v7a (the second with `-fmax-type-align=1`: 32-bit
+ARM faults on a float at an unaligned address, where the game keeps some), minSdk 26, so it installs on Android 8.0 and later. The floor is `java.nio.file`,
 which the launcher reads and writes the game's files with; every platform call
 above 26 is behind a version check with a fallback.
 
@@ -919,8 +987,7 @@ directory and the disc.
 
 | Option | Default | Description |
 |---|---|---|
-| `WITH_MMX` | `ON` | MMX bit in the emulated CPUID. Leave it on: reported absent, the game picks different copy routines and the movie streamer breaks. |
-| `WITH_PEDANTIC_FPU` | `OFF` | Every x87 value in 80 bits and the x87's own arithmetic to the bit (`src/lib/x87soft.cpp`). Any GCC or Clang build, Android included (`-Px87Exact`); not MSVC. |
+| `WITH_MMX` | `OFF` | The checks' only: the game's code they hold the port against still has MMX, `cpuid` and `rdtsc`. |
 | `NFS_TRACE_MSG` | `OFF` | Message-pump tracing. Very verbose. |
 | `NFS2_ASSERT_TRAP` | `OFF` | Unsupported-path asserts break into the debugger instead of logging. |
 | `NFS_BUILD_FF_TESTS` | `OFF` | Build `force_feedback_checks`, the force-feedback (`lib/forcefeedback.h`) regression test, against an SDL virtual joystick. |
@@ -947,13 +1014,14 @@ from the phone; the rest matter for a desktop run.
 | `NFS_NATIVES` | on | `0` runs the generated code instead of the car-specs native, to compare speeds. The loading, movie, vertex, polygon and drawing natives always run. |
 | `NFS_MAD_CHECK` | off | `1` (debug) runs the generated MAD player and checks the native decoder (`src/nfs3hp/native_movie.cpp`) against the generated one ([MAD]). |
 | `NFS_LOG` | on | `0` (debug mode off, the launcher's Advanced screen) writes nothing to the log: log priority critical, and SDL's direct Android logging held back (`android/app/jni/sdl_quiet.h`). With debug mode off the launcher sets none of the diagnostic variables. |
-| `NFS_FPU_EXTENDED` | on | Races at the x87's extended precision, as the Modern Patch runs them; `0` races in single precision, as the original (see The x87's precision). Every player of a network race needs the same. Debug mode takes it from its screen or a launch: `adb shell am start -n dev.nfs3hp.port/.SplashActivity --ez fpu_single_races true`. |
-| `NFS_FPU_FLOAT` | off | `1` rounds every x87 operation of the whole game to a float's 24 bits, the menus too, and races in single precision (`NFS_FPU_EXTENDED=0`): the game as it would run on the host's float. An experiment. Debug mode takes it from its screen or a launch: `--ez fpu_float true`. |
-| `NFS_NATIVE_AI` | on | `0` runs the generated sub_4064f0 and sub_4070c0 instead of their decompiled C++ (`src/nfs3hp/native_ai.h`). Debug mode takes it from its screen or a launch: `--ez native_ai_off true`. |
 | `NFS_NET_PORT` | `9803` | TCP port of network races, as the Modern Patch has it; the launcher's Network screen offers the original's `1030`. |
 | `NFS_NET_TRACE` | off | `1` (extra `net_trace`) writes a network race into the log: EA's comm library events and packet sends (`[COMM]`), up to 400 datagrams per socket instead of 16 (`[NET]`), and each new indirect call target once per thread after the IPX transport opens (`[CALL]`). For finding where two machines stop on the way into a race. |
 | `NFS_FE_NATIVE` | on | `0` leaves every hooked decompiled menu function, the screens' and the engine's, to the generated code (see Decompiled menus); the main menu, what it calls of the menu loop and the dialogs, and the controls' screens are native whole and stay native. |
 | `NFS_FE_NATIVE_OFF` | unset | A list of generated functions, `sub_437e00,sub_438260`, left to the generated code while the other decompiled ones run. |
+| `NFS_REPLAY_TRACE` | off | `1` (debug mode, Traces: `replay_trace`) every car at every physics step to `logs/trace-*.bin` (see Comparing builds by a replay). |
+| `NFS_AUTO_REPLAY` | off | `1` (debug mode, launch extra `auto_replay`) no movies, and from the first menu straight into the replay in `replay.rp3`. |
+| `NFS_PERF_TRACE` | off | `1` (debug mode, Traces: `perf_trace`, "Missing performance data logging") follows player one's 0-100 and the other timings from the car (`sub_4cdf10`) through the race's take-down to the results' copy (`sub_455410`), for the race summary's Performance page showing `---`: `[PERF]` when the car's change, `[PERFTIME]` at each step of `takeDownRace` and when the results' records change. |
+| `NFS_FUNC_LOG` | off | `1` (debug mode, switch `live_counter`) samples which functions run, to `functions.bin` (see Live functions log). |
 | `NFS_NATIVE_CHECK` | off | `1` (or `load`) runs each call of the loading natives (`src/nfs3hp/native_loading.cpp`: RefPack, FCE models, FRD tracks) both ways -- the native, everything it wrote put back, then the generated code -- and logs any difference in memory, registers or flags (`[NATIVE]`), holding the guest context meanwhile (`WinApplication::KeepContext`). The vertex, polygon and drawing natives have no generated code left in the game to be held against: their checks are on the desktop (`tools/game_checks/vertices`, `tools/game_checks/render`). Launch extras: `--ez native_check true`, `--ez load_check true`. |
 | `NFS_AUDIO_RATE` | unset | The output's own sample rate. The game mixes at 22050 Hz and SDL converts to this; a device opened at any other rate is resampled by Android, off its low-latency path. Unset, the device opens at SDL's default. |
 | `NFS_TOUCH_STEER_LEFT` etc. | unset | Keys the touch overlay sends for steering and the pedals, so that endpoint can report them as axes. |
@@ -972,15 +1040,20 @@ python3 disassemble_nfs3hp.py
 It reads `nfs3hp/nfs3.exe` and the three DLLs and rewrites
 `src/nfs3hp/disassembly`.
 
-Between two places where control can arrive or leave — a label, a jump, a
-call, a return — the generator keeps the x87 stack in C++ locals rather than in
-the emulated FPU's memory, and writes it back where the run ends
-(`disasm/codegen/fpu_stack.py`). The arithmetic is the same calls in the same
-order, so the results are the same to the bit; on a phone it is about a quarter
-more frames in the heaviest split-screen races. `NFS_FPU_LOCALS=0` in the
-generator's environment writes every instruction against the emulated FPU as
-before, and `NFS_FPU_LOCALS_CHECK=1` plays every run through both ways,
-symbolically, and stops on the first one that differs.
+The generated code has no x87 behind it (`disasm/codegen/fpu_frame.py`). The depth
+of the x87 stack at every instruction follows from the code, so each function
+keeps its stack in C++ locals, one for each depth, and its status word in another;
+the arithmetic is `fp::add`, `fp::mul` and so on, and comparisons give back the
+word `fnstsw` reads (`include/fpu.h`). What is left of the emulated FPU is what
+functions hand each other: a function's table of what it takes from the stack and
+how far it moves it is worked out from the code to a fixed point, the natives by
+the code they replace, and of about 6,000 functions 117 pass anything that way
+(sin, atan2, a helper returning a float). Only those values go through
+`cpu.fpu.push` and `pop`, and the control word stays for the few functions that
+load one. `NFS_FPU_LOCALS=0` in the generator's environment writes every instruction
+against the emulated FPU, to compare. A function whose depth does not follow from
+its code keeps the older form, the stack in locals only through straight runs
+(`disasm/codegen/fpu_stack.py`); one dead routine of the runtime is left of those.
 
 ## Credits
 

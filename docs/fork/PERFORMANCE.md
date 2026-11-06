@@ -1,5 +1,44 @@
 # Performance findings
 
+## Upstream 0.78 integration candidate (not tested)
+
+Source: experimental branch `919280cf` plus upstream `9c27ce73` (four commits
+since `4a65cd49`). Upstream changes 279 files, including regenerated functions,
+native replacements, replay diagnostics and a fixed single-precision `fp::` API.
+No tests, build or device measurements have been run for this integration.
+
+| Decision | Reason |
+| --- | --- |
+| Adopt upstream fixed single precision | Generated code and native helpers now use `fp::` without selecting an arithmetic mode at each operation. Retains wider exponents and exceptional-value handling; not a blanket conversion to C++ float. |
+| Drop double object/vector/matrix dispatch | Its unrounded arithmetic is incompatible with the new single-precision policy. The old host timing result does not justify mixing policies. |
+| Drop precision menu, FPU overrides and unchecked ARMv7 switch | Upstream removed the native precision environment switches. Keeping the controls would misreport behavior; unchecked float loops can mishandle exceptional values. Old preferences are cleared and old backup keys ignored. |
+| Keep ARMv7 compatible fallback and ARMv8 checked float/retry | Clang ARMv7 cannot honor the exception-tracking assumptions. Eligibility is now a compile-time platform choice; overlap and exceptional-value checks remain necessary. |
+| Keep packed-data access fixes | Required for unaligned guest data, especially ARMv7. These are correctness fixes. |
+| Keep opaque shader and one-time vertex attribute setup | Independent of arithmetic changes. Opaque classification must remain: transparent/unknown draws need the original shader. Device gain needs remeasurement. |
+| Keep cheaper mirror default, optional full detail | Avoiding extra rendering remains useful; this is a visual-quality choice. |
+| Keep lightweight FPS and optional detailed recording | Needed for comparison. FPS-only avoids the detailed collector; disabled collection still has enable checks. |
+| Keep diagnostics during integration | Upstream replay/function logs and crash reports help assess the substantial changes. The launcher menu is not the native hot path. |
+| Continue dropping batch merging and broad projection conversion | Earlier real-race benefit was weak for merging; projection changes had rounding/NaN discrepancies. |
+
+The candidate removes arithmetic-policy dispatch, not all branches. Range checks,
+NaN handling, transparent draw classification, in-place alias checks and retries
+are correctness conditions. Removing the Debug tab alone would not remove them
+or the independently enabled performance hooks. A later production build option
+could compile out diagnostics, but should be evaluated separately with the same
+race, device, ABI, resolution and settings. No FPS improvement is claimed here.
+
+Before accepting this candidate: run the updated fixed-single vertex comparison
+on both normal and ARMv7-style paths, inspect both ABI compiler policies, run
+launcher/settings/controller regressions, and build both ABIs. Then compare
+upstream and candidate on the same TV/phone races, including split screen,
+mirrors, transparent geometry and long sessions. Historical expanded track NaN
+failures must be reassessed against the new upstream reference, not presumed fixed.
+
+## Historical findings before upstream 0.78 integration
+
+The following results describe the old selectable-arithmetic branch only. Its
+precision controls and double specialization are removed in the candidate.
+
 | Approach | Result |
 | --- | --- |
 | Unlocking the 30 FPS cap | Revealed that the phone already ran well. This changes pacing, not rendering cost. |

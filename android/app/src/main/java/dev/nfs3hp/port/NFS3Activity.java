@@ -212,6 +212,8 @@ public class NFS3Activity extends SDLActivity
                     if (DebugOptions.value(preferences, getIntent(), option) != option.byDefault)
                         for (int i = 0; i + 1 < option.environment.length; i += 2)
                             setEnv(option.environment[i], option.environment[i + 1]);
+            if (getIntent().getBooleanExtra("auto_replay", false))
+                setEnv("NFS_AUTO_REPLAY", "1");
             String depth16 = DebugOptions.depth16(preferences, getIntent());
             if ("off".equals(depth16))
                 setEnv("NFS_DEPTH16", "0");
@@ -228,8 +230,7 @@ public class NFS3Activity extends SDLActivity
          * here is silently undone. */
         setRequestedOrientation(GamePreferences.screenOrientation(preferences));
 
-        for (java.util.Map.Entry<String,String> setting : VertexSettings.resolve(preferences, getIntent(), VertexSettings.armv7()).environment().entrySet())
-            setEnv(setting.getKey(), setting.getValue());
+        VertexSettings.clearLegacy(preferences);
 
         int performanceLevel=PerformanceSession.instrumentationLevel(preferences);
         setEnv("NFS_PERF_STATS", performanceLevel==PerformanceSession.DETAILED_LEVEL ? "1" : "0");

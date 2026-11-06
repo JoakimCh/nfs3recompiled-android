@@ -62,9 +62,6 @@ final class LauncherSettings {
     };
 
     private static boolean carried(String key, int format) {
-        // Older backups never carried these choices, so importing one preserves them.
-        if (VertexSettings.PRECISION.equals(key) || VertexSettings.FAST.equals(key))
-            return format >= 5;
         if (GamePreferences.SKIP_INTRO.equals(key) || GamePreferences.FULL_MIRROR.equals(key))
             return format >= 4;
         for (String known : KEYS) if (known.equals(key)) return true;
@@ -186,14 +183,14 @@ final class LauncherSettings {
 
     private static boolean valid(String key, JSONObject typed) {
         String expected;
-        if (controllerSetting(key) || key.equals(VertexSettings.PRECISION) || key.equals(GamePreferences.ORIENTATION)
+        if (controllerSetting(key) || key.equals(GamePreferences.ORIENTATION)
                 || key.equals(GamePreferences.TOUCH_MODE) || key.equals(GamePreferences.TOUCH_LAYOUT)
                 || key.equals(GamePreferences.TOUCH_POINTER) || key.equals(GamePreferences.FORCE_FEEDBACK))
             expected = "string";
         else if (key.equals(GamePreferences.TOUCH_ENABLED) || key.equals(GamePreferences.TOUCH_AUTO_HIDE)
                 || key.equals(GamePreferences.TOUCH_VIBRATION) || key.equals(GamePreferences.TOUCH_SNAP)
                 || key.equals(GamePreferences.SAVES_INCLUDE_SETTINGS)
-                || key.equals(GamePreferences.SKIP_INTRO) || key.equals(GamePreferences.FULL_MIRROR) || key.equals(VertexSettings.FAST)
+                || key.equals(GamePreferences.SKIP_INTRO) || key.equals(GamePreferences.FULL_MIRROR)
                 || key.endsWith("_from_right") || key.endsWith("_from_bottom"))
             expected = "boolean";
         else expected = key.startsWith("touch_position_") ? "float" : "int";
@@ -210,8 +207,6 @@ final class LauncherSettings {
             return value instanceof Number && Float.isFinite(((Number)value).floatValue());
         if (!(value instanceof String)) return false;
         String text = (String)value;
-        if (key.equals(VertexSettings.PRECISION))
-            return VertexSettings.EXTENDED.equals(text) || VertexSettings.SINGLE.equals(text);
         if (key.startsWith("input_role_"))
             return InputDeviceRoles.DEFAULT.equals(text) || InputDeviceRoles.CONTROLLER.equals(text)
                 || InputDeviceRoles.REMOTE.equals(text);

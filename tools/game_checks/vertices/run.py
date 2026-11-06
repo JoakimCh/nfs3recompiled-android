@@ -1,5 +1,5 @@
 """native_vertices.cpp's natives held against the game's code on
-Windows or a POSIX host, in every x87 mode the game can be in (vcheck.cpp):
+Windows or a POSIX host, at upstream fixed single precision (vcheck.cpp):
 
     python tools/game_checks/vertices/run.py [cases per mode] [name ...]
 
