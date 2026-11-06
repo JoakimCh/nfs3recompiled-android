@@ -31,12 +31,14 @@ public class VertexSettingsTest {
     }
     @Test public void oldBackupCannotReactivateRetiredArithmeticSettings() throws Exception {
         JSONObject settings=new JSONObject()
+            .put(GamePreferences.FPS_CAP,new JSONObject().put("type","int").put("value",60))
             .put("race_precision",new JSONObject().put("type","string").put("value","extended"))
             .put("vertex_fast",new JSONObject().put("type","boolean").put("value",true));
         JSONObject backup=new JSONObject().put("format",5).put("settings",settings);
         LauncherSettings.importFrom(RuntimeEnvironment.getApplication(),
             new ByteArrayInputStream(backup.toString().getBytes(StandardCharsets.UTF_8)),
             RuntimeEnvironment.getApplication().getCacheDir());
+        assertEquals(60,p.getInt(GamePreferences.FPS_CAP,30));
         assertFalse(p.contains("race_precision"));
         assertFalse(p.contains("vertex_fast"));
     }
