@@ -3,6 +3,17 @@
 Current evidence is below; versioned changes are in [CHANGELOG.md](CHANGELOG.md),
 artifact identities in [releases/](releases/), and older session details in Git history.
 
+## Pending TV text-input fix — untested
+
+The owner reports that the TV keyboard opens and accepts gamepad navigation,
+but player-name characters and backspace do not reach the game. Local changes
+handle IME text key events directly, synchronize deletion with the invisible
+editor, and preserve complete multi-character commits in the Win32 message bridge.
+Backspace/return character messages now precede subsequent queued text, so
+composition replacements cannot insert their new text before deleting the old.
+Regression tests were added but have not been run. No build or device validation
+has been performed; the reported complete input failure still needs TV verification.
+
 ## 0.78.38 / code 115 — current main, APK pending
 
 Merged into main at `a7a2c53` from `experiment-build-time-precision`, based on

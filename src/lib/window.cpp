@@ -4,6 +4,7 @@
 #include <SDL3/SDL.h>
 #include <cstring>
 #include <cstdarg>
+#include <string>
 
 #define WM_KEYDOWN  0x0100
 #define WM_KEYUP    0x0101
@@ -15,17 +16,15 @@ namespace win32
 Uint32 g_userEvent   = 0;
 Uint32 g_userEvent1  = 0;
 Uint32 g_userEvent2  = 0;
-Uint32 g_wmCharEvent = 0;
 
 static struct CustomEventRegistrar
 {
     CustomEventRegistrar()
     {
-        Uint32 base = SDL_RegisterEvents(4);
+        Uint32 base = SDL_RegisterEvents(3);
         g_userEvent   = base + 0;
         g_userEvent1  = base + 1;
         g_userEvent2  = base + 2;
-        g_wmCharEvent = base + 3;
     }
 } s_customEventRegistrar;
 
@@ -169,10 +168,29 @@ x86::reg32 Window::getMessageImpl(const x86::CPU& cpu, MSG* result, Window *wind
     NFS2_USE(filterMin);
     NFS2_USE(msgMax);
     static LPARAM s_lastLParam;
+    // An IME can commit a whole name at once. Keep the remaining bytes until
+    // the next GetMessage, ahead of subsequent SDL key/backspace events.
+    static thread_local std::string pendingText;
+    static thread_local size_t pendingOffset = 0;
+    static thread_local LPARAM pendingTextLParam;
     memset(result, 0, sizeof(MSG));
     SDL_Event event;
     for (;;)
     {
+        if (pendingOffset < pendingText.size())
+        {
+            if (cpu.terminate)
+                return 0;
+            result->message = WM_CHAR;
+            result->wParam = static_cast<unsigned char>(pendingText[pendingOffset++]);
+            result->lParam = pendingTextLParam;
+            if (pendingOffset == pendingText.size())
+            {
+                pendingText.clear();
+                pendingOffset = 0;
+            }
+            return 1;
+        }
         if (SDL_WaitEvent(&event))
         {
             if (cpu.terminate)
@@ -198,13 +216,6 @@ x86::reg32 Window::getMessageImpl(const x86::CPU& cpu, MSG* result, Window *wind
                     ++s_foreignWakes;
                 }
 #endif
-            }
-            else if (event.type == g_wmCharEvent)
-            {
-                result->message = WM_CHAR;
-                result->wParam = static_cast<x86::reg32>(reinterpret_cast<intptr_t>(event.user.data1));
-                result->lParam = static_cast<x86::reg32>(reinterpret_cast<intptr_t>(event.user.data2));
-                return 1;
             }
             else
             {
@@ -336,8 +347,6 @@ x86::reg32 Window::getMessageImpl(const x86::CPU& cpu, MSG* result, Window *wind
                             result->lParam |= s_scancodeTable[scancode] << 16;
                         s_lastLParam = result->lParam;
 
-                        SDL_Event event2;
-                        event2.type = g_wmCharEvent;
                         if (event.type == SDL_EVENT_KEY_UP)
                             result->message = WM_KEYUP;
                         else if (event.type == SDL_EVENT_KEY_DOWN)
@@ -345,9 +354,11 @@ x86::reg32 Window::getMessageImpl(const x86::CPU& cpu, MSG* result, Window *wind
                             result->message = WM_KEYDOWN;
                             if (isWMChar)
                             {
-                                event2.user.data1 = reinterpret_cast<void*>(static_cast<intptr_t>(result->wParam));
-                                event2.user.data2 = reinterpret_cast<void*>(static_cast<intptr_t>(result->lParam));
-                                SDL_PushEvent(&event2);
+                                // Deliver backspace/return immediately after
+                                // keydown, before later text already in SDL's
+                                // queue (including composition replacements).
+                                pendingText.assign(1, static_cast<char>(result->wParam));
+                                pendingTextLParam = result->lParam;
                             }
                         }
 
@@ -372,11 +383,12 @@ x86::reg32 Window::getMessageImpl(const x86::CPU& cpu, MSG* result, Window *wind
                  * frame is drawn. */
                 case SDL_EVENT_TEXT_INPUT:
                     {
-                        result->message = WM_CHAR;
-                        result->wParam = event.text.text[0];
-                        result->lParam = s_lastLParam;
+                        // Copy SDL's transient event text before waiting again.
+                        // Preserve the existing byte-oriented game interface.
+                        pendingText = event.text.text ? event.text.text : "";
+                        pendingTextLParam = s_lastLParam;
                     }
-                    return 1;
+                    break;
                 default:
 #ifdef NFS_TRACE_MSG
                     /* SDL woke the pump for an event that never becomes a

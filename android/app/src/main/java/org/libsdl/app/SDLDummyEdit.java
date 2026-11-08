@@ -32,6 +32,9 @@ public class SDLDummyEdit extends View implements View.OnKeyListener
 
     @Override
     public boolean onKey(View v, int keyCode, KeyEvent event) {
+        if (ic != null && event.getAction() == KeyEvent.ACTION_MULTIPLE && event.getCharacters() != null) {
+            return ic.commitText(event.getCharacters(), 1);
+        }
         return SDLActivity.handleKeyEvent(v, keyCode, event, ic);
     }
 

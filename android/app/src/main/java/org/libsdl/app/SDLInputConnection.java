@@ -1,8 +1,7 @@
 package org.libsdl.app;
 
-import android.content.*;
-import android.os.Build;
 import android.text.Editable;
+import android.text.Selection;
 import android.view.*;
 import android.view.inputmethod.BaseInputConnection;
 import android.widget.EditText;
@@ -14,7 +13,8 @@ class SDLInputConnection extends BaseInputConnection
 
     SDLInputConnection(View targetView, boolean fullEditor) {
         super(targetView, fullEditor);
-        mEditText = new EditText(SDL.getContext());
+        mEditText = new EditText(targetView.getContext());
+        Selection.setSelection(getEditable(), 0);
     }
 
     @Override
@@ -24,12 +24,29 @@ class SDLInputConnection extends BaseInputConnection
 
     @Override
     public boolean sendKeyEvent(KeyEvent event) {
-        /*
-         * This used to handle the keycodes from soft keyboard (and IME-translated input from hardkeyboard)
-         * However, as of Ice Cream Sandwich and later, almost all soft keyboard doesn't generate key presses
-         * and so we need to generate them ourselves in commitText.  To avoid duplicates on the handful of keys
-         * that still do, we empty this out.
-         */
+        // TV IMEs can send key events instead of commitText. Handle their text
+        // here: redispatching through the Activity can classify them as pad or
+        // remote input, and also bypasses the editor's text bookkeeping.
+        if (event.getAction() == KeyEvent.ACTION_MULTIPLE && event.getCharacters() != null) {
+            return commitText(event.getCharacters(), 1);
+        }
+        if (event.getKeyCode() == KeyEvent.KEYCODE_DEL) {
+            if (event.getAction() == KeyEvent.ACTION_DOWN) {
+                deleteSurroundingTextInCodePoints(1, 0);
+            }
+            return true;
+        }
+        int character = event.getUnicodeChar();
+        if (!event.isCtrlPressed() && character >= 32 && Character.isValidCodePoint(character)) {
+            if (event.getAction() == KeyEvent.ACTION_DOWN) {
+                commitText(new String(Character.toChars(character)), 1);
+            } else if (event.getAction() == KeyEvent.ACTION_MULTIPLE) {
+                for (int i = 0; i < Math.max(1, event.getRepeatCount()); ++i) {
+                    commitText(new String(Character.toChars(character)), 1);
+                }
+            }
+            return true;
+        }
 
         /*
          * Return DOES still generate a key event, however.  So rather than using it as the 'click a button' key
@@ -65,20 +82,38 @@ class SDLInputConnection extends BaseInputConnection
 
     @Override
     public boolean deleteSurroundingText(int beforeLength, int afterLength) {
-        // Workaround to capture backspace key. Ref: http://stackoverflow.com/questions>/14560344/android-backspace-in-webview-baseinputconnection
-        // and https://bugzilla.libsdl.org/show_bug.cgi?id=2265
-        if (beforeLength > 0 && afterLength == 0) {
-            // backspace(s)
-            while (beforeLength-- > 0) {
-                nativeGenerateScancodeForUnichar('\b');
-            }
-            return true;
-       }
+        return deleteText(beforeLength, afterLength, false);
+    }
 
-        if (!super.deleteSurroundingText(beforeLength, afterLength)) {
+    @Override
+    public boolean deleteSurroundingTextInCodePoints(int beforeLength, int afterLength) {
+        return deleteText(beforeLength, afterLength, true);
+    }
+
+    private boolean deleteText(int beforeLength, int afterLength, boolean codePoints) {
+        if (beforeLength < 0 || afterLength < 0) {
+            return false;
+        }
+        Editable text = getEditable();
+        int cursor = Math.min(Selection.getSelectionStart(text), Selection.getSelectionEnd(text));
+        if (cursor < 0) {
+            return false;
+        }
+        int available = codePoints ? Character.codePointCount(text, 0, cursor) : cursor;
+        // The game may already contain a default name, which this invisible
+        // editor does not know about. Keep allowing backspace past its start.
+        int extraBackspaces = afterLength == 0 ? Math.max(0, beforeLength - available) : 0;
+        finishComposingText();
+        boolean deleted = codePoints
+                ? super.deleteSurroundingTextInCodePoints(beforeLength, afterLength)
+                : super.deleteSurroundingText(beforeLength, afterLength);
+        if (!deleted) {
             return false;
         }
         updateText();
+        while (extraBackspaces-- > 0) {
+            sendCharacterKey('\b');
+        }
         return true;
     }
 
@@ -103,7 +138,7 @@ class SDLInputConnection extends BaseInputConnection
         /* FIXME: This doesn't handle graphemes, like '🌬️' */
         for (offset = matchLength; offset < mCommittedText.length(); ) {
             int codePoint = mCommittedText.codePointAt(offset);
-            nativeGenerateScancodeForUnichar('\b');
+            sendCharacterKey('\b');
             offset += Character.charCount(codePoint);
         }
 
@@ -119,14 +154,22 @@ class SDLInputConnection extends BaseInputConnection
                     }
                     /* Higher code points don't generate simulated scancodes */
                     if (codePoint > 0 && codePoint < 128) {
-                        nativeGenerateScancodeForUnichar((char)codePoint);
+                        sendCharacterKey((char)codePoint);
                     }
                     offset += Character.charCount(codePoint);
                 }
             }
-            SDLInputConnection.nativeCommitText(pendingText, 0);
+            sendText(pendingText);
         }
         mCommittedText = text;
+    }
+
+    protected void sendCharacterKey(char character) {
+        nativeGenerateScancodeForUnichar(character);
+    }
+
+    protected void sendText(String text) {
+        nativeCommitText(text, 0);
     }
 
     public static native void nativeCommitText(String text, int newCursorPosition);
