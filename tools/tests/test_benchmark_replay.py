@@ -80,5 +80,19 @@ class BenchmarkReplayTest(unittest.TestCase):
             bigf_entries(self.path)
 
 
+class IncludedBenchmarkReplayTest(unittest.TestCase):
+    def test_contributed_fixture_is_unchanged_and_matches_the_workload(self):
+        root = Path(__file__).resolve().parents[2]
+        report = inspect_replay(root / "tests/fixtures/renderer-benchmark/joakim.rp3")
+        self.assertEqual(report["replay"]["sha256"],
+                         "cc849bcc4e787379b23414b36080a0ef12132ac590fa97d42ebf94a66c65b07e")
+        self.assertEqual(report["track"], 3)
+        self.assertEqual(report["laps"], 2)
+        self.assertTrue(report["traffic_disabled"])
+        self.assertEqual(len(report["cars"]), 8)
+        self.assertEqual({car["car_id"] for car in report["cars"]},
+                         {"13000000000000000000000000000000"})
+
+
 if __name__ == "__main__":
     unittest.main()

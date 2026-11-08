@@ -13,19 +13,30 @@ performance conclusions; host software rendering does not predict TV FPS.
 ## Build and run
 
 Requirements: desktop C++17 toolchain, CMake, SDL3 development files (the fork
-pins 3.4.18), OpenGL development files, and Python 3. Linux x86-64 with SDL's
+pins 3.4.18), OpenGL development files, and Python 3.8+. Linux x86-64 with SDL's
 offscreen driver and Mesa llvmpipe has been exercised; other hosts are unverified.
 Set `SDL3_DIR`/`CMAKE_PREFIX_PATH` if SDL is installed outside standard locations.
 
 ```sh
+python3 tools/setup_benchmark.py
 cmake -S . -B out/replay-benchmark -DCMAKE_BUILD_TYPE=Release \
   -DNFS_RENDER_BENCHMARK=ON -DNFS_GAME_PRECISION=DOUBLE
 cmake --build out/replay-benchmark --parallel 2
 python3 tools/renderer_benchmark.py \
   --binary out/replay-benchmark/nfs3hp \
-  --demo-dir /path/to/extracted-demo --replay /path/to/joakim.rp3 \
   --output-dir out/benchmark-run-01
 ```
+
+Setup downloads the pinned demo ZIP, checks its SHA-256, and extracts only
+FEDATA/GAMEDATA plus the original readme/license notices into ignored
+`out/benchmark-assets/demo/`. It runs no Windows installer. Rerunning verifies
+existing files against the pinned archive and refuses to overwrite changed data.
+For offline setup, use `python3 tools/setup_benchmark.py --archive /path/to/demo.zip`.
+An HTTPS mirror can be supplied with `--url`; the required checksum stays fixed.
+
+The runner defaults to that demo folder and the included
+[`joakim.rp3`](../../tests/fixtures/renderer-benchmark/joakim.rp3). Override
+`--demo-dir` or `--replay` for another compatible fixture.
 
 The runner copies FEDATA/GAMEDATA into an isolated output folder and adds the
 repository's runtime files and generated `install.win`. It copies the replay
@@ -69,7 +80,15 @@ Inspected the [NFSHome final demo](https://www.nfshome.com/demos.php?download=4)
 whose README says **Final Demo: Sept 1st 1998**. Archive SHA-256:
 `425e240496a98b2a4543681b35dd92cc340c723b94c13d72755f44de4c90530b`.
 It extracts to 133 files / 23,647,711 bytes; data folders account for 18,780,408 bytes.
-Keep downloaded game data and private replays outside tracked source.
+The owner's benchmark replay is included in source at his request; downloaded
+demo files and other private replays stay outside tracked source.
+
+Redistribution review (2026-11-08): the archive's readme contains copyright and
+trademark notices; its `license.txt` applies to Microsoft components. Neither
+provides a grant to redistribute extracted EA assets. We did not establish
+demo-specific permission to bundle them. EA's [current content policy](https://help.ea.com/en/articles/security-and-rules/ea-content-policy/)
+also does not establish that permission for this 1998 package. The repository
+therefore supplies a downloader, rather than redistributing the demo data.
 
 | Assets | Observed contents |
 | --- | --- |

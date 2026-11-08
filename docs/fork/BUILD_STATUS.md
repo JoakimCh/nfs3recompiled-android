@@ -25,6 +25,21 @@ remained unchanged. Verified DOUBLE executable SHA-256:
 Runs used the uncommitted benchmark source and record the base commit, dirty flag,
 binary and input hashes. SINGLE, other desktop hosts and Android remain unverified.
 
+### Replay fixture and quick setup
+
+After publication at `0dbeb0e`, local setup changes include the owner's unchanged
+replay as the default fixture and a checksum-pinned demo downloader/extractor.
+On 2026-11-08 the live HTTPS download and extraction succeeded; a second invocation
+verified and reused the extracted files. The runner completed 30 warmup + 60
+measured frames using both default input paths, with eight cars and race clock
+advancing from 59 to 119. No native rebuild was needed.
+
+All 15 targeted replay/setup tests passed, covering the included replay's hash,
+archive bounds, download checksums, partial-file cleanup, extraction selection,
+path traversal/symlink rejection and preservation of changed existing data.
+Demo assets remain ignored/local; a redistribution grant for extracted EA assets
+was not established. See the benchmark guide for the review and offline setup.
+
 ## 0.78.38 / code 115 — current main, APK pending
 
 Merged into main at `a7a2c53` from `experiment-build-time-precision`, based on

@@ -67,8 +67,10 @@ def nonnegative(value):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--binary", type=Path, required=True)
-    parser.add_argument("--demo-dir", type=Path, required=True)
-    parser.add_argument("--replay", type=Path, required=True)
+    parser.add_argument("--demo-dir", type=Path, default=ROOT / "out/benchmark-assets/demo",
+                        help="Extracted demo (default: tools/setup_benchmark.py output)")
+    parser.add_argument("--replay", type=Path, default=ROOT / "tests/fixtures/renderer-benchmark/joakim.rp3",
+                        help="Replay (default: included Rocky Pass / Corvette fixture)")
     parser.add_argument("--output-dir", type=Path, required=True, help="New directory; never reuses stale results")
     parser.add_argument("--warmup", type=nonnegative, default=300, help="Replay frames excluded before timing (default 300)")
     parser.add_argument("--frames", type=positive, default=300, help="Measured frame intervals (default 300)")
@@ -83,6 +85,8 @@ def main():
             args.binary, args.demo_dir, args.replay, args.output_dir))
         if not binary.is_file() or not os.access(binary, os.X_OK):
             raise ValueError("Build an executable with NFS_RENDER_BENCHMARK=ON and pass it via --binary")
+        if not demo.is_dir():
+            raise ValueError("Demo data missing; run python3 tools/setup_benchmark.py or pass --demo-dir")
         metadata = inspect_replay(replay)
         metadata["assets"] = inspect_assets(demo, metadata)
         if not metadata["assets"]["core_scene_dependencies_found"]:
