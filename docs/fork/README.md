@@ -7,6 +7,7 @@ See the [main README](../../README.md) for features and requirements.
 - [Changelog](CHANGELOG.md)
 - [Performance findings](PERFORMANCE.md)
 - [Experimental replay benchmark](RENDERER_BENCHMARK.md)
+- [Earlier-stage benchmark proposal](PRE_RENDER_BENCHMARK_PROPOSAL.md)
 - [Launcher translations](TRANSLATIONS.md)
 - [Workspace recovery and troubleshooting](WORKSPACE.md)
 
