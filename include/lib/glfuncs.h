@@ -53,6 +53,7 @@ extern PFNGLTEXSTORAGE2DPROC            glTexStorage2D;
 extern PFNGLGENFRAMEBUFFERSPROC         glGenFramebuffers;
 extern PFNGLDELETEFRAMEBUFFERSPROC      glDeleteFramebuffers;
 extern PFNGLBINDFRAMEBUFFERPROC         glBindFramebuffer;
+extern PFNGLBLITFRAMEBUFFERPROC         glBlitFramebuffer;
 extern PFNGLFRAMEBUFFERTEXTURE2DPROC    glFramebufferTexture2D;
 extern PFNGLFRAMEBUFFERRENDERBUFFERPROC glFramebufferRenderbuffer;
 extern PFNGLGETFRAMEBUFFERATTACHMENTPARAMETERIVPROC glGetFramebufferAttachmentParameteriv;

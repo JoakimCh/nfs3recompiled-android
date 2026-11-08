@@ -436,6 +436,13 @@ HICON LoadIconA(WinApplication* app, x86::CPU& cpu,
 int MessageBoxA(WinApplication* app, x86::CPU& cpu,
                 HWND hWnd, LPCSTR lpText, LPCSTR lpCaption, UINT uType)
 {
+#ifdef NFS_RENDER_BENCHMARK
+    const char* benchmark = SDL_getenv("NFS_BENCHMARK");
+    if (benchmark && SDL_strcmp(benchmark, "1") == 0) {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "[BENCH] dialog %s: %s", lpCaption, lpText);
+        return 0;
+    }
+#endif
     NFS2_USE(app);
     NFS2_USE(cpu);
     NFS2_USE(hWnd);

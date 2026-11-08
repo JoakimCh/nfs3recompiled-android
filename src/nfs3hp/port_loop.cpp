@@ -1,6 +1,10 @@
 #include "port_loop.h"
 #include "diag_hooks.h"
 #include "port_text.h"
+#ifdef NFS_RENDER_BENCHMARK
+#include <lib/replaybench.h>
+#include <SDL3/SDL.h>
+#endif
 
 #include <cstdint>
 #include <cstring>
@@ -1669,6 +1673,25 @@ Result menuLoopCore(Game& g, reg32 esp, reg32 name, reg32 history)
     const reg32 at = esp - 20 - 0x10;
     const reg32 action = at;        // [ebp - 0x10]: 0x44b1a0 sets it
     const reg32 offset = at + 4;    // [ebp - 0xc]
+#ifdef NFS_RENDER_BENCHMARK
+    if (win32::benchmark::enabled())
+    {
+        static bool started = false;
+        if (started) {
+            SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
+                "[BENCH] returned to menus before measurement: replay=%u clock=%u load_aborted=%u",
+                unsigned(word(app, 0x6fd3a0)), unsigned(word(app, 0x7d3684)), unsigned(word(app, 0x55e88c)));
+            return 10;
+        }
+        started = true;
+        // Normally the menu loop initializes the language block used by the
+        // loading screen and HUD before loading any menu definitions.
+        GAME(at, kSetDisplay, {kDisplayChoice(app)});
+        GAME(at, kViewLastReplay);
+        SDL_Log("[BENCH] replay startup returned %u", unsigned(g.eax));
+        return g.eax == 7 ? 7 : 10;
+    }
+#endif
     bool running = true, firstScreen = true;
     setWord(app, action, 0);
     setWord(app, offset, 0);

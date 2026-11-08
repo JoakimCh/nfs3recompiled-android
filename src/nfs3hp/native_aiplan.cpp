@@ -1,4 +1,7 @@
 #include "native_guest.h"
+#ifdef NFS_RENDER_BENCHMARK
+#include <lib/replaybench.h>
+#endif
 
 #include <cstdint>
 #include <cstring>
@@ -3884,6 +3887,15 @@ bool traceSetup(App* app, CPU& cpu)
  * effect bus set up (port::busInit). */
 void startSound(App* app, CPU& cpu)
 {
+#ifdef NFS_RENDER_BENCHMARK
+    // The demo lacks retail frontend banks. This render/physics harness runs
+    // with the game's own effects/music-disabled paths, without an audio mixer.
+    if (win32::benchmark::enabled()) {
+        put(app, kEffectsOn, 0);
+        put(app, kMusicOn, 0);
+        put(app, kMusicSerial, 0);
+    }
+#endif
     push(app, cpu, cpu.ebx);
     push(app, cpu, cpu.ecx);
     push(app, cpu, cpu.edx);

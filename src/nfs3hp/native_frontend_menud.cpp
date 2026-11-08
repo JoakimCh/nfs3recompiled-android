@@ -1,4 +1,7 @@
 #include "native_frontend.h"
+#ifdef NFS_RENDER_BENCHMARK
+#include <lib/replaybench.h>
+#endif
 #include <nfs3hp.h>
 #include <cstdint>
 #include <cstring>
@@ -58,6 +61,12 @@ constexpr GuestString kPointerStrings[] = { { 0x53c5e4, "%smouse.fsh" } };
  * unless it already is, then the file let go. */
 reg32 loadPointerArt(Guest& guest)
 {
+#ifdef NFS_RENDER_BENCHMARK
+    if (win32::benchmark::enabled()) {
+        guest.setDword(kPointerArt, 0);
+        return 0;
+    }
+#endif
     if (guest.dword(kPointerArt) == 0)
     {
         guest.call(kSprintf, args({}, { kPointerPath, kPointerStrings[0].address, kArtFolder }));

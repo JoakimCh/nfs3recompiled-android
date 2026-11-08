@@ -1,6 +1,10 @@
 #include <lib/gamepad_policy.h>
 #include <lib/touch_input.h>
 #include <SDL3/SDL_main.h>
+#include <algorithm>
+#ifdef NFS_RENDER_BENCHMARK
+#include <lib/replaybench.h>
+#endif
 #include <lib/file.h>
 #include <lib/registry.h>
 #include <lib/gamepad.h>
@@ -2403,6 +2407,9 @@ void perfTick(win32::WinApplication* app)
  * keys go out, the phone's cornering and how the touch buttons steer. */
 void onSwap(win32::WinApplication* app)
 {
+#ifdef NFS_RENDER_BENCHMARK
+    win32::benchmark::replayTick(app);
+#endif
     ++nfs3hp::s_swaps;
 #ifndef __ANDROID__
     scriptTick();

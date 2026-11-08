@@ -6,6 +6,7 @@ See the [main README](../../README.md) for features and requirements.
 - [Verified builds and device feedback](BUILD_STATUS.md)
 - [Changelog](CHANGELOG.md)
 - [Performance findings](PERFORMANCE.md)
+- [Experimental replay benchmark](RENDERER_BENCHMARK.md)
 - [Launcher translations](TRANSLATIONS.md)
 - [Workspace recovery and troubleshooting](WORKSPACE.md)
 

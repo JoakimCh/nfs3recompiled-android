@@ -28,6 +28,13 @@ message(STATUS "NFS game precision: ${NFS_GAME_PRECISION}")
 option(WITH_MMX "The checks' game code: MMX registers, cpuid and rdtsc on the CPU" OFF)
 option(NFS_TRACE_MSG "Trace the win32 message pump to the log" OFF)
 option(NFS2_ASSERT_TRAP "Make NFS2_ASSERT a hard trap (debugger break) instead of logging and continuing" OFF)
+option(NFS_RENDER_BENCHMARK "Enable the experimental replay benchmark harness (desktop only)" OFF)
+if(NFS_RENDER_BENCHMARK)
+    if(ANDROID)
+        message(FATAL_ERROR "The initial replay benchmark is a desktop harness")
+    endif()
+    add_compile_definitions(NFS_RENDER_BENCHMARK)
+endif()
 
 # add compile definitions based on options
 if(WITH_MMX)

@@ -3,6 +3,28 @@
 Current evidence is below; versioned changes are in [CHANGELOG.md](CHANGELOG.md),
 artifact identities in [releases/](releases/), and older session details in Git history.
 
+## Experimental desktop replay benchmark — 2026-11-08
+
+On `experiment-renderer-benchmark`, based on main `2d6eecf`, the local DOUBLE
+benchmark compiled and linked with GCC, SDL 3.4.18 (pinned commit), and desktop
+OpenGL. See [RENDERER_BENCHMARK.md](RENDERER_BENCHMARK.md) for reproducible commands,
+fixture identities, scope and limitations. No APK was built or tested.
+
+The supplied `joakim.rp3` and final demo rendered through the production engine
+at 800×600 with eight Corvettes. Mesa llvmpipe / OpenGL 4.5 completed the default
+300 warmup + 300 measured-frame run, with race clock advancing from 348 to 716.
+The captured cockpit/track/opponent image was visually inspected. Another run
+completed 60 measured frames with the GL worker enabled and `--sync submit`.
+These are functional host results, not ARM measurements or stable speedup claims.
+
+Seven replay preflight tests passed. Invalid frame counts, an existing output
+directory and a one-second forced timeout were rejected. Ten affected C++ sources
+passed syntax checks with benchmark hooks disabled. Original replay SHA-256
+remained unchanged. Verified DOUBLE executable SHA-256:
+`db40869bfc3f96ca2d7c61f63069e085e2303f961c48f7fda6c09085855e0bce`.
+Runs used the uncommitted benchmark source and record the base commit, dirty flag,
+binary and input hashes. SINGLE, other desktop hosts and Android remain unverified.
+
 ## 0.78.38 / code 115 — current main, APK pending
 
 Merged into main at `a7a2c53` from `experiment-build-time-precision`, based on

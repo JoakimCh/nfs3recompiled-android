@@ -41,7 +41,11 @@ void closeTrace(win32::WinApplication* app)
 
 void openTrace(win32::WinApplication* app)
 {
+#ifdef __ANDROID__
     const char* root = SDL_GetAndroidExternalStoragePath();
+#else
+    const char* root = ".";
+#endif
     if (!root)
         return;
     const bool replay = app->getMemory<x86::reg32>(kReplay) == 2;

@@ -85,7 +85,8 @@ struct Cycle {uint64_t start=0,cpu=0,epoch=0;};
 inline Cycle& cycle(){static thread_local Cycle c;return c;}
 inline void gameCycleBegin(){if(enabled()){auto& c=cycle();c.epoch=state().epoch.load();c.start=now();c.cpu=cpuNow();}}
 inline void gameCycleEnd(){
-    if(!enabled())return;auto& c=cycle();auto end=now();
+    if(!enabled())return;
+    auto& c=cycle();auto end=now();
     if(c.start&&end>=c.start&&end-c.start<=1000000000ULL)
         timing(GameCycleCalls,end-c.start,cpuNow()-c.cpu,c.epoch);
     c.start=0;

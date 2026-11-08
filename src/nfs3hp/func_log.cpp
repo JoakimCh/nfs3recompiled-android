@@ -30,6 +30,8 @@
  */
 #include "func_log.h"
 
+#ifdef __ANDROID__
+
 #include <atomic>
 #include <cerrno>
 #include <csignal>
@@ -363,3 +365,7 @@ void startFunctionLog()
     SDL_Log("[FUNCS] sampling every %d ms", kIntervalUs / 1000);
 }
 }
+
+#else
+namespace nfs3hp { void startFunctionLog() {} }
+#endif

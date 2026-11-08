@@ -1,5 +1,8 @@
 #include <new>
 #include <lib/renderer.h>
+#ifdef NFS_RENDER_BENCHMARK
+#include <lib/replaybench.h>
+#endif
 #include <lib/perfstats.h>
 #include <lib/window.h>
 #include <lib/gamepad.h>
@@ -577,6 +580,9 @@ void Renderer::presentFrame(x86::reg32 width, x86::reg32 height)
     glEnable(GL_BLEND);
 
     glFlush();
+#ifdef NFS_RENDER_BENCHMARK
+    benchmark::presented(w, h);
+#endif
     maybeGrabFrame(w, h);
     bool swapped;
     {perf::Scope swapTiming(perf::SwapCalls);swapped=SDL_GL_SwapWindow(m_window->m_window);}
@@ -782,7 +788,11 @@ void Renderer::ensureFramePacing()
 {
     if (m_swapInterval != 0)
         return;
-    glthread::post(this, []() { SDL_GL_SetSwapInterval(1); });
+    int swapInterval = 1;
+#ifdef NFS_RENDER_BENCHMARK
+    if (benchmark::enabled()) swapInterval = 0;
+#endif
+    glthread::post(this, [swapInterval]() { SDL_GL_SetSwapInterval(swapInterval); });
     m_swapInterval = 1;
     const char* capEnv = SDL_getenv("NFS_FPS_CAP");
     const int cap = capEnv ? SDL_atoi(capEnv) : 30;

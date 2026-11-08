@@ -1,4 +1,8 @@
 #include "native_guest.h"
+#ifdef NFS_RENDER_BENCHMARK
+#include <lib/replaybench.h>
+#include <SDL3/SDL.h>
+#endif
 
 #include <utility>
 
@@ -2441,6 +2445,21 @@ void startRaceControlsTick(win32::WinApplication* app, x86::CPU& cpu)
         put(app, kWakes, cpu.edx);
         put(app, kTimerCount, cpu.edx);
     }
+#ifdef NFS_RENDER_BENCHMARK
+    if (win32::benchmark::enabled()) {
+        // With the menus bypassed, setup can reach its first timer check
+        // before the newly registered controls callback has had a turn.
+        // Yield through the game's Sleep wrapper; never synthesize ticks.
+        const reg32 savedEax = cpu.eax;
+        for (unsigned attempt = 0; attempt < 100 && at(app, kHalfTicks) == 0; ++attempt) {
+            cpu.eax = 1;
+            if (!byAddress(app, cpu, 0x4df8e0)) return;
+        }
+        SDL_Log("[BENCH] controls timer: %u half ticks, rate %u",
+                unsigned(at(app, kHalfTicks)), unsigned(at(app, 0x5643d8)));
+        cpu.eax = savedEax;
+    }
+#endif
     cpu.ebp = pop(app, cpu);
     cpu.edx = pop(app, cpu);
     cpu.ebx = pop(app, cpu);

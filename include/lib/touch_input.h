@@ -15,7 +15,8 @@ inline void active(bool racing){
         if(state().compare_exchange_weak(old,value))return;}
 }
 inline void set(unsigned action,bool down){
-    if(action>=13)return;const auto bit=uint32_t(1)<<action;auto old=state().load();
+    if(action>=13)return;
+    const auto bit=uint32_t(1)<<action;auto old=state().load();
     const auto generation=old&Generation;
     for(;;){if((old&Generation)!=generation || (down&&!(old&Active)))return;
         auto value=down?(old|bit):(old&~bit);if(state().compare_exchange_weak(old,value))return;}
