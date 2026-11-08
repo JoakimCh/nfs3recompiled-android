@@ -1,4 +1,7 @@
 #include <lib/thrashrenderer.h>
+#ifdef NFS_RENDER_BENCHMARK
+#include <lib/rendercapture.h>
+#endif
 #include <lib/perfstats.h>
 #include <lib/opaque_policy.h>
 #include <lib/renderer.h>
@@ -680,6 +683,9 @@ void ThrashRenderer::swap()
     renderPending();
     if (s_watcher)
         s_watcher->swapped();
+#ifdef NFS_RENDER_BENCHMARK
+    capture::swapped(*this);
+#endif
     DrawCounters& counters = s_counters;
     ++counters.frames;
     counters.depth16Frames += m_depth16;

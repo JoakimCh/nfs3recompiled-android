@@ -42,6 +42,7 @@ PFNGLGENFRAMEBUFFERSPROC         glGenFramebuffers;
 PFNGLDELETEFRAMEBUFFERSPROC      glDeleteFramebuffers;
 PFNGLBINDFRAMEBUFFERPROC         glBindFramebuffer;
 PFNGLBLITFRAMEBUFFERPROC         glBlitFramebuffer;
+PFNGLCHECKFRAMEBUFFERSTATUSPROC  glCheckFramebufferStatus;
 PFNGLFRAMEBUFFERTEXTURE2DPROC    glFramebufferTexture2D;
 PFNGLFRAMEBUFFERRENDERBUFFERPROC glFramebufferRenderbuffer;
 PFNGLGETFRAMEBUFFERATTACHMENTPARAMETERIVPROC glGetFramebufferAttachmentParameteriv;
@@ -118,6 +119,7 @@ void loadGlFunctions()
     load(glDeleteFramebuffers,      "glDeleteFramebuffers");
     load(glBindFramebuffer,         "glBindFramebuffer");
     load(glBlitFramebuffer,         "glBlitFramebuffer");
+    load(glCheckFramebufferStatus,  "glCheckFramebufferStatus");
     load(glFramebufferTexture2D,    "glFramebufferTexture2D");
     load(glFramebufferRenderbuffer, "glFramebufferRenderbuffer");
     load(glGetFramebufferAttachmentParameteriv, "glGetFramebufferAttachmentParameteriv");

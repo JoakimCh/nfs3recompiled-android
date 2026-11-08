@@ -1,5 +1,6 @@
 #ifdef NFS_RENDER_BENCHMARK
 #include <lib/replaybench.h>
+#include <lib/rendercapture.h>
 #include <lib/winapp.h>
 #include <lib/glcompat.h>
 #include <game_precision.h>
@@ -54,10 +55,12 @@ void replayTick(WinApplication* app) {
         && app->getMemory<x86::reg32>(0x7d3684) > 0) {
         SDL_Log("[BENCH] replay running; beginning frame warmup");
         ready.store(true, std::memory_order_release);
+        capture::started();
     }
 }
 
 void presented(int width, int height) {
+    if (capture::enabled()) return;
     if (!enabled() || !ready.load(std::memory_order_acquire)) return;
     static const unsigned warmup = setting("NFS_BENCH_WARMUP", 300);
     static const unsigned target = setting("NFS_BENCH_FRAMES", 300);

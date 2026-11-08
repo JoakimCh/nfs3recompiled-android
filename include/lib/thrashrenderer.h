@@ -9,6 +9,9 @@
 
 namespace win32
 {
+#ifdef NFS_RENDER_BENCHMARK
+namespace capture { struct Access; }
+#endif
 
 class Renderer;
 
@@ -163,6 +166,9 @@ public:
 
 private:
     friend struct ThrashDraw;
+#ifdef NFS_RENDER_BENCHMARK
+    friend struct capture::Access;
+#endif
 
     /* A texture of the game's, as the game thread knows it: the index of its
      * GL texture, its size and levels, and the render pass it was last

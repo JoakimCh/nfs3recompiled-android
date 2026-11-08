@@ -1,10 +1,11 @@
-# Experimental replay benchmark
+# Experimental renderer benchmarks
 
-The initial version runs an Android/retail `.rp3` replay through the production
-engine and renderer using the final PC demo's assets. It is a desktop harness,
-compiled separately from normal builds; it adds no launcher controls.
+Two desktop harnesses use the production renderer: a live Android/retail replay
+for generating scenes, and self-contained frame captures for fixed-workload
+performance/correctness checks. They compile separately from normal builds and
+add no launcher controls.
 
-It measures **live-replay frame intervals**, including simulation, submission,
+The live mode measures **live-replay frame intervals**, including simulation, submission,
 synchronization and the game's timer pacing. It is not a GPU-only test or a
 fixed draw-command replay. Physics precision, scheduling and camera changes can
 change the rendered workload. Compare images and clock ranges before drawing
@@ -37,6 +38,61 @@ An HTTPS mirror can be supplied with `--url`; the required checksum stays fixed.
 The runner defaults to that demo folder and the included
 [`joakim.rp3`](../../tests/fixtures/renderer-benchmark/joakim.rp3). Override
 `--demo-dir` or `--replay` for another compatible fixture.
+
+## Fixed renderer capture and replay
+
+Record a few representative frames once using a trusted build:
+
+```sh
+python3 tools/renderer_benchmark.py --binary out/replay-benchmark/nfs3hp \
+  --output-dir out/render-captures --warmup 300 \
+  --capture-frames 3 --capture-stride 120
+SDL_VIDEO_DRIVER=offscreen out/replay-benchmark/nfs_render_replay \
+  --capture out/render-captures/frame-0.nfrc --output-prefix out/render-baseline/frame-0 \
+  --warmup 10 --iterations 50
+```
+
+Choose a later warmup or larger stride for later race sections. Keep these
+captures unchanged when testing renderer edits. Rebuild only `nfs_render_replay`
+with `cmake --build out/replay-benchmark --target nfs_render_replay --parallel 2`;
+the standalone player needs neither the game simulation nor demo files.
+
+Each version-1 `.nfrc` file contains GL-ready initial texture data and mipmaps,
+ordered uploads/releases, clears, vertices, batches, fog and a reference RGBA
+image. Fields are serialized explicitly; vertex records use the renderer's
+32-byte IEEE-float layout on little-endian hosts. Files are bounded at 256 MiB,
+and malformed ranges, missing textures and frames without an initial full clear
+are rejected. Captures contain game assets and remain local/ignored.
+
+Replay calls production `upload`, `clearFrame` and `drawPending`; it has no shader
+copy. Initial texture restoration is outside timing; uploads within the recorded
+frame remain timed. Timings separate submission wall time from completion wall
+time (`glFinish`), excluding simulation, presentation, reference readback and
+file I/O. Completion wall time is not a hardware GPU timestamp.
+
+Native output is `<prefix>.json`, `.reference.ppm` and `.candidate.ppm`. The JSON
+records batches/vertices, device/version, samples and `rgba_mismatch_bytes`.
+Zero means byte-exact RGBA reproduction. A nonzero value is reported rather than
+silently replacing the baseline. The images cover the internal game render
+target, before the final presentation blit and display adjustments; live-mode
+window dimensions can differ from this internal resolution.
+
+`--shader general` disables the opaque shader only inside this standalone test
+process, using the production fallback. It permits comparison with `auto`
+without reintroducing a launcher option or a production hot-path toggle.
+
+Independent 4×4 GL regression scenes can run without demo downloads:
+
+```sh
+NFS_RENDER_REPLAY_BINARY="$PWD/out/replay-benchmark/nfs_render_replay" \
+  python3 -m unittest discover -s tools/tests -p test_render_capture.py -v
+```
+
+They check independently expected pixels for opaque/transparent geometry,
+partial clears, texture updates, releases and mipmap reallocation, plus malformed
+captures and output preservation. Other GL implementations remain unverified.
+
+## Live mode details
 
 The runner copies FEDATA/GAMEDATA into an isolated output folder and adds the
 repository's runtime files and generated `install.win`. It copies the replay
@@ -143,8 +199,5 @@ Desktop build repairs include loading `glBlitFramebuffer`, isolating the Android
 sampling profiler, making trace paths portable, and required includes/formatting
 for GCC. Benchmark hooks compile out with `NFS_RENDER_BENCHMARK=OFF` (default).
 
-The next step for isolated renderer comparisons is a complete draw capture:
-vertices, ordered batches, texture contents/updates, fog, clears and frame
-boundaries. `ThrashDraw`/`drawPending` is the useful production boundary, but
-texture indices alone cannot reproduce a frame. No capture-replay mode exists
-in this initial version.
+The fixed-frame player is the preferred tool for renderer edits. Use live mode
+to create new scenes and to assess whole-engine effects separately.

@@ -79,6 +79,8 @@ def main():
                         help="finish includes GPU completion; submit measures presentation intervals without forcing completion")
     parser.add_argument("--gl-thread", choices=("off", "on"), default="off")
     parser.add_argument("--video-driver", default="offscreen", help="SDL video driver; e.g. offscreen or x11")
+    parser.add_argument("--capture-frames", type=positive, help="Save self-contained renderer captures instead of timing live replay")
+    parser.add_argument("--capture-stride", type=positive, default=120, help="Frames between captures (default 120)")
     args = parser.parse_args()
     try:
         binary, demo, replay, output = (path.resolve() for path in (
@@ -102,7 +104,7 @@ def main():
         prepare(demo, replay, fixture)
         metadata["binary"] = file_identity(binary)
         metadata["options"] = {key: getattr(args, key) for key in (
-            "warmup", "frames", "timeout", "sync", "gl_thread", "video_driver")}
+            "warmup", "frames", "timeout", "sync", "gl_thread", "video_driver", "capture_frames", "capture_stride")}
         metadata["source_commit"] = subprocess.run(
             ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True, capture_output=True).stdout.strip()
         metadata["source_dirty"] = bool(subprocess.run(
@@ -122,6 +124,11 @@ def main():
             "NFS_FPS_CAP": "0", "SDL_AUDIO_DRIVER": "dummy",
             "SDL_VIDEO_DRIVER": args.video_driver,
         })
+        if args.capture_frames:
+            if args.capture_frames > 100:
+                raise ValueError("At most 100 capture frames per run")
+            env.update({"NFS_CAPTURE_DIR": str(output), "NFS_CAPTURE_FRAMES": str(args.capture_frames),
+                        "NFS_CAPTURE_STRIDE": str(args.capture_stride)})
         with (output / "run.log").open("w") as log:
             try:
                 result = subprocess.run([str(binary), str(fixture)], cwd=fixture, env=env,
@@ -130,6 +137,14 @@ def main():
                 raise ValueError(f"Benchmark timed out; inspect {output / 'run.log'}") from None
         if result.returncode != 0:
             raise ValueError(f"Benchmark exited {result.returncode}; inspect {output / 'run.log'}")
+        if args.capture_frames:
+            index = json.loads((output / "capture-index.json").read_text())
+            if len(index.get("frames", [])) != args.capture_frames:
+                raise ValueError("Capture count does not match the request")
+            index["files"] = {name: file_identity(output / name) for name in index["frames"]}
+            (output / "capture-manifest.json").write_text(json.dumps(index, indent=2) + "\n")
+            print(f"Captured {args.capture_frames} renderer frames: {output}")
+            return 0
         if not (output / "timing.json").is_file():
             raise ValueError(f"Game exited before completing the benchmark; inspect {output / 'run.log'}")
         timing = json.loads((output / "timing.json").read_text())

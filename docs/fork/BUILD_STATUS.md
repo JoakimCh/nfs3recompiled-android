@@ -40,6 +40,22 @@ path traversal/symlink rejection and preservation of changed existing data.
 Demo assets remain ignored/local; a redistribution grant for extracted EA assets
 was not established. See the benchmark guide for the review and offline setup.
 
+### Fixed renderer captures
+
+The next local milestone records self-contained frames and replays them through
+the production renderer without the game simulation. Three captured frames from
+the owner's replay rendered internally at 1920×1080, despite the 800×600 live
+window. All three matched the captured RGBA reference byte-for-byte with both
+automatic opaque selection and the forced general path (six runs, 5 warmup +
+30 measured iterations each). Frames contain 506–641 batches and
+12,237–24,888 vertices. One capture/reference image was visually inspected.
+These host timings are not a stable speedup estimate or ARM validation.
+
+Eight independent asset-free GL tests passed on llvmpipe: opaque/general shader
+agreement, transparency, partial clear, texture updates, release/reallocation,
+invalid capture rejection and output preservation. The capture format and
+measurement boundaries are documented in the benchmark guide. No APK was built.
+
 ## 0.78.38 / code 115 — current main, APK pending
 
 Merged into main at `a7a2c53` from `experiment-build-time-precision`, based on

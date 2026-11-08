@@ -4,6 +4,7 @@
 #include <algorithm>
 #ifdef NFS_RENDER_BENCHMARK
 #include <lib/replaybench.h>
+#include <lib/rendercapture.h>
 #endif
 #include <lib/file.h>
 #include <lib/registry.h>
@@ -2603,6 +2604,9 @@ int main(int argc, char* argv[])
     nfs3hp::diag::takeAutoReplay = nfs3hp::takeAutoReplay;
     nfs3hp::diag::raceDown = nfs3hp::raceDownStep;
     SDL_Init(SDL_INIT_EVENTS|SDL_INIT_VIDEO|SDL_INIT_AUDIO|SDL_INIT_JOYSTICK|SDL_INIT_GAMEPAD);
+#ifdef NFS_RENDER_BENCHMARK
+    win32::capture::install();
+#endif
     /* Window::getMessage consumes key, text, quit and its own registered user
      * events; everything else falls through its switch and is thrown away.  The
      * pad is read by polling its state (Gamepad::update), never from
