@@ -9,10 +9,10 @@ I use AI to help develop these changes.
 - Touch controls that follow the game's racing bindings.
 - A responsive launcher with Exit, optional intro skipping and individual
   bonus-content unlocks.
-- Adjustable mirror detail, opaque-rendering optimization, lightweight FPS
+- Adjustable mirror detail, automatic opaque rendering, lightweight FPS
   display and optional detailed performance reports.
 
-This experimental branch keeps upstream 0.78's engine, replay diagnostics and
+This fork keeps upstream 0.78's engine, replay diagnostics and
 log export, with build-time DOUBLE (default) or upstream SINGLE arithmetic.
 There is no launcher precision selector. The older unchecked fast-vertex
 experiment remains removed. See the [changelog](docs/fork/CHANGELOG.md)

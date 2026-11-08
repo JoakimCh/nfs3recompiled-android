@@ -1,12 +1,12 @@
 # Performance findings
 
-## Build time DOUBLE and SINGLE comparison
+## Current arithmetic policy
 
-The experiment branches from main `d0d5cd58`. DOUBLE is the default and uses
+Current main defaults to DOUBLE and uses
 hardware double arithmetic across fixed helpers, emulated-FPU operations and
 native vertex templates. Single-significand rounding and float/retry vertex
 dispatch compile out. Integer conversions and guest float stores stay intact.
-SINGLE retains main's upstream arithmetic, including compatible ARMv7 vertices
+SINGLE retains upstream rounding, using compatible ARMv7 vertices
 and checked float/retry on ARM64. [BUILD.md](BUILD.md) documents selection.
 
 The owner measured the older Extended mode faster than Single with fast vertices,
@@ -19,17 +19,17 @@ not a measurement of these new builds. Current automated evidence is in
 | Select arithmetic at build time | DOUBLE inlines plain double operations; SINGLE retains upstream 24-bit significand rounding with wider exponent handling. Neither needs a runtime precision selector. |
 | Use one double vertex template in DOUBLE | The same formulae serve the whole double build. SINGLE keeps its own consistent policy rather than mixing arithmetic modes. |
 | Drop precision menu, FPU overrides and unchecked ARMv7 switch | Upstream removed the native precision environment switches. Keeping the controls would misreport behavior; unchecked float loops can mishandle exceptional values. Old preferences are cleared and old backup keys ignored. |
-| Compile out float/retry dispatch in DOUBLE | SINGLE retains main's compatible ARMv7 path and checked ARM64 float/retry path. Packed accesses and input/output overlap handling remain. |
+| Compile out float/retry dispatch in DOUBLE | SINGLE retains the compatible ARMv7 path and checked ARM64 float/retry path. Packed accesses and input/output overlap handling remain. |
 | Keep packed-data access fixes | Required for unaligned guest data, especially ARMv7. These are correctness fixes. |
-| Bake in opaque rendering and cache shader uniforms | The optimization is always enabled; the old toggle and environment override are removed. Each program initializes on first use and retains its own uniforms within a submission. Transparent/unknown draws and shader-link failures use the general path. Owner feedback favors the optimization; the cleanup needs device remeasurement. |
+| Bake in opaque rendering and cache shader uniforms | The optimization is always enabled; the old toggle and environment override are removed. Each program initializes on first use and retains its own uniforms within a submission. Transparent/unknown draws and opaque-shader link failures use the general path. Owner feedback favors the optimization; the cleanup needs device remeasurement. |
 | Keep cheaper mirror default, optional full detail | Avoiding extra rendering remains useful; this is a visual-quality choice. |
 | Keep lightweight FPS and optional detailed recording | Needed for comparison. FPS-only avoids the detailed collector; disabled collection still has enable checks. |
 | Keep diagnostics during integration | Upstream replay/function logs and crash reports help assess the substantial changes. The launcher menu is not the native hot path. |
 | Continue dropping batch merging and broad projection conversion | Earlier real-race benefit was weak for merging; projection changes had rounding/NaN discrepancies. |
 
 The precision selector and arithmetic overrides are gone. Range/alias checks,
-NaN handling, transparent-draw classification and exception retries remain
-necessary for correctness. The Debug tab retains logs, replay and crash tools;
+NaN handling and transparent-draw classification remain where needed. SINGLE
+retains exception retries on its checked float path; DOUBLE omits that path. The Debug tab retains logs, replay and crash tools;
 removing that menu alone would not remove native checks or performance hooks.
 
 ## Overlay and recording

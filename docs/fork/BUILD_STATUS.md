@@ -3,9 +3,10 @@
 Current evidence is below; versioned changes are in [CHANGELOG.md](CHANGELOG.md),
 artifact identities in [releases/](releases/), and older session details in Git history.
 
-## 0.78.38 / code 115 — build time precision experiment
+## 0.78.38 / code 115 — current main, APK pending
 
-Branch `experiment-build-time-precision` starts from main `d0d5cd58`.
+Merged into main at `a7a2c53` from `experiment-build-time-precision`, based on
+previous main `d0d5cd58`.
 DOUBLE (default) compiles out single-significand rounding and float/retry vertex
 dispatch. SINGLE retains main's upstream policy. There is no launcher selector;
 see [BUILD.md](BUILD.md) for CMake, Gradle and runner flags.
@@ -45,10 +46,10 @@ opaque enable checks are removed. New overlay tests cover real-window FPS,
 precision-specific counters, idle state, unavailable shaders and legacy preferences.
 
 No APK, full native application link or device benchmark has been performed for
-this experiment. Signing/reporting code is updated, but a signed APK with the new
-precision marker has not yet been verified. The latest verified APK remains
+current 0.78.38 code. Signing/reporting code is updated, but a signed APK with the new
+precision marker has not yet been verified. The latest verified version remains
 0.78.37 below. Owner feedback favoring the old Extended mode motivates this work;
-it does not measure the new candidate.
+it does not measure the current code.
 
 ## 0.78.37 / code 114 — signed universal APK
 
@@ -97,6 +98,7 @@ cache-packaging failure. It passed on the same clean source.
 | --- | --- |
 | 0.78.36 / 0.78.35 | Dual-ABI native and automated checks passed; no APK or device benchmark. Double dispatch is removed in 0.78.37. |
 | [0.78.34](releases/0.78.34.json) | Signed local ARMv7 APK. Owner saw no graphical differences among the experimental modes; perceived speed was not a controlled measurement. |
+| [0.78.33](releases/0.78.33.json) | Rebuilt locally on 2026-11-08 for regression testing from exact commit `2915ab2`. Signed ARMv7 APK; 40 tooling tests, 23 launcher tests and 314 resource checks passed. Branch `log-warning-cleanup` contains that source. |
 | 0.78.32 | [Hosted universal build](https://github.com/JoakimCh/nfs3recompiled-android/actions/runs/41719407758) passed; its one-day artifacts have expired. |
 | [0.78.31](releases/0.78.31.json) | Signed local ARMv7 APK, launcher/controller/resource checks passed; device feedback was incomplete. |
 | [tv28](releases/tv28.json) | Original local APK reported working. [Hosted publication](https://github.com/JoakimCh/nfs3recompiled-android/actions/runs/41326807799) also succeeded. |

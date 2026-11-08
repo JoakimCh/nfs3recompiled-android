@@ -1,9 +1,9 @@
 # NFS III: Hot Pursuit — Android: technical details
 
-For this fork's TV/controller changes and build instructions, start with the
-[fork guide](docs/fork/README.md). The upstream reference below covers the shared
-port; fork build identity, compile-time DOUBLE/SINGLE arithmetic and performance
-options are documented separately.
+This fork defaults to hardware DOUBLE arithmetic and automatic opaque rendering.
+Use the [fork guide](docs/fork/README.md) and [build instructions](docs/fork/BUILD.md)
+for its controls, compile-time precision option and pinned toolchain. The upstream
+reference below describes upstream's SINGLE arithmetic and build commands.
 
 An Android port of the static recompilation of **Need for Speed III: Hot Pursuit**.
 The original 1998 Win32 x86 executable is translated into portable C++ that runs

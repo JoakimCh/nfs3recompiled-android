@@ -63,13 +63,12 @@ The optional manual workflow has the same choice. There is no launcher selector.
 
 DOUBLE uses hardware doubles in the fixed helpers and emulated-FPU arithmetic;
 vertex loops skip the float attempt and exception retry entirely. SINGLE retains
-main's upstream rounding and ABI policy. Both retain guest float stores and
+upstream rounding and the fork's ABI policy. Both retain guest float stores and
 integer-conversion rules. The APK manifest, native startup log, performance
 report and release metadata identify the policy. Signing reads it from the APK;
 promotion checks it against build validation. Guest control words are still
 reported as requested; the build policy determines actual arithmetic precision.
-Keep outputs for each mode in
-separate directories so comparison artifacts are not overwritten.
+Keep outputs for each mode in separate directories so comparison artifacts are not overwritten.
 
 ## Verification and signing identity
 
@@ -103,7 +102,7 @@ Plain Gradle without fork flags uses the upstream package/version and defaults t
 ## Optional GitHub builds
 
 Open [Android checks and builds](https://github.com/JoakimCh/nfs3recompiled-android/actions/workflows/armv7-release.yml),
-choose **Run workflow**, the intended branch, mode and native target. Modes match
+choose **Run workflow**, the intended branch, mode, native target and precision. Modes match
 the table above; defaults are `tests` and `both`. The historical workflow filename
 serves all targets. With GitHub CLI:
 
@@ -149,7 +148,7 @@ GitHub supplies the publishing token; no personal token is needed.
 
 [android-release.json](../../tools/android-release.json) defines fork `versionName`,
 `versionCode` and `revision`. Update all three together and add a matching heading,
-e.g. `## 0.78.37 — version 114`, to [CHANGELOG.md](CHANGELOG.md).
+e.g. `## 0.78.38 — version 115`, to [CHANGELOG.md](CHANGELOG.md).
 Keep validation in BUILD_STATUS.md and build automation in an Unreleased section.
 
 Versions combine upstream version and fork revision. Files use
