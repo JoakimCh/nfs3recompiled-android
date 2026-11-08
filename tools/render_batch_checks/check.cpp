@@ -4,18 +4,8 @@
 #include <iostream>
 #include <random>
 #include <limits>
-using R=win32::ThrashRenderer;
 using namespace win32;
 int main(){
- R::Batch root{},b{};
-#define REASON(field,bit) b=root;b.field=!root.field;assert(root.differenceMask(b)==(1u<<bit));
- REASON(texture,0) REASON(levels,1) REASON(format,2) REASON(wrapS,3) REASON(wrapT,3)
- REASON(zTest,4) REASON(zTestAlways,4) REASON(zBuffer,4) REASON(alphaBlend,5)
- REASON(cull,6) REASON(cullMode,6) REASON(chromaKey,7)
- REASON(clipMinX,8) REASON(clipMinY,8) REASON(clipMaxX,8) REASON(clipMaxY,8) REASON(fogTable,9)
- b=root;b.gamma=-0.f;assert(root.differenceMask(b)==(1u<<10));
- b=root;b.end=123;b.opaqueAlpha=true;assert(root.differenceMask(b)==0);
- root.gamma=std::numeric_limits<float>::quiet_NaN();b=root;assert(root.differenceMask(b)==0);
  for(int format=0;format<4;++format)for(size_t offset=0;offset<4;++offset){
   std::vector<uint8_t> bytes(4*21+4,255);auto p=bytes.data()+offset;
   assert(opaque::textureAlphaIsOne(p,21,format));
@@ -49,5 +39,5 @@ int main(){
   if(fast){assert(actual==1.f&&actual>ref);++eligible;}
  }
  assert(eligible>1000);
- std::cout<<"PASS: conservative opaque classification over 1,000,000 randomized inputs; all formats/mip alpha, unaligned bytes, vertex/texture alpha combination, invalid inputs/ref/chroma, boundary categories; eligible "<<eligible<<"\n";
+ std::cout<<"PASS: conservative opaque classification over 1,000,000 randomized inputs; all formats/mip alpha, unaligned bytes, vertex/texture alpha combination, invalid inputs/ref/chroma; eligible "<<eligible<<"\n";
 }

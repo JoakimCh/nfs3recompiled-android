@@ -10,7 +10,7 @@ DOUBLE (default) compiles out single-significand rounding and float/retry vertex
 dispatch. SINGLE retains main's upstream policy. There is no launcher selector;
 see [BUILD.md](BUILD.md) for CMake, Gradle and runner flags.
 
-On 2026-11-08 both modes passed 46 tooling tests and 30 launcher tests, with no
+At `2942e020`, both modes passed 46 tooling tests and 30 launcher tests, with no
 failures, errors or skips. The new checks cover arithmetic selection, integer
 rounding and invalid integer conversions, APK/report precision labels, and
 rejection of mismatched release metadata. Both modes passed NDK policy inspection
@@ -24,6 +24,25 @@ accepted NaN-only output-word differences; SINGLE had one. Each mode stopped ten
 particle cases at a stubbed callee, so those cases have partial coverage. These
 checks establish consistency with the selected policy, not original-game physics
 compatibility or a measured FPS improvement.
+
+### Rendering cleanup
+
+On 2026-11-08 both precision modes passed 46 tooling and 33 launcher tests after
+the renderer cleanup (zero failures/errors/skips). The SINGLE run disabled the
+Gradle build cache after clearing stale Kotlin compiler outputs. The renderer
+also passed ARMv7/ARM64 native compilation, the
+million-case opaque-classification check, and a Mesa llvmpipe GL comparison using
+production shader and submission code: 320 paired scenes / 640 submissions,
+bit-exact RGBA across 1,310,720 pixels. It covers depth quantization, shader
+switches, fog/gamma, blending, depth, clipping, wrapping, chroma and alpha fallback.
+The retired opaque environment override was set to zero during the GL check;
+the built-in optimization remained available.
+
+GL-call checks for eight state-identical batches pass: opaque-only uses one
+program bind and four uniform calls; general-only uses one and ten; alternating
+shaders use eight and fourteen. The old boundary-analysis pass and optional
+opaque enable checks are removed. New overlay tests cover real-window FPS,
+precision-specific counters, idle state, unavailable shaders and legacy preferences.
 
 No APK, full native application link or device benchmark has been performed for
 this experiment. Signing/reporting code is updated, but a signed APK with the new

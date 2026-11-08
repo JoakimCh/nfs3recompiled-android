@@ -8,6 +8,12 @@ omits float/retry vertex dispatch. Integer conversion rules and guest float
 stores are retained. Reports identify the selected policy; no launcher precision
 setting is added. Device correctness and performance comparisons are pending.
 
+Opaque rendering is always enabled; remove its launcher toggle and legacy override.
+Shader uniforms initialize on first use and cache per program. Remove the old
+batch-boundary diagnostic pass. Verbose groups frame, CPU and wait figures, names
+double vertex passes correctly, and uses the full-window FPS rate. Report schema
+v5 reserves the retired boundary columns as zero.
+
 ## 0.78.37 — version 114
 
 Integrate upstream 0.78 through `9c27ce73`. Adopt its fixed single-precision

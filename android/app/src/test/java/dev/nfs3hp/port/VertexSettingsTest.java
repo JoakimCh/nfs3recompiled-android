@@ -44,7 +44,7 @@ public class VertexSettingsTest {
     }
     @Test public void overlayIncludesActualVertexPassCounters() {
         long[] before=new long[311],after=new long[311];
-        after[1]=after[2]=2;after[3]=40_000_000;after[308]=4;after[309]=8;after[310]=2;
-        assertTrue(PerformanceSession.describe(before,after).contains("fast 4.0 | compatible 2.0 | retry 1.0"));
+        after[0]=40_000_000;after[1]=after[2]=2;after[3]=40_000_000;after[308]=4;after[309]=8;after[310]=2;
+        assertTrue(PerformanceSession.describe(before,after,"SINGLE").contains("float 4.0 | fallback 2.0 | retry 1.0"));
     }
 }

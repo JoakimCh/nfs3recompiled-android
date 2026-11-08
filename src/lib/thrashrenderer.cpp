@@ -368,19 +368,27 @@ void ThrashRenderer::compileShaders(int depthBits, const char* renderer)
                 m_depth16 ? "the Voodoo's 16-bit steps" : "the GPU's own precision", depthBits,
                 renderer ? renderer : "?");
 
-    const GLuint vertex=compileShader(GL_VERTEX_SHADER,"",g_vertexShader);
-    auto makeProgram=[&](bool opaquePath,Locations& locations) -> GLuint {
-        std::string defines=m_depth16?"#define NFS_DEPTH16 1\n":"";
-        if(opaquePath)defines+="#define NFS_OPAQUE 1\n";
-        const GLuint fragment=compileShader(GL_FRAGMENT_SHADER,defines,g_fragmentShader);
-        const GLuint program=glCreateProgram();
-        glAttachShader(program,vertex);glAttachShader(program,fragment);glLinkProgram(program);
+    const GLuint vertex = compileShader(GL_VERTEX_SHADER, "", g_vertexShader);
+    auto makeProgram = [&](bool opaquePath, Locations& locations) -> GLuint {
+        std::string defines = m_depth16 ? "#define NFS_DEPTH16 1\n" : "";
+        if (opaquePath)
+            defines += "#define NFS_OPAQUE 1\n";
+        const GLuint fragment = compileShader(GL_FRAGMENT_SHADER, defines, g_fragmentShader);
+        const GLuint program = glCreateProgram();
+        glAttachShader(program, vertex);
+        glAttachShader(program, fragment);
+        glLinkProgram(program);
         glDeleteShader(fragment);
-        GLint linked=0;glGetProgramiv(program,GL_LINK_STATUS,&linked);
-        if(!linked){
-            GLchar log[2048];GLsizei length=0;glGetProgramInfoLog(program,sizeof log,&length,log);
-            SDL_LogError(SDL_LOG_CATEGORY_RENDER,"[GFX] %s shader link failed: %s",opaquePath?"opaque":"general",log);
-            glDeleteProgram(program);return 0;
+        GLint linked = 0;
+        glGetProgramiv(program, GL_LINK_STATUS, &linked);
+        if (!linked) {
+            GLchar log[2048];
+            GLsizei length = 0;
+            glGetProgramInfoLog(program, sizeof log, &length, log);
+            SDL_LogError(SDL_LOG_CATEGORY_RENDER, "[GFX] %s shader link failed: %s",
+                         opaquePath ? "opaque" : "general", log);
+            glDeleteProgram(program);
+            return 0;
         }
         locations.position = glGetAttribLocation(program, "g_position");
         locations.color = glGetAttribLocation(program, "g_color");
@@ -399,14 +407,18 @@ void ThrashRenderer::compileShaders(int depthBits, const char* renderer)
         locations.levels = glGetUniformLocation(program, "u_levels");
         locations.texture = glGetUniformLocation(program, "u_texture");
 
-        glUseProgram(program);glUniform1i(locations.texture,0);
-        float w[64];fogW(w);glUniform1fv(locations.fogW,64,w);
+        glUseProgram(program);
+        glUniform1i(locations.texture, 0);
+        float w[64];
+        fogW(w);
+        glUniform1fv(locations.fogW, 64, w);
         return program;
     };
-    m_program=makeProgram(false,m_locations);
-    m_opaqueProgram=perf::opaqueEnabled()?makeProgram(true,m_opaqueLocations):0;
-    glDeleteShader(vertex);glUseProgram(0);
-    perf::rendererConfig(m_opaqueProgram!=0,m_depth16);
+    m_program = makeProgram(false, m_locations);
+    m_opaqueProgram = makeProgram(true, m_opaqueLocations);
+    glDeleteShader(vertex);
+    glUseProgram(0);
+    perf::rendererConfig(m_opaqueProgram != 0, m_depth16);
 
 }
 
@@ -519,7 +531,7 @@ void ThrashRenderer::drawPending(const ThrashDraw& draw)
 {
     const bool measure=perf::enabled();
     const uint64_t start=measure?perf::now():0, cpuStart=measure?perf::cpuNow():0;
-    uint64_t actualDraws=0,opaqueDraws=0,opaqueVertices=0,switches=0;
+    uint64_t opaqueDraws=0,opaqueVertices=0,switches=0;
     glBindFramebuffer(GL_FRAMEBUFFER, m_framebuffer);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_renderer->m_texture, 0);
     glBindVertexArray(m_vertexArray);
@@ -535,34 +547,46 @@ void ThrashRenderer::drawPending(const ThrashDraw& draw)
     glActiveTexture(GL_TEXTURE0);
     glBindBuffer(GL_ARRAY_BUFFER, m_vertexBuffer);
     glBufferData(GL_ARRAY_BUFFER, sizeof(ThrashVertex) * draw.vertexCount, draw.vertices, GL_STREAM_DRAW);
-    for(int i=0;i<2;++i) {
-        const GLuint program=i?m_opaqueProgram:m_program;if(!program)continue;
-        const auto& loc=i?m_opaqueLocations:m_locations;glUseProgram(program);
-        glUniformMatrix4fv(loc.transform,1,GL_FALSE,matrix);
-        glUniform3f(loc.fogColor,draw.fogColor[0],draw.fogColor[1],draw.fogColor[2]);
-        glUniform1f(loc.alphaRef,draw.alphaTestRef);
-        glUniform3i(loc.chromaKeyColor,GLint(draw.chromaKeyColor>>16&0xff),GLint(draw.chromaKeyColor>>8&0xff),GLint(draw.chromaKeyColor&0xff));
-    }
+    // Uniforms belong to each program. Prepare a program only when used and
+    // retain its last batch's values across opaque/general switches in this draw.
+    const Batch* shaderBatches[2] = {nullptr, nullptr};
     GLuint activeProgram=0;
 
     x86::reg32 first = 0;
-    int fogTable = -1;
     const Batch* previous = nullptr;
     bool scissor = false;
     bool blendEnabled = true;
-    for (size_t batchIndex = 0; batchIndex < draw.batches.size(); ++batchIndex)
+    for (const Batch& batch : draw.batches)
     {
-        const Batch& batch = draw.batches[batchIndex];
         const x86::reg32 vertexEnd = batch.end;
-        const bool validTexture=batch.texture<m_glTextures.size()&&m_glTextures[batch.texture]!=0;
-        const bool fast=m_opaqueProgram&&opaque::eligible(batch.opaqueAlpha,batch.chromaKey,draw.alphaTestRef,validTexture,batch.alphaBlend);
+        const GLuint texture = batch.texture < m_glTextures.size() ? m_glTextures[batch.texture] : 0;
+        const bool fast = m_opaqueProgram && opaque::eligible(
+            batch.opaqueAlpha, batch.chromaKey, draw.alphaTestRef, texture != 0, batch.alphaBlend);
         const GLuint program=fast?m_opaqueProgram:m_program;
         const auto& loc=fast?m_opaqueLocations:m_locations;
         const bool programChanged=activeProgram!=program;
-        if(programChanged){glUseProgram(program);activeProgram=program;}
-        if(measure) {
-            ++actualDraws;switches+=programChanged;
-            if(fast){++opaqueDraws;opaqueVertices+=vertexEnd-first;}
+        if (programChanged) {
+            glUseProgram(program);
+            activeProgram = program;
+        }
+        const unsigned shader = fast ? 1u : 0u;
+        const Batch* shaderPrevious = shaderBatches[shader];
+        if (!shaderPrevious) {
+            glUniformMatrix4fv(loc.transform, 1, GL_FALSE, matrix);
+            glUniform3f(loc.fogColor, draw.fogColor[0], draw.fogColor[1], draw.fogColor[2]);
+            // Alpha testing and chroma filtering are absent from the opaque shader.
+            if (!fast) {
+                glUniform1f(loc.alphaRef, draw.alphaTestRef);
+                glUniform3i(loc.chromaKeyColor, GLint(draw.chromaKeyColor >> 16 & 0xff),
+                            GLint(draw.chromaKeyColor >> 8 & 0xff), GLint(draw.chromaKeyColor & 0xff));
+            }
+        }
+        if (measure) {
+            switches += programChanged;
+            if (fast) {
+                ++opaqueDraws;
+                opaqueVertices += vertexEnd - first;
+            }
         }
         // Alpha one with SRC_ALPHA/ONE_MINUS_SRC_ALPHA replaces the destination.
         // Make that proven fact explicit to the GPU's opaque-surface processing.
@@ -570,24 +594,25 @@ void ThrashRenderer::drawPending(const ThrashDraw& draw)
             if(fast)glDisable(GL_BLEND);else glEnable(GL_BLEND);
             blendEnabled=!fast;
         }
-        if (programChanged || batch.fogTable != fogTable)
-        {
-            fogTable = batch.fogTable;
-            glUniform1fv(loc.fogTable, 64, draw.fogTables[fogTable].data());
-        }
+        if (!shaderPrevious || batch.fogTable != shaderPrevious->fogTable)
+            glUniform1fv(loc.fogTable, 64, draw.fogTables[batch.fogTable].data());
         if (!previous || batch.texture != previous->texture)
-        {
-            glBindTexture(GL_TEXTURE_2D, batch.texture < m_glTextures.size() ? m_glTextures[batch.texture] : 0);
-        }
-        if(programChanged || !previous || batch.texture!=previous->texture) {
-            glUniform1f(loc.levels,float(batch.levels));glUniform1i(loc.format,batch.format);
-        }
+            glBindTexture(GL_TEXTURE_2D, texture);
         if (!previous || batch.wrapS != previous->wrapS || batch.wrapT != previous->wrapT)
-        {
             glBindSampler(0, m_samplers[(batch.wrapS ? 1 : 0) + (batch.wrapT ? 2 : 0)]);
+        if (!fast) {
+            if (!shaderPrevious || batch.levels != shaderPrevious->levels)
+                glUniform1f(loc.levels, float(batch.levels));
+            if (!shaderPrevious || batch.format != shaderPrevious->format)
+                glUniform1i(loc.format, batch.format);
+            if (!shaderPrevious || batch.wrapS != shaderPrevious->wrapS || batch.wrapT != shaderPrevious->wrapT)
+                glUniform2f(loc.wrap, batch.wrapS ? 1.f : 0.f, batch.wrapT ? 1.f : 0.f);
+            if (!shaderPrevious || batch.chromaKey != shaderPrevious->chromaKey)
+                glUniform1i(loc.chromaKey, batch.chromaKey ? 1 : 0);
         }
-        if(programChanged || !previous || batch.wrapS!=previous->wrapS || batch.wrapT!=previous->wrapT)
-            glUniform2f(loc.wrap,batch.wrapS?1.f:0.f,batch.wrapT?1.f:0.f);
+        if (!shaderPrevious || batch.gamma != shaderPrevious->gamma)
+            glUniform1f(loc.gamma, batch.gamma);
+        shaderBatches[shader] = &batch;
         if (!previous || batch.zTest != previous->zTest)
         {
             if (batch.zTest)
@@ -607,10 +632,6 @@ void ThrashRenderer::drawPending(const ThrashDraw& draw)
             else
                 glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE, GL_ONE, GL_ZERO);
         }
-        if (programChanged || !previous || batch.chromaKey != previous->chromaKey)
-            glUniform1i(loc.chromaKey, batch.chromaKey ? 1 : 0);
-        if (programChanged || !previous || batch.gamma != previous->gamma)
-            glUniform1f(loc.gamma, batch.gamma);
         if (!previous || batch.cull != previous->cull)
         {
             if (batch.cull)
@@ -648,15 +669,8 @@ void ThrashRenderer::drawPending(const ThrashDraw& draw)
     if(!blendEnabled)glEnable(GL_BLEND);
     if(measure) {
         perf::opaqueUsage(opaqueDraws,opaqueVertices,switches);
-        perf::submitted(draw.batches.size(),actualDraws,draw.vertexCount,perf::now()-start,perf::cpuNow()-cpuStart);
-        const uint64_t epoch=perf::state().epoch.load(), boundaryStart=perf::now(), boundaryCpu=perf::cpuNow();
-        std::array<uint64_t,13> counts{};
-        for(size_t i=1;i<draw.batches.size();++i) {
-            ++counts[0];const auto mask=draw.batches[i-1].differenceMask(draw.batches[i]);
-            if(!mask)++counts[1];
-            for(unsigned bit=0;bit<11;++bit)counts[2+bit]+=(mask>>bit)&1u;
-        }
-        perf::boundaries(counts,perf::now()-boundaryStart,perf::cpuNow()-boundaryCpu,epoch);
+        perf::submitted(draw.batches.size(),draw.batches.size(),draw.vertexCount,
+                        perf::now()-start,perf::cpuNow()-cpuStart);
     }
 }
 
@@ -1125,7 +1139,7 @@ void ThrashRenderer::finishTriangle(ThrashVertex* out)
     }
     for (int i = 0; i < 3; ++i) {
         std::memcpy(out[i].combine, combine, sizeof combine);
-        if(m_batchOpaque&&perf::opaqueEnabled()&&!opaque::vertexAlphaIsOne(out[i],m_textureOpaque))m_batchOpaque=false;
+        if(m_batchOpaque&&!opaque::vertexAlphaIsOne(out[i],m_textureOpaque))m_batchOpaque=false;
     }
     m_vertexCount += 3;
     DrawCounters& counters = s_counters;

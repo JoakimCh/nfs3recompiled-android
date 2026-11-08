@@ -235,7 +235,7 @@ public class NFS3Activity extends SDLActivity
         int performanceLevel=PerformanceSession.instrumentationLevel(preferences);
         setEnv("NFS_PERF_STATS", performanceLevel==PerformanceSession.DETAILED_LEVEL ? "1" : "0");
         setEnv("NFS_FPS_COUNTER", performanceLevel==PerformanceSession.FPS_LEVEL ? "1" : "0");
-        setEnv("NFS_OPAQUE_SHADER", preferences.getBoolean(PerformanceSession.OPAQUE,true) ? "1" : "0");
+        PerformanceSession.clearLegacySettings(preferences);
         // Role filtering happens in the shared Android/SDL bridge. SDL's
         // blanket no-axes filter would incorrectly discard button-only pads.
         setEnv("SDL_TV_REMOTE_AS_JOYSTICK","1");

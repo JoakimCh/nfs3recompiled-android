@@ -1136,13 +1136,11 @@ private fun AdvancedScreen(a: LauncherActivity) {
                                     PerformanceSession.setOverlayMode(preferences, overlayModes[index])
                                     generation++
                                 }
-                                Hint("FPS uses lightweight frame counting. Verbose includes timings, draw calls and vertex counters.")
+                                Hint("FPS uses lightweight frame counting. Verbose shows frame times, rendering load and CPU timings.")
                                 BooleanSetting(preferences, PerformanceSession.COLLECT, false,
                                     "Record performance data", "Collects and saves full statistics regardless of the overlay selection.") {}
                                 BooleanSetting(preferences, GamePreferences.FULL_MIRROR, false,
                                     "Full-detail rear-view mirror", "Render additional scene detail in the mirror. May reduce performance.") {}
-                                BooleanSetting(preferences, PerformanceSession.OPAQUE, true,
-                                    "Rendering optimization (experimental)", "May improve rendering performance. Disable if you notice graphical problems.") {}
                             }
                         }
                         MenuButton("Share performance report", { PerformanceSession.showReport(a) }, width)

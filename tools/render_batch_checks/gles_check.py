@@ -22,6 +22,8 @@ with tempfile.TemporaryDirectory(prefix='nfs3-gles-check-') as directory:
   auto p=new Harness{};p->renderer={target,w,h};p->m_renderer=&p->renderer;
   p->m_glTextures.assign(textures,textures+count);p->initGl();return p;
  }
+ extern "C" unsigned checkUniformCalls(){return uniformCalls;}
+ extern "C" unsigned checkProgramCalls(){return programCalls;}
  extern "C" unsigned long long checkFastCount(){return perf::snapshot()[perf::OpaqueDraws];}
 extern "C" int checkAvailable(void* ptr){return static_cast<Harness*>(ptr)->m_opaqueProgram!=0;}
  extern "C" unsigned checkFramebuffer(void* ptr){return static_cast<Harness*>(ptr)->m_framebuffer;}
@@ -66,7 +68,13 @@ extern "C" int checkAvailable(void* ptr){return static_cast<Harness*>(ptr)->m_op
  #define SDL_LogError(...) std::fprintf(stderr,"GL shader error\\n")
  #define NFS_GLSL_PREAMBLE "#version 300 es\\nprecision highp float;\\nprecision highp int;\\nprecision highp sampler2D;\\n"
  '''
- for n in names:pre+=f'#define {n}(...) reinterpret_cast<decltype(&::{n})>(eglGetProcAddress("{n}"))(__VA_ARGS__)\n'
+ pre+='static unsigned uniformCalls=0, programCalls=0;\n'
+ for n in names:
+  call=f'reinterpret_cast<decltype(&::{n})>(eglGetProcAddress("{n}"))(__VA_ARGS__)'
+  if n.startswith('glUniform'):call='(++uniformCalls, '+call+')'
+  if n=='glUseProgram':call='(++programCalls, '+call+')'
+  pre+=f'#define {n}(...) {call}\n'
+
  cls='''namespace win32 {
  inline void loadGlFunctions(){}
  struct Harness {
@@ -103,10 +111,12 @@ extern "C" int checkAvailable(void* ptr){return static_cast<Harness*>(ptr)->m_op
  import struct,random
  U=C.c_uint;F=C.c_float
  os.environ['NFS_PERF_STATS']='1'
+ os.environ['NFS_OPAQUE_SHADER']='0' # retired override must not disable the built-in shader
  api=C.CDLL(str(WORK/'gl_harness.so'))
  api.checkCreate.argtypes=[U,U,U,C.POINTER(U),U];api.checkCreate.restype=P
  api.checkFramebuffer.argtypes=[P];api.checkFramebuffer.restype=U
  api.checkAvailable.argtypes=[P];api.checkAvailable.restype=I
+ api.checkUniformCalls.restype=U;api.checkProgramCalls.restype=U
  api.checkFastCount.restype=C.c_uint64;api.checkFastCount.argtypes=[]
  api.checkDraw.argtypes=[P,P,U,C.POINTER(I),U,I,F,F];api.checkDestroy.argtypes=[P]
  gen=gl('glGenTextures',None,[I,C.POINTER(U)]);bind=gl('glBindTexture',None,[U,U]);param=gl('glTexParameteri',None,[U,U,I]);image=gl('glTexImage2D',None,[U,I,I,I,I,I,U,U,P])
@@ -147,7 +157,23 @@ extern "C" int checkAvailable(void* ptr){return static_cast<Harness*>(ptr)->m_op
     pix=(C.c_ubyte*(64*64*4))();read(0,0,64,64,0x1908,0x1401,pix);results.append(bytes(pix));assert error()==0,(case,depth)
    assert results[0]==results[1],('pixel mismatch',depth,case,max(abs(a-b) for a,b in zip(*results)))
    cases+=1
+  # Same state repeated within one shader or across shader switches. No program
+  # should be initialized unless drawn, and uniform values belong to each program.
+  triangle=b''.join(struct.pack('<fffIfffBBBB',x,y,5000,0xffffffff,128,128,1,1,0,0,0)
+                    for x,y in [(2,2),(62,2),(32,62)])
+  vb=C.create_string_buffer(triangle*8)
+  for opaque_flags,expected_programs,expected_uniforms in [([1]*8,1,4),([0]*8,1,10),([1,0]*4,8,14)]:
+   batches=[]
+   for j,flag in enumerate(opaque_flags):
+    batches.extend([3*(j+1),0,0,flag,0,3,1,0,0,100,64,64])
+   bb=(I*len(batches))(*batches)
+   programs=api.checkProgramCalls();uniforms=api.checkUniformCalls()
+   api.checkDraw(harness,vb,24,bb,8,1,0,0)
+   assert api.checkProgramCalls()-programs==expected_programs
+   assert api.checkUniformCalls()-uniforms==expected_uniforms
+   assert error()==0
   api.checkDestroy(harness)
  assert api.checkFastCount()>0
+ print('PASS: lazy shader initialization and per-program uniform caches (opaque 4, general 10, alternating 14 uniform calls)')
  print('Actual optimized draws:',api.checkFastCount())
  print(f'PASS: {cases} paired scenes/{cases*2} full production GL submissions, general-only vs opaque-selected, bit-exact RGBA across {cases*64*64:,} pixels; depth quantization on/off, program switching, fog/gamma, blend/depth/scissor/wrap, chroma and alpha fallbacks')

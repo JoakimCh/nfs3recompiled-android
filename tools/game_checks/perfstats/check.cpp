@@ -42,8 +42,6 @@ int main(int argc, char** argv)
         gameCycleBegin(); gameCycleEnd();
         timing(RaceCalls, 10, 5, 0);
         submitted(2, 2, 6, 10, 5);
-        std::array<uint64_t,13> counts{};counts.fill(1);
-        boundaries(counts, 10, 5, 0);
         rendererConfig(true, true); opaqueUsage(2, 6, 1); vertexPass(VertexFast);
         presented(0, 640, 480);
         active(false); presented(0, 640, 480);
