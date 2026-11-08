@@ -1,5 +1,13 @@
 # Fork changes
 
+## 0.78.38 — version 115
+
+Select arithmetic at build time with DOUBLE (default) or SINGLE (upstream).
+DOUBLE uses hardware double operations across generated and native helpers and
+omits float/retry vertex dispatch. Integer conversion rules and guest float
+stores are retained. Reports identify the selected policy; no launcher precision
+setting is added. Device correctness and performance comparisons are pending.
+
 ## 0.78.37 — version 114
 
 Integrate upstream 0.78 through `9c27ce73`. Adopt its fixed single-precision

@@ -1,5 +1,5 @@
 """native_vertices.cpp's natives held against the game's code on
-Windows or a POSIX host, at upstream fixed single precision (vcheck.cpp):
+Windows or a POSIX host, with the same compile-time precision on both sides (vcheck.cpp):
 
     python tools/game_checks/vertices/run.py [cases per mode] [name ...]
 
@@ -11,8 +11,8 @@ VCHECK_TRACE=1 each run as it starts. VCHECK_BENCH=<iterations> measures the
 selected vertex and matrix/vector kernels instead of checking them; synthetic host timings
 are not device FPS. Do not use fast-math or floating-point contraction.
 
-Set CXX='c++ -DNFS_VERTEX_NO_FLOAT_FAST_PATH' to exercise the ARMv7-style
-single-precision fallback on the host. check_fp_policy.py --ndk PATH checks
+Default builds use DOUBLE. Set CXX='c++ -DNFS_GAME_SINGLE_PRECISION=1' for
+SINGLE; add -DNFS_VERTEX_NO_FLOAT_FAST_PATH for its ARMv7-style fallback. check_fp_policy.py --ndk PATH checks
 the real vertex translation unit's ARMv7/ARMv8 compiler policy."""
 import concurrent.futures
 import os

@@ -1,17 +1,25 @@
 # Performance findings
 
-## Current policy: upstream 0.78 integration
+## Build time DOUBLE and SINGLE comparison
 
-The fork adopts upstream `9c27ce73`'s fixed single-precision `fp::` API.
-The signed universal build and automated checks passed; qualifications and exact
-source are in [BUILD_STATUS.md](BUILD_STATUS.md). Device performance is unmeasured.
+The experiment branches from main `d0d5cd58`. DOUBLE is the default and uses
+hardware double arithmetic across fixed helpers, emulated-FPU operations and
+native vertex templates. Single-significand rounding and float/retry vertex
+dispatch compile out. Integer conversions and guest float stores stay intact.
+SINGLE retains main's upstream arithmetic, including compatible ARMv7 vertices
+and checked float/retry on ARM64. [BUILD.md](BUILD.md) documents selection.
+
+The owner measured the older Extended mode faster than Single with fast vertices,
+which was faster than compatible Single. This motivates the experiment; it is
+not a measurement of these new builds. Current automated evidence is in
+[BUILD_STATUS.md](BUILD_STATUS.md). Device comparisons remain pending.
 
 | Decision | Reason |
 | --- | --- |
-| Adopt upstream fixed single precision | Generated code and native helpers now use `fp::` without selecting an arithmetic mode at each operation. Retains wider exponents and exceptional-value handling; not a blanket conversion to C++ float. |
-| Drop double object/vector/matrix dispatch | Its unrounded arithmetic is incompatible with the new single-precision policy. The old host timing result does not justify mixing policies. |
+| Select arithmetic at build time | DOUBLE inlines plain double operations; SINGLE retains upstream 24-bit significand rounding with wider exponent handling. Neither needs a runtime precision selector. |
+| Use one double vertex template in DOUBLE | The same formulae serve the whole double build. SINGLE keeps its own consistent policy rather than mixing arithmetic modes. |
 | Drop precision menu, FPU overrides and unchecked ARMv7 switch | Upstream removed the native precision environment switches. Keeping the controls would misreport behavior; unchecked float loops can mishandle exceptional values. Old preferences are cleared and old backup keys ignored. |
-| Keep ARMv7 compatible fallback and ARMv8 checked float/retry | Clang ARMv7 cannot honor the exception-tracking assumptions. Eligibility is now a compile-time platform choice; overlap and exceptional-value checks remain necessary. |
+| Compile out float/retry dispatch in DOUBLE | SINGLE retains main's compatible ARMv7 path and checked ARM64 float/retry path. Packed accesses and input/output overlap handling remain. |
 | Keep packed-data access fixes | Required for unaligned guest data, especially ARMv7. These are correctness fixes. |
 | Keep opaque shader and one-time vertex attribute setup | Independent of arithmetic changes. Opaque classification must remain: transparent/unknown draws need the original shader. Device gain needs remeasurement. |
 | Keep cheaper mirror default, optional full detail | Avoiding extra rendering remains useful; this is a visual-quality choice. |
@@ -40,7 +48,8 @@ the display choice. Reset disables both overlay and recording.
 FPS includes loading stalls; Verbose interval statistics exclude gaps longer
 than one second. Pause starts a fresh display window. Detailed collection adds
 overhead; its device cost has not been measured. Vertex counters cover selected
-loops, not every helper; retries also count as compatible passes.
+loops, not every helper; retries also count as compatible passes. In DOUBLE
+builds the existing compatible column counts direct hardware-double passes.
 
 Reports identify the source, running ABI and fixed arithmetic policy. For native
 sampling, run the [phone script](../../tools/profiling/record-phone.sh) from an

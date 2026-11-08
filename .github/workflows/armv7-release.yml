@@ -1,5 +1,5 @@
 name: Android checks and builds
-run-name: ${{ inputs.target }} ${{ inputs.mode }} · ${{ github.ref_name }}
+run-name: ${{ inputs.target }} ${{ inputs.mode }} · ${{ inputs.precision }} · ${{ github.ref_name }}
 on:
   workflow_dispatch:
     inputs:
@@ -12,6 +12,14 @@ on:
           - armv7
           - armv8
           - both
+      precision:
+        description: Compile-time game arithmetic
+        type: choice
+        required: true
+        default: DOUBLE
+        options:
+          - DOUBLE
+          - SINGLE
       mode:
         description: What to run (apk-fast skips tests)
         type: choice
@@ -37,6 +45,7 @@ jobs:
       ANDROID_SDK_ROOT: ${{ github.workspace }}/.nfs3-cache/sdk
       GRADLE_USER_HOME: ${{ github.workspace }}/.gradle-cache
       NFS_ANDROID_TARGET: ${{ inputs.target }}
+      NFS_GAME_PRECISION: ${{ inputs.precision }}
       NFS_ANDROID_MODE: ${{ inputs.mode }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -78,7 +87,7 @@ jobs:
         run: python3 tools/android.py verify-signing --github-secrets
       - name: Run selected checks or build
         run: |
-          args=("$NFS_ANDROID_MODE" --target "$NFS_ANDROID_TARGET" --accept-sdk-licenses --jobs 2)
+          args=("$NFS_ANDROID_MODE" --target "$NFS_ANDROID_TARGET" --precision "$NFS_GAME_PRECISION" --accept-sdk-licenses --jobs 2)
           if [[ "$NFS_ANDROID_MODE" = apk || "$NFS_ANDROID_MODE" = apk-fast ]]; then args+=(--unsigned); fi
           python3 tools/android.py "${args[@]}"
       - name: Sign and verify APK

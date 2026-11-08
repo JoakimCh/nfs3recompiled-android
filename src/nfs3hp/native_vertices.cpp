@@ -17,7 +17,7 @@
  * between the clear and the test. */
 #if defined(__clang__)
 #pragma clang fp contract(off)
-#if !defined(__arm__)
+#if !defined(__arm__) && NFS_GAME_SINGLE_PRECISION
 #pragma STDC FENV_ACCESS ON
 #endif
 #elif defined(_MSC_VER)
@@ -36,12 +36,12 @@
  * port's changes to their code: the mirror's car scale (mirrorCarScale) and
  * its headlight light on the road (mirrorAsMain), the alpha intensity's
  * scaling on this driver.  tools/game_checks/vertices holds each against the
- * game's code, made afresh with those changes, at the upstream fixed single-precision setting.
+ * game's code, made afresh with those changes, with the same build-selected arithmetic on both sides.
  * (The hooks left at the end -- arenaReset, aiVotes, the [COMM] traces --
  * only watch, and always hand the call on to the generated code.)
  *
- * FpuMath uses upstream fp:: helpers: fixed single precision with a wider
- * exponent, including exceptional-value handling. Float stores remain explicit.
+ * FpuMath uses build-selected fp:: helpers: hardware double by default, or
+ * upstream single-precision rounding. Float stores remain explicit.
  *
  * At single precision to nearest the hottest loops (FloatMath) run as floats
  * instead: with float inputs, float arithmetic gives the x87's bits -- a double
@@ -113,8 +113,8 @@ struct FloatMath
     static Value sqrt(Value a) { return std::sqrt(a); }
 };
 
-/* The generated code's fixed single-precision arithmetic, retaining the
- * wider exponent and exceptional-value handling. What the natives call M. */
+/* The generated code's build-selected arithmetic. DOUBLE operations inline
+ * to hardware arithmetic; SINGLE retains upstream rounding. What the natives call M. */
 struct FpuMath
 {
     typedef double Value;
@@ -142,10 +142,11 @@ inline bool vertexRetryNeeded()
 #endif
 }
 
-// Fixed upstream single precision. ARMv7 cannot safely use exception retries.
+// DOUBLE uses the double template directly: no float attempt or exception retry.
+// SINGLE retains main's ABI policy (compatible ARMv7, checked float ARM64).
 inline constexpr bool vertexFloatFastPath()
 {
-#if (defined(__clang__) && defined(__arm__)) || defined(NFS_VERTEX_NO_FLOAT_FAST_PATH)
+#if !NFS_GAME_SINGLE_PRECISION || (defined(__clang__) && defined(__arm__)) || defined(NFS_VERTEX_NO_FLOAT_FAST_PATH)
     return false;
 #else
     return true;
@@ -2252,7 +2253,7 @@ void dotProductsNative(win32::WinApplication* app, x86::CPU& cpu)
  *   eax  a; edx  b; ebx  c
  * c may be a or b: the original copies whichever it is to its frame first, and
  * leaves eax or edx pointing at the copy.  Here everything is read before
- * anything is written. Fixed single-precision arithmetic needs no retry. */
+ * anything is written. Build-selected helper arithmetic needs no float retry. */
 void multiplyMatricesNative(win32::WinApplication* app, x86::CPU& cpu)
 {
     const FpuMath M{cpu.fpu};
@@ -2287,7 +2288,7 @@ void multiplyMatricesNative(win32::WinApplication* app, x86::CPU& cpu)
  *   [esp+4]  the points out, 12 bytes each (it returns with ret 4)
  * A point's three are read before it is written, so it works in place; the
  * move is added to what was stored, as floats. As for a multiplied matrix,
- * use fixed single-precision arithmetic; out may be in. */
+ * use build-selected helper arithmetic; out may be in. */
 void transformPointsNative(win32::WinApplication* app, x86::CPU& cpu)
 {
     const FpuMath M{cpu.fpu};

@@ -36,6 +36,7 @@
         android:enableOnBackInvokedCallback="false"
         android:resizeableActivity="true"
         android:hardwareAccelerated="true" >
+        <meta-data android:name="dev.nfs3hp.port.GAME_PRECISION" android:value="${gamePrecision}" />
 
         <!-- Opt-in release profiling (-PprofileNative); keeps debuggable=false. -->
         <profileable android:shell="${nativeProfileable}" />

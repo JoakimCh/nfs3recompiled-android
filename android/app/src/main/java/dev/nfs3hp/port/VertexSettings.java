@@ -3,7 +3,7 @@ package dev.nfs3hp.port;
 import android.content.SharedPreferences;
 import android.os.Process;
 
-/** Remove obsolete experimental preferences; upstream now fixes arithmetic at single precision. */
+/** Remove obsolete experimental preferences; arithmetic is selected at build time. */
 final class VertexSettings {
     static boolean armv7() { return !Process.is64Bit(); }
 

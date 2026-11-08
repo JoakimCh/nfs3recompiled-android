@@ -53,24 +53,26 @@ class AndroidRunnerTest(unittest.TestCase):
     def test_check_routes_every_selected_abi_and_keeps_fork_identity(self):
         for target, abis in android.TARGET_ABIS.items():
             with self.subTest(target=target), tempfile.TemporaryDirectory() as directory:
-                args = SimpleNamespace(jobs=2, target=target)
+                args = SimpleNamespace(jobs=2, target=target, precision="SINGLE")
                 with mock.patch.object(android.subprocess, 'run') as run:
                     android.gradle([':app:assembleRelease'], args, {}, [])
                 command = run.call_args.args[0]
                 self.assertIn('-PforkRelease', command)
+                self.assertIn('-PgamePrecision=SINGLE', command)
                 self.assertIn('-PgameAbis=' + ','.join(abis), command)
 
     def test_fast_report_marks_tests_as_not_run_and_keeps_apk_verification(self):
         with tempfile.TemporaryDirectory() as directory:
             output = Path(directory)
             (output / 'apk-resource-check.json').write_text('{"passed": true}')
-            args = SimpleNamespace(mode='apk-fast', output_dir=output, target='both')
+            args = SimpleNamespace(mode='apk-fast', output_dir=output, target='both', precision='DOUBLE')
             with mock.patch.object(android.setup, 'output', side_effect=['source-sha', '']), \
                  mock.patch.object(android.setup, 'digest', return_value='apk-digest'):
                 android.report(args, None)
             data = json.loads((output / 'validation.json').read_text())
             self.assertEqual(data['mode'], 'apk-fast')
             self.assertEqual(data['target'], 'both')
+            self.assertEqual(data['game_precision'], 'DOUBLE')
             self.assertEqual(data['architectures'], ['armeabi-v7a', 'arm64-v8a'])
             self.assertIsNone(data['tests'])
             self.assertTrue(data['native_compiled'])

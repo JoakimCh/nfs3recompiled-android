@@ -3,6 +3,34 @@
 Current evidence is below; versioned changes are in [CHANGELOG.md](CHANGELOG.md),
 artifact identities in [releases/](releases/), and older session details in Git history.
 
+## 0.78.38 / code 115 — build time precision experiment
+
+Branch `experiment-build-time-precision` starts from main `d0d5cd58`.
+DOUBLE (default) compiles out single-significand rounding and float/retry vertex
+dispatch. SINGLE retains main's upstream policy. There is no launcher selector;
+see [BUILD.md](BUILD.md) for CMake, Gradle and runner flags.
+
+On 2026-11-08 both modes passed 46 tooling tests and 30 launcher tests, with no
+failures, errors or skips. The new checks cover arithmetic selection, integer
+rounding and invalid integer conversions, APK/report precision labels, and
+rejection of mismatched release metadata. Both modes passed NDK policy inspection
+and native vertex machine-code generation for ARMv7 and ARM64. DOUBLE output
+contains hardware double arithmetic without the float/retry or single-rounding
+helpers; SINGLE retains main's ABI-specific policy.
+
+GCC host comparisons passed all 45 vertex functions at 200 cases each per mode
+using freshly generated references compiled with the same policy. DOUBLE had two
+accepted NaN-only output-word differences; SINGLE had one. Each mode stopped ten
+particle cases at a stubbed callee, so those cases have partial coverage. These
+checks establish consistency with the selected policy, not original-game physics
+compatibility or a measured FPS improvement.
+
+No APK, full native application link or device benchmark has been performed for
+this experiment. Signing/reporting code is updated, but a signed APK with the new
+precision marker has not yet been verified. The latest verified APK remains
+0.78.37 below. Owner feedback favoring the old Extended mode motivates this work;
+it does not measure the new candidate.
+
 ## 0.78.37 / code 114 — signed universal APK
 
 Built locally on 2026-11-06 from clean, published source

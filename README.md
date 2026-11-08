@@ -12,9 +12,10 @@ I use AI to help develop these changes.
 - Adjustable mirror detail, opaque-rendering optimization, lightweight FPS
   display and optional detailed performance reports.
 
-This branch incorporates upstream 0.78's fixed single-precision arithmetic,
-replay diagnostics and log export. The old selectable-precision and unchecked
-fast-vertex experiments have been removed. See the [changelog](docs/fork/CHANGELOG.md)
+This experimental branch keeps upstream 0.78's engine, replay diagnostics and
+log export, with build-time DOUBLE (default) or upstream SINGLE arithmetic.
+There is no launcher precision selector. The older unchecked fast-vertex
+experiment remains removed. See the [changelog](docs/fork/CHANGELOG.md)
 and [performance notes](docs/fork/PERFORMANCE.md) for details.
 
 Both upstream and this fork support ARMv7 and ARM64. Fork builds are available

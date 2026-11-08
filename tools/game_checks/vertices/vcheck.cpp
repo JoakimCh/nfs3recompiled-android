@@ -1168,7 +1168,7 @@ std::string floatBits(const x86::Float& f)
 }
 
 const x86::reg16 kModes[] = {
-    0x007f,  // single, nearest: the one mode the game's code is in now (fp::, include/fpu.h)
+    0x007f,  // guest requests single; DOUBLE builds override arithmetic, not the stored word
 };
 
 struct Counts
@@ -1402,6 +1402,7 @@ static long __stdcall crashed(void* pointers)
 
 int main(int argc, char** argv)
 {
+    std::printf("Game arithmetic: %s\n", nfs_precision::name);
 #ifdef _WIN32
     SetUnhandledExceptionFilter(reinterpret_cast<void*>(&crashed));
 #endif

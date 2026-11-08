@@ -2506,6 +2506,7 @@ static std::string getExeDirectory(const char* argv0)
 
 int main(int argc, char* argv[])
 {
+    SDL_Log("[BUILD] game arithmetic: %s", nfs_precision::name);
 #ifdef __ANDROID__
     /* There is no argv[1]/argv[2] on Android and argv[0] carries no directory
      * (SDL synthesizes it), so getExeDirectory()'s fallback would resolve to

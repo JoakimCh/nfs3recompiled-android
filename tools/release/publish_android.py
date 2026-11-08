@@ -128,6 +128,10 @@ def prepare(repo, run, directory, target='armv7'):
         apk_data = member(archive, apk_name)
         require(hashlib.sha256(apk_data).hexdigest() == metadata['apk_sha256'], 'APK SHA-256 mismatch.')
         validation = json.loads(member(archive, 'validation.json'))
+        if 'game_precision' in metadata or 'game_precision' in validation:
+            require(metadata.get('game_precision') in ('DOUBLE', 'SINGLE')
+                    and validation.get('game_precision') == metadata.get('game_precision'),
+                    'Game precision mismatch between APK and build validation.')
         tests = validation['tests']
         mode = validation['mode']
         valid_tests = (
@@ -263,6 +267,7 @@ def release_notes(repo, run, metadata, kind, test_count):
         f"- Version: `{metadata['version']}` ({metadata['versionCode']}).\n"
         f"- Source: [`{run['head_sha'][:7]}`](https://github.com/{repo}/commit/{run['head_sha']}).\n"
         f"- [Build and automated checks]({run['html_url']}){checks}.\n"
+        + (f"- Game arithmetic: `{metadata['game_precision']}`.\n" if 'game_precision' in metadata else '')
         + native_details + "\n\n"
         + 'The symbols ZIP and JSON files are for troubleshooting and verification. '
         'SHA256SUMS.txt contains file checksums. Only the APK is needed to play.\n\n'

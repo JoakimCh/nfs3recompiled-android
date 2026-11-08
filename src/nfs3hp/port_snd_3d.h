@@ -46,6 +46,7 @@ enum class Arithmetic
 
 inline Arithmetic arithmeticOf(const CPU& cpu)
 {
+    if constexpr (!nfs_precision::single) return Arithmetic::Double;
     return cpu.fpu.rounding == x86::FPU::kRoundNone ? Arithmetic::Double : Arithmetic::Single;
 }
 

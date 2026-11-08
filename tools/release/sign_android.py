@@ -62,6 +62,10 @@ def main():
         raise RuntimeError('Signing identity differs from installed TV releases')
     run([bt / 'zipalign', '-c', '-P', '16', '4', apk])
     manifest = run([bt / 'aapt', 'dump', 'xmltree', apk, 'AndroidManifest.xml'])
+    precision_match = re.search(r'android:name[^\n]*"dev\.nfs3hp\.port\.GAME_PRECISION"[^\n]*\n[^\n]*android:value[^\n]*"(DOUBLE|SINGLE)"', manifest)
+    if not precision_match:
+        raise RuntimeError('APK lacks compile-time game precision metadata')
+    precision = precision_match.group(1)
     if 'android:debuggable' in manifest or 'profileable' not in manifest or not re.search(r'android:shell[^\n]*0xffffffff', manifest):
         raise RuntimeError('Expected non-debug, shell-profileable release')
     readelf = (args.sdk.resolve() / 'ndk' / toolchain['ndk'] / 'toolchains/llvm/prebuilt'
@@ -113,7 +117,7 @@ def main():
          resource_report])
     source = run(['git', '-C', root, 'rev-parse', 'HEAD']).strip()
     summary = {'version': version, 'versionCode': code, 'revision': expected['revision'],
-               'target': args.target, 'architectures': list(abis), 'source_commit': source,
+               'target': args.target, 'game_precision': precision, 'architectures': list(abis), 'source_commit': source,
                'uncommitted_changes': bool(run(['git', '-C', root, 'status', '--porcelain']).strip()),
                'apk': apk.name, 'apk_sha256': hashlib.sha256(apk.read_bytes()).hexdigest(),
                'native_build_ids': identities, 'certificate_sha256': certificate,

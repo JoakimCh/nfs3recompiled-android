@@ -2,6 +2,7 @@
 #define FPU_H_
 
 #include <x86.h>
+#include <game_precision.h>
 #include <cstdint>
 #include <cstring>
 #include <cmath>
@@ -154,10 +155,9 @@ namespace x86
             return result;
         }
 
-        /* fninit.  The word an x87 starts with asks for 64 bits; here it asks
-         * for single precision, as the game's races do, so that the menus are in
-         * it too and code that reads the word and loads it again (the game's own
-         * loading screen does) asks for no other. */
+        /* Preserve upstream's guest-visible initial word. SINGLE follows its
+         * arithmetic precision; DOUBLE overrides arithmetic at compile time.
+         * Integer rounding and guest reads of this word are unchanged. */
         inline void init()
         {
             status.word = 0;
@@ -179,7 +179,11 @@ namespace x86
             control.word = word;
             if (s_controlHook)
                 s_controlHook(word);
-            rounding = control.pc != 0 ? kRoundNone : control.rc == 0 ? kRoundSingleNearest : kRoundSingleOther;
+            // Keep the guest control word (especially integer rounding) intact.
+            // DOUBLE bypasses arithmetic precision emulation at compile time.
+            rounding = nfs_precision::single
+                ? (control.pc != 0 ? kRoundNone : control.rc == 0 ? kRoundSingleNearest : kRoundSingleOther)
+                : kRoundNone;
         }
 
         /* The four operations and fsqrt as the x87 rounds them: to the
@@ -203,29 +207,33 @@ namespace x86
         static constexpr x86::reg8 kRoundNone = 0;           // 53 or 64 bits: the double as it is
         static constexpr x86::reg8 kRoundSingleNearest = 1;  // a race
         static constexpr x86::reg8 kRoundSingleOther = 2;    // single, a directed mode
-        x86::reg8 rounding = kRoundSingleNearest;
+        x86::reg8 rounding = nfs_precision::single ? kRoundSingleNearest : kRoundNone;
 
         inline Float add(const Float &a, const Float &b)
         {
             const double sum = a + b;
+            if constexpr (!nfs_precision::single) return sum;
             return rounding == kRoundNone ? sum : toSingle(sum, Rounded::Add, a, b);
         }
 
         inline Float sub(const Float &a, const Float &b)
         {
             const double difference = a - b;
+            if constexpr (!nfs_precision::single) return difference;
             return rounding == kRoundNone ? difference : toSingle(difference, Rounded::Sub, a, b);
         }
 
         inline Float mul(const Float &a, const Float &b)
         {
             const double product = a * b;
+            if constexpr (!nfs_precision::single) return product;
             return rounding == kRoundNone ? product : toSingle(product, Rounded::Mul, a, b);
         }
 
         inline Float div(const Float &a, const Float &b)
         {
             const double quotient = a / b;
+            if constexpr (!nfs_precision::single) return quotient;
             return rounding == kRoundNone ? quotient : toSingle(quotient, Rounded::Div, a, b);
         }
 
@@ -248,6 +256,7 @@ namespace x86
          * lies. */
         inline double toSingle(double value, Rounded op, double a, double b) const
         {
+            if constexpr (!nfs_precision::single) return value;
             std::uint64_t bits;
             std::memcpy(&bits, &value, sizeof bits);
             const std::uint64_t exponent = (bits >> 52) & 0x7ff;
@@ -381,6 +390,7 @@ namespace x86
         inline Float sqrt(const Float &value)
         {
             const double root = ::sqrt(value);
+            if constexpr (!nfs_precision::single) return root;
             return rounding == kRoundNone ? root : toSingle(root, Rounded::Sqrt, value, 0.0);
         }
 
@@ -459,7 +469,10 @@ namespace x86
 
 }
 
-/* The game's arithmetic with nothing behind it: no stack, no control word, no
+/* Build-selected arithmetic: DOUBLE keeps native double results; SINGLE
+ * applies upstream's 24-bit significand rounding. Guest float stores and integer
+ * conversions are separate and retain their original behavior.
+ * The game's arithmetic with nothing behind it: no stack, no control word, no
  * status word.  The sums, products, quotients and roots come out as an x87 at
  * single precision has them, to the bit; codegen/fpu.py writes these for the
  * generated code.  Values stay doubles between operations: a float's 24 bits
@@ -471,6 +484,7 @@ namespace fp
 
     inline double single(double value, x86::FPU::Rounded op, double a, double b)
     {
+        if constexpr (!nfs_precision::single) return value;
         std::uint64_t bits;
         std::memcpy(&bits, &value, sizeof bits);
         const std::uint64_t exponent = (bits >> 52) & 0x7ff;

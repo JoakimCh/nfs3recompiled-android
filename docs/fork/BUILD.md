@@ -46,6 +46,31 @@ outputs for resource and symbol verification; `--apk PATH` selects another input
 When signing after documentation-only commits, retain the actual build commit
 and unsigned APK hash in validation metadata; signing HEAD is not the build identity.
 
+## Compile time precision
+
+`--precision DOUBLE` is the default for the shared runner. Use
+`--precision SINGLE` for upstream single-precision arithmetic. For example:
+
+```sh
+python3 tools/android.py check --target both --precision DOUBLE --accept-sdk-licenses
+python3 tools/android.py apk --target armv7 --precision SINGLE --unsigned --output-dir out/single
+```
+
+Gradle accepts `-PgamePrecision=DOUBLE|SINGLE`; CMake accepts
+`-DNFS_GAME_PRECISION=DOUBLE|SINGLE`. Values are case-sensitive and invalid values
+are rejected. Direct C++ checks use `-DNFS_GAME_SINGLE_PRECISION=0|1` (default 0).
+The optional manual workflow has the same choice. There is no launcher selector.
+
+DOUBLE uses hardware doubles in the fixed helpers and emulated-FPU arithmetic;
+vertex loops skip the float attempt and exception retry entirely. SINGLE retains
+main's upstream rounding and ABI policy. Both retain guest float stores and
+integer-conversion rules. The APK manifest, native startup log, performance
+report and release metadata identify the policy. Signing reads it from the APK;
+promotion checks it against build validation. Guest control words are still
+reported as requested; the build policy determines actual arithmetic precision.
+Keep outputs for each mode in
+separate directories so comparison artifacts are not overwritten.
+
 ## Verification and signing identity
 
 All fork targets use package `dev.nfs3hp.port.armv7tv` and the original release key.

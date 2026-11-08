@@ -17,8 +17,8 @@ Keep two stable virtual controllers so the game's custom bindings survive.
 Replacing `config.dat` resets those bindings. Android and SDL must not deliver
 the same button twice; classify devices by capabilities and user overrides.
 
-Packed game data may be unaligned. Preserve upstream fixed single-precision
-semantics and exceptional-value fallbacks. Use the opaque shader only for draws
+Packed game data may be unaligned. Keep generated and native arithmetic consistent with the build-selected
+precision policy. Preserve integer conversions and explicit guest float stores. Use the opaque shader only for draws
 known to be opaque.
 
 Keep instructions in the relevant guide, build evidence in BUILD_STATUS.md and

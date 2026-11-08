@@ -78,7 +78,7 @@ def verify_signing(args, env):
 
 def gradle(tasks, args, env, flags, launcher_only=False):
     command = ['bash', str(ROOT / 'android/gradlew'), *tasks, '-PforkRelease', '-PgameAbis=' + ','.join(TARGET_ABIS[args.target]), '-PprofileNative',
-               '-PnativeJobs=' + str(args.jobs), '--no-daemon', '--max-workers=' + str(args.jobs),
+               '-PgamePrecision=' + args.precision, '-PnativeJobs=' + str(args.jobs), '--no-daemon', '--max-workers=' + str(args.jobs),
                '--build-cache', '--console=plain', *flags]
     if launcher_only: command.append('-PlauncherTestsOnly')
     subprocess.run(command, cwd=ROOT / 'android', env=env, check=True)
@@ -103,7 +103,7 @@ def report(args, results):
     args.output_dir.mkdir(parents=True, exist_ok=True)
     data = {'mode': args.mode, 'source_commit': setup.output(['git', '-C', ROOT, 'rev-parse', 'HEAD'], os.environ.copy()),
             'source_dirty': bool(setup.output(['git', '-C', ROOT, 'status', '--porcelain'], os.environ.copy())),
-            'target': args.target, 'architectures': list(TARGET_ABIS[args.target]),
+            'target': args.target, 'game_precision': args.precision, 'architectures': list(TARGET_ABIS[args.target]),
             'tests': results, 'native_compiled': args.mode in ('check', 'apk', 'apk-fast'),
             'toolchain': json.loads(setup.CONFIG.read_text())}
     if args.mode in ('apk', 'apk-fast'):
@@ -119,6 +119,8 @@ def main():
     setup.arguments(parser)
     parser.add_argument('--target', choices=TARGET_ABIS, default='armv7',
                         help='Native target; both creates one universal APK (default: armv7)')
+    parser.add_argument('--precision', choices=('DOUBLE', 'SINGLE'), default='DOUBLE',
+                        help='Compile-time arithmetic policy (default: DOUBLE)')
     parser.add_argument('--tests-only', action='store_true', help='Prepare only launcher tooling in setup mode')
     parser.add_argument('--unsigned', action='store_true', help='Explicitly leave an intermediate APK unsigned')
     parser.add_argument('--github-secrets', action='store_true', help='Read CI signing secrets into private temporary files and remove them afterwards')

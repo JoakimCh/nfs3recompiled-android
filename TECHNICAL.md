@@ -2,7 +2,8 @@
 
 For this fork's TV/controller changes and build instructions, start with the
 [fork guide](docs/fork/README.md). The upstream reference below covers the shared
-port; fork build identity and performance options are documented separately.
+port; fork build identity, compile-time DOUBLE/SINGLE arithmetic and performance
+options are documented separately.
 
 An Android port of the static recompilation of **Need for Speed III: Hot Pursuit**.
 The original 1998 Win32 x86 executable is translated into portable C++ that runs

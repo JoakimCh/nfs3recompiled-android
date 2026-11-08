@@ -23,7 +23,7 @@ def archive(files):
 
 
 class ReleasePromotionTests(unittest.TestCase):
-    def fixture(self, wrong_hash=False, wrong_symbols=False, failed_tests=False, version="test", fast=False, validation_updates=None):
+    def fixture(self, wrong_hash=False, wrong_symbols=False, failed_tests=False, version="test", fast=False, validation_updates=None, precision=None):
         names = artifact_names(version)
         metadata = {
             'version': version, 'versionCode': 106 if version == '0.78.29' else 105, 'apk': names['apk'],
@@ -34,11 +34,15 @@ class ReleasePromotionTests(unittest.TestCase):
             'apk_sha256': 'bad' if wrong_hash else hashlib.sha256(b'apk').hexdigest(),
             'native_build_id': '1234',
         }
+        if precision is not None:
+            metadata['game_precision'] = precision
         validation = {'source_commit': 'a' * 40, 'source_dirty': False, 'mode': 'apk',
                       'native_compiled': True, 'tests': {'tests': 14, 'failures': int(failed_tests),
                                                        'errors': 0, 'skipped': 0}}
         if fast:
             validation.update(mode='apk-fast', tests=None)
+        if precision is not None:
+            validation['game_precision'] = precision
         validation.update(validation_updates or {})
         symbol_metadata = dict(metadata, native_build_id='other') if wrong_symbols else metadata
         with archive({'metadata/release.json': symbol_metadata,
@@ -50,6 +54,18 @@ class ReleasePromotionTests(unittest.TestCase):
         for artifact in artifacts:
             self.addCleanup(artifact.close)
         return artifacts
+
+    def test_precision_is_preserved_and_mismatches_are_rejected(self):
+        for precision in ('DOUBLE', 'SINGLE'):
+            with self.subTest(precision=precision), tempfile.TemporaryDirectory() as temp, \
+                 patch.object(publish, 'artifact', side_effect=self.fixture(precision=precision)):
+                result = publish.prepare('owner/repo', {'head_sha': 'a' * 40}, Path(temp))
+                self.assertEqual(result['game_precision'], precision)
+        with tempfile.TemporaryDirectory() as temp, \
+             patch.object(publish, 'artifact', side_effect=self.fixture(
+                 precision='DOUBLE', validation_updates={'game_precision': 'SINGLE'})):
+            with self.assertRaisesRegex(RuntimeError, 'Game precision mismatch'):
+                publish.prepare('owner/repo', {'head_sha': 'a' * 40}, Path(temp))
 
     def test_preserves_exact_files(self):
         with tempfile.TemporaryDirectory() as temp, patch.object(publish, 'artifact', side_effect=self.fixture()):
