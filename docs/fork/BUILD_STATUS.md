@@ -51,10 +51,25 @@ automatic opaque selection and the forced general path (six runs, 5 warmup +
 12,237–24,888 vertices. One capture/reference image was visually inspected.
 These host timings are not a stable speedup estimate or ARM validation.
 
-Eight independent asset-free GL tests passed on llvmpipe: opaque/general shader
+Nine independent asset-free GL tests passed on llvmpipe: opaque/general shader
 agreement, transparency, partial clear, texture updates, release/reallocation,
 invalid capture rejection and output preservation. The capture format and
 measurement boundaries are documented in the benchmark guide. No APK was built.
+
+### Corpus comparisons
+
+The corpus runner completed all three saved frames with 10 warmup + 50 measured
+iterations per frame, first with automatic opaque selection and then the general
+shader against that baseline. Both runs matched every reference RGB and RGBA
+byte. Timing ratios and per-frame review images were produced; these sequential
+llvmpipe samples establish functionality, not a device performance improvement.
+
+Eleven comparison/preflight tests cover exact and tolerant RGB policies, pixel
+budgets, an injected visible error failing the CLI, difference artifacts, PPM
+parsing, changed-capture rejection, mismatched corpora and exclusion of failed
+images or incompatible device/sampling settings from performance ratios.
+Together with the nine GL and 15 replay/setup tests, 35 targeted tests passed.
+Captures remain local; only the owner's replay and tooling are published.
 
 ## 0.78.38 / code 115 — current main, APK pending
 

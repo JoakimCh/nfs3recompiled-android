@@ -48,7 +48,7 @@ python3 tools/renderer_benchmark.py --binary out/replay-benchmark/nfs3hp \
   --output-dir out/render-captures --warmup 300 \
   --capture-frames 3 --capture-stride 120
 SDL_VIDEO_DRIVER=offscreen out/replay-benchmark/nfs_render_replay \
-  --capture out/render-captures/frame-0.nfrc --output-prefix out/render-baseline/frame-0 \
+  --capture out/render-captures/frame-0.nfrc --output-prefix out/render-single/frame-0 \
   --warmup 10 --iterations 50
 ```
 
@@ -56,6 +56,51 @@ Choose a later warmup or larger stride for later race sections. Keep these
 captures unchanged when testing renderer edits. Rebuild only `nfs_render_replay`
 with `cmake --build out/replay-benchmark --target nfs_render_replay --parallel 2`;
 the standalone player needs neither the game simulation nor demo files.
+
+### Compare a renderer change
+
+Run the whole capture corpus before changing the renderer, then rebuild and run
+the candidate against the same files:
+
+```sh
+python3 tools/renderer_capture_benchmark.py \
+  --binary out/replay-benchmark/nfs_render_replay --captures out/render-captures \
+  --output-dir out/render-baseline --warmup 10 --iterations 50
+# Make the renderer change, then rebuild nfs_render_replay.
+python3 tools/renderer_capture_benchmark.py \
+  --binary out/replay-benchmark/nfs_render_replay --captures out/render-captures \
+  --output-dir out/render-candidate --baseline-dir out/render-baseline \
+  --warmup 10 --iterations 50
+```
+
+Use fresh output directories (including for the single-frame example above).
+The corpus runner checks capture hashes, records binary/source identities and
+driver settings, and writes per-frame timings, reference/candidate images,
+8× amplified grayscale difference images, logs and `summary.json`. It exits
+nonzero if any replay or image check fails. Image processing runs after all
+timed processes finish. Reference images are embedded in the original captures;
+`--baseline-dir` supplies earlier timings, never replacement reference pixels.
+
+Correctness defaults to exact **RGB** matching. Native `rgba_mismatch_bytes`
+also exposes alpha differences. For an explicitly approximate experiment, add
+`--channel-tolerance 1 --max-changed-fraction 0.001`: a pixel fails tolerance
+when any RGB channel differs by more than 1 on the 0–255 scale; at most 0.1%
+of pixels may do so. These are example values, not an established visual-quality
+standard. Reports retain exact difference counts, maximum channel error, MAE,
+RMSE and PSNR even when tolerance allows a pass. Dimensions must match; images
+are never resized. Inspect the full images and differences before accepting a
+rendering tradeoff; the numerical gate does not replace human judgment.
+
+For image-only review, `tools/render_image_compare.py --reference old.ppm
+--candidate new.ppm --output-dir out/image-review` uses the same policy and
+supports the same tolerance flags.
+
+Timing ratios require passing images, identical captures, GL device/version,
+resolution, sample counts, video driver and recorded driver environment. Reports
+show each frame's completion-time change and a geometric-mean speedup across
+comparable frames. Repeat baseline/candidate runs on an otherwise idle target;
+one sequential host sample does not establish a reliable speedup. Use
+`--shader general` in the corpus runner to compare the production general path.
 
 Each version-1 `.nfrc` file contains GL-ready initial texture data and mipmaps,
 ordered uploads/releases, clears, vertices, batches, fog and a reference RGBA
@@ -69,6 +114,12 @@ copy. Initial texture restoration is outside timing; uploads within the recorded
 frame remain timed. Timings separate submission wall time from completion wall
 time (`glFinish`), excluding simulation, presentation, reference readback and
 file I/O. Completion wall time is not a hardware GPU timestamp.
+
+Captures freeze already-batched geometry, draw flags and converted texture data.
+They exercise shader/submission/upload/clear changes, but not vertex calculations,
+batch construction, opaque classification, texture conversion or the GL worker
+queue. Use the live harness for changes to those stages. The current fixed-frame
+player is desktop OpenGL only; Android/TV timing still needs a device harness.
 
 Native output is `<prefix>.json`, `.reference.ppm` and `.candidate.ppm`. The JSON
 records batches/vertices, device/version, samples and `rgba_mismatch_bytes`.
@@ -85,7 +136,7 @@ Independent 4×4 GL regression scenes can run without demo downloads:
 
 ```sh
 NFS_RENDER_REPLAY_BINARY="$PWD/out/replay-benchmark/nfs_render_replay" \
-  python3 -m unittest discover -s tools/tests -p test_render_capture.py -v
+  python3 -m unittest discover -s tools/tests -p 'test_render_*.py' -v
 ```
 
 They check independently expected pixels for opaque/transparent geometry,

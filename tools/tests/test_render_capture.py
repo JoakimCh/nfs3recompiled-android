@@ -104,6 +104,14 @@ class RenderCaptureTest(unittest.TestCase):
         self.run_scene(capture([clear(0), quad(0xff0000ff)], reference, textures=[]), "missing-texture", success=False)
         self.run_scene(capture([quad(0xff0000ff)], reference), "missing-clear", success=False)
 
+    def test_invalid_batch_range_and_texture_length_are_rejected(self):
+        reference = bytes((255, 0, 0, 255)) * 16
+        bad_draw = bytearray(quad(0xff0000ff))
+        struct.pack_into("<I", bad_draw, 8 + 6 * 32 + 4, 9)  # end beyond six vertices
+        self.run_scene(capture([clear(0), bytes(bad_draw)], reference), "batch-range", success=False)
+        self.run_scene(capture([clear(0), quad(0xff0000ff)], reference,
+                               textures=[texture(pixels=b"too many bytes")]), "texture-length", success=False)
+
     def test_existing_outputs_are_not_overwritten(self):
         frame = capture([clear(0), quad(0xff0000ff)], bytes((255, 0, 0, 255)) * 16)
         self.run_scene(frame)
